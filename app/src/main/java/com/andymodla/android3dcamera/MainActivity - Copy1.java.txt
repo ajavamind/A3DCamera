@@ -1,0 +1,810 @@
+package com.andymodla.android3dcamera;
+
+import static android.Manifest.permission.CAMERA;
+import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import android.Manifest;
+import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.ImageFormat;
+import android.graphics.PixelFormat;
+import android.hardware.camera2.CameraAccessException;
+import android.hardware.camera2.CameraCaptureSession;
+import android.hardware.camera2.CameraDevice;
+import android.hardware.camera2.CameraManager;
+import android.hardware.camera2.CaptureRequest;
+import android.hardware.camera2.params.OutputConfiguration;
+import android.hardware.camera2.params.SessionConfiguration;
+import android.hardware.camera2.params.TonemapCurve;
+import android.media.Image;
+import android.media.ImageReader;
+import android.media.ImageReader.OnImageAvailableListener;
+import android.media.MediaScannerConnection;
+import android.opengl.GLES20;
+import android.opengl.GLSurfaceView;
+import android.opengl.GLUtils;
+import android.os.AsyncTask;
+import android.os.Bundle;
+import android.os.Environment;
+import android.os.Handler;
+import android.util.Log;
+import android.view.KeyEvent;
+import android.view.SurfaceHolder;
+import android.view.SurfaceView;
+import android.widget.Toast;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.FloatBuffer;
+import java.text.SimpleDateFormat;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
+
+import javax.microedition.khronos.egl.EGLConfig;
+import javax.microedition.khronos.opengles.GL10;
+
+public class MainActivity extends AppCompatActivity {
+
+    private static final String TAG = "Passthrough";
+    private static final int MY_CAMERA_REQUEST_CODE = 100;
+    private static final int MY_STORAGE_REQUEST_CODE = 101;
+
+    private String SAVE_FOLDER = "ACamera3D";
+
+    // preview camera dimensions
+    private int cameraWidth = 1440;
+    private int cameraHeight = 1080;
+
+    private static final float[] curve_srgb = { // sRGB curve
+            0.0000f, 0.0000f, 0.0667f, 0.2864f, 0.1333f, 0.4007f, 0.2000f, 0.4845f,
+            0.2667f, 0.5532f, 0.3333f, 0.6125f, 0.4000f, 0.6652f, 0.4667f, 0.7130f,
+            0.5333f, 0.7569f, 0.6000f, 0.7977f, 0.6667f, 0.8360f, 0.7333f, 0.8721f,
+            0.8000f, 0.9063f, 0.8667f, 0.9389f, 0.9333f, 0.9701f, 1.0000f, 1.0000f};
+
+    private CameraDevice mCameraDevice;
+    private CameraManager mCameraManager;
+    private CameraCaptureSession mCameraCaptureSession;
+    private CaptureRequest.Builder captureRequestBuilder;
+    private Handler mainHandler;
+    
+    // Display surfaces
+    private SurfaceView mSurfaceView0, mSurfaceView2;
+    private SurfaceHolder mSurfaceHolder0, mSurfaceHolder2;
+    private SurfaceView mAnaglyphSurfaceView;
+
+    // Image capture
+    private ImageReader mImageReader0, mImageReader2;
+
+    // Display mode
+    private boolean isAnaglyphMode = false;
+    
+    // Anaglyph capture readers
+    private ImageReader mAnaglyphReader0, mAnaglyphReader2;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        mCameraManager = (CameraManager) getSystemService(CAMERA_SERVICE);
+        setContentView(R.layout.layout);
+
+        setupSurfaces();
+        checkPermissions();
+    }
+
+    private void setupSurfaces() {
+        mSurfaceView0 = findViewById(R.id.surfaceView);
+        mSurfaceView2 = findViewById(R.id.surfaceView2);
+        mSurfaceHolder0 = mSurfaceView0.getHolder();
+        mSurfaceHolder2 = mSurfaceView2.getHolder();
+
+        // Setup anaglyph surface view
+        mAnaglyphSurfaceView = new SurfaceView(this);
+        mAnaglyphSurfaceView.getHolder().setFormat(PixelFormat.RGBA_8888);
+        mAnaglyphSurfaceView.setVisibility(SurfaceView.GONE);
+
+        SurfaceHolder.Callback shCallback = new SurfaceHolder.Callback() {
+            @Override
+            public void surfaceCreated(@NonNull SurfaceHolder holder) {
+                if (mCameraDevice == null &&
+                        mSurfaceHolder0.getSurface().isValid() &&
+                        mSurfaceHolder2.getSurface().isValid()) {
+                    initCamera();
+                }
+            }
+            @Override
+            public void surfaceChanged(@NonNull SurfaceHolder holder, int format, int width, int height) {
+            }
+
+            @Override
+            public void surfaceDestroyed(@NonNull SurfaceHolder holder) {
+                if (null != mCameraDevice) {
+                    mCameraDevice.close();
+                    mCameraDevice = null;
+                }
+            }
+        };
+
+        mSurfaceHolder0.addCallback(shCallback);
+        mSurfaceHolder2.addCallback(shCallback);
+    }
+
+    private void checkPermissions() {
+        String[] permissions = {Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE};
+        boolean needsPermission = false;
+        
+        for (String permission : permissions) {
+            if (ActivityCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED) {
+                needsPermission = true;
+                break;
+            }
+        }
+        
+        if (needsPermission) {
+            ActivityCompat.requestPermissions(this, permissions, MY_CAMERA_REQUEST_CODE);
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        
+        if (requestCode == MY_CAMERA_REQUEST_CODE) {
+            boolean allGranted = true;
+            for (int result : grantResults) {
+                if (result != PackageManager.PERMISSION_GRANTED) {
+                    allGranted = false;
+                    break;
+                }
+            }
+            
+            if (allGranted) {
+                initCamera();
+            } else {
+                Toast.makeText(this, "Camera and storage permissions required", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    private void initCameraold() {
+        mainHandler = new Handler(getMainLooper());
+        if (ActivityCompat.checkSelfPermission(this, CAMERA) !=
+                PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[]{Manifest.permission.CAMERA}, MY_CAMERA_REQUEST_CODE);
+        } else {
+            try {
+                mCameraManager.openCamera("3", stateCallback, mainHandler);
+            } catch (CameraAccessException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    private void initCamera() {
+        mainHandler = new Handler(getMainLooper());
+
+        // Setup ImageReaders for capture
+//        mImageReader0 = ImageReader.newInstance(1440, 1080, ImageFormat.JPEG, 1);
+//        mImageReader2 = ImageReader.newInstance(1440, 1080, ImageFormat.JPEG, 1);
+        mImageReader0 = ImageReader.newInstance(cameraWidth, cameraHeight, ImageFormat.JPEG, 2);
+        mImageReader2 = ImageReader.newInstance(cameraWidth, cameraHeight, ImageFormat.JPEG, 2);
+        
+        // Setup ImageReaders for anaglyph bitmap capture
+        mAnaglyphReader0 = ImageReader.newInstance(cameraWidth, cameraHeight, ImageFormat.YUV_420_888, 2);
+        mAnaglyphReader2 = ImageReader.newInstance(cameraWidth, cameraHeight, ImageFormat.YUV_420_888, 2);
+
+        if (ActivityCompat.checkSelfPermission(this, CAMERA) == PackageManager.PERMISSION_GRANTED) {
+            try {
+                mCameraManager.openCamera("3", stateCallback, mainHandler);
+            } catch (CameraAccessException e) {
+                Log.e(TAG, "Camera access exception", e);
+            }
+        }
+    }
+
+    private final CameraDevice.StateCallback stateCallback = new CameraDevice.StateCallback() {
+        @Override
+        public void onOpened(@NonNull CameraDevice camera) { // Open camera
+            mCameraDevice = camera;
+            if (mSurfaceView0.isAttachedToWindow() && mSurfaceView2.isAttachedToWindow()){
+                createCameraCaptureSession();
+            }
+        }
+
+        @Override
+        public void onDisconnected(@NonNull CameraDevice camera) { // Turn off camera
+            if (null != mCameraDevice) {
+                mCameraDevice.close();
+                mCameraDevice = null;
+            }
+        }
+
+        @Override
+        public void onError(@NonNull CameraDevice camera, int error) {
+            Log.e(TAG, "Camera hardware failure");
+        }
+    };
+
+//    private void createCameraCaptureSession() {
+//        try {
+//            OutputConfiguration opc0 = new OutputConfiguration(
+//                isAnaglyphMode ? mTextureSurface0 : mSurfaceHolder0.getSurface());
+//            OutputConfiguration opc1 = new OutputConfiguration(
+//                isAnaglyphMode ? mTextureSurface2 : mSurfaceHolder2.getSurface());
+//            opc1.setPhysicalCameraId("2");
+//
+//
+//            OutputConfiguration opcCapture0 = new OutputConfiguration(mImageReader0.getSurface());
+//            OutputConfiguration opcCapture1 = new OutputConfiguration(mImageReader2.getSurface());
+//            opcCapture1.setPhysicalCameraId("2");
+//
+//            List<OutputConfiguration> outputConfigsAll = Arrays.asList(opc0, opc1, opcCapture0, opcCapture1);
+//
+//            SessionConfiguration sessionConfiguration = new SessionConfiguration(
+//                SessionConfiguration.SESSION_REGULAR, outputConfigsAll, AsyncTask.SERIAL_EXECUTOR,
+//                new CameraCaptureSession.StateCallback() {
+//                    @Override
+//                    public void onConfigured(@NonNull CameraCaptureSession cameraCaptureSession) {
+//                        if (null == mCameraDevice) return;
+//                        mCameraCaptureSession = cameraCaptureSession;
+//                        try {
+//                            captureRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+//                            captureRequestBuilder.addTarget(isAnaglyphMode ? mTextureSurface0 : mSurfaceHolder0.getSurface());
+//                            captureRequestBuilder.addTarget(isAnaglyphMode ? mTextureSurface2 : mSurfaceHolder2.getSurface());
+//                            captureRequestBuilder.set(CaptureRequest.TONEMAP_MODE, CaptureRequest.TONEMAP_MODE_CONTRAST_CURVE);
+//                            captureRequestBuilder.set(CaptureRequest.TONEMAP_CURVE, new TonemapCurve(curve_srgb, curve_srgb, curve_srgb));
+//                            captureRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, 0);
+//                            captureRequestBuilder.set(CaptureRequest.LENS_FOCUS_DISTANCE, 0.60356647f); // hyperfocal distance
+//                            mCameraCaptureSession.setRepeatingRequest(captureRequestBuilder.build(), null, null);
+//                        } catch (CameraAccessException e) {
+//                            Log.e(TAG, "Camera access exception in session config", e);
+//                        }
+//                    }
+//
+//                    @Override
+//
+//                    public void onConfigureFailed(@NonNull CameraCaptureSession cameraCaptureSession) {
+//                        Log.e(TAG, "onConfigureFailed");
+//                    }
+//                });
+//            mCameraDevice.createCaptureSession(sessionConfiguration);
+//        } catch (CameraAccessException e) {
+//            Log.e(TAG, "Camera access exception", e);
+//        }
+//    }
+
+    private void createCameraCaptureSession() {
+        try {
+            OutputConfiguration opc0 = new OutputConfiguration(mSurfaceHolder0.getSurface());
+            OutputConfiguration opc1 = new OutputConfiguration(mSurfaceHolder2.getSurface());
+            opc1.setPhysicalCameraId("2");
+
+            OutputConfiguration opcCapture0 = new OutputConfiguration(mImageReader0.getSurface());
+            OutputConfiguration opcCapture1 = new OutputConfiguration(mImageReader2.getSurface());
+            opcCapture1.setPhysicalCameraId("2");
+            
+            OutputConfiguration opcAnaglyph0 = new OutputConfiguration(mAnaglyphReader0.getSurface());
+            OutputConfiguration opcAnaglyph1 = new OutputConfiguration(mAnaglyphReader2.getSurface());
+            opcAnaglyph1.setPhysicalCameraId("2");
+            
+            List<OutputConfiguration> outputConfigsAll = Arrays.asList(opc0, opc1, opcCapture0, opcCapture1, opcAnaglyph0, opcAnaglyph1);
+
+            SessionConfiguration sessionConfiguration = new SessionConfiguration(
+                SessionConfiguration.SESSION_REGULAR, outputConfigsAll, AsyncTask.SERIAL_EXECUTOR,
+                new CameraCaptureSession.StateCallback() {
+                    @Override
+                    public void onConfigured(@NonNull CameraCaptureSession cameraCaptureSession) {
+                        if (null == mCameraDevice) return;
+                        mCameraCaptureSession = cameraCaptureSession;
+                        try {
+                            captureRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+                            captureRequestBuilder.addTarget(mSurfaceHolder0.getSurface());
+                            captureRequestBuilder.addTarget(mSurfaceHolder2.getSurface());
+                            captureRequestBuilder.set(CaptureRequest.TONEMAP_MODE, CaptureRequest.TONEMAP_MODE_CONTRAST_CURVE);
+                            captureRequestBuilder.set(CaptureRequest.TONEMAP_CURVE, new TonemapCurve(curve_srgb, curve_srgb, curve_srgb));
+                            captureRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, 0);
+                            captureRequestBuilder.set(CaptureRequest.LENS_FOCUS_DISTANCE, 0.60356647f);// hyperfocal distance
+                            mCameraCaptureSession.setRepeatingRequest(captureRequestBuilder.build(), null, null);
+                        } catch (CameraAccessException e) {
+                            Log.e(TAG, "Camera access exception in session config", e);
+                        }
+                    }
+
+                    @Override
+                    public void onConfigureFailed(@NonNull CameraCaptureSession cameraCaptureSession) {
+                        Log.e(TAG, "onConfigureFailed");
+                    }
+                });
+            mCameraDevice.createCaptureSession(sessionConfiguration);
+        } catch (CameraAccessException e) {
+            Log.e(TAG, "Camera access exception", e);
+        }
+    }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        Log.d(TAG, "onKeyDown "+keyCode);
+        switch (keyCode) {
+            case KeyEvent.KEYCODE_VOLUME_UP:
+            case KeyEvent.KEYCODE_3D_MODE:
+                return true;
+            case KeyEvent.KEYCODE_VOLUME_DOWN:
+            case KeyEvent.KEYCODE_ENTER:
+                return true;
+            default:
+                return super.onKeyDown(keyCode, event);
+        }
+    }
+
+    @Override
+    public boolean onKeyUp(int keyCode, KeyEvent event) {
+        Log.d(TAG, "onKeyUp "+keyCode);
+        switch (keyCode) {
+            case KeyEvent.KEYCODE_VOLUME_UP:
+            case KeyEvent.KEYCODE_3D_MODE:
+                captureImages();
+                return true;
+            case KeyEvent.KEYCODE_VOLUME_DOWN:
+            case KeyEvent.KEYCODE_ENTER:
+                toggleDisplayMode();
+                return true;
+            default:
+                return super.onKeyDown(keyCode, event);
+        }
+    }
+
+    private void captureImages() {
+            if (mCameraDevice == null || mCameraCaptureSession == null) {
+                Toast.makeText(this, "Camera not ready", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+        try {
+            // Create capture request for both cameras
+            CaptureRequest.Builder captureBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
+            captureBuilder.addTarget(mImageReader0.getSurface());
+            captureBuilder.addTarget(mImageReader2.getSurface());
+            captureBuilder.set(CaptureRequest.TONEMAP_MODE, CaptureRequest.TONEMAP_MODE_CONTRAST_CURVE);
+            captureBuilder.set(CaptureRequest.TONEMAP_CURVE, new TonemapCurve(curve_srgb, curve_srgb, curve_srgb));
+
+            // Setup image capture listeners
+            String timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
+            
+            mImageReader0.setOnImageAvailableListener(new OnImageAvailableListener() {
+                @Override
+                public void onImageAvailable(ImageReader reader) {
+                    Image image = reader.acquireLatestImage();
+                    if (image != null) {
+                        saveImage(image, "IMG" + timestamp + "_l.jpg");
+                        image.close();
+                    }
+                }
+            }, mainHandler);
+
+            mImageReader2.setOnImageAvailableListener(new OnImageAvailableListener() {
+                @Override
+                public void onImageAvailable(ImageReader reader) {
+                    Image image = reader.acquireLatestImage();
+                    if (image != null) {
+                        saveImage(image, "IMG" + timestamp + "_r.jpg");
+                        image.close();
+                    }
+                }
+            }, mainHandler);
+
+            mCameraCaptureSession.capture(captureBuilder.build(), null, mainHandler);
+
+            // Also capture frames for anaglyph processing when needed
+            if (isAnaglyphMode) {
+                captureAnaglyphFrames();
+            }
+            
+            Toast.makeText(this, "Images captured: IMG" + timestamp, Toast.LENGTH_SHORT).show();
+            
+        } catch (CameraAccessException e) {
+            Log.e(TAG, "Error capturing images", e);
+            Toast.makeText(this, "Error capturing images", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void saveImage(Image image, String filename) {
+        ByteBuffer buffer = image.getPlanes()[0].getBuffer();
+        byte[] bytes = new byte[buffer.remaining()];
+        buffer.get(bytes);
+
+        File mediaStorageDir = new File(
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), SAVE_FOLDER);
+
+        // Create the storage directory if it does not exist
+        if (!mediaStorageDir.exists()) {
+            if (!mediaStorageDir.mkdirs()) {
+                Log.e(TAG, "failed to create directory to save photo: " + mediaStorageDir.getAbsolutePath());
+                Toast.makeText(this, "Error creating folder " + SAVE_FOLDER, Toast.LENGTH_SHORT).show();
+                return;
+            }
+        }
+
+        File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES+File.separator + SAVE_FOLDER), filename);
+        
+        try (FileOutputStream output = new FileOutputStream(file)) {
+            output.write(bytes);
+            
+            // Trigger media scanner to make image visible in gallery
+            MediaScannerConnection.scanFile(this, new String[]{file.getAbsolutePath()}, 
+                new String[]{"image/jpeg"}, null);
+            
+            Log.d(TAG, "Image saved: " + file.getAbsolutePath());
+        } catch (IOException e) {
+            Log.e(TAG, "Error saving image", e);
+        }
+    }
+
+    private void captureAnaglyphFrames() {
+        try {
+            String timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
+            
+            // Capture frames for anaglyph processing
+            CaptureRequest.Builder anaglyphCaptureBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
+            anaglyphCaptureBuilder.addTarget(mAnaglyphReader0.getSurface());
+            anaglyphCaptureBuilder.addTarget(mAnaglyphReader2.getSurface());
+            
+            final boolean[] capturedLeft = {false};
+            final boolean[] capturedRight = {false};
+            final Bitmap[] leftBmp = {null};
+            final Bitmap[] rightBmp = {null};
+            
+            mAnaglyphReader0.setOnImageAvailableListener(new OnImageAvailableListener() {
+                @Override
+                public void onImageAvailable(ImageReader reader) {
+                    Image image = reader.acquireLatestImage();
+                    if (image != null) {
+                        leftBmp[0] = convertYUV420ToBitmap(image);
+                        image.close();
+                        capturedLeft[0] = true;
+                        
+                        if (capturedRight[0]) {
+                            createAndSaveAnaglyph(leftBmp[0], rightBmp[0], timestamp);
+                        }
+                    }
+                }
+            }, mainHandler);
+            
+            mAnaglyphReader2.setOnImageAvailableListener(new OnImageAvailableListener() {
+                @Override
+                public void onImageAvailable(ImageReader reader) {
+                    Image image = reader.acquireLatestImage();
+                    if (image != null) {
+                        rightBmp[0] = convertYUV420ToBitmap(image);
+                        image.close();
+                        capturedRight[0] = true;
+                        
+                        if (capturedLeft[0]) {
+                            createAndSaveAnaglyph(leftBmp[0], rightBmp[0], timestamp);
+                        }
+                    }
+                }
+            }, mainHandler);
+            
+            mCameraCaptureSession.capture(anaglyphCaptureBuilder.build(), null, mainHandler);
+            
+        } catch (CameraAccessException e) {
+            Log.e(TAG, "Error capturing anaglyph frames", e);
+        }
+    }
+    
+    private Bitmap convertYUV420ToBitmap(Image image) {
+        Image.Plane[] planes = image.getPlanes();
+        ByteBuffer yBuffer = planes[0].getBuffer();
+        ByteBuffer uBuffer = planes[1].getBuffer();
+        ByteBuffer vBuffer = planes[2].getBuffer();
+
+        int ySize = yBuffer.remaining();
+        int uSize = uBuffer.remaining();
+        int vSize = vBuffer.remaining();
+
+        byte[] nv21 = new byte[ySize + uSize + vSize];
+        yBuffer.get(nv21, 0, ySize);
+        vBuffer.get(nv21, ySize, vSize);
+        uBuffer.get(nv21, ySize + vSize, uSize);
+
+        // Convert to RGB bitmap
+        int width = image.getWidth();
+        int height = image.getHeight();
+        int[] pixels = new int[width * height];
+        
+        for (int i = 0; i < height; i++) {
+            for (int j = 0; j < width; j++) {
+                int y = nv21[i * width + j] & 0xFF;
+                int u = nv21[ySize + (i / 2) * (width / 2) + (j / 2)] & 0xFF;
+                int v = nv21[ySize + vSize + (i / 2) * (width / 2) + (j / 2)] & 0xFF;
+                
+                int r = (int) (y + 1.402 * (v - 128));
+                int g = (int) (y - 0.344 * (u - 128) - 0.714 * (v - 128));
+                int b = (int) (y + 1.772 * (u - 128));
+                
+                r = Math.max(0, Math.min(255, r));
+                g = Math.max(0, Math.min(255, g));
+                b = Math.max(0, Math.min(255, b));
+                
+                pixels[i * width + j] = (0xFF << 24) | (r << 16) | (g << 8) | b;
+            }
+        }
+        return Bitmap.createBitmap(pixels, width, height, Bitmap.Config.ARGB_8888);
+    }
+
+    private void createAndSaveAnaglyph(Bitmap leftBitmap, Bitmap rightBitmap, String timestamp) {
+        if (leftBitmap == null || rightBitmap == null) return;
+        
+        int width = Math.min(leftBitmap.getWidth(), rightBitmap.getWidth());
+        int height = Math.min(leftBitmap.getHeight(), rightBitmap.getHeight());
+        
+        // Create anaglyph bitmap
+        Bitmap anaglyphBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        
+        int[] leftPixels = new int[width * height];
+        int[] rightPixels = new int[width * height];
+        
+        leftBitmap.getPixels(leftPixels, 0, width, 0, 0, width, height);
+        rightBitmap.getPixels(rightPixels, 0, width, 0, 0, width, height);
+        
+        int[] anaglyphPixels = new int[width * height];
+        
+        for (int i = 0; i < leftPixels.length; i++) {
+            int leftPixel = leftPixels[i];
+            int rightPixel = rightPixels[i];
+            
+            // Extract RGB components
+            int leftRed = (leftPixel >> 16) & 0xFF;
+            int rightGreen = (rightPixel >> 8) & 0xFF;
+            int rightBlue = rightPixel & 0xFF;
+            
+            // Create anaglyph pixel: left red + right green/blue
+            anaglyphPixels[i] = (0xFF << 24) | (leftRed << 16) | (rightGreen << 8) | rightBlue;
+            anaglyphPixels[i] = leftPixel;  // debug
+        }
+
+        anaglyphBitmap.setPixels(anaglyphPixels, 0, width, 0, 0, width, height);
+
+        // Save anaglyph image
+        File mediaStorageDir = new File(
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), SAVE_FOLDER);
+
+        // Create the storage directory if it does not exist
+        if (!mediaStorageDir.exists()) {
+            if (!mediaStorageDir.mkdirs()) {
+                Log.e(TAG, "failed to create directory to save photo: " + mediaStorageDir.getAbsolutePath());
+                Toast.makeText(this, "Error creating folder " + SAVE_FOLDER, Toast.LENGTH_SHORT).show();
+                return;
+            }
+        }
+
+        String filename = "IMG" + timestamp + "_ana.jpg";
+        File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES+File.separator + SAVE_FOLDER), filename);
+
+        try (FileOutputStream out = new FileOutputStream(file)) {
+            anaglyphBitmap.compress(Bitmap.CompressFormat.JPEG, 90, out);
+            
+            MediaScannerConnection.scanFile(this, new String[]{file.getAbsolutePath()}, 
+                new String[]{"image/jpeg"}, null);
+            
+            Log.d(TAG, "Anaglyph image saved: " + file.getAbsolutePath());
+        } catch (IOException e) {
+            Log.e(TAG, "Error saving anaglyph image", e);
+        }
+        
+        anaglyphBitmap.recycle();
+        leftBitmap.recycle();
+        rightBitmap.recycle();
+    }
+
+    private void toggleDisplayMode() {
+        isAnaglyphMode = !isAnaglyphMode;
+        
+        if (isAnaglyphMode) {
+            // Switch to anaglyph mode - create anaglyph view programmatically
+            createAnaglyphView();
+            Toast.makeText(this, "Anaglyph mode enabled", Toast.LENGTH_SHORT).show();
+        } else {
+            // Switch to side-by-side mode
+            setContentView(R.layout.layout);
+            setupSurfaces();
+            Toast.makeText(this, "Side-by-side mode enabled", Toast.LENGTH_SHORT).show();
+        }
+        
+        // Recreate camera session
+        if (mCameraDevice != null) {
+            try {
+                if (mCameraCaptureSession != null) {
+                    mCameraCaptureSession.close();
+                }
+                createCameraCaptureSession();
+            } catch (Exception e) {
+                Log.e(TAG, "Error recreating camera session", e);
+            }
+        }
+    }
+
+    private void createAnaglyphView() {
+        // Create a simple anaglyph preview using overlaid SurfaceViews
+        setContentView(R.layout.layout);
+        
+        mSurfaceView0 = findViewById(R.id.surfaceView);
+        mSurfaceView2 = findViewById(R.id.surfaceView2);
+        mSurfaceHolder0 = mSurfaceView0.getHolder();
+        mSurfaceHolder2 = mSurfaceView2.getHolder();
+        
+        // Set up color filters for anaglyph effect
+        mSurfaceView0.getHolder().setFormat(PixelFormat.TRANSLUCENT);
+        mSurfaceView2.getHolder().setFormat(PixelFormat.TRANSLUCENT);
+        
+        // Position views to overlay for anaglyph effect
+        mSurfaceView2.setAlpha(0.7f); // Make second view semi-transparent for blending
+        
+        setupSurfaces();
+    }
+
+//    private void Display() {
+//        if (mLeftBitmap != null && mRightBitmap != null && mAnaglyphRenderer != null) {
+//            mAnaglyphRenderer.updateTextures(mLeftBitmap, mRightBitmap);
+//            mGLSurfaceView.requestRender();
+//        }
+//    }
+
+    // OpenGL ES Renderer for Anaglyph Effect
+    private class AnaglyphRenderer implements GLSurfaceView.Renderer {
+        private int mProgram;
+        private int mPositionHandle;
+        private int mTexCoordHandle;
+        private int mLeftTextureHandle;
+        private int mRightTextureHandle;
+        private int mLeftTexture = -1;
+        private int mRightTexture = -1;
+
+        private final String vertexShaderCode =
+                "attribute vec4 vPosition;" +
+                "attribute vec2 vTexCoord;" +
+                "varying vec2 texCoord;" +
+                "void main() {" +
+                "  gl_Position = vPosition;" +
+                "  texCoord = vTexCoord;" +
+                "}";
+
+        private final String fragmentShaderCode =
+                "precision mediump float;" +
+                "uniform sampler2D leftTexture;" +
+                "uniform sampler2D rightTexture;" +
+                "varying vec2 texCoord;" +
+                "void main() {" +
+                "  vec4 leftColor = texture2D(leftTexture, texCoord);" +
+                "  vec4 rightColor = texture2D(rightTexture, texCoord);" +
+                "  // Anaglyph red-cyan" +
+                "  gl_FragColor = vec4(leftColor.r, rightColor.g, rightColor.b, 1.0);" +
+                "}";
+
+        private final float[] vertices = {
+                -1.0f, -1.0f, 0.0f, 0.0f,
+                 1.0f, -1.0f, 1.0f, 0.0f,
+                -1.0f,  1.0f, 0.0f, 1.0f,
+                 1.0f,  1.0f, 1.0f, 1.0f,
+        };
+
+        @Override
+        public void onSurfaceCreated(GL10 gl, EGLConfig config) {
+            GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+            
+            int vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, vertexShaderCode);
+            int fragmentShader = loadShader(GLES20.GL_FRAGMENT_SHADER, fragmentShaderCode);
+            
+            mProgram = GLES20.glCreateProgram();
+            GLES20.glAttachShader(mProgram, vertexShader);
+            GLES20.glAttachShader(mProgram, fragmentShader);
+            GLES20.glLinkProgram(mProgram);
+            
+            mPositionHandle = GLES20.glGetAttribLocation(mProgram, "vPosition");
+            mTexCoordHandle = GLES20.glGetAttribLocation(mProgram, "vTexCoord");
+            mLeftTextureHandle = GLES20.glGetUniformLocation(mProgram, "leftTexture");
+            mRightTextureHandle = GLES20.glGetUniformLocation(mProgram, "rightTexture");
+        }
+
+        @Override
+        public void onDrawFrame(GL10 gl) {
+            GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
+            
+            if (mLeftTexture != -1 && mRightTexture != -1) {
+                GLES20.glUseProgram(mProgram);
+                
+                // Bind textures
+                GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+                GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, mLeftTexture);
+                GLES20.glUniform1i(mLeftTextureHandle, 0);
+                
+                GLES20.glActiveTexture(GLES20.GL_TEXTURE1);
+                GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, mRightTexture);
+                GLES20.glUniform1i(mRightTextureHandle, 1);
+                
+                // Draw quad
+                drawQuad();
+            }
+        }
+
+        @Override
+        public void onSurfaceChanged(GL10 gl, int width, int height) {
+            GLES20.glViewport(0, 0, width, height);
+        }
+
+        private int loadShader(int type, String shaderCode) {
+            int shader = GLES20.glCreateShader(type);
+            GLES20.glShaderSource(shader, shaderCode);
+            GLES20.glCompileShader(shader);
+            return shader;
+        }
+
+        private void drawQuad() {
+            ByteBuffer bb = ByteBuffer.allocateDirect(vertices.length * 4);
+            bb.order(ByteOrder.nativeOrder());
+            FloatBuffer vertexBuffer = bb.asFloatBuffer();
+            vertexBuffer.put(vertices);
+            vertexBuffer.position(0);
+
+            GLES20.glEnableVertexAttribArray(mPositionHandle);
+            GLES20.glVertexAttribPointer(mPositionHandle, 2, GLES20.GL_FLOAT, false, 16, vertexBuffer);
+            
+            vertexBuffer.position(2);
+            GLES20.glEnableVertexAttribArray(mTexCoordHandle);
+            GLES20.glVertexAttribPointer(mTexCoordHandle, 2, GLES20.GL_FLOAT, false, 16, vertexBuffer);
+            
+            GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
+            
+            GLES20.glDisableVertexAttribArray(mPositionHandle);
+            GLES20.glDisableVertexAttribArray(mTexCoordHandle);
+        }
+
+        public void updateTextures(Bitmap leftBitmap, Bitmap rightBitmap) {
+            if (leftBitmap != null) {
+                if (mLeftTexture == -1) {
+                    int[] textures = new int[1];
+                    GLES20.glGenTextures(1, textures, 0);
+                    mLeftTexture = textures[0];
+                }
+                GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, mLeftTexture);
+                GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, leftBitmap, 0);
+                GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR);
+                GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
+            }
+            
+            if (rightBitmap != null) {
+                if (mRightTexture == -1) {
+                    int[] textures = new int[1];
+                    GLES20.glGenTextures(1, textures, 0);
+                    mRightTexture = textures[0];
+                }
+                GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, mRightTexture);
+                GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, rightBitmap, 0);
+                GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR);
+                GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
+            }
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (mCameraDevice != null) {
+            mCameraDevice.close();
+            mCameraDevice = null;
+        }
+        if (mImageReader0 != null) {
+            mImageReader0.close();
+        }
+        if (mImageReader2 != null) {
+            mImageReader2.close();
+        }
+    }
+}

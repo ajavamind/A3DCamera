@@ -1,0 +1,86 @@
+plugins {
+    alias(libs.plugins.android.application)
+}
+
+android {
+    namespace 'com.andymodla.android3dcamera'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.andymodla.android3dcamera"
+        minSdk 28
+        targetSdk 33
+        versionCode 1
+        versionName "1.0"
+
+        //testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.7.1'
+    //implementation 'com.google.android.material:material:1.12.0'
+    //implementation 'androidx.constraintlayout:constraintlayout:2.2.1'
+
+    // CameraX core library
+    def camerax_version = "1.4.2"
+    //def camerax_version = "1.3.1"
+    implementation "androidx.camera:camera-core:${camerax_version}"
+    // CameraX Camera2 extensions
+    implementation "androidx.camera:camera-camera2:${camerax_version}"
+    // CameraX Lifecycle library
+    implementation "androidx.camera:camera-lifecycle:${camerax_version}"
+    // CameraX View class
+    implementation "androidx.camera:camera-view:${camerax_version}"
+
+//    testImplementation libs.junit
+//    androidTestImplementation libs.androidx.junit
+//    androidTestImplementation libs.androidx.espresso.core
+//    androidTestImplementation platform(libs.androidx.compose.bom)
+//    androidTestImplementation libs.androidx.ui.test.junit4
+}
+
+// MODIFIED TASK: This task now extracts JARs from AAR files.
+task collectJars {
+    doLast {
+        def destDir = file("$buildDir/allJars")
+
+        // Clean the destination directory before starting
+        delete(destDir)
+        destDir.mkdirs()
+
+        // Iterate over all runtime dependencies for the release build.
+        // The configuration object is directly iterable, so .get() is not needed.
+        configurations.releaseRuntimeClasspath.each { file ->
+            if (file.name.endsWith('.jar')) {
+                // If it's a JAR, copy it directly
+                copy {
+                    from file
+                    into destDir
+                }
+            } else if (file.name.endsWith('.aar')) {
+                // If it's an AAR, extract its classes.jar
+                copy {
+                    from(zipTree(file))
+                    include('classes.jar')
+                    into destDir
+                    // Rename classes.jar to match the AAR's artifact name
+                    rename { String fileName ->
+                        file.name.replace('.aar', '.jar')
+                    }
+                }
+            }
+        }
+    }
+}
