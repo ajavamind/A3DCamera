@@ -11,10 +11,12 @@ import android.Manifest;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
 import android.graphics.ImageFormat;
 import android.graphics.PixelFormat;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
+import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CaptureRequest;
@@ -111,6 +113,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.layout);
         setupSurfaces();
         checkPermissions();
+        logFocusDistanceCalibration();
     }
 
     private void setupSurfaces() {
@@ -277,6 +280,46 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    public void logFocusDistanceCalibration() {
+
+        if (mCameraManager == null) {
+            Log.e(TAG, "CameraManager service not available");
+            return;
+        }
+        String[] cameraIds = {"0", "1", "2", "3"};
+        try {
+            // Iterate through all available camera IDs on the device
+            for (String cameraId : cameraIds) {
+                CameraCharacteristics characteristics = mCameraManager.getCameraCharacteristics(cameraId);
+                Integer calibration = characteristics.get(CameraCharacteristics.LENS_INFO_FOCUS_DISTANCE_CALIBRATION);
+
+                String calibrationString;
+                if (calibration != null) {
+                    switch (calibration) {
+                        case CameraCharacteristics.LENS_INFO_FOCUS_DISTANCE_CALIBRATION_UNCALIBRATED:
+                            calibrationString = "UNCALIBRATED";
+                            break;
+                        case CameraCharacteristics.LENS_INFO_FOCUS_DISTANCE_CALIBRATION_APPROXIMATE:
+                            calibrationString = "APPROXIMATE";
+                            break;
+                        case CameraCharacteristics.LENS_INFO_FOCUS_DISTANCE_CALIBRATION_CALIBRATED:
+                            calibrationString = "CALIBRATED";
+                            break;
+                        default:
+                            calibrationString = "UNKNOWN";
+                            break;
+                    }
+                } else {
+                    calibrationString = "VALUE NOT AVAILABLE";
+                }
+
+                Log.d(TAG, "Camera ID: " + cameraId + " - LENS_FOCUS_DISTANCE_CALIBRATION: " + calibrationString);
+            }
+        } catch (CameraAccessException e) {
+            Log.e(TAG, "Failed to access camera characteristics", e);
+        }
+    }
+
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         //Log.d(TAG, "onKeyDown "+keyCode);
@@ -298,7 +341,7 @@ public class MainActivity extends AppCompatActivity {
         switch (keyCode) {
             case KeyEvent.KEYCODE_VOLUME_UP:
             case KeyEvent.KEYCODE_VOLUME_DOWN:
-            case KeyEvent.KEYCODE_3D_MODE: // camera key - set to launch A3DCamera
+            case KeyEvent.KEYCODE_3D_MODE: // camera key - first turn off auto launch of native camera app
                 captureImages();
                 return true;
             case KeyEvent.KEYCODE_ENTER:
@@ -355,6 +398,7 @@ public class MainActivity extends AppCompatActivity {
                         if (leftBytes != null && rightBytes != null) {
                             leftBitmap = saveImageFile(leftBytes, "IMG" + timestamp, true ); // left
                             rightBitmap = saveImageFile(rightBytes, "IMG" + timestamp, false); // right
+                            createAndSaveSBS(timestamp, leftBitmap, rightBitmap);
                             if (isAnaglyphMode) {
                                 createAndSaveAnaglyph(timestamp, leftBitmap, rightBitmap);
                             }
@@ -374,11 +418,11 @@ public class MainActivity extends AppCompatActivity {
                         if (leftBytes != null && rightBytes != null) {
                             leftBitmap = saveImageFile(leftBytes, "IMG" + timestamp, true ); // left
                             rightBitmap = saveImageFile(rightBytes, "IMG" + timestamp, false); // right
+                            createAndSaveSBS(timestamp, leftBitmap, rightBitmap);
                             if (isAnaglyphMode) {
                                 createAndSaveAnaglyph(timestamp, leftBitmap, rightBitmap);
-                            } else {
-                                createAndSaveSBS(timestamp, leftBitmap, rightBitmap);
                             }
+
                         }
                    }
                 }
@@ -523,6 +567,56 @@ public class MainActivity extends AppCompatActivity {
 
     private void createAndSaveSBS(String timestamp, Bitmap leftBitmap, Bitmap rightBitmap) {
         Log.d(TAG, "createAndSaveSBS");
+        if (leftBitmap == null || rightBitmap == null) {
+            Log.d(TAG, "createAndSaveSBS failed Bitmaps null " + timestamp);
+            return;
+        }
+
+        // Calculate the dimensions for the combined bitmap.
+        int width = leftBitmap.getWidth() + rightBitmap.getWidth();
+        int height = Math.max(leftBitmap.getHeight(), rightBitmap.getHeight());
+
+        // Create a new bitmap with the combined dimensions.
+        Bitmap sbsBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+
+        // Create a canvas to draw on the new bitmap.
+        Canvas canvas = new Canvas(sbsBitmap);
+
+        // Draw the left bitmap at position (0, 0).
+        canvas.drawBitmap(leftBitmap, 0f, 0f, null);
+
+        // Draw the right bitmap immediately to the right of the left one.
+        canvas.drawBitmap(rightBitmap, leftBitmap.getWidth(), 0f, null);
+
+        // Save SBS image
+        File mediaStorageDir = new File(
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), SAVE_FOLDER);
+
+        // Create the storage directory if it does not exist
+        if (!mediaStorageDir.exists()) {
+            if (!mediaStorageDir.mkdirs()) {
+                Log.e(TAG, "failed to create directory to save photo: " + mediaStorageDir.getAbsolutePath());
+                Toast.makeText(this, "Error creating folder " + SAVE_FOLDER, Toast.LENGTH_SHORT).show();
+                return;
+            }
+        }
+
+        String filename = "IMG" + timestamp + "_2x1.jpg";
+        File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES + File.separator + SAVE_FOLDER), filename);
+
+        try (FileOutputStream out = new FileOutputStream(file)) {
+            sbsBitmap.compress(Bitmap.CompressFormat.JPEG, 100, out);
+            //sbsBitmap.compress(Bitmap.CompressFormat.PNG, 100, out);
+            MediaScannerConnection.scanFile(this, new String[]{file.getAbsolutePath()},
+                    new String[]{"image/jpeg"}, null);
+
+            Log.d(TAG, "SBS 2x1 image saved: " + file.getAbsolutePath());
+        } catch (IOException e) {
+            Log.e(TAG, "Error saving SBS 2x1 image", e);
+        }
+
+        sbsBitmap.recycle();
+
     }
 
     private void toggleDisplayMode() {
