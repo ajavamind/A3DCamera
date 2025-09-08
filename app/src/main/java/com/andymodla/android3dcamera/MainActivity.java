@@ -1,7 +1,6 @@
 package com.andymodla.android3dcamera;
 
 import static android.Manifest.permission.CAMERA;
-import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -13,7 +12,6 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.ImageFormat;
-import android.graphics.PixelFormat;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
@@ -27,34 +25,26 @@ import android.media.Image;
 import android.media.ImageReader;
 import android.media.ImageReader.OnImageAvailableListener;
 import android.media.MediaScannerConnection;
-import android.opengl.GLES20;
-import android.opengl.GLSurfaceView;
-import android.opengl.GLUtils;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
-import android.view.View;
 import android.widget.Toast;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.FloatBuffer;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
-
-import javax.microedition.khronos.egl.EGLConfig;
-import javax.microedition.khronos.opengles.GL10;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -76,6 +66,12 @@ public class MainActivity extends AppCompatActivity {
             0.5333f, 0.7569f, 0.6000f, 0.7977f, 0.6667f, 0.8360f, 0.7333f, 0.8721f,
             0.8000f, 0.9063f, 0.8667f, 0.9389f, 0.9333f, 0.9701f, 1.0000f, 1.0000f};
 
+    private static final CaptureRequest.Key<Integer> EXPOSURE_METERING = new CaptureRequest.Key<>("org.codeaurora.qcamera3.exposure_metering.exposure_metering_mode", Integer.TYPE);
+    int FRAME_AVERAGE = 0; // normal behavior
+    int CENTER_WEIGHTED = 1;
+    int SPOT_METERING = 2;
+    int exposureMetering = FRAME_AVERAGE;  // default
+
     private CameraDevice mCameraDevice;
     private CameraManager mCameraManager;
     private CameraCaptureSession mCameraCaptureSession;
@@ -90,8 +86,9 @@ public class MainActivity extends AppCompatActivity {
     private ImageReader mImageReader0, mImageReader2;
 
     // Conversion modes
-    private volatile boolean isAnaglyphMode = false;
-
+    private volatile boolean saveAnaglyph = true;
+    private volatile boolean saveSBS = true;
+    private volatile boolean isAnaglyphDisplayMode = false;
     // states
     private static final int STATE_LIVEVIEW = 0;
     private static final int STATE_REVIEW = 0;
@@ -103,6 +100,7 @@ public class MainActivity extends AppCompatActivity {
     volatile byte[] rightBytes;
     volatile Bitmap leftBitmap;
     volatile Bitmap rightBitmap;
+    volatile Bitmap sbsBitmap;
     volatile String timestamp;
 
     @Override
@@ -190,7 +188,7 @@ public class MainActivity extends AppCompatActivity {
                 initCamera();
             }
             //else {
-                //Toast.makeText(this, "Camera and storage permissions required", Toast.LENGTH_SHORT).show();
+            //Toast.makeText(this, "Camera and storage permissions required", Toast.LENGTH_SHORT).show();
             //}
         }
     }
@@ -205,7 +203,8 @@ public class MainActivity extends AppCompatActivity {
 
         if (ActivityCompat.checkSelfPermission(this, CAMERA) == PackageManager.PERMISSION_GRANTED) {
             try {
-                mCameraManager.openCamera("3", stateCallback, mainHandler);
+                mCameraManager.openCamera("3", stateCallback, mainHandler); // logical camera 3 combines 1 and 2
+                Log.d(TAG, "openCamera(3)");
             } catch (CameraAccessException e) {
                 Log.e(TAG, "Camera access exception", e);
             }
@@ -235,6 +234,39 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
+    private void stopMainHandlerThread() {
+        if (mainHandler != null) {
+            Looper looper = mainHandler.getLooper();
+            looper.quitSafely();
+//            try {
+//                Thread lThread = looper.getThread();
+//                lThread.join();
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
+            mainHandler = null;
+        }
+    }
+
+    private void stopCamera() {
+        Log.d(TAG, "stopCamera()");
+        try {
+            mCameraCaptureSession.stopRepeating();
+            mCameraCaptureSession.abortCaptures();
+        } catch (CameraAccessException e) {
+            throw new RuntimeException(e);
+        }
+        if (mCameraCaptureSession != null) {
+            mCameraCaptureSession.close();
+        }
+        mCameraCaptureSession = null;
+        if (mCameraDevice != null) {
+            mCameraDevice.close();
+        }
+        mCameraDevice = null;
+        //stopMainHandlerThread(); // problem causes main thread to quit - no allowed
+    }
+
     private void createCameraCaptureSession() {
         Log.d(TAG, "createCameraCaptureSession()");
         try {
@@ -262,7 +294,11 @@ public class MainActivity extends AppCompatActivity {
                                 captureRequestBuilder.set(CaptureRequest.TONEMAP_MODE, CaptureRequest.TONEMAP_MODE_CONTRAST_CURVE);
                                 captureRequestBuilder.set(CaptureRequest.TONEMAP_CURVE, new TonemapCurve(curve_srgb, curve_srgb, curve_srgb));
                                 captureRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, 0);
+                                //
+                                captureRequestBuilder.set(EXPOSURE_METERING, exposureMetering);
                                 captureRequestBuilder.set(CaptureRequest.LENS_FOCUS_DISTANCE, 0.60356647f);// hyperfocal distance
+                                captureRequestBuilder.set(CaptureRequest.NOISE_REDUCTION_MODE, 1); // NOISE_REDUCTION_MODE
+                                captureRequestBuilder.set(CaptureRequest.EDGE_MODE, 1); // EDGE_MODE
                                 mCameraCaptureSession.setRepeatingRequest(captureRequestBuilder.build(), null, null);
                             } catch (CameraAccessException e) {
                                 Log.e(TAG, "Camera access exception in session config", e);
@@ -346,15 +382,41 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             case KeyEvent.KEYCODE_ENTER:
             case KeyEvent.KEYCODE_BACK:
-                reviewImage();
+                reviewImages();
+                return true;
+            case KeyEvent.KEYCODE_0:
+                exposureMetering = FRAME_AVERAGE;
+                stopCamera();
+                initCamera();
+                return true;
+            case KeyEvent.KEYCODE_1:
+                exposureMetering = CENTER_WEIGHTED;
+                stopCamera();
+                initCamera();
+                return true;
+            case KeyEvent.KEYCODE_2:
+                exposureMetering = SPOT_METERING;
+                stopCamera();
+                initCamera();
                 return true;
             default:
                 return super.onKeyDown(keyCode, event);
         }
     }
 
-    private void reviewImage() {
-        Log.d(TAG, "reviewImage()");
+    private void reviewImages() {
+        Log.d(TAG, "reviewImages()");
+        //
+        // if in live view state
+        //   turn off and shutdown camera
+        //   set review state
+        //   switch layouts and show first saved image
+        // else in review mode
+        //   get next image to show in review and show it
+        //    if no more images to show
+        //    turn camera back on and switch layouts
+        //    set live view state
+        //
     }
 
     private void captureImages() {
@@ -363,7 +425,6 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(this, "Camera not ready", Toast.LENGTH_SHORT).show();
             return;
         }
-        isAnaglyphMode = true;  // force saving anaglyph image
         try {
             // Create capture request for both cameras
             CaptureRequest.Builder captureBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
@@ -371,6 +432,12 @@ public class MainActivity extends AppCompatActivity {
             captureBuilder.addTarget(mImageReader2.getSurface());
             captureBuilder.set(CaptureRequest.TONEMAP_MODE, CaptureRequest.TONEMAP_MODE_CONTRAST_CURVE);
             captureBuilder.set(CaptureRequest.TONEMAP_CURVE, new TonemapCurve(curve_srgb, curve_srgb, curve_srgb));
+            //
+            captureBuilder.set(EXPOSURE_METERING, exposureMetering);
+            captureBuilder.set(CaptureRequest.CONTROL_AF_MODE, 0);
+            captureBuilder.set(CaptureRequest.LENS_FOCUS_DISTANCE, 0.60356647f);// diopter hyperfocal distance
+            captureBuilder.set(CaptureRequest.NOISE_REDUCTION_MODE, 1); // NOISE_REDUCTION_MODE
+            captureBuilder.set(CaptureRequest.EDGE_MODE, 1); // EDGE_MODE
 
             timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
             imageL = null;
@@ -385,6 +452,10 @@ public class MainActivity extends AppCompatActivity {
                 rightBitmap.recycle();
                 rightBitmap = null;
             }
+            if (sbsBitmap != null) {
+                sbsBitmap.recycle();
+                sbsBitmap = null;
+            }
 
             // Setup image capture listeners
             mImageReader0.setOnImageAvailableListener(new OnImageAvailableListener() {
@@ -394,12 +465,14 @@ public class MainActivity extends AppCompatActivity {
                     if (imageL != null) {
                         leftBytes = convertToBytes(imageL);
                         imageL.close();
-                        // Capture frames for anaglyph processing when needed
+                        // Capture frames
                         if (leftBytes != null && rightBytes != null) {
-                            leftBitmap = saveImageFile(leftBytes, "IMG" + timestamp, true ); // left
+                            leftBitmap = saveImageFile(leftBytes, "IMG" + timestamp, true); // left
                             rightBitmap = saveImageFile(rightBytes, "IMG" + timestamp, false); // right
-                            createAndSaveSBS(timestamp, leftBitmap, rightBitmap);
-                            if (isAnaglyphMode) {
+                            if (saveSBS) {
+                                createAndSaveSBS(timestamp, leftBitmap, rightBitmap);
+                            }
+                            if (saveAnaglyph) {
                                 createAndSaveAnaglyph(timestamp, leftBitmap, rightBitmap);
                             }
                         }
@@ -414,17 +487,19 @@ public class MainActivity extends AppCompatActivity {
                     if (imageR != null) {
                         rightBytes = convertToBytes(imageR);
                         imageR.close();
-                        // Capture frames for anaglyph processing when needed
+                        // Capture frames
                         if (leftBytes != null && rightBytes != null) {
-                            leftBitmap = saveImageFile(leftBytes, "IMG" + timestamp, true ); // left
+                            leftBitmap = saveImageFile(leftBytes, "IMG" + timestamp, true); // left
                             rightBitmap = saveImageFile(rightBytes, "IMG" + timestamp, false); // right
-                            createAndSaveSBS(timestamp, leftBitmap, rightBitmap);
-                            if (isAnaglyphMode) {
+                            if (saveSBS) {
+                                createAndSaveSBS(timestamp, leftBitmap, rightBitmap);
+                            }
+                            if (saveAnaglyph) {
                                 createAndSaveAnaglyph(timestamp, leftBitmap, rightBitmap);
                             }
 
                         }
-                   }
+                    }
                 }
             }, mainHandler);
 
@@ -454,7 +529,7 @@ public class MainActivity extends AppCompatActivity {
         Log.d(TAG, "SaveImageFile " + filename);
         bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length, options);
         if (bitmap == null) {
-            Log.e(TAG, "Image decoding failed! " + (left ? "left": "right" ));
+            Log.e(TAG, "Image decoding failed! " + (left ? "left" : "right"));
             return null;
         }
 
@@ -494,7 +569,7 @@ public class MainActivity extends AppCompatActivity {
         ByteBuffer buffer = planes[0].getBuffer();
         byte[] bytes = new byte[buffer.remaining()];
         buffer.get(bytes);
-        Log.d(TAG, "convertToBytes Image Format: " + image.getFormat() + " planes "+planes.length);
+        Log.d(TAG, "convertToBytes Image Format: " + image.getFormat() + " planes " + planes.length);
         return bytes;
     }
 
@@ -577,7 +652,7 @@ public class MainActivity extends AppCompatActivity {
         int height = Math.max(leftBitmap.getHeight(), rightBitmap.getHeight());
 
         // Create a new bitmap with the combined dimensions.
-        Bitmap sbsBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        sbsBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
 
         // Create a canvas to draw on the new bitmap.
         Canvas canvas = new Canvas(sbsBitmap);
@@ -614,15 +689,12 @@ public class MainActivity extends AppCompatActivity {
         } catch (IOException e) {
             Log.e(TAG, "Error saving SBS 2x1 image", e);
         }
-
-        sbsBitmap.recycle();
-
     }
 
     private void toggleDisplayMode() {
-        isAnaglyphMode = !isAnaglyphMode;
+        isAnaglyphDisplayMode = !isAnaglyphDisplayMode;
 
-        if (isAnaglyphMode) {
+        if (isAnaglyphDisplayMode) {
             // Switch to anaglyph mode - create anaglyph view programmatically
             //createAnaglyphView();
             Toast.makeText(this, "Anaglyph mode enabled", Toast.LENGTH_SHORT).show();
