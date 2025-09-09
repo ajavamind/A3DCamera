@@ -2,11 +2,19 @@ package com.andymodla.android3dcamera;
 
 import static android.Manifest.permission.CAMERA;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
+import androidx.core.content.FileProvider;
 
 import android.Manifest;
+import android.app.Activity;
+import android.content.ContentResolver;
+import android.content.ContentValues;
+import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -25,11 +33,13 @@ import android.media.Image;
 import android.media.ImageReader;
 import android.media.ImageReader.OnImageAvailableListener;
 import android.media.MediaScannerConnection;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
+import android.provider.MediaStore;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.SurfaceHolder;
@@ -37,8 +47,10 @@ import android.view.SurfaceView;
 import android.widget.Toast;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
@@ -53,6 +65,7 @@ public class MainActivity extends AppCompatActivity {
     private static final int MY_STORAGE_REQUEST_CODE = 101;
 
     private String SAVE_FOLDER = "A3DCamera";
+    private String PHOTO_PREFIX = "IMG";
 
     // camera dimensions
     //private int cameraWidth = 1024;//1440;
@@ -85,9 +98,12 @@ public class MainActivity extends AppCompatActivity {
     // Image capture
     private ImageReader mImageReader0, mImageReader2;
 
-    // Conversion modes
+    // Image Save File modes
     private volatile boolean saveAnaglyph = true;
     private volatile boolean saveSBS = true;
+    private volatile boolean saveLR = true;
+    // at least one of above booleans must be true;
+    private volatile boolean crossEye = false;  // reverse SBS output to cross eye
     private volatile boolean isAnaglyphDisplayMode = false;
     // states
     private static final int STATE_LIVEVIEW = 0;
@@ -101,7 +117,9 @@ public class MainActivity extends AppCompatActivity {
     volatile Bitmap leftBitmap;
     volatile Bitmap rightBitmap;
     volatile Bitmap sbsBitmap;
+    volatile Bitmap anaglyphBitmap;
     volatile String timestamp;
+    volatile File reviewSBS;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -406,6 +424,16 @@ public class MainActivity extends AppCompatActivity {
 
     private void reviewImages() {
         Log.d(TAG, "reviewImages()");
+        if (reviewSBS != null) {
+            shareImage(reviewSBS);
+        } else {
+            Toast.makeText(this, "Photo Albums Available", Toast.LENGTH_SHORT).show();
+            shareImage(reviewSBS);
+        }
+    }
+
+    private void reviewImage() {
+
         //
         // if in live view state
         //   turn off and shutdown camera
@@ -417,6 +445,7 @@ public class MainActivity extends AppCompatActivity {
         //    turn camera back on and switch layouts
         //    set live view state
         //
+
     }
 
     private void captureImages() {
@@ -456,6 +485,10 @@ public class MainActivity extends AppCompatActivity {
                 sbsBitmap.recycle();
                 sbsBitmap = null;
             }
+            if (anaglyphBitmap != null) {
+                anaglyphBitmap.recycle();
+                anaglyphBitmap = null;
+            }
 
             // Setup image capture listeners
             mImageReader0.setOnImageAvailableListener(new OnImageAvailableListener() {
@@ -465,17 +498,8 @@ public class MainActivity extends AppCompatActivity {
                     if (imageL != null) {
                         leftBytes = convertToBytes(imageL);
                         imageL.close();
-                        // Capture frames
-                        if (leftBytes != null && rightBytes != null) {
-                            leftBitmap = saveImageFile(leftBytes, "IMG" + timestamp, true); // left
-                            rightBitmap = saveImageFile(rightBytes, "IMG" + timestamp, false); // right
-                            if (saveSBS) {
-                                createAndSaveSBS(timestamp, leftBitmap, rightBitmap);
-                            }
-                            if (saveAnaglyph) {
-                                createAndSaveAnaglyph(timestamp, leftBitmap, rightBitmap);
-                            }
-                        }
+                        // Save frames
+                        saveImageFiles();
                     }
                 }
             }, mainHandler);
@@ -487,29 +511,39 @@ public class MainActivity extends AppCompatActivity {
                     if (imageR != null) {
                         rightBytes = convertToBytes(imageR);
                         imageR.close();
-                        // Capture frames
-                        if (leftBytes != null && rightBytes != null) {
-                            leftBitmap = saveImageFile(leftBytes, "IMG" + timestamp, true); // left
-                            rightBitmap = saveImageFile(rightBytes, "IMG" + timestamp, false); // right
-                            if (saveSBS) {
-                                createAndSaveSBS(timestamp, leftBitmap, rightBitmap);
-                            }
-                            if (saveAnaglyph) {
-                                createAndSaveAnaglyph(timestamp, leftBitmap, rightBitmap);
-                            }
-
-                        }
+                        // Save frames
+                        saveImageFiles();
                     }
                 }
             }, mainHandler);
 
             mCameraCaptureSession.capture(captureBuilder.build(), null, mainHandler);
 
-            Toast.makeText(this, "Images captured: IMG" + timestamp, Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Saved IMG" + timestamp, Toast.LENGTH_SHORT).show();
 
         } catch (CameraAccessException e) {
             Log.e(TAG, "Error capturing images", e);
             Toast.makeText(this, "Error capturing images", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void saveImageFiles() {
+        if (leftBytes != null && rightBytes != null) {
+            if (saveLR) {
+                leftBitmap = saveImageFile(leftBytes, PHOTO_PREFIX + timestamp, true); // left
+                rightBitmap = saveImageFile(rightBytes, PHOTO_PREFIX + timestamp, false); // right
+            }
+            if (saveAnaglyph) {
+                createAndSaveAnaglyph(PHOTO_PREFIX + timestamp, leftBitmap, rightBitmap);
+            }
+            if (saveSBS) {
+                if (crossEye) {
+                    reviewSBS = createAndSaveSBS(PHOTO_PREFIX + timestamp, rightBitmap, leftBitmap);
+                } else {
+                    reviewSBS = createAndSaveSBS(PHOTO_PREFIX + timestamp, leftBitmap, rightBitmap);
+
+                }
+            }
         }
     }
 
@@ -584,7 +618,7 @@ public class MainActivity extends AppCompatActivity {
         int height = Math.min(leftBitmap.getHeight(), rightBitmap.getHeight());
 
         // Create anaglyph bitmap
-        Bitmap anaglyphBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        anaglyphBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
 
         int[] leftPixels = new int[width * height];
         int[] rightPixels = new int[width * height];
@@ -622,7 +656,7 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        String filename = "IMG" + timestamp + "_ana.jpg";
+        String filename = timestamp + "_ana.jpg";
         File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES + File.separator + SAVE_FOLDER), filename);
 
         try (FileOutputStream out = new FileOutputStream(file)) {
@@ -636,15 +670,13 @@ public class MainActivity extends AppCompatActivity {
             Log.e(TAG, "Error saving anaglyph image", e);
         }
 
-        anaglyphBitmap.recycle();
-
     }
 
-    private void createAndSaveSBS(String timestamp, Bitmap leftBitmap, Bitmap rightBitmap) {
+    private File createAndSaveSBS(String timestamp, Bitmap leftBitmap, Bitmap rightBitmap) {
         Log.d(TAG, "createAndSaveSBS");
         if (leftBitmap == null || rightBitmap == null) {
             Log.d(TAG, "createAndSaveSBS failed Bitmaps null " + timestamp);
-            return;
+            return null;
         }
 
         // Calculate the dimensions for the combined bitmap.
@@ -672,25 +704,138 @@ public class MainActivity extends AppCompatActivity {
             if (!mediaStorageDir.mkdirs()) {
                 Log.e(TAG, "failed to create directory to save photo: " + mediaStorageDir.getAbsolutePath());
                 Toast.makeText(this, "Error creating folder " + SAVE_FOLDER, Toast.LENGTH_SHORT).show();
-                return;
+                return null;
             }
         }
 
-        String filename = "IMG" + timestamp + "_2x1.jpg";
+        String filename = timestamp + "_2x1.jpg";
         File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES + File.separator + SAVE_FOLDER), filename);
 
         try (FileOutputStream out = new FileOutputStream(file)) {
             sbsBitmap.compress(Bitmap.CompressFormat.JPEG, 100, out);
             //sbsBitmap.compress(Bitmap.CompressFormat.PNG, 100, out);
             MediaScannerConnection.scanFile(this, new String[]{file.getAbsolutePath()},
-                    new String[]{"image/jpeg"}, null);
+                    new String[]{"image/*"}, null);
 
-            Log.d(TAG, "SBS 2x1 image saved: " + file.getAbsolutePath());
+            Log.d(TAG, "SBS image saved: " + file.getAbsolutePath());
         } catch (IOException e) {
-            Log.e(TAG, "Error saving SBS 2x1 image", e);
+            Log.e(TAG, "Error saving SBS image", e);
+            return null;
+        }
+        return file;
+    }
+
+    public void shareImage(File imageFile) {
+        Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+        photoPickerLauncher.launch(intent);
+    }
+
+    private final ActivityResultLauncher<Intent> photoPickerLauncher =
+            registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),
+                    result -> {
+                        if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
+                            Uri contentUri = result.getData().getData();
+                            if (contentUri != null) {
+                                // Start the share intent with the URI from the Photo Picker
+                                Intent shareIntent = new Intent(Intent.ACTION_SEND);
+                                shareIntent.putExtra(Intent.EXTRA_STREAM, contentUri);
+                                shareIntent.setType("image/*");
+                                shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                                startActivity(Intent.createChooser(shareIntent, "Share image..."));
+                            }
+                        }
+                    });
+
+    // EXAMPLE CODE FOR VARIOUS ways to SHARE
+    public void shareImage2(File imageFile) {
+        ContentResolver resolver = this.getContentResolver();
+        ContentValues contentValues = new ContentValues();
+        contentValues.put(MediaStore.Images.Media.DISPLAY_NAME,  imageFile.getName());
+        contentValues.put(MediaStore.Images.Media.MIME_TYPE, "image/*");
+        contentValues.put(MediaStore.Images.Media.IS_PENDING, 1);
+
+        // Tell the MediaStore to add the file to the Pictures collection
+        Uri contentUri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues);
+
+        if (contentUri != null) {
+            try {
+                // Write the actual file data into the new MediaStore entry
+                OutputStream outputStream = resolver.openOutputStream(contentUri);
+                FileInputStream inputStream = new FileInputStream(imageFile);
+
+                byte[] buffer = new byte[1024];
+                int bytesRead;
+                while ((bytesRead = inputStream.read(buffer)) != -1) {
+                    outputStream.write(buffer, 0, bytesRead);
+                }
+                outputStream.close();
+                inputStream.close();
+
+            // Now, share the new content:// Uri
+                contentValues.clear();
+                contentValues.put(MediaStore.Images.Media.IS_PENDING, 0);
+                resolver.update(contentUri, contentValues, null, null);
+            Intent intent = new Intent(Intent.ACTION_SEND);
+            intent.putExtra(Intent.EXTRA_STREAM, contentUri);
+            intent.setType("image/*");
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            this.startActivity(Intent.createChooser(intent, "Share using:"));
+            } catch (IOException e) {
+                Log.e(TAG, "Error writing to MediaStore: " + e.getMessage());
+            }
+        } else {
+            Log.e(TAG, "Failed to create MediaStore entry.");
         }
     }
 
+    public void shareImage1(File imageFile) {
+        Uri contentUri = FileProvider.getUriForFile(this, this.getPackageName() + ".fileprovider", imageFile);
+
+        if (contentUri != null) {
+            Intent shareIntent = new Intent(Intent.ACTION_SEND);
+            shareIntent.putExtra(Intent.EXTRA_STREAM, contentUri);
+            shareIntent.setType("image/*");
+            shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION); // Required for receiving app
+            this.startActivity(Intent.createChooser(shareIntent, "Share image using..."));
+        } else {
+            Log.d(TAG, "Failed to get a content URI for the image file.");
+        }
+    }
+
+    public void shareImages(File imageFile) {
+        //Uri contentUri = FileProvider.getUriForFile(this, this.getPackageName() + ".fileprovider", imageFile);
+        ContentResolver resolver = this.getContentResolver();
+        ContentValues contentValues = new ContentValues();
+        //contentValues.put(MediaStore.Images.Media.DISPLAY_NAME, imageFile.getName());
+        //contentValues.put(MediaStore.Images.Media.DISPLAY_NAME, imageFile.getPath());
+        //contentValues.put(MediaStore.Images.Media.DISPLAY_NAME, imageFile.getAbsolutePath());
+        try {
+            contentValues.put(MediaStore.Images.Media.DISPLAY_NAME, imageFile.getCanonicalPath());
+        } catch (IOException e) {
+            contentValues.put(MediaStore.Images.Media.DISPLAY_NAME, imageFile.getPath());
+        }
+        String fileName = imageFile.getName();
+        String path = imageFile.getPath();
+        String mimeType = "image/*";
+
+        contentValues.put(MediaStore.Images.Media.MIME_TYPE, mimeType);
+        Log.d(TAG, "Filename: " + fileName + " Path=" + path);
+        Uri contentUri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues);
+
+        if (contentUri != null) {
+            Intent intent = new Intent(Intent.ACTION_SEND);
+            intent.putExtra(Intent.EXTRA_STREAM, contentUri);
+            intent.setType(mimeType); // Or the correct MIME type
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            this.startActivity(Intent.createChooser(intent, "Share using:")); // Allows the user to select the print service
+            //this.startActivity(intent); // SEND only
+        } else {
+            // Handle the case where the insertion failed
+            Log.d(TAG, "Failed to share image");
+        }
+    }
+
+    // TODO anaglyph live view display
     private void toggleDisplayMode() {
         isAnaglyphDisplayMode = !isAnaglyphDisplayMode;
 
