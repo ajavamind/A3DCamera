@@ -62,7 +62,6 @@ public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "A3DCamera";
     private static final int MY_CAMERA_REQUEST_CODE = 100;
-    private static final int MY_STORAGE_REQUEST_CODE = 101;
 
     private String SAVE_FOLDER = "A3DCamera";
     private String PHOTO_PREFIX = "IMG";
@@ -73,6 +72,7 @@ public class MainActivity extends AppCompatActivity {
     private int cameraWidth = 4080; // camera width lens pixels
     private int cameraHeight = 3072;// camera height lens pixels
 
+    private volatile boolean captureTonemapModeContrastCurve = true;
     private static final float[] curve_srgb = { // sRGB curve
             0.0000f, 0.0000f, 0.0667f, 0.2864f, 0.1333f, 0.4007f, 0.2000f, 0.4845f,
             0.2667f, 0.5532f, 0.3333f, 0.6125f, 0.4000f, 0.6652f, 0.4667f, 0.7130f,
@@ -99,9 +99,9 @@ public class MainActivity extends AppCompatActivity {
     private ImageReader mImageReader0, mImageReader2;
 
     // Image Save File modes
-    private volatile boolean saveAnaglyph = true;
+    private volatile boolean saveAnaglyph = false;
     private volatile boolean saveSBS = true;
-    private volatile boolean saveLR = true;
+    private volatile boolean saveLR = false;
     // at least one of above booleans must be true;
     private volatile boolean crossEye = false;  // reverse SBS output to cross eye
     private volatile boolean isAnaglyphDisplayMode = false;
@@ -282,7 +282,7 @@ public class MainActivity extends AppCompatActivity {
             mCameraDevice.close();
         }
         mCameraDevice = null;
-        //stopMainHandlerThread(); // problem causes main thread to quit - no allowed
+        //stopMainHandlerThread(); // problem causes main thread to quit - not allowed
     }
 
     private void createCameraCaptureSession() {
@@ -404,16 +404,26 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             case KeyEvent.KEYCODE_0:
                 exposureMetering = FRAME_AVERAGE;
+                Toast.makeText(this, "FRAME AVERAGE", Toast.LENGTH_SHORT).show();
                 stopCamera();
                 initCamera();
                 return true;
             case KeyEvent.KEYCODE_1:
                 exposureMetering = CENTER_WEIGHTED;
+                Toast.makeText(this, "CENTER WEIGHTED", Toast.LENGTH_SHORT).show();
                 stopCamera();
                 initCamera();
                 return true;
             case KeyEvent.KEYCODE_2:
                 exposureMetering = SPOT_METERING;
+                Toast.makeText(this, "SPOT METERING", Toast.LENGTH_SHORT).show();
+                stopCamera();
+                initCamera();
+                return true;
+            case KeyEvent.KEYCODE_3:
+                if (!captureTonemapModeContrastCurve) captureTonemapModeContrastCurve = true;
+                else captureTonemapModeContrastCurve = false;
+                Toast.makeText(this, "captureTonemapModeContrastCurve="+ (captureTonemapModeContrastCurve?"true" : "false"), Toast.LENGTH_SHORT).show();
                 stopCamera();
                 initCamera();
                 return true;
@@ -459,7 +469,9 @@ public class MainActivity extends AppCompatActivity {
             CaptureRequest.Builder captureBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
             captureBuilder.addTarget(mImageReader0.getSurface());
             captureBuilder.addTarget(mImageReader2.getSurface());
-            captureBuilder.set(CaptureRequest.TONEMAP_MODE, CaptureRequest.TONEMAP_MODE_CONTRAST_CURVE);
+            if (captureTonemapModeContrastCurve) {
+                captureBuilder.set(CaptureRequest.TONEMAP_MODE, CaptureRequest.TONEMAP_MODE_CONTRAST_CURVE);
+            }
             captureBuilder.set(CaptureRequest.TONEMAP_CURVE, new TonemapCurve(curve_srgb, curve_srgb, curve_srgb));
             //
             captureBuilder.set(EXPOSURE_METERING, exposureMetering);
@@ -529,10 +541,8 @@ public class MainActivity extends AppCompatActivity {
 
     private void saveImageFiles() {
         if (leftBytes != null && rightBytes != null) {
-            if (saveLR) {
-                leftBitmap = saveImageFile(leftBytes, PHOTO_PREFIX + timestamp, true); // left
-                rightBitmap = saveImageFile(rightBytes, PHOTO_PREFIX + timestamp, false); // right
-            }
+            leftBitmap = saveImageFile(leftBytes, PHOTO_PREFIX + timestamp, true); // left
+            rightBitmap = saveImageFile(rightBytes, PHOTO_PREFIX + timestamp, false); // right
             if (saveAnaglyph) {
                 createAndSaveAnaglyph(PHOTO_PREFIX + timestamp, leftBitmap, rightBitmap);
             }
@@ -565,6 +575,10 @@ public class MainActivity extends AppCompatActivity {
         if (bitmap == null) {
             Log.e(TAG, "Image decoding failed! " + (left ? "left" : "right"));
             return null;
+        } else {
+            if (!saveLR) {
+                return bitmap;
+            }
         }
 
         File mediaStorageDir = new File(
