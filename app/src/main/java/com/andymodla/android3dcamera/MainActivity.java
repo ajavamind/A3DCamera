@@ -6,6 +6,7 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.camera.core.CameraInfo;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.FileProvider;
 
@@ -45,6 +46,7 @@ import android.view.KeyEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.widget.Toast;
+import android.media.MediaActionSound;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -66,13 +68,16 @@ public class MainActivity extends AppCompatActivity {
     private String SAVE_FOLDER = "A3DCamera";
     private String PHOTO_PREFIX = "IMG";
 
+    boolean allPermissionsGranted = false;
+    boolean shutterSound = true;
+    boolean burstMode = false;
+
     // camera dimensions
     //private int cameraWidth = 1024;//1440;
     //private int cameraHeight = 768;//1080;
     private int cameraWidth = 4080; // camera width lens pixels
     private int cameraHeight = 3072;// camera height lens pixels
 
-    private volatile boolean captureTonemapModeContrastCurve = true;
     private static final float[] curve_srgb = { // sRGB curve
             0.0000f, 0.0000f, 0.0667f, 0.2864f, 0.1333f, 0.4007f, 0.2000f, 0.4845f,
             0.2667f, 0.5532f, 0.3333f, 0.6125f, 0.4000f, 0.6652f, 0.4667f, 0.7130f,
@@ -129,10 +134,28 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.layout);
         setupSurfaces();
         checkPermissions();
-        logFocusDistanceCalibration();
     }
 
+    @Override
+    protected void onResume() {
+        Log.d(TAG, "onResume");
+        super.onResume();
+        if (allPermissionsGranted) {
+            initCamera();
+            logFocusDistanceCalibration();  // for debug
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        Log.d(TAG, "onPause()");
+        super.onPause();
+        stopCamera();
+    }
+
+
     private void setupSurfaces() {
+        Log.d(TAG, "setupSurfaces()");
         mSurfaceView0 = findViewById(R.id.surfaceView);
         mSurfaceView2 = findViewById(R.id.surfaceView2);
 
@@ -149,11 +172,11 @@ public class MainActivity extends AppCompatActivity {
         SurfaceHolder.Callback shCallback = new SurfaceHolder.Callback() {
             @Override
             public void surfaceCreated(@NonNull SurfaceHolder holder) {
-                if (mCameraDevice == null &&
-                        mSurfaceHolder0.getSurface().isValid() &&
-                        mSurfaceHolder2.getSurface().isValid()) {
-                    initCamera();
-                }
+//                if (mCameraDevice == null &&
+//                        mSurfaceHolder0.getSurface().isValid() &&
+//                        mSurfaceHolder2.getSurface().isValid()) {
+//                    initCamera();
+//                }
             }
 
             @Override
@@ -174,7 +197,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void checkPermissions() {
-        String[] permissions = {Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE};
+        Log.d(TAG, "chekPermissions");
+        String[] permissions = {Manifest.permission.CAMERA}; // Manifest.permission.WRITE_EXTERNAL_STORAGE};
         boolean needsPermission = false;
 
         for (String permission : permissions) {
@@ -185,34 +209,43 @@ public class MainActivity extends AppCompatActivity {
         }
 
         if (needsPermission) {
+            Log.d(TAG, "Needs permission");
             ActivityCompat.requestPermissions(this, permissions, MY_CAMERA_REQUEST_CODE);
+        } else {
+            allPermissionsGranted = true;
         }
+
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-
+        Log.d(TAG, "onRequestPermissionsResult requestCode="+requestCode);
         if (requestCode == MY_CAMERA_REQUEST_CODE) {
-            boolean allGranted = true;
+            allPermissionsGranted = true;
             for (int result : grantResults) {
+                Log.d(TAG, "result="+result);
                 if (result != PackageManager.PERMISSION_GRANTED) {
-                    allGranted = false;
+                    allPermissionsGranted = false;
                     break;
                 }
             }
 
-            if (allGranted) {
-                initCamera();
-            }
-            //else {
-            //Toast.makeText(this, "Camera and storage permissions required", Toast.LENGTH_SHORT).show();
-            //}
+//            if (allPermissionsGranted) {
+//                initCamera();
+//            }
+//            //else {
+//            //Toast.makeText(this, "Camera and storage permissions required", Toast.LENGTH_SHORT).show();
+//            //}
         }
     }
 
     private void initCamera() {
         Log.d(TAG, "initCamera()");
+        if (shutterSound) {
+            CameraInfo.mustPlayShutterSound();
+        }
+        System.out.println("shutter sound ");
         mainHandler = new Handler(getMainLooper());
 
         // Setup ImageReaders for capture
@@ -268,21 +301,23 @@ public class MainActivity extends AppCompatActivity {
 
     private void stopCamera() {
         Log.d(TAG, "stopCamera()");
-        try {
-            mCameraCaptureSession.stopRepeating();
-            mCameraCaptureSession.abortCaptures();
-        } catch (CameraAccessException e) {
-            throw new RuntimeException(e);
-        }
         if (mCameraCaptureSession != null) {
-            mCameraCaptureSession.close();
+            try {
+                mCameraCaptureSession.stopRepeating();
+                mCameraCaptureSession.abortCaptures();
+            } catch (CameraAccessException e) {
+                throw new RuntimeException(e);
+            }
+            if (mCameraCaptureSession != null) {
+                mCameraCaptureSession.close();
+            }
+            mCameraCaptureSession = null;
+            if (mCameraDevice != null) {
+                mCameraDevice.close();
+            }
+            mCameraDevice = null;
+            //stopMainHandlerThread(); // problem causes main thread to quit - not allowed
         }
-        mCameraCaptureSession = null;
-        if (mCameraDevice != null) {
-            mCameraDevice.close();
-        }
-        mCameraDevice = null;
-        //stopMainHandlerThread(); // problem causes main thread to quit - not allowed
     }
 
     private void createCameraCaptureSession() {
@@ -420,10 +455,30 @@ public class MainActivity extends AppCompatActivity {
                 stopCamera();
                 initCamera();
                 return true;
+//            case KeyEvent.KEYCODE_3: // DEBUG only
+//                if (!captureTonemapModeContrastCurve) captureTonemapModeContrastCurve = true;
+//                else captureTonemapModeContrastCurve = false;
+//                Toast.makeText(this, "captureTonemapModeContrastCurve="+ (captureTonemapModeContrastCurve?"true" : "false"), Toast.LENGTH_SHORT).show();
+//                stopCamera();
+//                initCamera();
+//                return true;
             case KeyEvent.KEYCODE_3:
-                if (!captureTonemapModeContrastCurve) captureTonemapModeContrastCurve = true;
-                else captureTonemapModeContrastCurve = false;
-                Toast.makeText(this, "captureTonemapModeContrastCurve="+ (captureTonemapModeContrastCurve?"true" : "false"), Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Key 3 - not implemented", Toast.LENGTH_SHORT).show();
+                stopCamera();
+                initCamera();
+                return true;
+            case KeyEvent.KEYCODE_B:
+                Toast.makeText(this, "Set Burst Mode - not implemented", Toast.LENGTH_SHORT).show();
+                stopCamera();
+                initCamera();
+                return true;
+            case KeyEvent.KEYCODE_C:
+                Toast.makeText(this, "Countdown Shutter Mode - not implemented", Toast.LENGTH_SHORT).show();
+                stopCamera();
+                initCamera();
+                return true;
+            case KeyEvent.KEYCODE_I:
+                Toast.makeText(this, "Interval Capture Mode - not implemented", Toast.LENGTH_SHORT).show();
                 stopCamera();
                 initCamera();
                 return true;
@@ -469,9 +524,7 @@ public class MainActivity extends AppCompatActivity {
             CaptureRequest.Builder captureBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
             captureBuilder.addTarget(mImageReader0.getSurface());
             captureBuilder.addTarget(mImageReader2.getSurface());
-            if (captureTonemapModeContrastCurve) {
-                captureBuilder.set(CaptureRequest.TONEMAP_MODE, CaptureRequest.TONEMAP_MODE_CONTRAST_CURVE);
-            }
+            // default TONEMAP_MODE_CONTRAST_CURVE assumed for best contrast, color and detail capture
             captureBuilder.set(CaptureRequest.TONEMAP_CURVE, new TonemapCurve(curve_srgb, curve_srgb, curve_srgb));
             //
             captureBuilder.set(EXPOSURE_METERING, exposureMetering);
@@ -528,6 +581,9 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
             }, mainHandler);
+            MediaActionSound mediaActionSound = new MediaActionSound();
+            mediaActionSound.load(MediaActionSound.SHUTTER_CLICK); // Pre-load the sound
+            mediaActionSound.play(MediaActionSound.SHUTTER_CLICK); // Play the sound
 
             mCameraCaptureSession.capture(captureBuilder.build(), null, mainHandler);
 
@@ -870,7 +926,7 @@ public class MainActivity extends AppCompatActivity {
                 if (mCameraCaptureSession != null) {
                     mCameraCaptureSession.close();
                 }
-                createCameraCaptureSession();
+                //createCameraCaptureSession();
             } catch (Exception e) {
                 Log.e(TAG, "Error recreating camera session", e);
             }
