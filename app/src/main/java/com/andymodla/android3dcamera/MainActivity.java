@@ -71,6 +71,8 @@ public class MainActivity extends AppCompatActivity {
     boolean allPermissionsGranted = false;
     boolean shutterSound = true;
     boolean burstMode = false;
+    int BURST_COUNT = 5;
+    int burstCounter = 0;
 
     // camera dimensions
     //private int cameraWidth = 1024;//1440;
@@ -123,7 +125,7 @@ public class MainActivity extends AppCompatActivity {
     volatile Bitmap rightBitmap;
     volatile Bitmap sbsBitmap;
     volatile Bitmap anaglyphBitmap;
-    volatile String timestamp;
+    String timestamp;
     volatile File reviewSBS;
 
     @Override
@@ -433,7 +435,6 @@ public class MainActivity extends AppCompatActivity {
             case KeyEvent.KEYCODE_3D_MODE: // camera key - first turn off auto launch of native camera app
                 captureImages();
                 return true;
-            case KeyEvent.KEYCODE_ENTER:
             case KeyEvent.KEYCODE_BACK:
                 reviewImages();
                 return true;
@@ -467,11 +468,17 @@ public class MainActivity extends AppCompatActivity {
                 stopCamera();
                 initCamera();
                 return true;
-            case KeyEvent.KEYCODE_B:
-                Toast.makeText(this, "Set Burst Mode - not implemented", Toast.LENGTH_SHORT).show();
-                stopCamera();
-                initCamera();
-                return true;
+            case KeyEvent.KEYCODE_ENTER:
+            case KeyEvent.KEYCODE_B:  // start and cancel Burst capture mode
+                //Toast.makeText(this, "Burst Mode ", Toast.LENGTH_SHORT).show();
+                if (burstCounter > 0) {
+                    burstCounter = 0;
+                    Toast.makeText(this, "Burst Mode Canceled ", Toast.LENGTH_SHORT).show();
+                } else {
+                    burstCounter  = BURST_COUNT;
+                    captureImages();
+                }
+               return true;
             case KeyEvent.KEYCODE_C:
                 Toast.makeText(this, "Countdown Shutter Mode - not implemented", Toast.LENGTH_SHORT).show();
                 stopCamera();
@@ -603,11 +610,18 @@ public class MainActivity extends AppCompatActivity {
                 createAndSaveAnaglyph(PHOTO_PREFIX + timestamp, leftBitmap, rightBitmap);
             }
             if (saveSBS) {
+                if (burstCounter > 0)
+                    timestamp += "_" + String.valueOf(BURST_COUNT - burstCounter + 1);
                 if (crossEye) {
                     reviewSBS = createAndSaveSBS(PHOTO_PREFIX + timestamp, rightBitmap, leftBitmap);
                 } else {
                     reviewSBS = createAndSaveSBS(PHOTO_PREFIX + timestamp, leftBitmap, rightBitmap);
-
+                }
+                if (burstCounter > 0) {
+                    burstCounter--;
+                    if (burstCounter > 0) {
+                        captureImages();
+                    }
                 }
             }
         }
