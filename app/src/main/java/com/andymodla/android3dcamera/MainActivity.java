@@ -68,11 +68,17 @@ public class MainActivity extends AppCompatActivity {
     private String SAVE_FOLDER = "A3DCamera";
     private String PHOTO_PREFIX = "IMG";
 
-    boolean allPermissionsGranted = false;
-    boolean shutterSound = true;
-    boolean burstMode = false;
+    volatile boolean allPermissionsGranted = false;
+    volatile boolean shutterSound = true;
+
+    volatile boolean focusDistanceUpdate = false;
+    float MACRO__FOCUS_DISTANCE = 10.0f;
+    float HYPERFOCAL_FOCUS_DISTANCE = 0.60356647f;
+    float PHOTOBOOTH_FOCUS_DISTANCE = 1.0f;
+
+    volatile boolean burstMode = false;
     int BURST_COUNT = 5;
-    int burstCounter = 0;
+    volatile int burstCounter = 0;
 
     // camera dimensions
     //private int cameraWidth = 1024;//1440;
@@ -91,6 +97,15 @@ public class MainActivity extends AppCompatActivity {
     int CENTER_WEIGHTED = 1;
     int SPOT_METERING = 2;
     int exposureMetering = FRAME_AVERAGE;  // default
+
+    // Saturation 0 - 10, default 5
+    private static final CaptureRequest.Key<Integer> SATURATION = new CaptureRequest.Key<>("org.codeaurora.qcamera3.saturation.use_saturation", Integer.class);
+
+    // Sharpness 0 - 6, default 2
+    private static final CaptureRequest.Key<Integer> SHARPNESS = new CaptureRequest.Key<>("org.codeaurora.qcamera3.sharpness.strength", Integer.class);
+
+//    captureRequestBuilder.set(SATURATION, 5);
+//    captureBuilder.set(SATURATION, 5);
 
     private CameraDevice mCameraDevice;
     private CameraManager mCameraManager;
@@ -164,7 +179,7 @@ public class MainActivity extends AppCompatActivity {
         mSurfaceHolder0 = mSurfaceView0.getHolder();
         mSurfaceHolder2 = mSurfaceView2.getHolder();
 
-        // Setup anaglyph surface view
+        // Setup anaglyph surface view TODO
         //mAnaglyphSurfaceView = findViewById(R.id.surfaceView3);  // anaglyph surface
         //mAnaglyphSurfaceView.getHolder().setFormat(PixelFormat.RGBA_8888);
         //mAnaglyphSurfaceView.setVisibility(SurfaceView.GONE);  // initially hide
@@ -222,23 +237,16 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        Log.d(TAG, "onRequestPermissionsResult requestCode="+requestCode);
+        Log.d(TAG, "onRequestPermissionsResult requestCode=" + requestCode);
         if (requestCode == MY_CAMERA_REQUEST_CODE) {
             allPermissionsGranted = true;
             for (int result : grantResults) {
-                Log.d(TAG, "result="+result);
+                Log.d(TAG, "result=" + result);
                 if (result != PackageManager.PERMISSION_GRANTED) {
                     allPermissionsGranted = false;
                     break;
                 }
             }
-
-//            if (allPermissionsGranted) {
-//                initCamera();
-//            }
-//            //else {
-//            //Toast.makeText(this, "Camera and storage permissions required", Toast.LENGTH_SHORT).show();
-//            //}
         }
     }
 
@@ -351,7 +359,13 @@ public class MainActivity extends AppCompatActivity {
                                 captureRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, 0);
                                 //
                                 captureRequestBuilder.set(EXPOSURE_METERING, exposureMetering);
-                                captureRequestBuilder.set(CaptureRequest.LENS_FOCUS_DISTANCE, 0.60356647f);// hyperfocal distance
+
+                                if (focusDistanceUpdate) {
+                                    captureRequestBuilder.set(CaptureRequest.LENS_FOCUS_DISTANCE, MACRO__FOCUS_DISTANCE);  // 100 cm
+                                } else {
+                                    captureRequestBuilder.set(CaptureRequest.LENS_FOCUS_DISTANCE, HYPERFOCAL_FOCUS_DISTANCE);// hyperfocal distance
+                                }
+
                                 captureRequestBuilder.set(CaptureRequest.NOISE_REDUCTION_MODE, 1); // NOISE_REDUCTION_MODE
                                 captureRequestBuilder.set(CaptureRequest.EDGE_MODE, 1); // EDGE_MODE
                                 mCameraCaptureSession.setRepeatingRequest(captureRequestBuilder.build(), null, null);
@@ -433,29 +447,31 @@ public class MainActivity extends AppCompatActivity {
             case KeyEvent.KEYCODE_VOLUME_UP:
             case KeyEvent.KEYCODE_VOLUME_DOWN:
             case KeyEvent.KEYCODE_3D_MODE: // camera key - first turn off auto launch of native camera app
+            case KeyEvent.KEYCODE_S:
                 captureImages();
                 return true;
             case KeyEvent.KEYCODE_BACK:
                 reviewImages();
                 return true;
             case KeyEvent.KEYCODE_0:
-                exposureMetering = FRAME_AVERAGE;
                 Toast.makeText(this, "FRAME AVERAGE", Toast.LENGTH_SHORT).show();
                 stopCamera();
+                exposureMetering = FRAME_AVERAGE;
                 initCamera();
                 return true;
             case KeyEvent.KEYCODE_1:
-                exposureMetering = CENTER_WEIGHTED;
                 Toast.makeText(this, "CENTER WEIGHTED", Toast.LENGTH_SHORT).show();
                 stopCamera();
+                exposureMetering = CENTER_WEIGHTED;
                 initCamera();
                 return true;
             case KeyEvent.KEYCODE_2:
-                exposureMetering = SPOT_METERING;
                 Toast.makeText(this, "SPOT METERING", Toast.LENGTH_SHORT).show();
                 stopCamera();
+                exposureMetering = SPOT_METERING;
                 initCamera();
                 return true;
+
 //            case KeyEvent.KEYCODE_3: // DEBUG only
 //                if (!captureTonemapModeContrastCurve) captureTonemapModeContrastCurve = true;
 //                else captureTonemapModeContrastCurve = false;
@@ -463,22 +479,35 @@ public class MainActivity extends AppCompatActivity {
 //                stopCamera();
 //                initCamera();
 //                return true;
-            case KeyEvent.KEYCODE_3:
-                Toast.makeText(this, "Key 3 - not implemented", Toast.LENGTH_SHORT).show();
+
+            case KeyEvent.KEYCODE_D: // change focus distance
+                stopCamera();
+                focusDistanceUpdate = ! focusDistanceUpdate;
+                initCamera();
+                Toast.makeText(this, "Focus Distance " + (focusDistanceUpdate ? "Macro" : "Normal"), Toast.LENGTH_SHORT).show();
+                return true;
+
+            case KeyEvent.KEYCODE_MENU: // 82
+                Toast.makeText(this, "Key 82 menu - not implemented", Toast.LENGTH_SHORT).show();
                 stopCamera();
                 initCamera();
                 return true;
+
             case KeyEvent.KEYCODE_ENTER:
             case KeyEvent.KEYCODE_B:  // start and cancel Burst capture mode
-                //Toast.makeText(this, "Burst Mode ", Toast.LENGTH_SHORT).show();
-                if (burstCounter > 0) {
-                    burstCounter = 0;
-                    Toast.makeText(this, "Burst Mode Canceled ", Toast.LENGTH_SHORT).show();
+                if (burstMode) {
+                    //Toast.makeText(this, "Burst Mode ", Toast.LENGTH_SHORT).show();
+                    if (burstCounter > 0) {
+                        burstCounter = 0;
+                        Toast.makeText(this, "Burst Mode Canceled ", Toast.LENGTH_SHORT).show();
+                    } else {
+                        burstCounter = BURST_COUNT;
+                        captureImages();
+                    }
                 } else {
-                    burstCounter  = BURST_COUNT;
-                    captureImages();
+                    Toast.makeText(this, "Burst Mode Not Enabled", Toast.LENGTH_SHORT).show();
                 }
-               return true;
+                return true;
             case KeyEvent.KEYCODE_C:
                 Toast.makeText(this, "Countdown Shutter Mode - not implemented", Toast.LENGTH_SHORT).show();
                 stopCamera();
@@ -534,9 +563,14 @@ public class MainActivity extends AppCompatActivity {
             // default TONEMAP_MODE_CONTRAST_CURVE assumed for best contrast, color and detail capture
             captureBuilder.set(CaptureRequest.TONEMAP_CURVE, new TonemapCurve(curve_srgb, curve_srgb, curve_srgb));
             //
-            captureBuilder.set(EXPOSURE_METERING, exposureMetering);
             captureBuilder.set(CaptureRequest.CONTROL_AF_MODE, 0);
-            captureBuilder.set(CaptureRequest.LENS_FOCUS_DISTANCE, 0.60356647f);// diopter hyperfocal distance
+            captureBuilder.set(EXPOSURE_METERING, exposureMetering);
+            if (focusDistanceUpdate) {
+                captureBuilder.set(CaptureRequest.LENS_FOCUS_DISTANCE, MACRO__FOCUS_DISTANCE);  // Close up
+            } else {
+                captureBuilder.set(CaptureRequest.LENS_FOCUS_DISTANCE, HYPERFOCAL_FOCUS_DISTANCE); // hyperfocal distance
+            }
+
             captureBuilder.set(CaptureRequest.NOISE_REDUCTION_MODE, 1); // NOISE_REDUCTION_MODE
             captureBuilder.set(CaptureRequest.EDGE_MODE, 1); // EDGE_MODE
 
@@ -594,8 +628,6 @@ public class MainActivity extends AppCompatActivity {
 
             mCameraCaptureSession.capture(captureBuilder.build(), null, mainHandler);
 
-            Toast.makeText(this, "Saved IMG" + timestamp, Toast.LENGTH_SHORT).show();
-
         } catch (CameraAccessException e) {
             Log.e(TAG, "Error capturing images", e);
             Toast.makeText(this, "Error capturing images", Toast.LENGTH_SHORT).show();
@@ -618,12 +650,13 @@ public class MainActivity extends AppCompatActivity {
                     reviewSBS = createAndSaveSBS(PHOTO_PREFIX + timestamp, leftBitmap, rightBitmap);
                 }
                 if (burstCounter > 0) {
-                    burstCounter--;
+                    burstCounter = burstCounter - 1;
                     if (burstCounter > 0) {
                         captureImages();
                     }
                 }
             }
+            Toast.makeText(this, "Saved IMG" + timestamp, Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -834,7 +867,7 @@ public class MainActivity extends AppCompatActivity {
     public void shareImage2(File imageFile) {
         ContentResolver resolver = this.getContentResolver();
         ContentValues contentValues = new ContentValues();
-        contentValues.put(MediaStore.Images.Media.DISPLAY_NAME,  imageFile.getName());
+        contentValues.put(MediaStore.Images.Media.DISPLAY_NAME, imageFile.getName());
         contentValues.put(MediaStore.Images.Media.MIME_TYPE, "image/*");
         contentValues.put(MediaStore.Images.Media.IS_PENDING, 1);
 
@@ -855,15 +888,15 @@ public class MainActivity extends AppCompatActivity {
                 outputStream.close();
                 inputStream.close();
 
-            // Now, share the new content:// Uri
+                // Now, share the new content:// Uri
                 contentValues.clear();
                 contentValues.put(MediaStore.Images.Media.IS_PENDING, 0);
                 resolver.update(contentUri, contentValues, null, null);
-            Intent intent = new Intent(Intent.ACTION_SEND);
-            intent.putExtra(Intent.EXTRA_STREAM, contentUri);
-            intent.setType("image/*");
-            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-            this.startActivity(Intent.createChooser(intent, "Share using:"));
+                Intent intent = new Intent(Intent.ACTION_SEND);
+                intent.putExtra(Intent.EXTRA_STREAM, contentUri);
+                intent.setType("image/*");
+                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                this.startActivity(Intent.createChooser(intent, "Share using:"));
             } catch (IOException e) {
                 Log.e(TAG, "Error writing to MediaStore: " + e.getMessage());
             }
