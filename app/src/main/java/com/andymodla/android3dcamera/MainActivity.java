@@ -189,11 +189,6 @@ public class MainActivity extends AppCompatActivity {
         SurfaceHolder.Callback shCallback = new SurfaceHolder.Callback() {
             @Override
             public void surfaceCreated(@NonNull SurfaceHolder holder) {
-//                if (mCameraDevice == null &&
-//                        mSurfaceHolder0.getSurface().isValid() &&
-//                        mSurfaceHolder2.getSurface().isValid()) {
-//                    initCamera();
-//                }
             }
 
             @Override
@@ -448,9 +443,11 @@ public class MainActivity extends AppCompatActivity {
             case KeyEvent.KEYCODE_VOLUME_DOWN:
             case KeyEvent.KEYCODE_3D_MODE: // camera key - first turn off auto launch of native camera app
             case KeyEvent.KEYCODE_S:
+            case KeyEvent.KEYCODE_DPAD_CENTER:
                 captureImages();
                 return true;
             case KeyEvent.KEYCODE_BACK:
+            case KeyEvent.KEYCODE_ESCAPE:
                 reviewImages();
                 return true;
             case KeyEvent.KEYCODE_0:
@@ -488,6 +485,12 @@ public class MainActivity extends AppCompatActivity {
                 return true;
 
             case KeyEvent.KEYCODE_MENU: // 82
+                Toast.makeText(this, "Key 82 menu - not implemented", Toast.LENGTH_SHORT).show();
+                stopCamera();
+                initCamera();
+                return true;
+
+            case KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE: // 85
                 Toast.makeText(this, "Key 82 menu - not implemented", Toast.LENGTH_SHORT).show();
                 stopCamera();
                 initCamera();
