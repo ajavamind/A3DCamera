@@ -74,7 +74,7 @@ public class MainActivity extends AppCompatActivity {
     volatile boolean focusDistanceUpdate = false;
     float MACRO__FOCUS_DISTANCE = 10.0f;
     float HYPERFOCAL_FOCUS_DISTANCE = 0.60356647f;
-    float PHOTOBOOTH_FOCUS_DISTANCE = 1.0f;
+    float PHOTOBOOTH_FOCUS_DISTANCE = 1.0f; // TODO not defined yet
 
     volatile boolean burstMode = false;
     int BURST_COUNT = 5;
@@ -106,6 +106,8 @@ public class MainActivity extends AppCompatActivity {
 
 //    captureRequestBuilder.set(SATURATION, 5);
 //    captureBuilder.set(SATURATION, 5);
+    private final String leftCameraId = "0";
+    private final String rightCameraId = "2";
 
     private CameraDevice mCameraDevice;
     private CameraManager mCameraManager;
@@ -329,12 +331,14 @@ public class MainActivity extends AppCompatActivity {
         Log.d(TAG, "createCameraCaptureSession()");
         try {
             OutputConfiguration opc0 = new OutputConfiguration(mSurfaceHolder0.getSurface());
+            opc0.setPhysicalCameraId(leftCameraId);
             OutputConfiguration opc1 = new OutputConfiguration(mSurfaceHolder2.getSurface());
-            opc1.setPhysicalCameraId("2");
+            opc1.setPhysicalCameraId(rightCameraId);
 
             OutputConfiguration opcCapture0 = new OutputConfiguration(mImageReader0.getSurface());
+            opcCapture0.setPhysicalCameraId(leftCameraId);
             OutputConfiguration opcCapture1 = new OutputConfiguration(mImageReader2.getSurface());
-            opcCapture1.setPhysicalCameraId("2");
+            opcCapture1.setPhysicalCameraId(rightCameraId);
 
             List<OutputConfiguration> outputConfigsAll = Arrays.asList(opc0, opc1, opcCapture0, opcCapture1);
 
@@ -479,7 +483,7 @@ public class MainActivity extends AppCompatActivity {
 
             case KeyEvent.KEYCODE_D: // change focus distance
                 stopCamera();
-                focusDistanceUpdate = ! focusDistanceUpdate;
+                focusDistanceUpdate = !focusDistanceUpdate;
                 initCamera();
                 Toast.makeText(this, "Focus Distance " + (focusDistanceUpdate ? "Macro" : "Normal"), Toast.LENGTH_SHORT).show();
                 return true;
