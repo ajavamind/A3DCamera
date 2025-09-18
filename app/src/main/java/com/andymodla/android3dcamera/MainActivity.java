@@ -36,6 +36,7 @@ import android.media.ImageReader.OnImageAvailableListener;
 import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -45,6 +46,9 @@ import android.util.Log;
 import android.view.KeyEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.view.View;
+import android.view.WindowInsets;
+import android.view.WindowInsetsController;
 import android.widget.Toast;
 import android.media.MediaActionSound;
 
@@ -53,12 +57,24 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.InterfaceAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.Locale;
+import java.util.Vector;
+
+import android.net.Uri;
+import android.net.wifi.WifiInfo;
+import android.net.wifi.WifiManager;
+import android.os.Build;
+
+import netP5.*; // network library for UDP Server
 
 public class MainActivity extends AppCompatActivity {
 
@@ -104,7 +120,7 @@ public class MainActivity extends AppCompatActivity {
     // Sharpness 0 - 6, default 2
     private static final CaptureRequest.Key<Integer> SHARPNESS = new CaptureRequest.Key<>("org.codeaurora.qcamera3.sharpness.strength", Integer.class);
 
-//    captureRequestBuilder.set(SATURATION, 5);
+    //    captureRequestBuilder.set(SATURATION, 5);
 //    captureBuilder.set(SATURATION, 5);
     private final String leftCameraId = "0";
     private final String rightCameraId = "2";
@@ -145,6 +161,20 @@ public class MainActivity extends AppCompatActivity {
     String timestamp;
     volatile File reviewSBS;
 
+    // UDP Server variables
+    private volatile UdpServer1 udpServer;    // Broadcast receiver
+    private int port = 8000;  // Broadcast port
+    public static String httpUrl = "";
+    public static String sCount = ""; // Photo counter received from Broadcast message
+
+    public enum Stereo {MONO, LEFT, RIGHT} // no suffix, left suffix, right suffix
+
+    public static Stereo suffixSelection = Stereo.MONO; // no suffix, left suffix, right suffix
+    public static String savedTimeStamp = null;
+    private boolean mouseCapture = false;
+    private boolean isWiFiRemoteEnabled = true;
+    private boolean isVideo = false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -153,11 +183,402 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.layout);
         setupSurfaces();
         checkPermissions();
+        setupUdpServer();  // listens for broadcast messages to control camera remotely
+    }
+
+    private void setupUdpServer() {
+        // UDP server setup
+        // Create the UDP server to listen for incoming broadcast messages,
+        // create a listener for the server.
+        // A listener will receive NetMessages which contain camera commands.
+        // NetListener is an interface and requires methods netEvent
+        // and netStatus.
+        //
+        if (isWiFiRemoteEnabled) {
+            if (udpServer == null) {
+                // create listener for UDP messages
+                NetListener udpListener = new NetListener() {
+                    public void netEvent(NetMessage m) {
+                        if (MyDebug.LOG)
+                            Log.d(TAG, "netEvent from ip address=" + m.getDatagramPacket().getAddress());
+                        byte[] data = m.getData();
+                        byte[] b = new byte[1];
+                        b[0] = data[0];
+                        String command = Bytes.getAsString(b);
+                        if (MyDebug.LOG) Log.d(TAG, "netEvent (UDP Server) command=" + command);
+                        if (command.startsWith("F")) {
+                            if (!isVideo) {
+                                if (!isFocusWaiting()) {
+                                    if (MyDebug.LOG) Log.d(TAG, "remote request focus");
+                                    MainActivity.this.runOnUiThread(new Runnable() {
+                                        public void run() {
+                                            requestAutoFocus();
+                                        }
+                                    });
+                                }
+                            } else {
+                                showToast(null, "Remote Not In Photo Mode");
+                            }
+                        } else if (command.startsWith("S") || command.startsWith("C")) {
+                            sCount = getParam(data);
+                            if (MyDebug.LOG) Log.d(TAG, "remote takePicture() " + sCount);
+                            if (!isVideo) {
+                                MainActivity.this.runOnUiThread(new Runnable() {
+                                    public void run() {
+                                        captureImages(); //takePicture(false);
+                                    }
+                                });
+                            } else {
+                                showToast(null, "Remote Not In Photo Mode");
+                            }
+                        } else if (command.startsWith("V")) { // record/stop video
+                            sCount = getParam(data);
+                            if (MyDebug.LOG) Log.d(TAG, "remote record video " + sCount);
+                            if (isVideo) {
+                                MainActivity.this.runOnUiThread(new Runnable() {
+                                    public void run() {
+                                        if (isVideoRecording())
+                                            stopVideo(true);
+                                        else
+                                            captureImages();//takePicture(false);
+                                    }
+                                });
+                            } else {
+                                showToast(null, "Remote Not In Video Mode");
+                            }
+                        } else if (command.startsWith("P")) { // pause
+                            if (MyDebug.LOG) Log.d(TAG, "remote pause Video ");
+                            if (isVideo) {
+                                MainActivity.this.runOnUiThread(new Runnable() {
+                                    public void run() {
+                                        if (isVideoRecording()) {
+                                            pauseVideo();
+                                        }
+                                    }
+                                });
+                            } else {
+                                showToast(null, "Remote Not In Video Mode");
+                            }
+                        } else if (command.startsWith("R")) { // reset / information request
+//                            if (httpServer != null) {
+//                                httpUrl = getHostnameURL();
+//                                if (MyDebug.LOG) Log.d(TAG, "information request " + httpUrl);
+//                                preview.showToast(null, httpUrl);
+//                            } else {
+//                                preview.showToast(null, "No HTTP Server");
+//                            }
+                        }
+                    }
+
+                    public void netStatus(NetStatus s) {
+                        if (MyDebug.LOG) Log.d(TAG, "netStatus (UDP Server) : " + s);
+                    }
+                };
+                // UDP server for receiving Broadcast messages
+                if (udpServer == null) {
+                    udpServer = new UdpServer1(udpListener, port);
+                    if (udpServer == null) {
+                        if (MyDebug.LOG) Log.d(TAG, "UdpServer error");
+                        showToast(null, "Remote Message Server not running");
+                    } else {
+                        if (udpServer.socket() == null) {
+                            if (MyDebug.LOG) Log.d(TAG, "UdpServer not connected retry");
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private void requestAutoFocus() {
+    }
+
+    private void stopVideo(boolean b) {
+    }
+
+    private boolean isVideoRecording() {
+        return false;
+    }
+
+    private void pauseVideo() {
+    }
+
+    private void showToast(Object o, String remoteMessageServerNotRunning) {
+    }
+
+    private boolean isFocusWaiting() {
+        return false;
     }
 
     @Override
+    protected void onStart() {
+        super.onStart();
+        Log.d(TAG, "onStart()");
+        setVisibility();
+    }
+
+    private static final int MAXPARAM_SIZE = 16;
+
+    private String getParam(byte[] data) {
+        String param = "";
+        byte[] s = new byte[MAXPARAM_SIZE];
+        boolean done = false;
+        for (int i = 0; i < MAXPARAM_SIZE; i++) {
+            byte b = data[i + 1];
+            if (done || b == 0 || b == '\r' || b == '\n') {
+                s[i] = ' ';
+                done = true;
+            } else {
+                s[i] = data[i + 1];
+            }
+        }
+        param = Bytes.getAsString(s).trim();
+        return param;
+    }
+
+//    public String getHostnameURL() {
+//        String hostname = getHostnameAddress();
+//        httpUrl = "http://" + hostname + ":" + serverPort +"/";
+//        return httpUrl;
+//    }
+
+    public String getHostnameAddress() {
+        WifiManager wifiMan = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+        WifiInfo wifiInf = wifiMan.getConnectionInfo();
+        int ipAddress = wifiInf.getIpAddress();
+        String ip = String.format("%d.%d.%d.%d", (ipAddress & 0xff), (ipAddress >> 8 & 0xff), (ipAddress >> 16 & 0xff), (ipAddress >> 24 & 0xff));
+        return ip;
+    }
+
+//	public String getHostnameAddress() {
+//		try {
+//			for (Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces(); en
+//					.hasMoreElements(); ) {
+//				NetworkInterface intf = en.nextElement();
+//				Enumeration<NetworkInterface> niEnum = NetworkInterface.getNetworkInterfaces();
+//				String last = null;
+//				while (niEnum.hasMoreElements())
+//				{
+//					NetworkInterface ni = niEnum.nextElement();
+//					if(!ni.isLoopback() && !ni.isPointToPoint()){
+//						for (InterfaceAddress interfaceAddress : ni.getInterfaceAddresses())
+//						{
+//							if( MyDebug.LOG ) Log.d(TAG, "network prefix length="+interfaceAddress.getNetworkPrefixLength());
+//							if (interfaceAddress.getAddress()!= null) {
+//								if( MyDebug.LOG ) Log.d(TAG, interfaceAddress.getAddress().getHostAddress());
+//								last =  (interfaceAddress.getAddress().getHostAddress());
+//								if (last.matches("\\d*\\.\\d*\\.\\d*\\.\\d*")) {
+//									return last;
+//								}
+//							}
+//						}
+//					}
+//				}
+//			}
+//		} catch (SocketException ex) {
+//			if( MyDebug.LOG ) {
+//				Log.d(TAG, "Socket Exception");
+//			}
+//		}
+//		return null;
+//	}
+
+    public String getBroadcastAddress() {
+        try {
+            for (Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces(); en
+                    .hasMoreElements(); ) {
+                NetworkInterface intf = en.nextElement();
+                Enumeration<NetworkInterface> niEnum = NetworkInterface.getNetworkInterfaces();
+                while (niEnum.hasMoreElements()) {
+                    NetworkInterface ni = niEnum.nextElement();
+                    if (!ni.isLoopback()) {
+                        for (InterfaceAddress interfaceAddress : ni.getInterfaceAddresses()) {
+                            if (interfaceAddress.getBroadcast() != null) {
+                                //println(interfaceAddress.getBroadcast().toString());
+                                return (interfaceAddress.getBroadcast().toString().substring(1));
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (SocketException ex) {
+            if (MyDebug.LOG) {
+                Log.d(TAG, "Socket Exception");
+            }
+        }
+        return null;
+    }
+    // Andy Modla end block
+
+    // Andy Modla begin block
+    @Override
+    protected void onStop() {
+        if (MyDebug.LOG)
+            Log.d(TAG, "onStop");
+        super.onStop();
+        // Andy Modla block
+//		investigate -Do this in stop not pause - code transferred from onPause()
+//        mainUI.destroyPopup();
+//        mSensorManager.unregisterListener(accelerometerListener);
+//        unregisterMagneticListener();
+//        orientationEventListener.disable();
+//		try {
+//			unregisterReceiver(cameraReceiver);
+//		}
+//		catch(IllegalArgumentException e) {
+//			// this can happen if not registered - simplest to just catch the exception
+//			e.printStackTrace();
+//		}
+//		stopRemoteControl();
+//		freeAudioListener(false);
+//		stopSpeechRecognizer();
+//        applicationInterface.getLocationSupplier().freeLocationListeners();
+//		applicationInterface.getGyroSensor().stopRecording();
+//		applicationInterface.getGyroSensor().disableSensors();
+//		soundPoolManager.releaseSound();
+//        applicationInterface.clearLastImages(); // this should happen when pausing the preview, but call explicitly just to be safe
+//		applicationInterface.getDrawPreview().clearGhostImage();
+//        preview.onPause();
+//	}
+        // Andy Modla end block
+
+        // we stop location listening in onPause, but done here again just to be certain!
+        //applicationInterface.getLocationSupplier().freeLocationListeners();
+    }
+
+    // Andy Modla begin block
+    // stop UDP server for broadcast message reception
+    void destroyUDPServer() {
+        if (MyDebug.LOG) Log.d(TAG, "Destroy UDP server");
+        if (udpServer != null) {
+            Vector list = udpServer.getListeners();
+            if (MyDebug.LOG) Log.d(TAG, "NetListener size=" + list.size());
+            for (int i = 0; i < list.size(); i++) {
+                udpServer.removeListener((netP5.NetListener) list.get(i));
+                if (MyDebug.LOG) Log.d(TAG, "remove NetListener " + list.get(i).toString());
+            }
+            udpServer.stop();
+            udpServer.dispose();
+            udpServer = null;
+        }
+    }
+    // stop HTTP server
+//    void destroyHTTPServer() {
+//        if (MyDebug.LOG) Log.d(TAG, "Destroy httpServer " + httpServer);
+//        if (httpServer != null) {
+//            httpServer.closeAllConnections();
+//            if (MyDebug.LOG) Log.d(TAG, "httpServer closed "+httpServer.getMyServerSocket().isClosed() );
+//            httpServer = null;
+//        }
+//    }
+
+    // Extra events for controlling the app, mouse
+//    @Override
+//    public boolean onGenericMotionEvent(MotionEvent event) {
+//        boolean consumed = false;
+//        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+//        mouseCapture = sharedPreferences.getBoolean(PreferenceKeys.MouseCapturePreferenceKey, false);
+//
+//        if (!mouseCapture) {
+//            consumed = super.onGenericMotionEvent(event);
+//            return consumed;
+//        }
+//        if (!consumed  && (0 != (event.getSource() & InputDevice.SOURCE_MOUSE))) {
+//            //if (0 != (event.getSource() & InputDevice.SOURCE_CLASS_POINTER)) {
+//            if (MyDebug.LOG) Log.d(TAG, "mouse button state="+event.getButtonState());
+//            if (mainUI.popupIsOpen() || settingsIsOpen())
+//                return false;
+//            consumed = true;
+//            int buttonState = event.getButtonState();
+//            int actionmasked = event.getActionMasked();
+//            if (MyDebug.LOG) Log.d(TAG, "action mask=" + actionmasked);
+//            if (actionmasked == MotionEvent.ACTION_HOVER_ENTER) {
+//                if (MyDebug.LOG) Log.d(TAG, "HOOVER ENTER");
+//                consumed = true;
+//            } else if (actionmasked == MotionEvent.ACTION_HOVER_EXIT) {
+//                if (MyDebug.LOG) Log.d(TAG, "HOVER EXIT");
+//                //
+//                consumed = true;
+//            } else if (buttonState == MotionEvent.BUTTON_PRIMARY) {
+//                int action = event.getAction();
+//                if (action == MotionEvent.ACTION_BUTTON_PRESS) {
+//                    if (MyDebug.LOG) Log.d(TAG, "Primary Mouse button press");
+//                    if (!preview.isVideo()) {
+//                        sCount = "";
+//                        MainActivity.this.runOnUiThread(new Runnable() {
+//                            public void run() {
+//                                takePicture(false);
+//                            }
+//                        });
+//                    }
+//                    else {
+//                        sCount = "";
+//                        MainActivity.this.runOnUiThread(new Runnable() {
+//                            public void run() {
+//                                if (preview.isVideoRecording())
+//                                    preview.stopVideo(true);
+//                                else
+//                                    takePicture(false);
+//                            }
+//                        });
+//                    }
+//                }
+//                consumed = true;
+//            } else if (buttonState == MotionEvent.BUTTON_SECONDARY) {
+//                if (MyDebug.LOG) Log.d(TAG, "Secondary Mouse button press");
+//                sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+//                String volume_keys = sharedPreferences.getString(PreferenceKeys.VolumeKeysPreferenceKey, "volume_take_photo");
+//                if (volume_keys.equals("volume_focus")) {
+//                    getPreview().requestAutoFocus();
+//                    consumed = true;
+//                }
+//                else{
+//                    openGallery();
+//                    consumed = true;
+//                }
+//            } else if (buttonState == MotionEvent.BUTTON_TERTIARY) {
+//                if (MyDebug.LOG) Log.d(TAG, "Tertiary Mouse button press");
+//                if (!preview.isVideo()) {
+//                    if (!preview.isFocusWaiting()) {
+//                        if( MyDebug.LOG ) Log.d(TAG, "remote request focus");
+//                        MainActivity.this.runOnUiThread(new Runnable() {
+//                            public void run() {
+//                                preview.requestAutoFocus();
+//                            }
+//                        });
+//                    }
+//                }
+//                consumed = true;
+//            } else switch (event.getAction()) {
+//                case MotionEvent.ACTION_SCROLL:
+//                    float speed = event.getAxisValue(MotionEvent.AXIS_VSCROLL);
+//                    if (MyDebug.LOG) Log.d(TAG, "scroll="+speed);
+//                    // zoom camera  here (ZOOM_STEP * speed);
+//                    if (speed < 0)
+//                        zoomOut();
+//                    else
+//                        zoomIn();
+//                    consumed = true;
+//                    break;
+//                case MotionEvent.ACTION_BUTTON_PRESS:
+//                    if (MyDebug.LOG) Log.d(TAG, "ACTION_BUTTON_PRESS");
+//                    consumed = true;
+//                    break;
+//                case MotionEvent.ACTION_BUTTON_RELEASE:
+//                    if (MyDebug.LOG) Log.d(TAG, "ACTION_BUTTON_RELEASE");
+//                    consumed = true;
+//                    break;
+//            }
+
+    /// /            consumed = true;
+//            return consumed;
+//        }
+//        return consumed;
+//    }
+    // Andy Modla end block
+    @Override
     protected void onResume() {
-        Log.d(TAG, "onResume");
+        Log.d(TAG, "onResume()");
         super.onResume();
         if (allPermissionsGranted) {
             initCamera();
@@ -448,7 +869,12 @@ public class MainActivity extends AppCompatActivity {
             case KeyEvent.KEYCODE_3D_MODE: // camera key - first turn off auto launch of native camera app
             case KeyEvent.KEYCODE_S:
             case KeyEvent.KEYCODE_DPAD_CENTER:
-                captureImages();
+                MainActivity.this.runOnUiThread(new Runnable() {
+                    public void run() {
+                        captureImages(); //takePicture(false);
+                    }
+                });
+                //captureImages();
                 return true;
             case KeyEvent.KEYCODE_BACK:
             case KeyEvent.KEYCODE_ESCAPE:
@@ -1000,6 +1426,52 @@ public class MainActivity extends AppCompatActivity {
         if (mImageReader2 != null) {
             mImageReader2.close();
         }
+
+        //destroyHTTPServer();
+        destroyUDPServer();
+
+    }
+
+    private void setVisibility() {
+        //if (DEBUG) println("setVisibility width = "+width + " height="+height);
+        runOnUiThread(new Runnable() {
+                          @Override
+                          public void run() {
+                              if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                                  // Android 11 (API 30) and above - use WindowInsetsController
+                                  WindowInsetsController controller = getWindow().getInsetsController();
+                                  if (controller != null) {
+                                      // Hide status bar and navigation bar
+                                      controller.hide(WindowInsets.Type.statusBars() | WindowInsets.Type.navigationBars());
+
+                                      // Set behavior for when user swipes to show system bars
+                                      controller.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+
+                                      // Optional: Set light status bar (uncomment if needed)
+                                      // controller.setSystemBarsAppearance(
+                                      //     WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS,
+                                      //     WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
+                                      // );
+                                  }
+
+                                  // Enable edge-to-edge layout
+                                  getWindow().setDecorFitsSystemWindows(false);
+                              } else {
+                                  // Fallback for older Android versions (API 29 and below)
+                                  int newVis = View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                                          | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                                          | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                                          | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                                          | View.SYSTEM_UI_FLAG_FULLSCREEN
+                                          //  | View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+                                          | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY;
+
+                                  final View decorView = getWindow().getDecorView();
+                                  decorView.setSystemUiVisibility(newVis);
+                              }
+                          }
+                      }
+        );
     }
 
 }
