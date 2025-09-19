@@ -14,7 +14,6 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.ContentResolver;
 import android.content.ContentValues;
-import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
@@ -52,6 +51,9 @@ import android.view.WindowInsetsController;
 import android.widget.Toast;
 import android.media.MediaActionSound;
 
+import java.util.Timer;
+import java.util.TimerTask;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -69,11 +71,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Vector;
 
-import android.net.Uri;
-import android.net.wifi.WifiInfo;
-import android.net.wifi.WifiManager;
-import android.os.Build;
-
 import netP5.*; // network library for UDP Server
 
 public class MainActivity extends AppCompatActivity {
@@ -87,11 +84,12 @@ public class MainActivity extends AppCompatActivity {
     volatile boolean allPermissionsGranted = false;
     volatile boolean shutterSound = true;
 
-    volatile boolean focusDistanceUpdate = false;
-    float MACRO__FOCUS_DISTANCE = 10.0f;
-    float HYPERFOCAL_FOCUS_DISTANCE = 0.60356647f;
-    float PHOTOBOOTH_FOCUS_DISTANCE = 1.0f; // TODO not defined yet
-
+    volatile int focusDistanceIndex = 0;  // default HYPERFOCAL
+    static final float MACRO_FOCUS_DISTANCE = 10.0f;
+    static final float HYPERFOCAL_FOCUS_DISTANCE = 0.60356647f;
+    static final float PHOTO_BOOTH_FOCUS_DISTANCE = 1.0f;
+    static final float[] FOCUS_DISTANCE = {HYPERFOCAL_FOCUS_DISTANCE, PHOTO_BOOTH_FOCUS_DISTANCE, MACRO_FOCUS_DISTANCE};
+    static final String[] FOCUS_DISTANCE_NAMES = {"HYPERFOCAL FOCUS DISTANCE", "PHOTO BOOTH FOCUS DISTANCE", "MACRO FOCUS DISTANCE"};
     volatile boolean burstMode = false;
     int BURST_COUNT = 5;
     volatile int burstCounter = 0;
@@ -109,11 +107,12 @@ public class MainActivity extends AppCompatActivity {
             0.8000f, 0.9063f, 0.8667f, 0.9389f, 0.9333f, 0.9701f, 1.0000f, 1.0000f};
 
     private static final CaptureRequest.Key<Integer> EXPOSURE_METERING = new CaptureRequest.Key<>("org.codeaurora.qcamera3.exposure_metering.exposure_metering_mode", Integer.TYPE);
-    int FRAME_AVERAGE = 0; // normal behavior
-    int CENTER_WEIGHTED = 1;
-    int SPOT_METERING = 2;
-    int exposureMetering = FRAME_AVERAGE;  // default
-
+    static final int FRAME_AVERAGE = 0; // normal behavior
+    static final int CENTER_WEIGHTED = 1;
+    static final int SPOT_METERING = 2;
+    int meteringIndex = 0;  // default
+    static final int[] METERING = { FRAME_AVERAGE, CENTER_WEIGHTED, SPOT_METERING};
+    String[] METERING_NAMES = {"FRAME AVERAGE", "CENTER WEIGHTED", "SPOT METERING"};
     // Saturation 0 - 10, default 5
     private static final CaptureRequest.Key<Integer> SATURATION = new CaptureRequest.Key<>("org.codeaurora.qcamera3.saturation.use_saturation", Integer.class);
 
@@ -175,6 +174,28 @@ public class MainActivity extends AppCompatActivity {
     private boolean isWiFiRemoteEnabled = true;
     private boolean isVideo = false;
 
+    private boolean isPhotobooth = true;
+    Timer countdownTimer;
+    int countdownStart = 3;
+    int countdownDigit = -1;
+
+    // Key codes for 8BitDo micro Bluetooth Keyboard controller (Keyboard mode)
+    static final int SHUTTER_KEY = KeyEvent.KEYCODE_M;
+    static final int FOCUS_KEY = KeyEvent.KEYCODE_R;
+    static final int MODE_KEY = KeyEvent.KEYCODE_L;
+    static final int VIDEO_RECORD_KEY = KeyEvent.KEYCODE_K;
+    static final int DISP_KEY = KeyEvent.KEYCODE_C;
+    static final int ISO_KEY = KeyEvent.KEYCODE_D;
+    static final int TIMER_KEY = KeyEvent.KEYCODE_E;
+    static final int SHUTTER_SPEED_KEY = KeyEvent.KEYCODE_F;
+    static final int COLOR_BALANCE_KEY = KeyEvent.KEYCODE_N;
+    static final int AEL_KEY = KeyEvent.KEYCODE_O;
+    static final int FN_KEY = KeyEvent.KEYCODE_H;
+    static final int MENU_KEY = KeyEvent.KEYCODE_I;
+    static final int REVIEW_KEY = KeyEvent.KEYCODE_J;
+    static final int OK_KEY = KeyEvent.KEYCODE_G;
+    static final int SHARE_PRINT_KEY = KeyEvent.KEYCODE_S;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -186,14 +207,15 @@ public class MainActivity extends AppCompatActivity {
         setupUdpServer();  // listens for broadcast messages to control camera remotely
     }
 
+    /**
+     * UDP server setup
+     * Create the UDP server to listen for incoming broadcast messages,
+     * create a listener for the server.
+     * A listener will receive NetMessages which contain camera commands.
+     * NetListener is an interface and requires methods netEvent
+     * and netStatus.
+     */
     private void setupUdpServer() {
-        // UDP server setup
-        // Create the UDP server to listen for incoming broadcast messages,
-        // create a listener for the server.
-        // A listener will receive NetMessages which contain camera commands.
-        // NetListener is an interface and requires methods netEvent
-        // and netStatus.
-        //
         if (isWiFiRemoteEnabled) {
             if (udpServer == null) {
                 // create listener for UDP messages
@@ -217,7 +239,7 @@ public class MainActivity extends AppCompatActivity {
                                     });
                                 }
                             } else {
-                                showToast(null, "Remote Not In Photo Mode");
+                                showToast("Remote Not In Photo Mode");
                             }
                         } else if (command.startsWith("S") || command.startsWith("C")) {
                             sCount = getParam(data);
@@ -229,7 +251,7 @@ public class MainActivity extends AppCompatActivity {
                                     }
                                 });
                             } else {
-                                showToast(null, "Remote Not In Photo Mode");
+                                showToast("Remote Not In Photo Mode");
                             }
                         } else if (command.startsWith("V")) { // record/stop video
                             sCount = getParam(data);
@@ -244,7 +266,7 @@ public class MainActivity extends AppCompatActivity {
                                     }
                                 });
                             } else {
-                                showToast(null, "Remote Not In Video Mode");
+                                showToast("Remote Not In Video Mode");
                             }
                         } else if (command.startsWith("P")) { // pause
                             if (MyDebug.LOG) Log.d(TAG, "remote pause Video ");
@@ -257,16 +279,12 @@ public class MainActivity extends AppCompatActivity {
                                     }
                                 });
                             } else {
-                                showToast(null, "Remote Not In Video Mode");
+                                showToast("Remote Not In Video Mode");
                             }
                         } else if (command.startsWith("R")) { // reset / information request
-//                            if (httpServer != null) {
-//                                httpUrl = getHostnameURL();
-//                                if (MyDebug.LOG) Log.d(TAG, "information request " + httpUrl);
-//                                preview.showToast(null, httpUrl);
-//                            } else {
-//                                preview.showToast(null, "No HTTP Server");
-//                            }
+                            httpUrl = getHostnameUrl();
+                            if (MyDebug.LOG) Log.d(TAG, "Reset information request " + httpUrl);
+                            showToast(httpUrl);
                         }
                     }
 
@@ -279,7 +297,7 @@ public class MainActivity extends AppCompatActivity {
                     udpServer = new UdpServer1(udpListener, port);
                     if (udpServer == null) {
                         if (MyDebug.LOG) Log.d(TAG, "UdpServer error");
-                        showToast(null, "Remote Message Server not running");
+                        showToast("Remote Message Server not running");
                     } else {
                         if (udpServer.socket() == null) {
                             if (MyDebug.LOG) Log.d(TAG, "UdpServer not connected retry");
@@ -303,7 +321,8 @@ public class MainActivity extends AppCompatActivity {
     private void pauseVideo() {
     }
 
-    private void showToast(Object o, String remoteMessageServerNotRunning) {
+    private void showToast(String message) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
     }
 
     private boolean isFocusWaiting() {
@@ -336,52 +355,53 @@ public class MainActivity extends AppCompatActivity {
         return param;
     }
 
-//    public String getHostnameURL() {
-//        String hostname = getHostnameAddress();
-//        httpUrl = "http://" + hostname + ":" + serverPort +"/";
-//        return httpUrl;
-//    }
-
-    public String getHostnameAddress() {
-        WifiManager wifiMan = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
-        WifiInfo wifiInf = wifiMan.getConnectionInfo();
-        int ipAddress = wifiInf.getIpAddress();
-        String ip = String.format("%d.%d.%d.%d", (ipAddress & 0xff), (ipAddress >> 8 & 0xff), (ipAddress >> 16 & 0xff), (ipAddress >> 24 & 0xff));
-        return ip;
+    public String getHostnameUrl() {
+        String hostname = getHostnameAddress();
+        //httpUrl = "http://" + hostname + ":" + serverPort +"/";
+        httpUrl = "http://" + hostname + "/";
+        return httpUrl;
     }
 
-//	public String getHostnameAddress() {
-//		try {
-//			for (Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces(); en
-//					.hasMoreElements(); ) {
-//				NetworkInterface intf = en.nextElement();
-//				Enumeration<NetworkInterface> niEnum = NetworkInterface.getNetworkInterfaces();
-//				String last = null;
-//				while (niEnum.hasMoreElements())
-//				{
-//					NetworkInterface ni = niEnum.nextElement();
-//					if(!ni.isLoopback() && !ni.isPointToPoint()){
-//						for (InterfaceAddress interfaceAddress : ni.getInterfaceAddresses())
-//						{
-//							if( MyDebug.LOG ) Log.d(TAG, "network prefix length="+interfaceAddress.getNetworkPrefixLength());
-//							if (interfaceAddress.getAddress()!= null) {
-//								if( MyDebug.LOG ) Log.d(TAG, interfaceAddress.getAddress().getHostAddress());
-//								last =  (interfaceAddress.getAddress().getHostAddress());
-//								if (last.matches("\\d*\\.\\d*\\.\\d*\\.\\d*")) {
-//									return last;
-//								}
-//							}
-//						}
-//					}
-//				}
-//			}
-//		} catch (SocketException ex) {
-//			if( MyDebug.LOG ) {
-//				Log.d(TAG, "Socket Exception");
-//			}
-//		}
-//		return null;
-//	}
+//    public String getHostnameAddress() {
+//        WifiManager wifiMan = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+//        WifiInfo wifiInf = wifiMan.getConnectionInfo();
+//        int ipAddress = wifiInf.getIpAddress();
+//        String ip = String.format("%d.%d.%d.%d", (ipAddress & 0xff), (ipAddress >> 8 & 0xff), (ipAddress >> 16 & 0xff), (ipAddress >> 24 & 0xff));
+//        return ip;
+//    }
+
+	public String getHostnameAddress() {
+		try {
+			for (Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces(); en
+					.hasMoreElements(); ) {
+				NetworkInterface intf = en.nextElement();
+				Enumeration<NetworkInterface> niEnum = NetworkInterface.getNetworkInterfaces();
+				String last = null;
+				while (niEnum.hasMoreElements())
+				{
+					NetworkInterface ni = niEnum.nextElement();
+					if(!ni.isLoopback() && !ni.isPointToPoint()){
+						for (InterfaceAddress interfaceAddress : ni.getInterfaceAddresses())
+						{
+							if( MyDebug.LOG ) Log.d(TAG, "network prefix length="+interfaceAddress.getNetworkPrefixLength());
+							if (interfaceAddress.getAddress()!= null) {
+								if( MyDebug.LOG ) Log.d(TAG, interfaceAddress.getAddress().getHostAddress());
+								last =  (interfaceAddress.getAddress().getHostAddress());
+								if (last.matches("\\d*\\.\\d*\\.\\d*\\.\\d*")) {
+									return last;
+								}
+							}
+						}
+					}
+				}
+			}
+		} catch (SocketException ex) {
+			if( MyDebug.LOG ) {
+				Log.d(TAG, "Socket Exception");
+			}
+		}
+		return null;
+	}
 
     public String getBroadcastAddress() {
         try {
@@ -778,13 +798,8 @@ public class MainActivity extends AppCompatActivity {
                                 captureRequestBuilder.set(CaptureRequest.TONEMAP_CURVE, new TonemapCurve(curve_srgb, curve_srgb, curve_srgb));
                                 captureRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, 0);
                                 //
-                                captureRequestBuilder.set(EXPOSURE_METERING, exposureMetering);
-
-                                if (focusDistanceUpdate) {
-                                    captureRequestBuilder.set(CaptureRequest.LENS_FOCUS_DISTANCE, MACRO__FOCUS_DISTANCE);  // 100 cm
-                                } else {
-                                    captureRequestBuilder.set(CaptureRequest.LENS_FOCUS_DISTANCE, HYPERFOCAL_FOCUS_DISTANCE);// hyperfocal distance
-                                }
+                                captureRequestBuilder.set(EXPOSURE_METERING, METERING[meteringIndex]);
+                                captureRequestBuilder.set(CaptureRequest.LENS_FOCUS_DISTANCE, FOCUS_DISTANCE[focusDistanceIndex]);
 
                                 captureRequestBuilder.set(CaptureRequest.NOISE_REDUCTION_MODE, 1); // NOISE_REDUCTION_MODE
                                 captureRequestBuilder.set(CaptureRequest.EDGE_MODE, 1); // EDGE_MODE
@@ -867,66 +882,55 @@ public class MainActivity extends AppCompatActivity {
             case KeyEvent.KEYCODE_VOLUME_UP:
             case KeyEvent.KEYCODE_VOLUME_DOWN:
             case KeyEvent.KEYCODE_3D_MODE: // camera key - first turn off auto launch of native camera app
-            case KeyEvent.KEYCODE_S:
+            case SHUTTER_KEY:
             case KeyEvent.KEYCODE_DPAD_CENTER:
-                MainActivity.this.runOnUiThread(new Runnable() {
-                    public void run() {
-                        captureImages(); //takePicture(false);
-                    }
-                });
+                if (isPhotobooth && (countdownDigit < 0)) {
+                    startCountdownSequence(countdownStart);
+                } else {
+                    MainActivity.this.runOnUiThread(new Runnable() {
+                        public void run() {
+                            captureImages();
+                        }
+                    });
+                }
                 //captureImages();
                 return true;
             case KeyEvent.KEYCODE_BACK:
+                return false;
             case KeyEvent.KEYCODE_ESCAPE:
+            case REVIEW_KEY:
+                return true;
+            case SHARE_PRINT_KEY:
                 reviewImages();
                 return true;
-            case KeyEvent.KEYCODE_0:
-                Toast.makeText(this, "FRAME AVERAGE", Toast.LENGTH_SHORT).show();
+            case FN_KEY:
                 stopCamera();
-                exposureMetering = FRAME_AVERAGE;
+                meteringIndex++;
+                if (meteringIndex >= METERING.length) meteringIndex = 0;
+                Toast.makeText(this, METERING_NAMES[meteringIndex], Toast.LENGTH_SHORT).show();
                 initCamera();
                 return true;
-            case KeyEvent.KEYCODE_1:
-                Toast.makeText(this, "CENTER WEIGHTED", Toast.LENGTH_SHORT).show();
+            case MENU_KEY: // change focus distance
                 stopCamera();
-                exposureMetering = CENTER_WEIGHTED;
+                int i = focusDistanceIndex + 1;
+                if (i >= FOCUS_DISTANCE.length) i = 0;
+                focusDistanceIndex = i;
                 initCamera();
+                Toast.makeText(this, FOCUS_DISTANCE_NAMES[focusDistanceIndex], Toast.LENGTH_SHORT).show();
                 return true;
-            case KeyEvent.KEYCODE_2:
-                Toast.makeText(this, "SPOT METERING", Toast.LENGTH_SHORT).show();
-                stopCamera();
-                exposureMetering = SPOT_METERING;
-                initCamera();
-                return true;
-
-//            case KeyEvent.KEYCODE_3: // DEBUG only
-//                if (!captureTonemapModeContrastCurve) captureTonemapModeContrastCurve = true;
-//                else captureTonemapModeContrastCurve = false;
-//                Toast.makeText(this, "captureTonemapModeContrastCurve="+ (captureTonemapModeContrastCurve?"true" : "false"), Toast.LENGTH_SHORT).show();
-//                stopCamera();
-//                initCamera();
-//                return true;
-
-            case KeyEvent.KEYCODE_D: // change focus distance
-                stopCamera();
-                focusDistanceUpdate = !focusDistanceUpdate;
-                initCamera();
-                Toast.makeText(this, "Focus Distance " + (focusDistanceUpdate ? "Macro" : "Normal"), Toast.LENGTH_SHORT).show();
-                return true;
-
-            case KeyEvent.KEYCODE_MENU: // 82
-                Toast.makeText(this, "Key 82 menu - not implemented", Toast.LENGTH_SHORT).show();
+            case KeyEvent.KEYCODE_ENTER:
+            case OK_KEY:
+                Toast.makeText(this, " OK - not implemented", Toast.LENGTH_SHORT).show();
                 stopCamera();
                 initCamera();
                 return true;
 
             case KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE: // 85
-                Toast.makeText(this, "Key 82 menu - not implemented", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "not implemented", Toast.LENGTH_SHORT).show();
                 stopCamera();
                 initCamera();
                 return true;
 
-            case KeyEvent.KEYCODE_ENTER:
             case KeyEvent.KEYCODE_B:  // start and cancel Burst capture mode
                 if (burstMode) {
                     //Toast.makeText(this, "Burst Mode ", Toast.LENGTH_SHORT).show();
@@ -941,13 +945,52 @@ public class MainActivity extends AppCompatActivity {
                     Toast.makeText(this, "Burst Mode Not Enabled", Toast.LENGTH_SHORT).show();
                 }
                 return true;
-            case KeyEvent.KEYCODE_C:
-                Toast.makeText(this, "Countdown Shutter Mode - not implemented", Toast.LENGTH_SHORT).show();
+            case AEL_KEY:
+                Toast.makeText(this, "AEL - not implemented", Toast.LENGTH_SHORT).show();
                 stopCamera();
                 initCamera();
                 return true;
-            case KeyEvent.KEYCODE_I:
-                Toast.makeText(this, "Interval Capture Mode - not implemented", Toast.LENGTH_SHORT).show();
+            case MODE_KEY:
+                Toast.makeText(this, "Mode M, S, A - not implemented", Toast.LENGTH_SHORT).show();
+                stopCamera();
+                initCamera();
+                return true;
+            case KeyEvent.KEYCODE_DPAD_RIGHT:
+            case SHUTTER_SPEED_KEY:
+                Toast.makeText(this, "Shutter Speed - not implemented", Toast.LENGTH_SHORT).show();
+                stopCamera();
+                initCamera();
+                return true;
+            case KeyEvent.KEYCODE_DPAD_LEFT:
+            case TIMER_KEY:
+                Toast.makeText(this, "Timer - not implemented", Toast.LENGTH_SHORT).show();
+                stopCamera();
+                initCamera();
+                return true;
+            case KeyEvent.KEYCODE_DPAD_DOWN:
+            case ISO_KEY:
+                Toast.makeText(this, "ISO - not implemented", Toast.LENGTH_SHORT).show();
+                stopCamera();
+                initCamera();
+                return true;
+            case KeyEvent.KEYCODE_DPAD_UP:
+            case DISP_KEY:
+                Toast.makeText(this, "DISP - not implemented", Toast.LENGTH_SHORT).show();
+                stopCamera();
+                initCamera();
+                return true;
+            case FOCUS_KEY:
+                Toast.makeText(this, "Focus - not implemented", Toast.LENGTH_SHORT).show();
+                stopCamera();
+                initCamera();
+                return true;
+            case VIDEO_RECORD_KEY:
+                Toast.makeText(this, "Video Record - not implemented", Toast.LENGTH_SHORT).show();
+                stopCamera();
+                initCamera();
+                return true;
+            case COLOR_BALANCE_KEY:
+                Toast.makeText(this, "Color Balance - not implemented", Toast.LENGTH_SHORT).show();
                 stopCamera();
                 initCamera();
                 return true;
@@ -997,12 +1040,8 @@ public class MainActivity extends AppCompatActivity {
             captureBuilder.set(CaptureRequest.TONEMAP_CURVE, new TonemapCurve(curve_srgb, curve_srgb, curve_srgb));
             //
             captureBuilder.set(CaptureRequest.CONTROL_AF_MODE, 0);
-            captureBuilder.set(EXPOSURE_METERING, exposureMetering);
-            if (focusDistanceUpdate) {
-                captureBuilder.set(CaptureRequest.LENS_FOCUS_DISTANCE, MACRO__FOCUS_DISTANCE);  // Close up
-            } else {
-                captureBuilder.set(CaptureRequest.LENS_FOCUS_DISTANCE, HYPERFOCAL_FOCUS_DISTANCE); // hyperfocal distance
-            }
+            captureBuilder.set(EXPOSURE_METERING, METERING[meteringIndex]);
+            captureBuilder.set(CaptureRequest.LENS_FOCUS_DISTANCE, FOCUS_DISTANCE[focusDistanceIndex]);
 
             captureBuilder.set(CaptureRequest.NOISE_REDUCTION_MODE, 1); // NOISE_REDUCTION_MODE
             captureBuilder.set(CaptureRequest.EDGE_MODE, 1); // EDGE_MODE
@@ -1430,6 +1469,30 @@ public class MainActivity extends AppCompatActivity {
         //destroyHTTPServer();
         destroyUDPServer();
 
+    }
+
+    void startCountdownSequence(int startCount) {
+        if (countdownTimer == null) {
+            countdownTimer = new Timer();
+            countdownDigit = startCount;
+            // define a task to decrement the countdown digit every second
+            TimerTask task = new TimerTask() {
+                public void run() {
+                    countdownDigit--;
+                    if (countdownDigit < 0) {
+                        // stop the timer when the countdown reaches 0
+                        countdownTimer.cancel();
+                        countdownTimer = null;
+                        // hide digit display
+                        captureImages(); // take a picture
+                    } else {
+                        Log.d(TAG, "countdown=" + countdownDigit); // show digit display
+                    }
+                }
+            };
+
+            countdownTimer.schedule(task, 0, 1000);
+        }
     }
 
     private void setVisibility() {
