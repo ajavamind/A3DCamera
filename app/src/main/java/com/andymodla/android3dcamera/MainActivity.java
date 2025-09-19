@@ -49,7 +49,6 @@ import android.view.View;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
 import android.widget.Toast;
-import android.media.MediaActionSound;
 
 import java.util.Timer;
 import java.util.TimerTask;
@@ -70,6 +69,8 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.Locale;
 import java.util.Vector;
+import android.media.AudioManager;
+import android.media.ToneGenerator;
 
 import netP5.*; // network library for UDP Server
 
@@ -174,27 +175,28 @@ public class MainActivity extends AppCompatActivity {
     private boolean isWiFiRemoteEnabled = true;
     private boolean isVideo = false;
 
-    private boolean isPhotobooth = true;
+    private boolean isPhotobooth =  false; //true;
     Timer countdownTimer;
     int countdownStart = 3;
     int countdownDigit = -1;
 
-    // Key codes for 8BitDo micro Bluetooth Keyboard controller (Keyboard mode)
-    static final int SHUTTER_KEY = KeyEvent.KEYCODE_M;
-    static final int FOCUS_KEY = KeyEvent.KEYCODE_R;
-    static final int MODE_KEY = KeyEvent.KEYCODE_L;
-    static final int VIDEO_RECORD_KEY = KeyEvent.KEYCODE_K;
-    static final int DISP_KEY = KeyEvent.KEYCODE_C;
-    static final int ISO_KEY = KeyEvent.KEYCODE_D;
-    static final int TIMER_KEY = KeyEvent.KEYCODE_E;
-    static final int SHUTTER_SPEED_KEY = KeyEvent.KEYCODE_F;
-    static final int COLOR_BALANCE_KEY = KeyEvent.KEYCODE_N;
-    static final int AEL_KEY = KeyEvent.KEYCODE_O;
-    static final int FN_KEY = KeyEvent.KEYCODE_H;
-    static final int MENU_KEY = KeyEvent.KEYCODE_I;
-    static final int REVIEW_KEY = KeyEvent.KEYCODE_J;
-    static final int OK_KEY = KeyEvent.KEYCODE_G;
-    static final int SHARE_PRINT_KEY = KeyEvent.KEYCODE_S;
+    // Key codes for 8BitDo micro Bluetooth Keyboard controller (Android mode)
+    static final int SHUTTER_KEY = KeyEvent.KEYCODE_BUTTON_R1;
+    static final int FOCUS_KEY = KeyEvent.KEYCODE_BUTTON_R2;
+    static final int MODE_KEY = KeyEvent.KEYCODE_BUTTON_L2;
+    static final int VIDEO_RECORD_KEY = KeyEvent.KEYCODE_BUTTON_L1;
+    static final int DISP_KEY = KeyEvent.KEYCODE_DPAD_UP;
+    static final int ISO_KEY = KeyEvent.KEYCODE_DPAD_DOWN;
+    static final int TIMER_KEY = KeyEvent.KEYCODE_DPAD_LEFT;
+    static final int SHUTTER_SPEED_KEY = KeyEvent.KEYCODE_DPAD_RIGHT;
+    static final int COLOR_BALANCE_KEY = KeyEvent.KEYCODE_BUTTON_SELECT; // 109-82 KeyEvent.KEYCODE_MENU;
+    static final int AEL_KEY = KeyEvent.KEYCODE_BUTTON_START; // 108  KeyEvent.KEYCODE_DPAD_CENTER = 23;
+    static final int FN_KEY = KeyEvent.KEYCODE_BUTTON_X; //  99 KeyEvent.KEYCODE_DEL = 67
+    static final int MENU_KEY = KeyEvent.KEYCODE_BUTTON_Y;  // 100  KeyEvent.KEYCODE_SPACE = 62
+    static final int REVIEW_KEY = KeyEvent.KEYCODE_BUTTON_A;  // 96 KEYCODE_DPAD_CENTER = 23
+    static final int OK_KEY = KeyEvent.KEYCODE_BUTTON_A;  // 96 KEYCODE_DPAD_CENTER = 23
+    static final int BACK_KEY = KeyEvent.KEYCODE_BACK;  // KeyEvent.KEYCODE_BUTTON_B = 97 KEYCODE_BACK = 04
+    static final int SHARE_PRINT_KEY = KeyEvent.KEYCODE_BUTTON_MODE;  // 110
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -206,6 +208,18 @@ public class MainActivity extends AppCompatActivity {
         checkPermissions();
         setupUdpServer();  // listens for broadcast messages to control camera remotely
     }
+
+//    @Override
+//    public void onBackPressed() {
+//        // Check if a specific condition is met, for example, if a drawer is open
+//        // if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
+//        //     drawerLayout.closeDrawer(GravityCompat.START);
+//        // } else {
+//        // Call the super method to allow the default back button behavior
+//        Log.d(TAG, "onBackPressed()");
+//        super.onBackPressed();
+//        // }
+//    }
 
     /**
      * UDP server setup
@@ -428,15 +442,12 @@ public class MainActivity extends AppCompatActivity {
         }
         return null;
     }
-    // Andy Modla end block
 
-    // Andy Modla begin block
     @Override
     protected void onStop() {
         if (MyDebug.LOG)
             Log.d(TAG, "onStop");
         super.onStop();
-        // Andy Modla block
 //		investigate -Do this in stop not pause - code transferred from onPause()
 //        mainUI.destroyPopup();
 //        mSensorManager.unregisterListener(accelerometerListener);
@@ -466,7 +477,6 @@ public class MainActivity extends AppCompatActivity {
         //applicationInterface.getLocationSupplier().freeLocationListeners();
     }
 
-    // Andy Modla begin block
     // stop UDP server for broadcast message reception
     void destroyUDPServer() {
         if (MyDebug.LOG) Log.d(TAG, "Destroy UDP server");
@@ -602,7 +612,7 @@ public class MainActivity extends AppCompatActivity {
         super.onResume();
         if (allPermissionsGranted) {
             initCamera();
-            logFocusDistanceCalibration();  // for debug
+            //logFocusDistanceCalibration();  // for debug
         }
     }
 
@@ -867,6 +877,7 @@ public class MainActivity extends AppCompatActivity {
             case KeyEvent.KEYCODE_VOLUME_UP:
             case KeyEvent.KEYCODE_VOLUME_DOWN:
             case KeyEvent.KEYCODE_ENTER:
+            case SHUTTER_KEY:
                 return true;
             case KeyEvent.KEYCODE_3D_MODE: // ignore so that this key does not launch XReal camera app
                 return true;
@@ -883,7 +894,6 @@ public class MainActivity extends AppCompatActivity {
             case KeyEvent.KEYCODE_VOLUME_DOWN:
             case KeyEvent.KEYCODE_3D_MODE: // camera key - first turn off auto launch of native camera app
             case SHUTTER_KEY:
-            case KeyEvent.KEYCODE_DPAD_CENTER:
                 if (isPhotobooth && (countdownDigit < 0)) {
                     startCountdownSequence(countdownStart);
                 } else {
@@ -896,9 +906,9 @@ public class MainActivity extends AppCompatActivity {
                 //captureImages();
                 return true;
             case KeyEvent.KEYCODE_BACK:
-                return false;
+                Toast.makeText(this, "Back", Toast.LENGTH_SHORT).show();
+                return true;
             case KeyEvent.KEYCODE_ESCAPE:
-            case REVIEW_KEY:
                 return true;
             case SHARE_PRINT_KEY:
                 reviewImages();
@@ -910,7 +920,7 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(this, METERING_NAMES[meteringIndex], Toast.LENGTH_SHORT).show();
                 initCamera();
                 return true;
-            case MENU_KEY: // change focus distance
+            case MENU_KEY: // for now only change focus distance, should be sub menu
                 stopCamera();
                 int i = focusDistanceIndex + 1;
                 if (i >= FOCUS_DISTANCE.length) i = 0;
@@ -920,7 +930,7 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             case KeyEvent.KEYCODE_ENTER:
             case OK_KEY:
-                Toast.makeText(this, " OK - not implemented", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, " OK/Review - not implemented", Toast.LENGTH_SHORT).show();
                 stopCamera();
                 initCamera();
                 return true;
@@ -955,25 +965,21 @@ public class MainActivity extends AppCompatActivity {
                 stopCamera();
                 initCamera();
                 return true;
-            case KeyEvent.KEYCODE_DPAD_RIGHT:
             case SHUTTER_SPEED_KEY:
                 Toast.makeText(this, "Shutter Speed - not implemented", Toast.LENGTH_SHORT).show();
                 stopCamera();
                 initCamera();
                 return true;
-            case KeyEvent.KEYCODE_DPAD_LEFT:
             case TIMER_KEY:
                 Toast.makeText(this, "Timer - not implemented", Toast.LENGTH_SHORT).show();
                 stopCamera();
                 initCamera();
                 return true;
-            case KeyEvent.KEYCODE_DPAD_DOWN:
             case ISO_KEY:
                 Toast.makeText(this, "ISO - not implemented", Toast.LENGTH_SHORT).show();
                 stopCamera();
                 initCamera();
                 return true;
-            case KeyEvent.KEYCODE_DPAD_UP:
             case DISP_KEY:
                 Toast.makeText(this, "DISP - not implemented", Toast.LENGTH_SHORT).show();
                 stopCamera();
@@ -1094,16 +1100,36 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
             }, mainHandler);
-            MediaActionSound mediaActionSound = new MediaActionSound();
-            mediaActionSound.load(MediaActionSound.SHUTTER_CLICK); // Pre-load the sound
-            mediaActionSound.play(MediaActionSound.SHUTTER_CLICK); // Play the sound
-
+            if (shutterSound) {
+                playShutterSound();
+            }
             mCameraCaptureSession.capture(captureBuilder.build(), null, mainHandler);
 
         } catch (CameraAccessException e) {
             Log.e(TAG, "Error capturing images", e);
             Toast.makeText(this, "Error capturing images", Toast.LENGTH_SHORT).show();
         }
+    }
+
+    public void playShutterSound() {
+        // Create a ToneGenerator instance.
+        // The AudioManager.STREAM_SYSTEM is important here to ensure the sound plays through the system volume.
+        // The volume parameter (100) is a percentage of the maximum volume.
+        ToneGenerator toneGen = new ToneGenerator(AudioManager.STREAM_SYSTEM, 100);
+
+        // Play the tone.
+        // TONE_PROP_BEEP is a short, distinct sound that works well as a shutter click.
+        toneGen.startTone(ToneGenerator.TONE_PROP_BEEP);
+
+        // Release the ToneGenerator resources after a short delay.
+        // It's crucial to release the resources to avoid memory leaks.
+        // We use a Handler to delay the release so the sound has time to play.
+        new android.os.Handler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                toneGen.release();
+            }
+        }, 100); // 100 milliseconds is a good duration for a short tone.
     }
 
     private void saveImageFiles() {
