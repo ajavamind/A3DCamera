@@ -74,6 +74,8 @@ import android.media.ToneGenerator;
 
 import netP5.*; // network library for UDP Server
 
+// README:   https://github.com/ajavamind/A3DCamera/blob/main/README.md
+
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "A3DCamera";
@@ -91,8 +93,9 @@ public class MainActivity extends AppCompatActivity {
     static final float PHOTO_BOOTH_FOCUS_DISTANCE = 1.0f;
     static final float[] FOCUS_DISTANCE = {HYPERFOCAL_FOCUS_DISTANCE, PHOTO_BOOTH_FOCUS_DISTANCE, MACRO_FOCUS_DISTANCE};
     static final String[] FOCUS_DISTANCE_NAMES = {"HYPERFOCAL FOCUS DISTANCE", "PHOTO BOOTH FOCUS DISTANCE", "MACRO FOCUS DISTANCE"};
-    volatile boolean burstMode = false;
-    int BURST_COUNT = 5;
+    volatile boolean burstModeFeature = true;
+    volatile boolean burstMode = true;
+    int BURST_COUNT = 100;
     volatile int burstCounter = 0;
 
     // camera dimensions
@@ -121,10 +124,12 @@ public class MainActivity extends AppCompatActivity {
     private static final CaptureRequest.Key<Integer> SHARPNESS = new CaptureRequest.Key<>("org.codeaurora.qcamera3.sharpness.strength", Integer.class);
 
     //    captureRequestBuilder.set(SATURATION, 5);
-//    captureBuilder.set(SATURATION, 5);
-    private final String leftCameraId = "0";
-    private final String rightCameraId = "2";
+    //    captureBuilder.set(SATURATION, 5);
 
+    private final String leftCameraId = "0";
+    private final String frontCameraId = "1";
+    private final String rightCameraId = "2";
+    private final String stereoCameraId = "3";
     private CameraDevice mCameraDevice;
     private CameraManager mCameraManager;
     private CameraCaptureSession mCameraCaptureSession;
@@ -145,7 +150,8 @@ public class MainActivity extends AppCompatActivity {
     // at least one of above booleans must be true;
     private volatile boolean crossEye = false;  // reverse SBS output to cross eye
     private volatile boolean isAnaglyphDisplayMode = false;
-    // states
+
+    // states - work in progress
     private static final int STATE_LIVEVIEW = 0;
     private static final int STATE_REVIEW = 0;
     private int state = STATE_LIVEVIEW;
@@ -171,20 +177,20 @@ public class MainActivity extends AppCompatActivity {
 
     public static Stereo suffixSelection = Stereo.MONO; // no suffix, left suffix, right suffix
     public static String savedTimeStamp = null;
-    private boolean mouseCapture = false;
-    private boolean isWiFiRemoteEnabled = true;
+
+    private boolean isWiFiRemoteEnabled = false; //true;
     private boolean isVideo = false;
 
-    private boolean isPhotobooth =  false; //true;
+    private boolean isPhotobooth =  false; //true;  // work in progress
     Timer countdownTimer;
     int countdownStart = 3;
     int countdownDigit = -1;
 
-    // Key codes for 8BitDo micro Bluetooth Keyboard controller (Android mode)
+    // Key codes for 8BitDo Micro Bluetooth Keyboard controller (Android mode)
     static final int SHUTTER_KEY = KeyEvent.KEYCODE_BUTTON_R1;
     static final int FOCUS_KEY = KeyEvent.KEYCODE_BUTTON_R2;
     static final int MODE_KEY = KeyEvent.KEYCODE_BUTTON_L2;
-    static final int VIDEO_RECORD_KEY = KeyEvent.KEYCODE_BUTTON_L1;
+    static final int BURST_KEY = KeyEvent.KEYCODE_BUTTON_L1;
     static final int DISP_KEY = KeyEvent.KEYCODE_DPAD_UP;
     static final int ISO_KEY = KeyEvent.KEYCODE_DPAD_DOWN;
     static final int TIMER_KEY = KeyEvent.KEYCODE_DPAD_LEFT;
@@ -207,6 +213,7 @@ public class MainActivity extends AppCompatActivity {
         setupSurfaces();
         checkPermissions();
         setupUdpServer();  // listens for broadcast messages to control camera remotely
+
     }
 
 //    @Override
@@ -448,31 +455,6 @@ public class MainActivity extends AppCompatActivity {
         if (MyDebug.LOG)
             Log.d(TAG, "onStop");
         super.onStop();
-//		investigate -Do this in stop not pause - code transferred from onPause()
-//        mainUI.destroyPopup();
-//        mSensorManager.unregisterListener(accelerometerListener);
-//        unregisterMagneticListener();
-//        orientationEventListener.disable();
-//		try {
-//			unregisterReceiver(cameraReceiver);
-//		}
-//		catch(IllegalArgumentException e) {
-//			// this can happen if not registered - simplest to just catch the exception
-//			e.printStackTrace();
-//		}
-//		stopRemoteControl();
-//		freeAudioListener(false);
-//		stopSpeechRecognizer();
-//        applicationInterface.getLocationSupplier().freeLocationListeners();
-//		applicationInterface.getGyroSensor().stopRecording();
-//		applicationInterface.getGyroSensor().disableSensors();
-//		soundPoolManager.releaseSound();
-//        applicationInterface.clearLastImages(); // this should happen when pausing the preview, but call explicitly just to be safe
-//		applicationInterface.getDrawPreview().clearGhostImage();
-//        preview.onPause();
-//	}
-        // Andy Modla end block
-
         // we stop location listening in onPause, but done here again just to be certain!
         //applicationInterface.getLocationSupplier().freeLocationListeners();
     }
@@ -492,17 +474,8 @@ public class MainActivity extends AppCompatActivity {
             udpServer = null;
         }
     }
-    // stop HTTP server
-//    void destroyHTTPServer() {
-//        if (MyDebug.LOG) Log.d(TAG, "Destroy httpServer " + httpServer);
-//        if (httpServer != null) {
-//            httpServer.closeAllConnections();
-//            if (MyDebug.LOG) Log.d(TAG, "httpServer closed "+httpServer.getMyServerSocket().isClosed() );
-//            httpServer = null;
-//        }
-//    }
 
-    // Extra events for controlling the app, mouse
+//    Extra events for controlling the app, mouse
 //    @Override
 //    public boolean onGenericMotionEvent(MotionEvent event) {
 //        boolean consumed = false;
@@ -605,7 +578,7 @@ public class MainActivity extends AppCompatActivity {
 //        }
 //        return consumed;
 //    }
-    // Andy Modla end block
+
     @Override
     protected void onResume() {
         Log.d(TAG, "onResume()");
@@ -703,7 +676,7 @@ public class MainActivity extends AppCompatActivity {
         if (shutterSound) {
             CameraInfo.mustPlayShutterSound();
         }
-        System.out.println("shutter sound ");
+        Log.d(TAG, "shutter sound " + ((shutterSound) ? "on" : "off"));
         mainHandler = new Handler(getMainLooper());
 
         // Setup ImageReaders for capture
@@ -712,7 +685,7 @@ public class MainActivity extends AppCompatActivity {
 
         if (ActivityCompat.checkSelfPermission(this, CAMERA) == PackageManager.PERMISSION_GRANTED) {
             try {
-                mCameraManager.openCamera("3", stateCallback, mainHandler); // logical camera 3 combines 1 and 2
+                mCameraManager.openCamera(stereoCameraId, stateCallback, mainHandler); // logical camera 3 combines 1 and 2
                 Log.d(TAG, "openCamera(3)");
             } catch (CameraAccessException e) {
                 Log.e(TAG, "Camera access exception", e);
@@ -739,7 +712,7 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public void onError(@NonNull CameraDevice camera, int error) {
-            Log.e(TAG, "Camera hardware failure");
+            Log.e(TAG, "Camera " + camera.getId() + " hardware failure");
         }
     };
 
@@ -836,7 +809,7 @@ public class MainActivity extends AppCompatActivity {
             Log.e(TAG, "CameraManager service not available");
             return;
         }
-        String[] cameraIds = {"0", "1", "2", "3"};
+        String[] cameraIds = {leftCameraId, frontCameraId, rightCameraId, stereoCameraId};
         try {
             // Iterate through all available camera IDs on the device
             for (String cameraId : cameraIds) {
@@ -940,13 +913,13 @@ public class MainActivity extends AppCompatActivity {
                 stopCamera();
                 initCamera();
                 return true;
-
+            case BURST_KEY:
             case KeyEvent.KEYCODE_B:  // start and cancel Burst capture mode
-                if (burstMode) {
+                if (burstModeFeature && burstMode) {
                     //Toast.makeText(this, "Burst Mode ", Toast.LENGTH_SHORT).show();
                     if (burstCounter > 0) {
                         burstCounter = 0;
-                        Toast.makeText(this, "Burst Mode Canceled ", Toast.LENGTH_SHORT).show();
+                        //Toast.makeText(this, "Burst Mode Canceled ", Toast.LENGTH_SHORT).show();
                     } else {
                         burstCounter = BURST_COUNT;
                         captureImages();
@@ -990,11 +963,11 @@ public class MainActivity extends AppCompatActivity {
                 stopCamera();
                 initCamera();
                 return true;
-            case VIDEO_RECORD_KEY:
-                Toast.makeText(this, "Video Record - not implemented", Toast.LENGTH_SHORT).show();
-                stopCamera();
-                initCamera();
-                return true;
+//            case VIDEO_RECORD_KEY:
+//                Toast.makeText(this, "Video Record - not implemented", Toast.LENGTH_SHORT).show();
+//                stopCamera();
+//                initCamera();
+//                return true;
             case COLOR_BALANCE_KEY:
                 Toast.makeText(this, "Color Balance - not implemented", Toast.LENGTH_SHORT).show();
                 stopCamera();
@@ -1154,7 +1127,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
             }
-            Toast.makeText(this, "Saved IMG" + timestamp, Toast.LENGTH_SHORT).show();
+            //Toast.makeText(this, "Saved IMG" + timestamp, Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -1339,6 +1312,24 @@ public class MainActivity extends AppCompatActivity {
         }
         return file;
     }
+
+//    Intent shareIntent = new Intent(Intent.ACTION_SEND);
+//    shareIntent.setType("image/*"); // Or the appropriate MIME type
+//    // ... add your image data to the intent using putExtra(Intent.EXTRA_STREAM, ...)
+//
+//    // Set the package name of the target app
+//    shareIntent.setPackage("jp.suto.stereoroidpro"); // Replace with the actual package name
+//
+//    // (Optional) Set the specific component (activity) within the target app
+//    // shareIntent.setComponent(new ComponentName("jp.suto.stereoroidpro", "jp.suto.stereoroidpro.StereoRoidPro"));
+//
+//    try {
+//        startActivity(shareIntent);
+//    } catch (ActivityNotFoundException e) {
+//        // Handle the case where the target app is not installed
+//        // e.g., show a Toast message or direct the user to the Play Store
+//    }
+
 
     public void shareImage(File imageFile) {
         Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
