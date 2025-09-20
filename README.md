@@ -70,7 +70,10 @@ to align left and right images vertically, correct any horizontal perspective di
 
 ### Camera Control
 Photo capture uses these camera keys: camera, volume up, or volume down after key release. There is no touch screen capture implemented.
-![8BitGo Micro Bluetooth Controller](images/A3DCamera_Layout_1080.png)
+
+Here is the current key mapping for the 8BitDo Bluetooth game controller in Android mode. Not all function keys are fully implemented. This is a work in progress.
+
+![8BitDo Micro Bluetooth Controller](images/A3DCamera_Layout_1080.png)
 
 ### Limitations
 Captured images are on par in quality with the native camera app. However, with this camera images may still need adjustments for contrast, color saturation, and sharpening.
