@@ -29,8 +29,8 @@ For the above uses cases the app requires remote key control of its functions, n
 With the remote control requirements for the app,  a minimum Bluetooth controller is needed. I want to keep the GUI at a minimum for viewing 3D images and use for displaying information status or settings.
 Therefore only key input will determine the camera operation.
 
-I chose the 8BitDo Micro Bluetooth key controller in its Android mode. With this controller's 15 keys many camera functions can be set or controlled with a single key.
-The 8BitDo Micro is sold as key programmable in its keyboard mode, but I found it impossible to modify key codes using the manufacturer's Google Play Store app. Fortunately the out of the box Android key mode is good enough.
+I chose the [8BitDo](https://www.8bitdo.com) Micro Bluetooth key controller in its Android mode. With this controller's 15 keys many camera functions can be set or controlled with a single key.
+The 8BitDo Micro is sold as key programmable in its keyboard mode, but I found it impossible to modify key codes using the manufacturer's [Google Play Store app](https://play.google.com/store/apps/details?id=com.abitdo.advance). Fortunately the out of the box Android key mode is good enough.
 
 ## Camera Functions
 ### Camera Mode
@@ -70,6 +70,7 @@ to align left and right images vertically, correct any horizontal perspective di
 
 ### Camera Control
 Photo capture uses these camera keys: camera, volume up, or volume down after key release. There is no touch screen capture implemented.
+![8BitGo Micro Bluetooth Controller](images/A3DCamera_layout_1080.png)
 
 ### Limitations
 Captured images are on par in quality with the native camera app. However, with this camera images may still need adjustments for contrast, color saturation, and sharpening.
