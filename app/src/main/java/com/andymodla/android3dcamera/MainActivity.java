@@ -12,10 +12,15 @@ import androidx.core.content.FileProvider;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.ActivityNotFoundException;
+import android.content.ComponentName;
 import android.content.ContentResolver;
+import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -69,6 +74,7 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.Locale;
 import java.util.Vector;
+
 import android.media.AudioManager;
 import android.media.ToneGenerator;
 
@@ -81,6 +87,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = "A3DCamera";
     private static final int MY_CAMERA_REQUEST_CODE = 100;
 
+    private String BASE_FOLDER = Environment.DIRECTORY_PICTURES;  // Environment.DIRECTORY_DCIM;  //
     private String SAVE_FOLDER = "A3DCamera";
     private String PHOTO_PREFIX = "IMG";
 
@@ -115,7 +122,7 @@ public class MainActivity extends AppCompatActivity {
     static final int CENTER_WEIGHTED = 1;
     static final int SPOT_METERING = 2;
     int meteringIndex = 0;  // default
-    static final int[] METERING = { FRAME_AVERAGE, CENTER_WEIGHTED, SPOT_METERING};
+    static final int[] METERING = {FRAME_AVERAGE, CENTER_WEIGHTED, SPOT_METERING};
     String[] METERING_NAMES = {"FRAME AVERAGE", "CENTER WEIGHTED", "SPOT METERING"};
     // Saturation 0 - 10, default 5
     private static final CaptureRequest.Key<Integer> SATURATION = new CaptureRequest.Key<>("org.codeaurora.qcamera3.saturation.use_saturation", Integer.class);
@@ -181,7 +188,7 @@ public class MainActivity extends AppCompatActivity {
     private boolean isWiFiRemoteEnabled = false; //true;
     private boolean isVideo = false;
 
-    private boolean isPhotobooth =  false; //true;  // work in progress
+    private boolean isPhotobooth = false; //true;  // work in progress
     Timer countdownTimer;
     int countdownStart = 3;
     int countdownDigit = -1;
@@ -196,10 +203,11 @@ public class MainActivity extends AppCompatActivity {
     static final int TIMER_KEY = KeyEvent.KEYCODE_DPAD_LEFT;
     static final int SHUTTER_SPEED_KEY = KeyEvent.KEYCODE_DPAD_RIGHT;
     static final int COLOR_BALANCE_KEY = KeyEvent.KEYCODE_BUTTON_SELECT; // 109-82 KeyEvent.KEYCODE_MENU;
-    static final int AEL_KEY = KeyEvent.KEYCODE_BUTTON_START; // 108  KeyEvent.KEYCODE_DPAD_CENTER = 23;
+    static final int AEL_KEY = KeyEvent.KEYCODE_L;  // KeyEvent.KEYCODE_BUTTON_START; // 108  KeyEvent.KEYCODE_DPAD_CENTER = 23;
+    static final int REVIEW_KEY = KeyEvent.KEYCODE_BUTTON_START; // 108  KeyEvent.KEYCODE_DPAD_CENTER = 23;
     static final int FN_KEY = KeyEvent.KEYCODE_BUTTON_X; //  99 KeyEvent.KEYCODE_DEL = 67
     static final int MENU_KEY = KeyEvent.KEYCODE_BUTTON_Y;  // 100  KeyEvent.KEYCODE_SPACE = 62
-    static final int REVIEW_KEY = KeyEvent.KEYCODE_BUTTON_A;  // 96 KEYCODE_DPAD_CENTER = 23
+    //static final int REVIEW_KEY = KeyEvent.KEYCODE_BUTTON_A;  // 96 KEYCODE_DPAD_CENTER = 23
     static final int OK_KEY = KeyEvent.KEYCODE_BUTTON_A;  // 96 KEYCODE_DPAD_CENTER = 23
     static final int BACK_KEY = KeyEvent.KEYCODE_BACK;  // KeyEvent.KEYCODE_BUTTON_B = 97 KEYCODE_BACK = 04
     static final int SHARE_PRINT_KEY = KeyEvent.KEYCODE_BUTTON_MODE;  // 110
@@ -391,38 +399,38 @@ public class MainActivity extends AppCompatActivity {
 //        return ip;
 //    }
 
-	public String getHostnameAddress() {
-		try {
-			for (Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces(); en
-					.hasMoreElements(); ) {
-				NetworkInterface intf = en.nextElement();
-				Enumeration<NetworkInterface> niEnum = NetworkInterface.getNetworkInterfaces();
-				String last = null;
-				while (niEnum.hasMoreElements())
-				{
-					NetworkInterface ni = niEnum.nextElement();
-					if(!ni.isLoopback() && !ni.isPointToPoint()){
-						for (InterfaceAddress interfaceAddress : ni.getInterfaceAddresses())
-						{
-							if( MyDebug.LOG ) Log.d(TAG, "network prefix length="+interfaceAddress.getNetworkPrefixLength());
-							if (interfaceAddress.getAddress()!= null) {
-								if( MyDebug.LOG ) Log.d(TAG, interfaceAddress.getAddress().getHostAddress());
-								last =  (interfaceAddress.getAddress().getHostAddress());
-								if (last.matches("\\d*\\.\\d*\\.\\d*\\.\\d*")) {
-									return last;
-								}
-							}
-						}
-					}
-				}
-			}
-		} catch (SocketException ex) {
-			if( MyDebug.LOG ) {
-				Log.d(TAG, "Socket Exception");
-			}
-		}
-		return null;
-	}
+    public String getHostnameAddress() {
+        try {
+            for (Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces(); en
+                    .hasMoreElements(); ) {
+                NetworkInterface intf = en.nextElement();
+                Enumeration<NetworkInterface> niEnum = NetworkInterface.getNetworkInterfaces();
+                String last = null;
+                while (niEnum.hasMoreElements()) {
+                    NetworkInterface ni = niEnum.nextElement();
+                    if (!ni.isLoopback() && !ni.isPointToPoint()) {
+                        for (InterfaceAddress interfaceAddress : ni.getInterfaceAddresses()) {
+                            if (MyDebug.LOG)
+                                Log.d(TAG, "network prefix length=" + interfaceAddress.getNetworkPrefixLength());
+                            if (interfaceAddress.getAddress() != null) {
+                                if (MyDebug.LOG)
+                                    Log.d(TAG, interfaceAddress.getAddress().getHostAddress());
+                                last = (interfaceAddress.getAddress().getHostAddress());
+                                if (last.matches("\\d*\\.\\d*\\.\\d*\\.\\d*")) {
+                                    return last;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (SocketException ex) {
+            if (MyDebug.LOG) {
+                Log.d(TAG, "Socket Exception");
+            }
+        }
+        return null;
+    }
 
     public String getBroadcastAddress() {
         try {
@@ -578,7 +586,6 @@ public class MainActivity extends AppCompatActivity {
 //        }
 //        return consumed;
 //    }
-
     @Override
     protected void onResume() {
         Log.d(TAG, "onResume()");
@@ -893,7 +900,7 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(this, METERING_NAMES[meteringIndex], Toast.LENGTH_SHORT).show();
                 initCamera();
                 return true;
-            case MENU_KEY: // for now only change focus distance, should be sub menu
+            case FOCUS_KEY: // change focus distance, should be sub menu
                 stopCamera();
                 int i = focusDistanceIndex + 1;
                 if (i >= FOCUS_DISTANCE.length) i = 0;
@@ -907,7 +914,6 @@ public class MainActivity extends AppCompatActivity {
                 stopCamera();
                 initCamera();
                 return true;
-
             case KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE: // 85
                 Toast.makeText(this, "not implemented", Toast.LENGTH_SHORT).show();
                 stopCamera();
@@ -927,6 +933,10 @@ public class MainActivity extends AppCompatActivity {
                 } else {
                     Toast.makeText(this, "Burst Mode Not Enabled", Toast.LENGTH_SHORT).show();
                 }
+                return true;
+            case REVIEW_KEY:
+                Toast.makeText(this, "Review", Toast.LENGTH_SHORT).show();
+                shareImage2(reviewSBS);
                 return true;
             case AEL_KEY:
                 Toast.makeText(this, "AEL - not implemented", Toast.LENGTH_SHORT).show();
@@ -958,8 +968,8 @@ public class MainActivity extends AppCompatActivity {
                 stopCamera();
                 initCamera();
                 return true;
-            case FOCUS_KEY:
-                Toast.makeText(this, "Focus - not implemented", Toast.LENGTH_SHORT).show();
+            case MENU_KEY:
+                Toast.makeText(this, "MENU - not implemented", Toast.LENGTH_SHORT).show();
                 stopCamera();
                 initCamera();
                 return true;
@@ -969,7 +979,7 @@ public class MainActivity extends AppCompatActivity {
 //                initCamera();
 //                return true;
             case COLOR_BALANCE_KEY:
-                Toast.makeText(this, "Color Balance - not implemented", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "- not implemented", Toast.LENGTH_SHORT).show();
                 stopCamera();
                 initCamera();
                 return true;
@@ -1156,7 +1166,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         File mediaStorageDir = new File(
-                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), SAVE_FOLDER);
+                Environment.getExternalStoragePublicDirectory(BASE_FOLDER), SAVE_FOLDER);
 
         // Create the storage directory if it does not exist
         if (!mediaStorageDir.exists()) {
@@ -1167,7 +1177,7 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES + File.separator + SAVE_FOLDER), filename);
+        File file = new File(Environment.getExternalStoragePublicDirectory(BASE_FOLDER + File.separator + SAVE_FOLDER), filename);
 
         try (FileOutputStream output = new FileOutputStream(file)) {
             output.write(bytes);
@@ -1233,7 +1243,7 @@ public class MainActivity extends AppCompatActivity {
 
         // Save anaglyph image
         File mediaStorageDir = new File(
-                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), SAVE_FOLDER);
+                Environment.getExternalStoragePublicDirectory(BASE_FOLDER), SAVE_FOLDER);
 
         // Create the storage directory if it does not exist
         if (!mediaStorageDir.exists()) {
@@ -1245,7 +1255,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         String filename = timestamp + "_ana.jpg";
-        File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES + File.separator + SAVE_FOLDER), filename);
+        File file = new File(Environment.getExternalStoragePublicDirectory(BASE_FOLDER + File.separator + SAVE_FOLDER), filename);
 
         try (FileOutputStream out = new FileOutputStream(file)) {
             anaglyphBitmap.compress(Bitmap.CompressFormat.JPEG, 100, out);
@@ -1285,7 +1295,7 @@ public class MainActivity extends AppCompatActivity {
 
         // Save SBS image
         File mediaStorageDir = new File(
-                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), SAVE_FOLDER);
+                Environment.getExternalStoragePublicDirectory(BASE_FOLDER), SAVE_FOLDER);
 
         // Create the storage directory if it does not exist
         if (!mediaStorageDir.exists()) {
@@ -1297,7 +1307,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         String filename = timestamp + "_2x1.jpg";
-        File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES + File.separator + SAVE_FOLDER), filename);
+        File file = new File(Environment.getExternalStoragePublicDirectory(BASE_FOLDER + File.separator + SAVE_FOLDER), filename);
 
         try (FileOutputStream out = new FileOutputStream(file)) {
             sbsBitmap.compress(Bitmap.CompressFormat.JPEG, 100, out);
@@ -1312,24 +1322,6 @@ public class MainActivity extends AppCompatActivity {
         }
         return file;
     }
-
-//    Intent shareIntent = new Intent(Intent.ACTION_SEND);
-//    shareIntent.setType("image/*"); // Or the appropriate MIME type
-//    // ... add your image data to the intent using putExtra(Intent.EXTRA_STREAM, ...)
-//
-//    // Set the package name of the target app
-//    shareIntent.setPackage("jp.suto.stereoroidpro"); // Replace with the actual package name
-//
-//    // (Optional) Set the specific component (activity) within the target app
-//    // shareIntent.setComponent(new ComponentName("jp.suto.stereoroidpro", "jp.suto.stereoroidpro.StereoRoidPro"));
-//
-//    try {
-//        startActivity(shareIntent);
-//    } catch (ActivityNotFoundException e) {
-//        // Handle the case where the target app is not installed
-//        // e.g., show a Toast message or direct the user to the Play Store
-//    }
-
 
     public void shareImage(File imageFile) {
         Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
@@ -1352,41 +1344,69 @@ public class MainActivity extends AppCompatActivity {
                         }
                     });
 
-    // EXAMPLE CODE FOR VARIOUS ways to SHARE
-    public void shareImage2(File imageFile) {
-        ContentResolver resolver = this.getContentResolver();
-        ContentValues contentValues = new ContentValues();
-        contentValues.put(MediaStore.Images.Media.DISPLAY_NAME, imageFile.getName());
-        contentValues.put(MediaStore.Images.Media.MIME_TYPE, "image/*");
-        contentValues.put(MediaStore.Images.Media.IS_PENDING, 1);
+    private Uri getContentUriForFile(String filePath) {
+        File file = new File(filePath);
+        if (!file.exists()) {
+            return null;
+        }
 
-        // Tell the MediaStore to add the file to the Pictures collection
-        Uri contentUri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues);
+        ContentResolver resolver = getContentResolver();
+
+        // First try to find existing MediaStore entry
+        String[] projection = {MediaStore.Images.Media._ID};
+        String selection = MediaStore.Images.Media.DATA + "=?";
+        String[] selectionArgs = {file.getAbsolutePath()};
+
+        Cursor cursor = resolver.query(
+                MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                projection,
+                selection,
+                selectionArgs,
+                null
+        );
+
+        if (cursor != null && cursor.moveToFirst()) {
+            int idColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID);
+            long id = cursor.getLong(idColumn);
+            cursor.close();
+            return ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id);
+        }
+
+        if (cursor != null) {
+            cursor.close();
+        }
+
+        // If not found, add to MediaStore
+        ContentValues contentValues = new ContentValues();
+        contentValues.put(MediaStore.Images.Media.DISPLAY_NAME, file.getName());
+        contentValues.put(MediaStore.Images.Media.MIME_TYPE, getMimeType(file.getName()));
+        contentValues.put(MediaStore.Images.Media.DATA, file.getAbsolutePath());
+        contentValues.put(MediaStore.Images.Media.DATE_ADDED, System.currentTimeMillis() / 1000);
+
+        return resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues);
+    }
+
+    private String getMimeType(String fileName) {
+        if (fileName.toLowerCase().endsWith(".jpg") || fileName.toLowerCase().endsWith(".jpeg")) {
+            return "image/jpeg";
+        } else if (fileName.toLowerCase().endsWith(".png")) {
+            return "image/png";
+        }
+        return "image/*";
+    }
+
+    public void shareImage2(File imageFile) {
+        Uri contentUri = getContentUriForFile(imageFile.getPath());
 
         if (contentUri != null) {
             try {
-                // Write the actual file data into the new MediaStore entry
-                OutputStream outputStream = resolver.openOutputStream(contentUri);
-                FileInputStream inputStream = new FileInputStream(imageFile);
-
-                byte[] buffer = new byte[1024];
-                int bytesRead;
-                while ((bytesRead = inputStream.read(buffer)) != -1) {
-                    outputStream.write(buffer, 0, bytesRead);
-                }
-                outputStream.close();
-                inputStream.close();
-
-                // Now, share the new content:// Uri
-                contentValues.clear();
-                contentValues.put(MediaStore.Images.Media.IS_PENDING, 0);
-                resolver.update(contentUri, contentValues, null, null);
                 Intent intent = new Intent(Intent.ACTION_SEND);
                 intent.putExtra(Intent.EXTRA_STREAM, contentUri);
                 intent.setType("image/*");
                 intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                this.startActivity(Intent.createChooser(intent, "Share using:"));
-            } catch (IOException e) {
+                 intent.setPackage("jp.suto.stereoroidpro"); //  actual package name
+                this.startActivity(intent);
+            } catch (Exception e) {
                 Log.e(TAG, "Error writing to MediaStore: " + e.getMessage());
             }
         } else {
@@ -1394,19 +1414,47 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public void shareImage1(File imageFile) {
-        Uri contentUri = FileProvider.getUriForFile(this, this.getPackageName() + ".fileprovider", imageFile);
+    public void findIntent() {
+        // First, find what activities can handle image sharing
+        PackageManager pm = getPackageManager();
+        Intent shareIntent = new Intent(Intent.ACTION_SEND);
+        shareIntent.setType("image/*");
 
-        if (contentUri != null) {
-            Intent shareIntent = new Intent(Intent.ACTION_SEND);
-            shareIntent.putExtra(Intent.EXTRA_STREAM, contentUri);
-            shareIntent.setType("image/*");
-            shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION); // Required for receiving app
-            this.startActivity(Intent.createChooser(shareIntent, "Share image using..."));
-        } else {
-            Log.d(TAG, "Failed to get a content URI for the image file.");
+        List<ResolveInfo> activities = pm.queryIntentActivities(shareIntent, 0);
+        for (ResolveInfo activity : activities) {
+            String appName = activity.loadLabel(pm).toString();
+            String packageName = activity.activityInfo.packageName;
+            Log.d(TAG, "App: " + appName + ", Package: " + packageName);
+
+            if (appName.toLowerCase().contains("stereo") ||
+                    packageName.toLowerCase().contains("stereo")) {
+                Log.d(TAG, "StereoRoidPro: " + packageName + " / " + activity.activityInfo.name);
+            }
         }
     }
+
+    public void shareImage1(File imageFile) {
+        findIntent();
+        Uri contentUri = FileProvider.getUriForFile(this, this.getPackageName() + ".fileprovider", imageFile);
+        Log.d(TAG, "shareImage1 "+imageFile.getAbsolutePath());
+        if (contentUri != null) {
+
+            Intent shareIntent = new Intent(Intent.ACTION_SEND);
+            shareIntent.setType("image/*");
+            shareIntent.putExtra(Intent.EXTRA_STREAM, contentUri);
+            shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION); // Required for receiving app
+            shareIntent.setPackage("jp.suto.stereoroidpro"); // Replace with the actual package name
+
+             try {
+                this.startActivity(shareIntent);
+            } catch (ActivityNotFoundException e) {
+                // Handle the case where the target app is not installed
+                Log.d(TAG, "Failed to launch stereoroidpro.");
+                Toast.makeText(this, "StereoRoidPro not installed", Toast.LENGTH_SHORT).show();
+                // Toast message or direct the user to the Play Store
+            }
+        }
+     }
 
     public void shareImages(File imageFile) {
         //Uri contentUri = FileProvider.getUriForFile(this, this.getPackageName() + ".fileprovider", imageFile);
