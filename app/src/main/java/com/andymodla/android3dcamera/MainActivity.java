@@ -82,6 +82,9 @@ import netP5.*; // network library for UDP Server
 
 // README:   https://github.com/ajavamind/A3DCamera/blob/main/README.md
 
+/**
+ * Copyright 2025 Andy Modla  All Rights Reserved
+ */
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "A3DCamera";
@@ -90,6 +93,7 @@ public class MainActivity extends AppCompatActivity {
     private String BASE_FOLDER = Environment.DIRECTORY_PICTURES;  // Environment.DIRECTORY_DCIM;  //
     private String SAVE_FOLDER = "A3DCamera";
     private String PHOTO_PREFIX = "IMG";
+    private String APP_PACKAGE = "jp.suto.stereoroidpro"; // Review with StereoRoidPro app default
 
     volatile boolean allPermissionsGranted = false;
     volatile boolean shutterSound = true;
@@ -179,11 +183,10 @@ public class MainActivity extends AppCompatActivity {
     private int port = 8000;  // Broadcast port
     public static String httpUrl = "";
     public static String sCount = ""; // Photo counter received from Broadcast message
-
     public enum Stereo {MONO, LEFT, RIGHT} // no suffix, left suffix, right suffix
 
     public static Stereo suffixSelection = Stereo.MONO; // no suffix, left suffix, right suffix
-    public static String savedTimeStamp = null;
+    public static String lastSavedFilePath = null;
 
     private boolean isWiFiRemoteEnabled = false; //true;
     private boolean isVideo = false;
@@ -203,14 +206,14 @@ public class MainActivity extends AppCompatActivity {
     static final int TIMER_KEY = KeyEvent.KEYCODE_DPAD_LEFT;
     static final int SHUTTER_SPEED_KEY = KeyEvent.KEYCODE_DPAD_RIGHT;
     static final int COLOR_BALANCE_KEY = KeyEvent.KEYCODE_BUTTON_SELECT; // 109-82 KeyEvent.KEYCODE_MENU;
-    static final int AEL_KEY = KeyEvent.KEYCODE_L;  // KeyEvent.KEYCODE_BUTTON_START; // 108  KeyEvent.KEYCODE_DPAD_CENTER = 23;
-    static final int REVIEW_KEY = KeyEvent.KEYCODE_BUTTON_START; // 108  KeyEvent.KEYCODE_DPAD_CENTER = 23;
+    static final int AELA_KEY = KeyEvent.KEYCODE_L;  // KeyEvent.KEYCODE_BUTTON_START; // 108
+    static final int AEL_KEY = KeyEvent.KEYCODE_BUTTON_START; // 108
     static final int FN_KEY = KeyEvent.KEYCODE_BUTTON_X; //  99 KeyEvent.KEYCODE_DEL = 67
     static final int MENU_KEY = KeyEvent.KEYCODE_BUTTON_Y;  // 100  KeyEvent.KEYCODE_SPACE = 62
-    //static final int REVIEW_KEY = KeyEvent.KEYCODE_BUTTON_A;  // 96 KEYCODE_DPAD_CENTER = 23
+    static final int REVIEW_KEY = KeyEvent.KEYCODE_BUTTON_A;  // 96 KEYCODE_DPAD_CENTER = 23
     static final int OK_KEY = KeyEvent.KEYCODE_BUTTON_A;  // 96 KEYCODE_DPAD_CENTER = 23
     static final int BACK_KEY = KeyEvent.KEYCODE_BACK;  // KeyEvent.KEYCODE_BUTTON_B = 97 KEYCODE_BACK = 04
-    static final int SHARE_PRINT_KEY = KeyEvent.KEYCODE_BUTTON_MODE;  // 110
+    static final int SHARE_KEY = KeyEvent.KEYCODE_BUTTON_MODE;  // 110
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -871,7 +874,7 @@ public class MainActivity extends AppCompatActivity {
         Log.d(TAG, "onKeyUp " + keyCode);
         switch (keyCode) {
             case KeyEvent.KEYCODE_VOLUME_UP:
-            case KeyEvent.KEYCODE_VOLUME_DOWN:
+            //case KeyEvent.KEYCODE_VOLUME_DOWN:
             case KeyEvent.KEYCODE_3D_MODE: // camera key - first turn off auto launch of native camera app
             case SHUTTER_KEY:
                 if (isPhotobooth && (countdownDigit < 0)) {
@@ -883,15 +886,18 @@ public class MainActivity extends AppCompatActivity {
                         }
                     });
                 }
-                //captureImages();
                 return true;
             case KeyEvent.KEYCODE_BACK:
                 Toast.makeText(this, "Back", Toast.LENGTH_SHORT).show();
                 return true;
             case KeyEvent.KEYCODE_ESCAPE:
                 return true;
-            case SHARE_PRINT_KEY:
-                reviewImages();
+            case SHARE_KEY:
+                if (reviewSBS != null) {
+                    shareImage2(reviewSBS, null);
+                } else {
+                    Toast.makeText(this, "Nothing to Share", Toast.LENGTH_SHORT).show();
+                }
                 return true;
             case FN_KEY:
                 stopCamera();
@@ -908,14 +914,14 @@ public class MainActivity extends AppCompatActivity {
                 initCamera();
                 Toast.makeText(this, FOCUS_DISTANCE_NAMES[focusDistanceIndex], Toast.LENGTH_SHORT).show();
                 return true;
-            case KeyEvent.KEYCODE_ENTER:
-            case OK_KEY:
-                Toast.makeText(this, " OK/Review - not implemented", Toast.LENGTH_SHORT).show();
-                stopCamera();
-                initCamera();
-                return true;
+//            case KeyEvent.KEYCODE_ENTER:
+//            case OK_KEY:
+//                Toast.makeText(this, " OK/Review - not implemented", Toast.LENGTH_SHORT).show();
+//                stopCamera();
+//                initCamera();
+//                return true;
             case KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE: // 85
-                Toast.makeText(this, "not implemented", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Not implemented", Toast.LENGTH_SHORT).show();
                 stopCamera();
                 initCamera();
                 return true;
@@ -934,17 +940,21 @@ public class MainActivity extends AppCompatActivity {
                     Toast.makeText(this, "Burst Mode Not Enabled", Toast.LENGTH_SHORT).show();
                 }
                 return true;
+            case KeyEvent.KEYCODE_VOLUME_DOWN:
             case REVIEW_KEY:
-                Toast.makeText(this, "Review", Toast.LENGTH_SHORT).show();
-                shareImage2(reviewSBS);
+                if (reviewSBS != null) {
+                    shareImage2(reviewSBS, APP_PACKAGE);
+                } else {
+                    Toast.makeText(this, "Nothing to Review", Toast.LENGTH_SHORT).show();
+                }
                 return true;
             case AEL_KEY:
-                Toast.makeText(this, "AEL - not implemented", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Not implemented", Toast.LENGTH_SHORT).show();
                 stopCamera();
                 initCamera();
                 return true;
             case MODE_KEY:
-                Toast.makeText(this, "Mode M, S, A - not implemented", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Auto Exposure - Manual, Shutter Priority", Toast.LENGTH_SHORT).show();
                 stopCamera();
                 initCamera();
                 return true;
@@ -979,7 +989,7 @@ public class MainActivity extends AppCompatActivity {
 //                initCamera();
 //                return true;
             case COLOR_BALANCE_KEY:
-                Toast.makeText(this, "- not implemented", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Not implemented", Toast.LENGTH_SHORT).show();
                 stopCamera();
                 initCamera();
                 return true;
@@ -1395,7 +1405,7 @@ public class MainActivity extends AppCompatActivity {
         return "image/*";
     }
 
-    public void shareImage2(File imageFile) {
+    public void shareImage2(File imageFile, String appPackage) {
         Uri contentUri = getContentUriForFile(imageFile.getPath());
 
         if (contentUri != null) {
@@ -1404,10 +1414,19 @@ public class MainActivity extends AppCompatActivity {
                 intent.putExtra(Intent.EXTRA_STREAM, contentUri);
                 intent.setType("image/*");
                 intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                 intent.setPackage("jp.suto.stereoroidpro"); //  actual package name
+                if (appPackage != null)
+                intent.setPackage(appPackage); //  actual package name
                 this.startActivity(intent);
-            } catch (Exception e) {
-                Log.e(TAG, "Error writing to MediaStore: " + e.getMessage());
+            } catch (ActivityNotFoundException e) {
+                // Handle the case where the target app is not installed
+                Log.d(TAG, "Failed to launch StereoRoidPro.");
+                Toast.makeText(this, "StereoRoidPro not installed", Toast.LENGTH_SHORT).show();
+                // Toast message or direct the user to the Play Store
+                Intent intent = new Intent(Intent.ACTION_SEND);
+                intent.putExtra(Intent.EXTRA_STREAM, contentUri);
+                intent.setType("image/*");
+                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                this.startActivity(Intent.createChooser(intent, "Share image with:"));
             }
         } else {
             Log.e(TAG, "Failed to create MediaStore entry.");
@@ -1436,7 +1455,7 @@ public class MainActivity extends AppCompatActivity {
     public void shareImage1(File imageFile) {
         findIntent();
         Uri contentUri = FileProvider.getUriForFile(this, this.getPackageName() + ".fileprovider", imageFile);
-        Log.d(TAG, "shareImage1 "+imageFile.getAbsolutePath());
+        Log.d(TAG, "shareImage1 " + imageFile.getAbsolutePath());
         if (contentUri != null) {
 
             Intent shareIntent = new Intent(Intent.ACTION_SEND);
@@ -1445,7 +1464,7 @@ public class MainActivity extends AppCompatActivity {
             shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION); // Required for receiving app
             shareIntent.setPackage("jp.suto.stereoroidpro"); // Replace with the actual package name
 
-             try {
+            try {
                 this.startActivity(shareIntent);
             } catch (ActivityNotFoundException e) {
                 // Handle the case where the target app is not installed
@@ -1454,15 +1473,12 @@ public class MainActivity extends AppCompatActivity {
                 // Toast message or direct the user to the Play Store
             }
         }
-     }
+    }
 
     public void shareImages(File imageFile) {
         //Uri contentUri = FileProvider.getUriForFile(this, this.getPackageName() + ".fileprovider", imageFile);
         ContentResolver resolver = this.getContentResolver();
         ContentValues contentValues = new ContentValues();
-        //contentValues.put(MediaStore.Images.Media.DISPLAY_NAME, imageFile.getName());
-        //contentValues.put(MediaStore.Images.Media.DISPLAY_NAME, imageFile.getPath());
-        //contentValues.put(MediaStore.Images.Media.DISPLAY_NAME, imageFile.getAbsolutePath());
         try {
             contentValues.put(MediaStore.Images.Media.DISPLAY_NAME, imageFile.getCanonicalPath());
         } catch (IOException e) {
