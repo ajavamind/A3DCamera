@@ -93,7 +93,7 @@ public class MainActivity extends AppCompatActivity {
     private String BASE_FOLDER = Environment.DIRECTORY_PICTURES;  // Environment.DIRECTORY_DCIM;  //
     private String SAVE_FOLDER = "A3DCamera";
     private String PHOTO_PREFIX = "IMG";
-    private String APP_PACKAGE = "jp.suto.stereoroidpro"; // Review with StereoRoidPro app default
+    private String APP_REVIEW_PACKAGE = "jp.suto.stereoroidpro"; // Review with StereoRoidPro app default
 
     volatile boolean allPermissionsGranted = false;
     volatile boolean shutterSound = true;
@@ -943,7 +943,7 @@ public class MainActivity extends AppCompatActivity {
             case KeyEvent.KEYCODE_VOLUME_DOWN:
             case REVIEW_KEY:
                 if (reviewSBS != null) {
-                    shareImage2(reviewSBS, APP_PACKAGE);
+                    shareImage2(reviewSBS, APP_REVIEW_PACKAGE);
                 } else {
                     Toast.makeText(this, "Nothing to Review", Toast.LENGTH_SHORT).show();
                 }
@@ -1414,13 +1414,14 @@ public class MainActivity extends AppCompatActivity {
                 intent.putExtra(Intent.EXTRA_STREAM, contentUri);
                 intent.setType("image/*");
                 intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                if (appPackage != null)
-                intent.setPackage(appPackage); //  actual package name
+                if (appPackage != null) {
+                    intent.setPackage(appPackage); //  actual package name
+                }
                 this.startActivity(intent);
             } catch (ActivityNotFoundException e) {
                 // Handle the case where the target app is not installed
-                Log.d(TAG, "Failed to launch StereoRoidPro.");
-                Toast.makeText(this, "StereoRoidPro not installed", Toast.LENGTH_SHORT).show();
+                Log.d(TAG, "Failed to launch 3DSteroid Pro.");
+                Toast.makeText(this, "3DSteroidPro not installed", Toast.LENGTH_SHORT).show();
                 // Toast message or direct the user to the Play Store
                 Intent intent = new Intent(Intent.ACTION_SEND);
                 intent.putExtra(Intent.EXTRA_STREAM, contentUri);
@@ -1462,7 +1463,7 @@ public class MainActivity extends AppCompatActivity {
             shareIntent.setType("image/*");
             shareIntent.putExtra(Intent.EXTRA_STREAM, contentUri);
             shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION); // Required for receiving app
-            shareIntent.setPackage("jp.suto.stereoroidpro"); // Replace with the actual package name
+            shareIntent.setPackage(APP_REVIEW_PACKAGE); // Replace with the actual package name
 
             try {
                 this.startActivity(shareIntent);
