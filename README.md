@@ -5,7 +5,7 @@ This is a personal camera project intended for 3D photography hobbyists and expe
 The app runs on the Xreal Beam Pro device and takes 3D photos exclusively. It is not intended to replace the native camera app.
 It is a starting point for special purpose experimental 3D camera apps using the Xreal Beam Pro camera.
 
-## Design Principles
+## Design Goals
 ### Use Cases
 The intended uses for the app are situations where the camera is not in your hands and the screen cannot or should not be touched. 
 Specific uses I would like to have with a 3D camera app are:
@@ -76,14 +76,30 @@ to align left and right images vertically, correct any horizontal perspective di
 
 ### Camera Control
 #### On Camera
-Photo capture uses these on camera keys: camera, volume up, or volume down after key release. There is no touch screen capture implemented.
+Take photos with the camera key or volume up key upon key release. There is no touch screen photo capture implemented.
+
+Use the volume down on key release to review the last photo taken. The Review function launches the StereoRoidPro app by default to view the photo.
+If this app is not installed, you can select the app you will use for review.
 
 #### Wired Remote Control
 A wired USB-C connected Android keyboard can control the camera with keys (not fully worked out).
 
 #### Bluetooth Remote Control
-Here is the current key mapping for a 8BitDo Bluetooth game controller in Android mode. A Bluetooth Android keyboard may also be used. Not all function keys are fully designed or implemented. This is a work in progress.
+Here is the current key mapping for a 8BitDo Bluetooth game controller in Android mode. A Bluetooth Android keyboard may also be used. Not all function keys are implemented.
 
+* SHUTTER - Take a photo
+* FOCUS   - Cycle through fixed focus distances: Hyperfocal, Photo Booth, Macro
+* MODE    - Select Auto, Manual, and Shutter Priority (only Auto is implemented)
+* BURST   - Start continous picture capture at about 1 photo per second until the key is pressed again.
+* DISP    - Toggle change Live View display mode (not implemented SBS, Anaglyph, L/R, Blank)
+* TIMER   - Set timer for time interval settings and delay time to take a photo or burst (not implemented)
+* ISO     - Set the ISO (not implemented)
+* SPEED   - Set the Shutter speed (not implemented)
+* FN      - Cycle through exposure metering: Frame Average, Center Weighted, Spot Metering
+* MENU    - Not implemented
+* BACK    - Not implemented
+* OK/REVIEW - Review the last photo taken in StereoRoidPro or another viewer. OK function for menus when camera is not active
+* SHARE    - Share the last photo taken with Email, Messaging, Photo Viewing, Printer, etc. apps.
 ![8BitDo Micro Bluetooth Controller](images/A3DCamera_Layout_1080.png)
 
 #### WiFi Remote Control
@@ -105,8 +121,12 @@ There are no camera leveling, tilt, or subject distance suggestions from the app
 
 ## App Download Link
 
-Version 1.0 https://drive.google.com/file/d/1EDfRDsRwNqKlmn5RrDLSUZ3KBl2emwbJ/view?usp=sharing
-Latest version: 
+Latest version: [Version 1.4 A3DECamera Android app](https://drive.google.com/file/d/1xkNVHQ7EOTipQxIqTqoDuHsepO7f5MxE/view?usp=drive_link)
+
+Download the apk file into the XBeam Pro "Downloads" folder. Use the "Files" app to click on the apk file to install it. 
+You will be asked to scan the file for security, respond yes.
+
+My Beam Pro is in developers mode, but you do not need to be in that mode to install.
 
 ## Credits
 
