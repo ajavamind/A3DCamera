@@ -32,7 +32,7 @@ With the remote control requirements for the app,  a minimum Bluetooth controlle
 I want to keep the GUI mostly for viewing 3D images and for showing information status or settings.
 Therefore only key input will determine the camera operation.
 
-I chose the [8BitDo](https://www.8bitdo.com) Micro Bluetooth key controller in its Android mode. With this controller's 15 keys many camera functions can be set or controlled with a single key.
+I chose the [8BitDo](https://www.8bitdo.com) Micro Bluetooth game key controller in its Android mode. With this controller's 15 keys many camera functions can be set or controlled with a single key.
 The 8BitDo Micro is sold as key programmable in its keyboard mode, but I found it impossible to modify key codes using the manufacturer's [Google Play Store app](https://play.google.com/store/apps/details?id=com.abitdo.advance). 
 Fortunately the out of the box Android key mode is good enough.
 
@@ -53,12 +53,12 @@ Auto exposure sets the best subject lighting by automatically changing shutter s
 The photographer can set the type of exposure metering: Frame Average, Center Weighted, and Spot Metering.
 
 ### Image Storage
-The app stores image files in the "Pictures/A3DCamera" folder.
+The app stores image files in the "Pictures/A3DCamera" folder. The base folder can be changed to "DCIM/A3DCamera" in the code.
 
 There are options for storing 3D photos in several formats. Left and Right Camera images are stored respectively as "_l" and "_r" suffix filename jpg files.
 Side by Side parallel left and right images are stored as "_2x1" suffix filename jpg files.
 Anaglyph 3D images are stored as "_ana" suffix filename jpg files.
-The default is SBS image storage and cannot be altered until menu settings is implemented.
+The default is SBS image storage and cannot be altered until the app implements menu settings.
 
 Left and right images contain limited EXIF capture information: for example- IMG20250904_r.jpg f2.2, 1/3 second, 2.16mm, ISO413
 Each camera image captured is 4080 x 3072 pixels (4/3 ratio) the full sensor size of each left and right camera.
@@ -67,7 +67,7 @@ Each camera image captured is 4080 x 3072 pixels (4/3 ratio) the full sensor siz
 The app display is a centered viewfinder sized to permit use of stereoscopic "free-viewing". This is a learned eye relaxing technique you can use to help see your subject in 3D. See 
 [Learning To Free View](https://stereoscopy.blog/2022/03/11/learning-to-free-view-see-stereoscopic-images-with-the-naked-eye/).
 
-When free-viewing I use a pair of +4.0 reading glasses to get closer to the screen.
+When free-viewing I use a pair of +4.0 reading glasses to get closer to the screen. A +5.0 reading glasses would be ideal, if I could find one without lens distortion. 
 
 The display is sized for mounting the camera in a stereoscope.
 
@@ -78,28 +78,31 @@ to align left and right images vertically, correct any horizontal perspective di
 #### On Camera
 Take photos with the camera key or volume up key upon key release. There is no touch screen photo capture implemented.
 
-Use the volume down on key release to review the last photo taken. The Review function launches the StereoRoidPro app by default to view the photo.
+Use the volume down on key release to review the last photo taken. The Review function launches the [3DSteroid Pro (StereoRoidPro)](https://play.google.com/store/apps/details?id=jp.suto.stereoroidpro&hl=en_US)
+app by default to view the photo.
 If this app is not installed, you can select the app you will use for review.
 
 #### Wired Remote Control
 A wired USB-C connected Android keyboard can control the camera with keys (not fully worked out).
 
 #### Bluetooth Remote Control
-Here is the current key mapping for a 8BitDo Bluetooth game controller in Android mode. A Bluetooth Android keyboard may also be used. Not all function keys are implemented.
+Here is the current key mapping for a 8BitDo Bluetooth game controller in Android mode. The controller must be paired with the Beam Pro. 
+A Bluetooth Android keyboard may also be used, but the app needs an update for a normal keyboard to work. Not all function keys are working.
 
-* SHUTTER - Take a photo
+* SHUTTER - Take a photo on key release.
 * FOCUS   - Cycle through fixed focus distances: Hyperfocal, Photo Booth, Macro
-* MODE    - Select Auto, Manual, and Shutter Priority (only Auto is implemented)
-* BURST   - Start continous picture capture at about 1 photo per second until the key is pressed again.
-* DISP    - Toggle change Live View display mode (not implemented SBS, Anaglyph, L/R, Blank)
+* MODE    - Select Auto, Manual, and Shutter Priority (only Auto implemented)
+* BURST   - Start continous photo capture at about 1 photo per second until the key is pressed and released again.
+* DISP    - Toggle change Live View display mode (SBS, not working: Anaglyph, L/R, Blank)
 * TIMER   - Set timer for time interval settings and delay time to take a photo or burst (not implemented)
 * ISO     - Set the ISO (not implemented)
 * SPEED   - Set the Shutter speed (not implemented)
 * FN      - Cycle through exposure metering: Frame Average, Center Weighted, Spot Metering
-* MENU    - Not implemented
-* BACK    - Not implemented
-* OK/REVIEW - Review the last photo taken in StereoRoidPro or another viewer. OK function for menus when camera is not active
+* MENU    - Settings, etc. not implemented
+* BACK    - Only active with menu, not implemented
+* OK/REVIEW - Review the last photo taken in [3DSteroid Pro (StereoRoidPro)](https://play.google.com/store/apps/details?id=jp.suto.stereoroidpro&hl=en_US) or another viewer. OK function for menus when camera is not active
 * SHARE    - Share the last photo taken with Email, Messaging, Photo Viewing, Printer, etc. apps.
+
 ![8BitDo Micro Bluetooth Controller](images/A3DCamera_Layout_1080.png)
 
 #### WiFi Remote Control
@@ -121,13 +124,15 @@ There are no camera leveling, tilt, or subject distance suggestions from the app
 
 ## App Download Link
 
-Latest version: [Version 1.4 A3DECamera Android app](https://drive.google.com/file/d/1xkNVHQ7EOTipQxIqTqoDuHsepO7f5MxE/view?usp=drive_link)
+Latest version: [Version 1.4 A3DCamera Android app](https://drive.google.com/file/d/1xkNVHQ7EOTipQxIqTqoDuHsepO7f5MxE/view?usp=drive_link)
 
 Download the apk file into the XBeam Pro "Downloads" folder. Use the "Files" app to click on the apk file to install it. 
 You will be asked to scan the file for security, respond yes.
 
 My Beam Pro is in developers mode, but you do not need to be in that mode to install.
 
+
+
 ## Credits
 
-Thanks to Wilbert Brants for his code example for 3D camera implementation. 
+Thanks to Wilbert Brants for his code example for 3D camera operation. 
