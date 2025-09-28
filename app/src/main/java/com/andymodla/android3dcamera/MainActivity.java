@@ -59,6 +59,7 @@ import android.widget.Toast;
 
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
+import java.util.ArrayList;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -110,14 +111,15 @@ public class MainActivity extends AppCompatActivity {
 
     volatile boolean allPermissionsGranted = false;
     volatile boolean shutterSound = true;
-    volatile boolean autoFocus = true;
+    //volatile boolean autoFocus = true;
 
     volatile int focusDistanceIndex = 0;  // default HYPERFOCAL
     static final float MACRO_FOCUS_DISTANCE = 10.0f;
     static final float HYPERFOCAL_FOCUS_DISTANCE = 0.60356647f;
     static final float PHOTO_BOOTH_FOCUS_DISTANCE = 1.0f;
-    static final float[] FOCUS_DISTANCE = {HYPERFOCAL_FOCUS_DISTANCE, PHOTO_BOOTH_FOCUS_DISTANCE, MACRO_FOCUS_DISTANCE};
-    static final String[] FOCUS_DISTANCE_NAMES = {"HYPERFOCAL FOCUS DISTANCE", "PHOTO BOOTH FOCUS DISTANCE", "MACRO FOCUS DISTANCE"};
+    static final float AUTO_FOCUS_DISTANCE = 0.0f;
+    static final float[] FOCUS_DISTANCE = {HYPERFOCAL_FOCUS_DISTANCE, PHOTO_BOOTH_FOCUS_DISTANCE, MACRO_FOCUS_DISTANCE, AUTO_FOCUS_DISTANCE};
+    static final String[] FOCUS_DISTANCE_NAMES = {"HYPERFOCAL FOCUS DISTANCE", "PHOTO BOOTH FOCUS DISTANCE", "MACRO FOCUS DISTANCE", "AUTO FOCUS"};
     volatile boolean burstModeFeature = true;
     volatile boolean burstMode = true;
     int BURST_COUNT = 100;
@@ -167,6 +169,7 @@ public class MainActivity extends AppCompatActivity {
     private SurfaceHolder mSurfaceHolder0, mSurfaceHolder2;
     private GLSurfaceView glSurfaceView;
     private AnaglyphRenderer anaglyphRenderer;
+    private View view;
 
     // Image capture
     private ImageReader mImageReader0, mImageReader2;
@@ -281,6 +284,7 @@ public class MainActivity extends AppCompatActivity {
             setContentView(R.layout.layout);
             setupSurfaces();
         }
+
         checkPermissions();
         setupUdpServer();  // listens for broadcast messages to control camera remotely
 
@@ -412,8 +416,14 @@ public class MainActivity extends AppCompatActivity {
     private void pauseVideo() {
     }
 
+    /**
+     * Show half second Toast
+     *
+     * @param message Text message to display
+     */
     private void showToast(String message) {
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+        //    Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+        ToastHelper.showToast(this, message);
     }
 
     private boolean isFocusWaiting() {
@@ -653,9 +663,13 @@ public class MainActivity extends AppCompatActivity {
         Log.d(TAG, "onResume()");
         super.onResume();
         if (allPermissionsGranted) {
-            //logCameras();  // debug what cameras are available
+            String[] list = getCameraIdList();  // debug what cameras are available
+            for (String id : list) {
+                Log.d(TAG, "CameraIds: " + id);
+            }
+
             //logFocusDistanceCalibration();  // for debug
-            //            initCamera();
+            initCamera();
         }
     }
 
@@ -893,7 +907,7 @@ public class MainActivity extends AppCompatActivity {
                                 captureRequestBuilder.addTarget(mSurfaceHolder2.getSurface());
                                 captureRequestBuilder.set(CaptureRequest.TONEMAP_MODE, CaptureRequest.TONEMAP_MODE_CONTRAST_CURVE);
                                 captureRequestBuilder.set(CaptureRequest.TONEMAP_CURVE, new TonemapCurve(curve_srgb, curve_srgb, curve_srgb));
-                                if (autoFocus) {
+                                if (FOCUS_DISTANCE[focusDistanceIndex] == AUTO_FOCUS_DISTANCE) {
                                     captureRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
                                 } else {
                                     captureRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_OFF);
@@ -962,26 +976,45 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public void logCameras() {
-        Log.d(TAG, "logCameras()");
+    public String[] getCameraIdList() {
+        ArrayList<String> list = new ArrayList<String>();
+        String cameraId = "0";
+        Log.d(TAG, "getCameraIdList()");
         if (mCameraManager == null) {
             Log.e(TAG, "CameraManager service not available");
-            return;
-        }
-        String[] cameraIds = {leftCameraId, frontCameraId, rightCameraId, stereoCameraId, "4", "5"};
-        try {
-            // Iterate through all available camera IDs on the device
-            for (String cameraId : cameraIds) {
-                CameraCharacteristics characteristics = mCameraManager.getCameraCharacteristics(cameraId);
-                Set<String> group = characteristics.getPhysicalCameraIds();
-                Log.d(TAG, "cameraId=" + cameraId + " Set: " + Arrays.toString(group.toArray()));
-            }
+        } else {
 
-        } catch (CameraAccessException e) {
-            Log.e(TAG, "Failed to access camera characteristics", e);
-        } catch (IllegalArgumentException ill) {
-            Log.e(TAG, "Illegal Argument Failed to access camera characteristics ", ill);
+            for (int cameraNum = 0; cameraNum < 6; cameraNum++) {
+                cameraId = String.valueOf(cameraNum);
+                //String[] cameraIds = {leftCameraId, frontCameraId, rightCameraId, stereoCameraId, "4", "5"};
+                try {
+                    // Iterate through all available camera IDs on the device
+                    CameraCharacteristics characteristics = mCameraManager.getCameraCharacteristics(cameraId);
+                    Set<String> group = characteristics.getPhysicalCameraIds();
+                    String[] gList = group.toArray(new String[0]);
+                    Log.d(TAG, "cameraId=" + cameraId + " Set: " + Arrays.toString(group.toArray()));
+
+                    if (group.isEmpty()) {
+                        list.add(cameraId);
+                    } else {
+                        list.add(cameraId);  // include logical camera id
+                        for (String s : gList) {
+                            if (!list.contains(s)) list.add(s);
+                        }
+                    }
+
+                } catch (CameraAccessException e) {
+                    Log.e(TAG, "getCameraIdList(): Failed to access camera characteristics");
+                    break;
+                } catch (IllegalArgumentException ill) {
+                    Log.d(TAG, "getCameraIdList(): Illegal Argument Failed to access camera characteristics ");
+                    break;
+                }
+            }
         }
+        Log.d(TAG, "getCameraIdList(): No more cameras >= " + cameraId);
+        String[] rList = list.toArray(new String[0]);
+        return rList;
     }
 
     @Override
@@ -1185,7 +1218,7 @@ public class MainActivity extends AppCompatActivity {
             // default TONEMAP_MODE_CONTRAST_CURVE assumed for best contrast, color and detail capture
             captureBuilder.set(CaptureRequest.TONEMAP_CURVE, new TonemapCurve(curve_srgb, curve_srgb, curve_srgb));
             //
-            if (autoFocus) {
+            if (FOCUS_DISTANCE[focusDistanceIndex] == AUTO_FOCUS_DISTANCE) {
                 captureRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
             } else {
                 captureRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_OFF);
@@ -1279,6 +1312,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void saveImageFiles() {
         if (leftBytes != null && rightBytes != null) {
+            showToast("Saved IMG" + timestamp);
             leftBitmap = saveImageFile(leftBytes, PHOTO_PREFIX + timestamp, true); // left
             rightBitmap = saveImageFile(rightBytes, PHOTO_PREFIX + timestamp, false); // right
             if (saveAnaglyph) {
