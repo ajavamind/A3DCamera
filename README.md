@@ -103,6 +103,9 @@ A Bluetooth Android keyboard may also be used, but the app needs an update for a
 
 ![8BitDo Micro Bluetooth Controller](images/A3DCamera_Layout_1080.png)
 
+Here are the Android keyboard keys matching the function keys of the 8BitDo Micro controller:
+![8BitDo Micro Bluetooth Controller](images/A3DCamera_KB_Layout_1080.png)
+
 #### WiFi Remote Control
 The app can listen for UDP broadcast messages to control the camera. Only shutter control is working. Turned off at present, this is a work in progress.
 This feature can be used to trigger multiple cameras at the same time. More on this later.
