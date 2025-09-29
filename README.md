@@ -10,14 +10,12 @@ It is a starting point for special purpose experimental 3D camera apps using the
 The intended uses for the app are situations where the camera is not in your hands and the screen cannot or should not be touched. 
 Specific uses I would like to have with a 3D camera app are:
 
-* 3D Photo Booth
+* 3D Photo Booth (work in progress)
 * 3D live view, photo capture, or photo viewing using any stereoscope
-* Live 3D demonstrations of the stereo window
-* Live 3D capture for other types of 3D displays (monitors, TV)
-* Remote control of the camera using Bluetooth or a local WiFi network
+* Live 3D demonstrations of the stereo window (work in progress)
+* Remote control of the camera using Bluetooth or a local WiFi network (work in progress)
 * Simultaneous multiple 3D cameras remote control
-* Anaglyph or side by side parallel image web camera
-* Sharing photos via email, for direct printing SBS or Anaglyph, or with other 3D apps like 3DSteroid
+* Sharing photos via email, for direct printing SBS or Anaglyph, or with other 3D apps like 3DSteroidPro
 
 The display of the 3D parallel L/R image should be centered on the display and no larger than 130 cm wide for a stereoscope or free-viewing the image to minimize eye strain. 
 There is a display mode where only the stereo image appears without controls or other information.
