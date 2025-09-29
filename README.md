@@ -15,7 +15,7 @@ Specific uses I would like to have with a 3D camera app are:
 * Live 3D demonstrations of the stereo window (work in progress)
 * Remote control of the camera using Bluetooth or a local WiFi network (work in progress)
 * Simultaneous multiple 3D cameras remote control
-* Sharing photos via email, for direct printing SBS or Anaglyph, or with other 3D apps like 3DSteroidPro
+* Sharing photos via email, for direct printing SBS or Anaglyph, or for review and alignment using 3D apps like [3DSteroidPro](https://play.google.com/store/apps/details?id=jp.suto.stereoroidpro&hl=en_US).
 
 The display of the 3D parallel L/R image should be centered on the display and no larger than 130 cm wide for a stereoscope or free-viewing the image to minimize eye strain. 
 There is a display mode where only the stereo image appears without controls or other information.
@@ -71,6 +71,8 @@ The display is sized for mounting the camera in a stereoscope.
 
 The app does not vertically align the left and right images nor adjust the stereo window. As a hobbyist app the user is encouraged to use [Stereo Photo Maker (English)](https://stereo.jpn.org/eng/stphmkr/) 
 to align left and right images vertically, correct any horizontal perspective distortion, and set the most pleasing stereo window.
+
+The app implements a image review feature by launching a separate app like 3DSteroidPro.
 
 ### Camera Control
 #### On Camera
