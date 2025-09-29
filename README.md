@@ -62,12 +62,13 @@ Left and right images contain limited EXIF capture information: for example- IMG
 Each camera image captured is 4080 x 3072 pixels (4/3 ratio) the full sensor size of each left and right camera.
 
 ### Display
-The app display is a centered viewfinder sized to permit use of stereoscopic "free-viewing". This is a learned eye relaxing technique you can use to help see your subject in 3D. See 
+The app display is a centered viewfinder sized to permit use of stereoscopic "free-viewing". This is a learned eye relaxing technique you can use to help see your subject in 3D with parallal side by side left and right eye images. 
+See 
 [Learning To Free View](https://stereoscopy.blog/2022/03/11/learning-to-free-view-see-stereoscopic-images-with-the-naked-eye/).
 
 When free-viewing I use a pair of +4.0 reading glasses to get closer to the screen. A +5.0 reading glasses would be ideal, if I could find one without lens distortion. 
 
-The display is sized for mounting the camera in a stereoscope.
+The SBS display is sized at 130 mm for viewing in a stereoscope.
 
 The app does not vertically align the left and right images nor adjust the stereo window. As a hobbyist app the user is encouraged to use [Stereo Photo Maker (English)](https://stereo.jpn.org/eng/stphmkr/) 
 to align left and right images vertically, correct any horizontal perspective distortion, and set the most pleasing stereo window.
