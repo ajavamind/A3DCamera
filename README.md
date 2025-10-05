@@ -10,14 +10,12 @@ It is a starting point for special purpose experimental 3D camera apps using the
 The intended uses for the app are situations where the camera is not in your hands and the screen cannot or should not be touched. 
 Specific uses I would like to have with a 3D camera app are:
 
-* 3D Photo Booth
+* 3D Photo Booth (work in progress)
 * 3D live view, photo capture, or photo viewing using any stereoscope
-* Live 3D demonstrations of the stereo window
-* Live 3D capture for other types of 3D displays (monitors, TV)
-* Remote control of the camera using Bluetooth or a local WiFi network
+* Live 3D demonstrations of the stereo window (work in progress)
+* Remote control of the camera using Bluetooth or a local WiFi network (work in progress)
 * Simultaneous multiple 3D cameras remote control
-* Anaglyph or side by side parallel image web camera
-* Sharing photos via email, for direct printing SBS or Anaglyph, or with other 3D apps like 3DSteroid
+* Sharing photos via email, for direct printing SBS or Anaglyph, or for review and alignment using 3D apps like [3DSteroidPro](https://play.google.com/store/apps/details?id=jp.suto.stereoroidpro&hl=en_US).
 
 The display of the 3D parallel L/R image should be centered on the display and no larger than 130 cm wide for a stereoscope or free-viewing the image to minimize eye strain. 
 There is a display mode where only the stereo image appears without controls or other information.
@@ -64,15 +62,18 @@ Left and right images contain limited EXIF capture information: for example- IMG
 Each camera image captured is 4080 x 3072 pixels (4/3 ratio) the full sensor size of each left and right camera.
 
 ### Display
-The app display is a centered viewfinder sized to permit use of stereoscopic "free-viewing". This is a learned eye relaxing technique you can use to help see your subject in 3D. See 
+The app display is a centered viewfinder sized to permit use of stereoscopic "free-viewing". This is a learned eye relaxing technique you can use to help see your subject in 3D with parallal side by side left and right eye images. 
+See 
 [Learning To Free View](https://stereoscopy.blog/2022/03/11/learning-to-free-view-see-stereoscopic-images-with-the-naked-eye/).
 
 When free-viewing I use a pair of +4.0 reading glasses to get closer to the screen. A +5.0 reading glasses would be ideal, if I could find one without lens distortion. 
 
-The display is sized for mounting the camera in a stereoscope.
+The SBS display is sized at 130 mm for viewing in a stereoscope.
 
 The app does not vertically align the left and right images nor adjust the stereo window. As a hobbyist app the user is encouraged to use [Stereo Photo Maker (English)](https://stereo.jpn.org/eng/stphmkr/) 
 to align left and right images vertically, correct any horizontal perspective distortion, and set the most pleasing stereo window.
+
+The app implements a image review feature by launching a separate app like 3DSteroidPro.
 
 ### Camera Control
 #### On Camera
@@ -104,6 +105,9 @@ A Bluetooth Android keyboard may also be used, but the app needs an update for a
 * SHARE    - Share the last photo taken with Email, Messaging, Photo Viewing, Printer, etc. apps.
 
 ![8BitDo Micro Bluetooth Controller](images/A3DCamera_Layout_1080.png)
+
+Here are the Android keyboard keys matching the function keys of the 8BitDo Micro controller:
+![8BitDo Micro Bluetooth Controller](images/A3DCamera_KB_Layout_1080.png)
 
 #### WiFi Remote Control
 The app can listen for UDP broadcast messages to control the camera. Only shutter control is working. Turned off at present, this is a work in progress.
