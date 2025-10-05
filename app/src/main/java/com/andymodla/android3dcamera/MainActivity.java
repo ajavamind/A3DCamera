@@ -91,6 +91,7 @@ import android.media.ToneGenerator;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
+import com.andymodla.android3dcamera.AnaglyphRenderer;
 
 import netP5.*; // network library for UDP Server
 
@@ -170,6 +171,7 @@ public class MainActivity extends AppCompatActivity {
     private GLSurfaceView glSurfaceView;
     private AnaglyphRenderer anaglyphRenderer;
     private View view;
+    private Surface surface;
 
     // Image capture
     private ImageReader mImageReader0, mImageReader2;
@@ -210,6 +212,7 @@ public class MainActivity extends AppCompatActivity {
     public static String lastSavedFilePath = null;
 
     private boolean isWiFiRemoteEnabled = false; //true;
+    private boolean blankScreen = false;
     private boolean isVideo = false;
 
     private boolean isPhotobooth = false; //true;  // work in progress
@@ -226,7 +229,7 @@ public class MainActivity extends AppCompatActivity {
     static final int ISO_KEY = KeyEvent.KEYCODE_DPAD_DOWN;
     static final int TIMER_KEY = KeyEvent.KEYCODE_DPAD_LEFT;
     static final int SHUTTER_SPEED_KEY = KeyEvent.KEYCODE_DPAD_RIGHT;
-    static final int COLOR_BALANCE_KEY = KeyEvent.KEYCODE_BUTTON_SELECT; // 109-82 KeyEvent.KEYCODE_MENU;
+    static final int BLANK_SCREEN_KEY = KeyEvent.KEYCODE_BUTTON_SELECT; // 109-82 KeyEvent.KEYCODE_MENU;
     static final int AEL_KEY = KeyEvent.KEYCODE_BUTTON_START; // 108
     static final int FN_KEY = KeyEvent.KEYCODE_BUTTON_X; //  99 KeyEvent.KEYCODE_DEL = 67
     static final int MENU_KEY = KeyEvent.KEYCODE_BUTTON_Y;  // 100  KeyEvent.KEYCODE_SPACE = 62
@@ -244,7 +247,7 @@ public class MainActivity extends AppCompatActivity {
     static final int ISO_KB_KEY = KeyEvent.KEYCODE_D;
     static final int TIMER_KB_KEY = KeyEvent.KEYCODE_E;
     static final int SHUTTER_SPEED_KB_KEY = KeyEvent.KEYCODE_F;
-    static final int COLOR_BALANCE_KB_KEY = KeyEvent.KEYCODE_N;
+    static final int BLANK_SCREEN_KB_KEY = KeyEvent.KEYCODE_N;
     static final int AEL_KB_KEY = KeyEvent.KEYCODE_O;
     static final int FN_KB_KEY = KeyEvent.KEYCODE_H;
     static final int MENU_KB_KEY = KeyEvent.KEYCODE_I;
@@ -276,6 +279,11 @@ public class MainActivity extends AppCompatActivity {
             Log.d(TAG, "set stereo cameras for " + deviceName);
 
         }
+        // check system property for usb uvc webcam
+        Log.d(TAG, "ro.usb.uvc.enabled=" + System.getProperty("ro.usb.uvc.enabled"));
+        //System.setProperty("ro.usb.uvc.enabled", String.valueOf(true));
+        //Log.d(TAG, "ro.usb.uvc.enabled="+System.getProperty("ro.usb.uvc.enabled"));
+
         mCameraManager = (CameraManager) getSystemService(CAMERA_SERVICE);
         if (isAnaglyphDisplayMode) {
             setContentView(R.layout.layout_anaglyph);
@@ -662,13 +670,17 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         Log.d(TAG, "onResume()");
         super.onResume();
+
+        // for debugging and test
         if (allPermissionsGranted) {
             String[] list = getCameraIdList();  // debug what cameras are available
             for (String id : list) {
-                Log.d(TAG, "CameraIds: " + id);
+                Log.d(TAG, "Available CameraId: |" + id + "|");
             }
 
-            //logFocusDistanceCalibration();  // for debug
+            CameraInfoUtil.checkCameraSyncType(this, list);
+            CameraInfoUtil.logFocusDistanceCalibration(this);  // for debug
+
             initCamera();
         }
     }
@@ -763,7 +775,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void checkPermissions() {
-        Log.d(TAG, "chekPermissions");
+        Log.d(TAG, "checkPermissions");
         String[] permissions = {Manifest.permission.CAMERA}; // Manifest.permission.WRITE_EXTERNAL_STORAGE};
         boolean needsPermission = false;
 
@@ -826,7 +838,7 @@ public class MainActivity extends AppCompatActivity {
         public void onOpened(@NonNull CameraDevice camera) { // Open camera
             mCameraDevice = camera;
             if (mSurfaceView0.isAttachedToWindow() && mSurfaceView2.isAttachedToWindow()) {
-                createCameraCaptureSession();
+                createCameraViewSession();
             }
         }
 
@@ -862,8 +874,10 @@ public class MainActivity extends AppCompatActivity {
         Log.d(TAG, "stopCamera()");
         if (mCameraCaptureSession != null) {
             try {
-                mCameraCaptureSession.stopRepeating();
-                mCameraCaptureSession.abortCaptures();
+                if (mCameraCaptureSession.isReprocessable()) {
+                    mCameraCaptureSession.stopRepeating();
+                    mCameraCaptureSession.abortCaptures();
+                }
             } catch (CameraAccessException e) {
                 throw new RuntimeException(e);
             }
@@ -879,9 +893,10 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void createCameraCaptureSession() {
-        Log.d(TAG, "createCameraCaptureSession()");
+    private void createCameraViewSession() {
+        Log.d(TAG, "createCameraViewSession()");
         try {
+            //mSurfaceHolder0.getSurface().
             OutputConfiguration opc0 = new OutputConfiguration(mSurfaceHolder0.getSurface());
             opc0.setPhysicalCameraId(leftCameraId);
             OutputConfiguration opc1 = new OutputConfiguration(mSurfaceHolder2.getSurface());
@@ -932,47 +947,6 @@ public class MainActivity extends AppCompatActivity {
             mCameraDevice.createCaptureSession(sessionConfiguration);
         } catch (CameraAccessException e) {
             Log.e(TAG, "Camera access exception", e);
-        }
-    }
-
-    public void logFocusDistanceCalibration() {
-
-        if (mCameraManager == null) {
-            Log.e(TAG, "CameraManager service not available");
-            return;
-        }
-        String[] cameraIds = {leftCameraId, frontCameraId, rightCameraId, stereoCameraId, "4", "5"};
-        try {
-            // Iterate through all available camera IDs on the device
-            for (String cameraId : cameraIds) {
-                CameraCharacteristics characteristics = mCameraManager.getCameraCharacteristics(cameraId);
-                Integer calibration = characteristics.get(CameraCharacteristics.LENS_INFO_FOCUS_DISTANCE_CALIBRATION);
-
-                String calibrationString;
-                if (calibration != null) {
-                    switch (calibration) {
-                        case CameraCharacteristics.LENS_INFO_FOCUS_DISTANCE_CALIBRATION_UNCALIBRATED:
-                            calibrationString = "UNCALIBRATED";
-                            break;
-                        case CameraCharacteristics.LENS_INFO_FOCUS_DISTANCE_CALIBRATION_APPROXIMATE:
-                            calibrationString = "APPROXIMATE";
-                            break;
-                        case CameraCharacteristics.LENS_INFO_FOCUS_DISTANCE_CALIBRATION_CALIBRATED:
-                            calibrationString = "CALIBRATED";
-                            break;
-                        default:
-                            calibrationString = "UNKNOWN";
-                            break;
-                    }
-                } else {
-                    calibrationString = "VALUE NOT AVAILABLE";
-                }
-                Log.d(TAG, "Camera ID: " + cameraId + " - LENS_FOCUS_DISTANCE_CALIBRATION: " + calibrationString);
-            }
-        } catch (CameraAccessException e) {
-            Log.e(TAG, "Failed to access camera characteristics", e);
-        } catch (IllegalArgumentException ill) {
-            Log.e(TAG, "Illegal Argument Failed to access camera characteristics ", ill);
         }
     }
 
@@ -1092,8 +1066,8 @@ public class MainActivity extends AppCompatActivity {
 //                return true;
             case KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE: // 85 not used with 8BitDo
                 Toast.makeText(this, "Not implemented", Toast.LENGTH_SHORT).show();
-                stopCamera();
-                initCamera();
+//                stopCamera();
+//                initCamera();
                 return true;
             case BURST_KEY:
             case BURST_KB_KEY: // start and cancel Burst capture mode
@@ -1122,44 +1096,44 @@ public class MainActivity extends AppCompatActivity {
             case AEL_KEY:
             case AEL_KB_KEY:
                 Toast.makeText(this, "Not implemented", Toast.LENGTH_SHORT).show();
-                stopCamera();
-                initCamera();
+//                stopCamera();
+//                initCamera();
                 return true;
             case MODE_KEY:
             case MODE_KB_KEY:
                 Toast.makeText(this, "Auto Exposure - Manual, Shutter Priority", Toast.LENGTH_SHORT).show();
-                stopCamera();
-                initCamera();
+//                stopCamera();
+//                initCamera();
                 return true;
             case SHUTTER_SPEED_KEY:
             case SHUTTER_SPEED_KB_KEY:
                 Toast.makeText(this, "Shutter Speed - not implemented", Toast.LENGTH_SHORT).show();
-                stopCamera();
-                initCamera();
+//                stopCamera();
+//                initCamera();
                 return true;
             case TIMER_KEY:
             case TIMER_KB_KEY:
                 Toast.makeText(this, "Timer - not implemented", Toast.LENGTH_SHORT).show();
-                stopCamera();
-                initCamera();
+//                stopCamera();
+//                initCamera();
                 return true;
             case ISO_KEY:
             case ISO_KB_KEY:
                 Toast.makeText(this, "ISO - not implemented", Toast.LENGTH_SHORT).show();
-                stopCamera();
-                initCamera();
+//                stopCamera();
+//                initCamera();
                 return true;
             case DISP_KEY:
             case DISP_KB_KEY:
                 Toast.makeText(this, "DISP - not implemented", Toast.LENGTH_SHORT).show();
-                stopCamera();
-                initCamera();
+//                stopCamera();
+//                initCamera();
                 return true;
             case MENU_KEY:
             case MENU_KB_KEY:
                 Toast.makeText(this, "MENU - not implemented", Toast.LENGTH_SHORT).show();
-                stopCamera();
-                initCamera();
+//                stopCamera();
+//                initCamera();
                 return true;
 //            case VIDEO_RECORD_KEY:
 //            case VIDEO_RECORD_KB_KEY:
@@ -1167,11 +1141,24 @@ public class MainActivity extends AppCompatActivity {
 //                stopCamera();
 //                initCamera();
 //                return true;
-            case COLOR_BALANCE_KEY:
-            case COLOR_BALANCE_KB_KEY:
-                Toast.makeText(this, "Not implemented", Toast.LENGTH_SHORT).show();
-                stopCamera();
-                initCamera();
+            case BLANK_SCREEN_KEY:
+            case BLANK_SCREEN_KB_KEY:
+                blankScreen = !blankScreen;
+
+                String id = String.valueOf(mCameraCaptureSession.getDevice().getId());
+                Toast.makeText(this, (blankScreen ? "Id: " + id + " Blank Screen" : "UnBlank Screen"), Toast.LENGTH_SHORT).show();
+                if (blankScreen) {
+                    //mSurfaceView0.setVisibility(View.GONE);
+                    //mSurfaceView2.setVisibility(View.GONE);
+
+                } else {
+                    //mSurfaceView0.setVisibility(View.VISIBLE);
+                    //mSurfaceView2.setVisibility(View.VISIBLE);
+                    stopCamera();
+                    initCamera();
+
+                }
+
                 return true;
             default:
                 return super.onKeyDown(keyCode, event);
@@ -1698,6 +1685,7 @@ public class MainActivity extends AppCompatActivity {
 
         if (isAnaglyphDisplayMode) {
             // Switch to anaglyph mode - create anaglyph view programmatically
+
             //createAnaglyphView();
             Toast.makeText(this, "Anaglyph mode enabled", Toast.LENGTH_SHORT).show();
         } else {
@@ -1806,185 +1794,3 @@ public class MainActivity extends AppCompatActivity {
     }
 }
 
-//  NOT WORKNG
-class AnaglyphRenderer implements GLSurfaceView.Renderer {
-    private static final String TAG = "AnaglyphRenderer";
-    private int leftTextureId, rightTextureId;
-    private SurfaceTexture leftSurfaceTexture, rightSurfaceTexture;
-    private Surface leftSurface, rightSurface;
-    private int shaderProgram;
-    private int aPositionHandle, aTexCoordHandle;
-    private int uTextureHandle;
-    private FloatBuffer vertexBuffer, texCoordBuffer;
-    private boolean isAnaglyphMode = true;
-    private GLSurfaceView glSurfaceView;
-    private static final String VERTEX_SHADER =
-            "attribute vec4 aPosition;\n" +
-                    "attribute vec2 aTexCoord;\n" +
-                    "varying vec2 vTexCoord;\n" +
-                    "void main() {\n" +
-                    "    gl_Position = aPosition;\n" +
-                    "    vTexCoord = aTexCoord;\n" +
-                    "}\n";
-    private static final String FRAGMENT_SHADER =
-            "#extension GL_OES_EGL_image_external : require\n" +
-                    "precision mediump float;\n" +
-                    "uniform samplerExternalOES uTexture;\n" +
-                    "varying vec2 vTexCoord;\n" +
-                    "void main() {\n" +
-                    "    gl_FragColor = texture2D(uTexture, vTexCoord);\n" +
-                    "}\n";
-    private static final float[] VERTICES = {
-            -1.0f, -1.0f, 0.0f,
-            1.0f, -1.0f, 0.0f,
-            -1.0f, 1.0f, 0.0f,
-            1.0f, 1.0f, 0.0f
-    };
-    private static final float[] TEX_COORDS = {
-            0.0f, 1.0f,
-            1.0f, 1.0f,
-            0.0f, 0.0f,
-            1.0f, 0.0f
-    };
-
-    @Override
-    public void onSurfaceCreated(GL10 gl, EGLConfig config) {
-        Log.d(TAG, "AnaglyphRenderer.onSurfaceCreated()");
-        GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-        // Load shaders and create program
-        int vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, VERTEX_SHADER);
-        int fragmentShader = loadShader(GLES20.GL_FRAGMENT_SHADER, FRAGMENT_SHADER);
-        shaderProgram = GLES20.glCreateProgram();
-        GLES20.glAttachShader(shaderProgram, vertexShader);
-        GLES20.glAttachShader(shaderProgram, fragmentShader);
-        GLES20.glLinkProgram(shaderProgram);
-        // Get handles
-        aPositionHandle = GLES20.glGetAttribLocation(shaderProgram, "aPosition");
-        aTexCoordHandle = GLES20.glGetAttribLocation(shaderProgram, "aTexCoord");
-        uTextureHandle = GLES20.glGetUniformLocation(shaderProgram, "uTexture");
-        // Setup vertex buffer
-        ByteBuffer bb = ByteBuffer.allocateDirect(VERTICES.length * 4);
-        bb.order(ByteOrder.nativeOrder());
-        vertexBuffer = bb.asFloatBuffer();
-        vertexBuffer.put(VERTICES);
-        vertexBuffer.position(0);
-        // Setup texture coordinate buffer
-        ByteBuffer tcbb = ByteBuffer.allocateDirect(TEX_COORDS.length * 4);
-        tcbb.order(ByteOrder.nativeOrder());
-        texCoordBuffer = tcbb.asFloatBuffer();
-        texCoordBuffer.put(TEX_COORDS);
-        texCoordBuffer.position(0);
-    }
-
-    @Override
-    public void onSurfaceChanged(GL10 gl, int width, int height) {
-        GLES20.glViewport(0, 0, width, height);
-    }
-
-    @Override
-    public void onDrawFrame(GL10 gl) {
-        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
-        if (leftSurfaceTexture != null && rightSurfaceTexture != null) {
-            leftSurfaceTexture.updateTexImage();
-            rightSurfaceTexture.updateTexImage();
-            GLES20.glUseProgram(shaderProgram);
-            GLES20.glEnableVertexAttribArray(aPositionHandle);
-            GLES20.glVertexAttribPointer(aPositionHandle, 3, GLES20.GL_FLOAT, false, 0, vertexBuffer);
-            GLES20.glEnableVertexAttribArray(aTexCoordHandle);
-            GLES20.glVertexAttribPointer(aTexCoordHandle, 2, GLES20.GL_FLOAT, false, 0, texCoordBuffer);
-            GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
-            GLES20.glUniform1i(uTextureHandle, 0);
-            if (isAnaglyphMode) {
-                // ANAGLYPH MODE: Use OpenGL ColorMask
-                GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
-                // First pass: Draw left eye with RED channel only
-                GLES20.glColorMask(true, false, false, false); // Only red
-                GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, leftTextureId);
-                GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
-                // Second pass: Draw right eye with GREEN and BLUE channels only
-                GLES20.glColorMask(false, true, true, false); // Only green and blue
-                GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, rightTextureId);
-                GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
-                // Reset color mask
-                GLES20.glColorMask(true, true, true, true);
-            } else {
-                // SIDE-BY-SIDE MODE: Normal rendering
-                GLES20.glColorMask(true, true, true, true);
-                // Draw left camera on left half
-                GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, leftTextureId);
-                GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
-                // Draw right camera on right half
-                GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, rightTextureId);
-                GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
-            }
-            GLES20.glDisableVertexAttribArray(aPositionHandle);
-            GLES20.glDisableVertexAttribArray(aTexCoordHandle);
-        }
-    }
-
-    public void setupSurfaces() {
-        int[] leftTextures = new int[1];
-        GLES20.glGenTextures(1, leftTextures, 0);
-        leftTextureId = leftTextures[0];
-        GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, leftTextureId);
-        GLES20.glTexParameterf(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR);
-        GLES20.glTexParameterf(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
-        leftSurfaceTexture = new SurfaceTexture(leftTextureId);
-        leftSurface = new Surface(leftSurfaceTexture);
-        int[] rightTextures = new int[1];
-        GLES20.glGenTextures(1, rightTextures, 0);
-        rightTextureId = rightTextures[0];
-        GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, rightTextureId);
-        GLES20.glTexParameterf(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR);
-        GLES20.glTexParameterf(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
-        rightSurfaceTexture = new SurfaceTexture(rightTextureId);
-        rightSurface = new Surface(rightSurfaceTexture);
-        leftSurfaceTexture.setOnFrameAvailableListener(surfaceTexture -> {
-            if (glSurfaceView != null) {
-                glSurfaceView.requestRender();
-            }
-        });
-        rightSurfaceTexture.setOnFrameAvailableListener(surfaceTexture -> {
-            if (glSurfaceView != null) {
-                glSurfaceView.requestRender();
-            }
-        });
-    }
-
-    public Surface getLeftSurface() {
-        return leftSurface;
-    }
-
-    public Surface getRightSurface() {
-        return rightSurface;
-    }
-
-    public void toggleDisplayMode() {
-        isAnaglyphMode = !isAnaglyphMode;
-        if (glSurfaceView != null) {
-            glSurfaceView.requestRender();
-        }
-    }
-
-    public boolean isAnaglyphMode() {
-        return isAnaglyphMode;
-    }
-
-    public void setGLSurfaceView(GLSurfaceView view) {
-        this.glSurfaceView = view;
-    }
-
-    private int loadShader(int type, String shaderCode) {
-        int shader = GLES20.glCreateShader(type);
-        GLES20.glShaderSource(shader, shaderCode);
-        GLES20.glCompileShader(shader);
-        int[] compiled = new int[1];
-        GLES20.glGetShaderiv(shader, GLES20.GL_COMPILE_STATUS, compiled, 0);
-        if (compiled[0] == 0) {
-            Log.e(TAG, "Shader compilation error: " + GLES20.glGetShaderInfoLog(shader));
-            GLES20.glDeleteShader(shader);
-            return 0;
-        }
-        return shader;
-    }
-}
