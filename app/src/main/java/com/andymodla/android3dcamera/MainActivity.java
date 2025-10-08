@@ -32,6 +32,7 @@ import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CaptureRequest;
+import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.OutputConfiguration;
 import android.hardware.camera2.params.SessionConfiguration;
 import android.hardware.camera2.params.TonemapCurve;
@@ -93,7 +94,12 @@ import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 import com.andymodla.android3dcamera.AnaglyphRenderer;
 
-import netP5.*; // network library for UDP Server
+import netP5.Bytes;
+import netP5.UdpServer1; // network library for UDP Server
+import netP5.AbstractUdpServer1; // network library for UDP Server
+import netP5.NetListener; // network library for UDP Server
+import netP5.NetMessage; // network library for UDP Server
+import netP5.NetStatus; // network library for UDP Server
 
 // README:   https://github.com/ajavamind/A3DCamera/blob/main/README.md
 
@@ -123,12 +129,16 @@ public class MainActivity extends AppCompatActivity {
     static final String[] FOCUS_DISTANCE_NAMES = {"HYPERFOCAL FOCUS DISTANCE", "PHOTO BOOTH FOCUS DISTANCE", "MACRO FOCUS DISTANCE", "AUTO FOCUS"};
     volatile boolean burstModeFeature = true;
     volatile boolean burstMode = true;
-    int BURST_COUNT = 100;
+    int BURST_COUNT = 60;  // approximately 1 capture per second
     volatile int burstCounter = 0;
 
     // Maximum camera sensor image dimensions
     //private int cameraWidth = 1024;//1440;
     //private int cameraHeight = 768;//1080;
+    //private int cameraWidth = 1920;
+    //private int cameraHeight = 1080;
+    //private int cameraWidth = 4080;  // results in 1920x1440 images
+    //private int cameraHeight = 3060; // results in 1920x1440 images
     private int cameraWidth = 4080; // camera width lens pixels
     private int cameraHeight = 3072;// camera height lens pixels
 
@@ -170,6 +180,7 @@ public class MainActivity extends AppCompatActivity {
     private SurfaceHolder mSurfaceHolder0, mSurfaceHolder2;
     private GLSurfaceView glSurfaceView;
     private AnaglyphRenderer anaglyphRenderer;
+    private AIvision aiVision;
     private View view;
     private Surface surface;
 
@@ -216,6 +227,7 @@ public class MainActivity extends AppCompatActivity {
     private boolean isVideo = false;
 
     private boolean isPhotobooth = false; //true;  // work in progress
+    String prompt = "Does this photo show a deer? Answer only with deer or none/";
     Timer countdownTimer;
     int countdownStart = 3;
     int countdownDigit = -1;
@@ -295,7 +307,7 @@ public class MainActivity extends AppCompatActivity {
 
         checkPermissions();
         setupUdpServer();  // listens for broadcast messages to control camera remotely
-
+        //aiVision = new AIvision(this);
     }
 
 //    @Override
@@ -933,10 +945,29 @@ public class MainActivity extends AppCompatActivity {
 
                                 captureRequestBuilder.set(CaptureRequest.NOISE_REDUCTION_MODE, 1); // NOISE_REDUCTION_MODE
                                 captureRequestBuilder.set(CaptureRequest.EDGE_MODE, 1); // EDGE_MODE
-                                mCameraCaptureSession.setRepeatingRequest(captureRequestBuilder.build(), null, null);
+                                //mCameraCaptureSession.setRepeatingRequest(captureRequestBuilder.build(), null, null);
                             } catch (CameraAccessException e) {
                                 Log.e(TAG, "Camera access exception in session config", e);
                             }
+                            // Create your CaptureCallback instance.
+                            CameraCaptureSession.CaptureCallback captureCallback = new CameraCaptureSession.CaptureCallback() {
+                                @Override
+                                public void onCaptureCompleted(@NonNull CameraCaptureSession session, @NonNull CaptureRequest request, @NonNull TotalCaptureResult result) {
+                                    super.onCaptureCompleted(session, request, result);
+                                    // This is where you get the "capture completed" notification.
+                                    // The TotalCaptureResult contains the final metadata.
+                                    // Your logic for handling the completed capture goes here.
+                                    //Log.d(TAG, "Capture completed!");
+                                    //aiVision.getInformationFromSurfaceView(mSurfaceView0, prompt);
+                                }
+                            };
+                            try {
+                                mCameraCaptureSession.setRepeatingRequest(captureRequestBuilder.build(), captureCallback, mainHandler);
+                                //mCameraCaptureSession.capture(captureRequestBuilder.build(), captureCallback, mainHandler);
+                            } catch (CameraAccessException e) {
+                                Log.e(TAG, "createCameraViewSession"+e.toString());
+                            }
+
                         }
 
                         @Override
@@ -944,7 +975,9 @@ public class MainActivity extends AppCompatActivity {
                             Log.e(TAG, "onConfigureFailed");
                         }
                     });
+
             mCameraDevice.createCaptureSession(sessionConfiguration);
+
         } catch (CameraAccessException e) {
             Log.e(TAG, "Camera access exception", e);
         }
@@ -1191,7 +1224,7 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    private void captureImages() {
+    public void captureImages() {
         Log.d(TAG, "captureImages()");
         if (mCameraDevice == null || mCameraCaptureSession == null) {
             Toast.makeText(this, "Camera not ready", Toast.LENGTH_SHORT).show();
@@ -1302,6 +1335,9 @@ public class MainActivity extends AppCompatActivity {
             showToast("Saved IMG" + timestamp);
             leftBitmap = saveImageFile(leftBytes, PHOTO_PREFIX + timestamp, true); // left
             rightBitmap = saveImageFile(rightBytes, PHOTO_PREFIX + timestamp, false); // right
+            //String response = aiVision.getInformationFromImage(leftBitmap, prompt);
+            //Log.d(TAG, "AI Vision response: " + response);
+            //Toast.makeText(this, "AI Vision response: " + response, Toast.LENGTH_SHORT).show();
             if (saveAnaglyph) {
                 createAndSaveAnaglyph(PHOTO_PREFIX + timestamp, leftBitmap, rightBitmap);
             }

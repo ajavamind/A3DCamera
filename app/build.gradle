@@ -8,12 +8,17 @@ android {
 
     defaultConfig {
         applicationId "com.andymodla.android3dcamera"
-        minSdk 29
+        minSdk 33
         targetSdk 33
         versionCode 6
         versionName "1.5"
 
         //testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+    packagingOptions {
+        pickFirst 'META-INF/DEPENDENCIES' // This tells Gradle to pick the first encountered file
+        // or
+        // exclude 'META-INF/DEPENDENCIES' // This tells Gradle to exclude all files at this path
     }
 
     buildTypes {
@@ -43,7 +48,10 @@ dependencies {
     implementation "androidx.camera:camera-lifecycle:${camerax_version}"
     // CameraX View class
     implementation "androidx.camera:camera-view:${camerax_version}"
+    implementation 'com.squareup.okhttp3:okhttp:4.12.0' // Use the latest stable version
+    implementation("com.openai:openai-java:4.1.0")
     // oscP5.jar used for receiving broadcast messages over UDP
+    // exclude Apache httpclient and http core from build as we use okhttp3 always
     implementation files('libs/oscP5.jar')
 
 //    testImplementation libs.junit
