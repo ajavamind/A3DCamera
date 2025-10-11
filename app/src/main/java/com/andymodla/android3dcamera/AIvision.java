@@ -164,16 +164,17 @@ public class AIvision {
 
             System.out.println("First content: " + firstContent[0]);
             handler.post(() -> {
+                
                 // Update the UI on the main thread with the result
-                //Toast.makeText(context, "First content: " + firstContent[0], Toast.LENGTH_SHORT).show();
-                if (firstContent[0].toLowerCase().contains("deer")) {
-                    //if (firstContent[0].toLowerCase().contains("dog") || firstContent[0].toLowerCase().contains("cat")) {
-                    mainActivity.runOnUiThread(new Runnable() {
-                        public void run() {
-                            mainActivity.captureImages();
-                        }
-                    });
-                }
+                Toast.makeText(context, "First content: " + firstContent[0], Toast.LENGTH_SHORT).show();
+//                if (firstContent[0].toLowerCase().contains("deer")) {
+//                    //if (firstContent[0].toLowerCase().contains("dog") || firstContent[0].toLowerCase().contains("cat")) {
+//                    mainActivity.runOnUiThread(new Runnable() {
+//                        public void run() {
+//                            mainActivity.captureImages();
+//                        }
+//                    });
+//                }
             });
 
         } catch (Exception e) {

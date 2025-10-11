@@ -181,6 +181,7 @@ public class MainActivity extends AppCompatActivity {
     private GLSurfaceView glSurfaceView;
     private AnaglyphRenderer anaglyphRenderer;
     private AIvision aiVision;
+    private boolean aiVisionEnabled = false;
     private View view;
     private Surface surface;
 
@@ -227,7 +228,7 @@ public class MainActivity extends AppCompatActivity {
     private boolean isVideo = false;
 
     private boolean isPhotobooth = false; //true;  // work in progress
-    String prompt = "Does this photo show a deer? Answer only with deer or none/";
+    String prompt = "short caption";
     Timer countdownTimer;
     int countdownStart = 3;
     int countdownDigit = -1;
@@ -250,7 +251,7 @@ public class MainActivity extends AppCompatActivity {
     static final int BACK_KEY = KeyEvent.KEYCODE_BACK;  // KeyEvent.KEYCODE_BUTTON_B = 97 KEYCODE_BACK = 04
     static final int SHARE_KEY = KeyEvent.KEYCODE_BUTTON_MODE;  // 110
 
-    // Key codes for 8BitDo Micro Bluetooth Keyboard controller (Android mode)
+    // Key codes for 8BitDo Micro Bluetooth Keyboard controller (Keyboard mode)
     static final int SHUTTER_KB_KEY = KeyEvent.KEYCODE_M;
     static final int FOCUS_KB_KEY = KeyEvent.KEYCODE_R;
     static final int MODE_KB_KEY = KeyEvent.KEYCODE_L;
@@ -307,7 +308,9 @@ public class MainActivity extends AppCompatActivity {
 
         checkPermissions();
         setupUdpServer();  // listens for broadcast messages to control camera remotely
-        //aiVision = new AIvision(this);
+        if (aiVisionEnabled) {
+            aiVision = new AIvision(this);
+        }
     }
 
 //    @Override
@@ -908,7 +911,7 @@ public class MainActivity extends AppCompatActivity {
     private void createCameraViewSession() {
         Log.d(TAG, "createCameraViewSession()");
         try {
-            //mSurfaceHolder0.getSurface().
+
             OutputConfiguration opc0 = new OutputConfiguration(mSurfaceHolder0.getSurface());
             opc0.setPhysicalCameraId(leftCameraId);
             OutputConfiguration opc1 = new OutputConfiguration(mSurfaceHolder2.getSurface());
@@ -945,29 +948,10 @@ public class MainActivity extends AppCompatActivity {
 
                                 captureRequestBuilder.set(CaptureRequest.NOISE_REDUCTION_MODE, 1); // NOISE_REDUCTION_MODE
                                 captureRequestBuilder.set(CaptureRequest.EDGE_MODE, 1); // EDGE_MODE
-                                //mCameraCaptureSession.setRepeatingRequest(captureRequestBuilder.build(), null, null);
+                                mCameraCaptureSession.setRepeatingRequest(captureRequestBuilder.build(), null, null);
                             } catch (CameraAccessException e) {
                                 Log.e(TAG, "Camera access exception in session config", e);
                             }
-                            // Create your CaptureCallback instance.
-                            CameraCaptureSession.CaptureCallback captureCallback = new CameraCaptureSession.CaptureCallback() {
-                                @Override
-                                public void onCaptureCompleted(@NonNull CameraCaptureSession session, @NonNull CaptureRequest request, @NonNull TotalCaptureResult result) {
-                                    super.onCaptureCompleted(session, request, result);
-                                    // This is where you get the "capture completed" notification.
-                                    // The TotalCaptureResult contains the final metadata.
-                                    // Your logic for handling the completed capture goes here.
-                                    //Log.d(TAG, "Capture completed!");
-                                    //aiVision.getInformationFromSurfaceView(mSurfaceView0, prompt);
-                                }
-                            };
-                            try {
-                                mCameraCaptureSession.setRepeatingRequest(captureRequestBuilder.build(), captureCallback, mainHandler);
-                                //mCameraCaptureSession.capture(captureRequestBuilder.build(), captureCallback, mainHandler);
-                            } catch (CameraAccessException e) {
-                                Log.e(TAG, "createCameraViewSession"+e.toString());
-                            }
-
                         }
 
                         @Override
@@ -1335,9 +1319,11 @@ public class MainActivity extends AppCompatActivity {
             showToast("Saved IMG" + timestamp);
             leftBitmap = saveImageFile(leftBytes, PHOTO_PREFIX + timestamp, true); // left
             rightBitmap = saveImageFile(rightBytes, PHOTO_PREFIX + timestamp, false); // right
-            //String response = aiVision.getInformationFromImage(leftBitmap, prompt);
-            //Log.d(TAG, "AI Vision response: " + response);
-            //Toast.makeText(this, "AI Vision response: " + response, Toast.LENGTH_SHORT).show();
+            if (aiVisionEnabled) {
+                String response = aiVision.getInformationFromImage(leftBitmap, prompt);
+                //Log.d(TAG, "AI Vision response: " + response);
+                //Toast.makeText(this, "AI Vision response: " + response, Toast.LENGTH_SHORT).show();
+            }
             if (saveAnaglyph) {
                 createAndSaveAnaglyph(PHOTO_PREFIX + timestamp, leftBitmap, rightBitmap);
             }
@@ -1757,7 +1743,6 @@ public class MainActivity extends AppCompatActivity {
         if (mImageReader2 != null) {
             mImageReader2.close();
         }
-
         //destroyHTTPServer();
         destroyUDPServer();
 
