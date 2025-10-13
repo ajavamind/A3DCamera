@@ -90,12 +90,12 @@ A wired USB-C connected Android keyboard can control the camera with keys (not f
 Here is the current key mapping for a 8BitDo Bluetooth game controller in Android mode. The controller must be paired with the Beam Pro. 
 A Bluetooth Android keyboard may also be used, but the app needs an update for a normal keyboard to work. Not all function keys are working.
 
-* SHUTTER - Take a photo on key release.
+* SHUTTER - Take a photo on key release. In Photo Booth mode show count down seconds delay.
 * FOCUS   - Cycle through fixed focus distances: Hyperfocal, Photo Booth, Macro
 * MODE    - Select Auto, Manual, and Shutter Priority (only Auto implemented)
-* BURST   - Start continous photo capture at about 1 photo per second until the key is pressed and released again.
+* BURST   - Start continous photo capture at about 1 photo per second until the key is pressed and released again, or 60 images captured. In Photo Booth mode take only 4 images.
 * DISP    - Toggle change Live View display mode (SBS, not working: Anaglyph, L/R, Blank)
-* TIMER   - Set timer for time interval settings and delay time to take a photo or burst (not implemented)
+* TIMER   - Set 3 second delay time to take a photo or burst for Photo Booth mode. Toggle no delay or Photo Booth.
 * ISO     - Set the ISO (not implemented)
 * SPEED   - Set the Shutter speed (not implemented)
 * FN      - Cycle through exposure metering: Frame Average, Center Weighted, Spot Metering
@@ -106,7 +106,7 @@ A Bluetooth Android keyboard may also be used, but the app needs an update for a
 
 ![8BitDo Micro Bluetooth Controller](images/A3DCamera_Layout_1080.png)
 
-Here are the Android keyboard keys matching the function keys of the 8BitDo Micro controller:
+Here are the Android keyboard keys matching the function keys of the 8BitDo Micro controller in keyboard mode:
 ![8BitDo Micro Bluetooth Controller](images/A3DCamera_KB_Layout_1080.png)
 
 #### WiFi Remote Control
@@ -130,12 +130,16 @@ There are no camera leveling, tilt, or subject distance suggestions from the app
 
 Latest version: [Version 1.4 A3DCamera Android app](https://drive.google.com/file/d/1xkNVHQ7EOTipQxIqTqoDuHsepO7f5MxE/view?usp=drive_link)
 
-Download the apk file into the XBeam Pro "Downloads" folder. Use the "Files" app to click on the apk file to install it. 
+Download the apk file into the XBeam Pro "Downloads" folder. Use the "Files" app to find and click on the A3DCamera apk file in the Downloads folder to install it. 
 You will be asked to scan the file for security, respond yes.
 
-My Beam Pro is in developers mode, but you do not need to be in that mode to install.
+My Beam Pro is in developers mode, but you do not have to be in that mode to install.
 
+To enter developer mode, press the Settings -> About This device -> Build number (key) 7 times to enter this mode.
+In developer mode, use Settings -> System -> Developer options to turn on USB debugging and use Android Studio or Processing.org Android Mode SDK to download an app
 
+## AI Vision
+There is code to use a local network small multimodal language AI model to get a caption for the last photo taken. Not enabled.
 
 ## Credits
 
