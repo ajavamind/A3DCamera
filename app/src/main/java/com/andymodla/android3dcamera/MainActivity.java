@@ -49,11 +49,16 @@ import android.os.Handler;
 import android.os.Looper;
 import android.provider.MediaStore;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.KeyEvent;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
+import android.util.DisplayMetrics;
+import android.widget.FrameLayout;
+import android.widget.RelativeLayout;
+import android.widget.TextView;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
 import android.widget.Toast;
@@ -121,16 +126,34 @@ public class MainActivity extends AppCompatActivity {
     //volatile boolean autoFocus = true;
 
     volatile int focusDistanceIndex = 0;  // default HYPERFOCAL
-    static final float MACRO_FOCUS_DISTANCE = 10.0f;
-    static final float HYPERFOCAL_FOCUS_DISTANCE = 0.60356647f;
-    static final float PHOTO_BOOTH_FOCUS_DISTANCE = 1.0f;
+    //
+    static final float MACRO_FOCUS_DISTANCE = 10.0f;  // 100mm
+    static final float HYPERFOCAL_FOCUS_DISTANCE = 0.60356647f;  // 1.66 meters
+    static final float PHOTO_BOOTH_FOCUS_DISTANCE = 1.43f;  // 700mm  was 1.0f;  1 meter
     static final float AUTO_FOCUS_DISTANCE = 0.0f;
     static final float[] FOCUS_DISTANCE = {HYPERFOCAL_FOCUS_DISTANCE, PHOTO_BOOTH_FOCUS_DISTANCE, MACRO_FOCUS_DISTANCE, AUTO_FOCUS_DISTANCE};
     static final String[] FOCUS_DISTANCE_NAMES = {"HYPERFOCAL FOCUS DISTANCE", "PHOTO BOOTH FOCUS DISTANCE", "MACRO FOCUS DISTANCE", "AUTO FOCUS"};
+
     volatile boolean burstModeFeature = true;
     volatile boolean burstMode = true;
-    int BURST_COUNT = 60;  // approximately 1 capture per second
+    private static final int BURST_COUNT_DEFAULT = 60;
+    private static final int BURST_COUNT_PHOTO_BOOTH = 4;
+    private int BURST_COUNT = BURST_COUNT_DEFAULT;  // approximately 1 capture per second
     volatile int burstCounter = 0;
+
+    // aspect ratio
+    int aspectRatioIndex = 0;  // default
+    String[] ASPECT_RATIO_NAMES = {"DEFAULT", "4:3", "16:9", "1:1"};
+    int CAMERA_WIDTH_AR_DEFAULT = 4080;
+    int CAMERA_HEIGHT_AR_DEFAULT = 3072;
+    int CAMERA_WIDTH_AR_4_3 = 4000;
+    int CAMERA_HEIGHT_AR_4_3 = 3000;
+    int CAMERA_WIDTH_AR_16_9 = 3840;
+    int CAMERA_HEIGHT_AR_16_9 = 2160;
+    int CAMERA_WIDTH_AR_1_1 = 3072;
+    int CAMERA_HEIGHT_AR_1_1 = 3072;
+    int CAMERA_WIDTH_AR_SMALL = 1080;
+    int CAMERA_HEIGHT_AR_SMALL = 1080;
 
     // Maximum camera sensor image dimensions
     //private int cameraWidth = 1024;//1440;
@@ -139,8 +162,8 @@ public class MainActivity extends AppCompatActivity {
     //private int cameraHeight = 1080;
     //private int cameraWidth = 4080;  // results in 1920x1440 images
     //private int cameraHeight = 3060; // results in 1920x1440 images
-    private int cameraWidth = 4080; // camera width lens pixels
-    private int cameraHeight = 3072;// camera height lens pixels
+    private int cameraWidth = CAMERA_WIDTH_AR_DEFAULT; // camera width lens pixels
+    private int cameraHeight = CAMERA_HEIGHT_AR_DEFAULT;// camera height lens pixels
 
     private static final float[] curve_srgb = { // sRGB curve
             0.0000f, 0.0000f, 0.0667f, 0.2864f, 0.1333f, 0.4007f, 0.2000f, 0.4845f,
@@ -149,20 +172,20 @@ public class MainActivity extends AppCompatActivity {
             0.8000f, 0.9063f, 0.8667f, 0.9389f, 0.9333f, 0.9701f, 1.0000f, 1.0000f};
 
     private static final CaptureRequest.Key<Integer> EXPOSURE_METERING = new CaptureRequest.Key<>("org.codeaurora.qcamera3.exposure_metering.exposure_metering_mode", Integer.TYPE);
-    static final int FRAME_AVERAGE = 0; // normal behavior
-    static final int CENTER_WEIGHTED = 1;
-    static final int SPOT_METERING = 2;
+    private static final int FRAME_AVERAGE = 0; // normal behavior
+    private static final int CENTER_WEIGHTED = 1;
+    private static final int SPOT_METERING = 2;
     int meteringIndex = 0;  // default
     static final int[] METERING = {FRAME_AVERAGE, CENTER_WEIGHTED, SPOT_METERING};
     String[] METERING_NAMES = {"FRAME AVERAGE", "CENTER WEIGHTED", "SPOT METERING"};
+
     // Saturation 0 - 10, default 5
     private static final CaptureRequest.Key<Integer> SATURATION = new CaptureRequest.Key<>("org.codeaurora.qcamera3.saturation.use_saturation", Integer.class);
+    //    captureRequestBuilder.set(SATURATION, 5);
+    //    captureBuilder.set(SATURATION, 5);
 
     // Sharpness 0 - 6, default 2
     private static final CaptureRequest.Key<Integer> SHARPNESS = new CaptureRequest.Key<>("org.codeaurora.qcamera3.sharpness.strength", Integer.class);
-
-    //    captureRequestBuilder.set(SATURATION, 5);
-    //    captureBuilder.set(SATURATION, 5);
 
     // Camera Ids for Xreal Beam Pro
     private String leftCameraId = "0";
@@ -180,8 +203,11 @@ public class MainActivity extends AppCompatActivity {
     private SurfaceHolder mSurfaceHolder0, mSurfaceHolder2;
     private GLSurfaceView glSurfaceView;
     private AnaglyphRenderer anaglyphRenderer;
-    private AIvision aiVision;
+
+    private AIvision aiVision;  // local network small multimodal vision AI model server (Google Gemma 3 8B 4_K_M GGUF)
     private boolean aiVisionEnabled = false;
+    String prompt = "Generate a caption shorter than 6 words.";
+
     private View view;
     private Surface surface;
 
@@ -198,7 +224,7 @@ public class MainActivity extends AppCompatActivity {
 
     // states - work in progress
     private static final int STATE_LIVEVIEW = 0;
-    private static final int STATE_REVIEW = 0;
+    private static final int STATE_REVIEW = 1;
     private int state = STATE_LIVEVIEW;
 
     volatile Image imageL;
@@ -224,11 +250,9 @@ public class MainActivity extends AppCompatActivity {
     public static String lastSavedFilePath = null;
 
     private boolean isWiFiRemoteEnabled = false; //true;
-    private boolean blankScreen = false;
     private boolean isVideo = false;
 
-    private boolean isPhotobooth = false; //true;  // work in progress
-    String prompt = "short caption";
+    private boolean isPhotobooth = false;  // work in progress
     Timer countdownTimer;
     int countdownStart = 3;
     int countdownDigit = -1;
@@ -269,6 +293,8 @@ public class MainActivity extends AppCompatActivity {
     static final int BACK_KB_KEY = KeyEvent.KEYCODE_J;
     static final int SHARE_KB_KEY = KeyEvent.KEYCODE_S;
 
+    private TextView countdownTextView;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -277,10 +303,21 @@ public class MainActivity extends AppCompatActivity {
         String deviceName = manufacturer + " " + modelName;
         Log.d(TAG, "Device Manufacturer and Model: " + deviceName);
         if (modelName.equals("LPD-20W")) {
+            // back cameras
+            leftCameraId = "0";
+            rightCameraId = "2";
             stereoCameraId = "4";  // logical (left "0" and right "2") back cameras
             cameraWidth = 4656; // 16Mp Back camera width lens pixels
             cameraHeight = 3496;// 16MP Back camera height lens pixels
-            //APP_REVIEW_PACKAGE = "com.leialoft.leiaplayer"; // Review with Leia Player app default
+
+            // front cameras
+//            leftCameraId = "1";
+//            rightCameraId = "3";
+//            stereoCameraId = "5";  // logical (left "1" and right "3") front cameras
+//            cameraWidth = 4656; // 16Mp Back camera width lens pixels
+//            cameraHeight = 3496;// 16MP Back camera height lens pixels
+
+            APP_REVIEW_PACKAGE = "com.leialoft.leiaplayer"; // Review with Leia Player app default
             BASE_FOLDER = Environment.DIRECTORY_DCIM;  // change base to DCIM folder for cameras
             Log.d(TAG, "set stereo cameras for " + deviceName);
         } else if (modelName.equals("LPD-10W")) {
@@ -311,6 +348,40 @@ public class MainActivity extends AppCompatActivity {
         if (aiVisionEnabled) {
             aiVision = new AIvision(this);
         }
+
+        countdownTextView = findViewById(R.id.overlay_text);
+        // Corrected code
+        //RelativeLayout myRelativeLayout = (RelativeLayout) findViewById(R.id.overlay_text);
+
+        // This is a crucial step: we need to wait for the view to be laid out
+        // before we can get its dimensions.
+        countdownTextView.post(new Runnable() {
+            @Override
+            public void run() {
+                // Get the total height of the parent FrameLayout
+                int parentHeight = ((RelativeLayout) countdownTextView.getParent()).getHeight();
+
+                // Calculate one-third of the parent height
+                int countdownHeight = parentHeight / 3;
+
+                // Set the TextView's height to one-third of the parent height
+                countdownTextView.getLayoutParams().height = countdownHeight;
+
+                // Adjust the font size to fit within this new height
+                // You can use a library or a helper method to do this dynamically
+                // For a simpler approach, you can set a large fixed value
+                // and let the TextView handle scaling, but dynamic sizing is better
+                float newTextSize = (float) (countdownHeight * 0.75); // Use 75% of the height as a good starting point for the font size
+                countdownTextView.setTextSize(TypedValue.COMPLEX_UNIT_PX, newTextSize);
+                Log.d(TAG, "countdownTextView height=" + countdownTextView.getHeight());
+                Log.d(TAG, "parent height=" + parentHeight);
+                countdownTextView.setY(parentHeight/3.0f);
+                countdownTextView.setVisibility(View.GONE);
+                countdownTextView.requestLayout();
+
+            }
+        });
+
     }
 
 //    @Override
@@ -1036,11 +1107,32 @@ public class MainActivity extends AppCompatActivity {
                 if (isPhotobooth && (countdownDigit < 0)) {
                     startCountdownSequence(countdownStart);
                 } else {
+                    countdownTextView.setVisibility(View.GONE);
                     MainActivity.this.runOnUiThread(new Runnable() {
                         public void run() {
                             captureImages();
                         }
                     });
+                }
+                return true;
+            case BURST_KEY:
+            case BURST_KB_KEY: // start and cancel Burst capture mode
+                if (burstModeFeature && burstMode) {
+                    //Toast.makeText(this, "Burst Mode ", Toast.LENGTH_SHORT).show();
+                    if (isPhotobooth && (countdownDigit < 0) && burstCounter == 0) {
+                        startCountdownSequence(countdownStart);  // calls captureImages() after count down finished
+                        burstCounter = BURST_COUNT;
+                    } else {
+                        if (burstCounter > 0) {
+                            burstCounter = 0;
+                            //Toast.makeText(this, "Burst Mode Canceled ", Toast.LENGTH_SHORT).show();
+                        } else {
+                            burstCounter = BURST_COUNT;
+                            captureImages();
+                        }
+                    }
+                } else {
+                    Toast.makeText(this, "Burst Mode Not Enabled", Toast.LENGTH_SHORT).show();
                 }
                 return true;
             case KeyEvent.KEYCODE_BACK:
@@ -1086,21 +1178,6 @@ public class MainActivity extends AppCompatActivity {
 //                stopCamera();
 //                initCamera();
                 return true;
-            case BURST_KEY:
-            case BURST_KB_KEY: // start and cancel Burst capture mode
-                if (burstModeFeature && burstMode) {
-                    //Toast.makeText(this, "Burst Mode ", Toast.LENGTH_SHORT).show();
-                    if (burstCounter > 0) {
-                        burstCounter = 0;
-                        //Toast.makeText(this, "Burst Mode Canceled ", Toast.LENGTH_SHORT).show();
-                    } else {
-                        burstCounter = BURST_COUNT;
-                        captureImages();
-                    }
-                } else {
-                    Toast.makeText(this, "Burst Mode Not Enabled", Toast.LENGTH_SHORT).show();
-                }
-                return true;
             case KeyEvent.KEYCODE_VOLUME_DOWN:
             case REVIEW_KEY:
             case REVIEW_KB_KEY:
@@ -1130,7 +1207,20 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             case TIMER_KEY:
             case TIMER_KB_KEY:
-                Toast.makeText(this, "Timer - not implemented", Toast.LENGTH_SHORT).show();
+                 if (isPhotobooth) {
+                    isPhotobooth = false;
+                    BURST_COUNT = BURST_COUNT_DEFAULT;
+                } else {
+                    isPhotobooth = true;
+                    BURST_COUNT = BURST_COUNT_PHOTO_BOOTH;
+                }
+                countdownDigit = -1;
+                 if (isPhotobooth) {
+                     Toast.makeText(this, "Photo Booth Countdown=" + Integer.toString(countdownStart), Toast.LENGTH_SHORT).show();
+                 }
+                 else {
+                     Toast.makeText(this, "Timer Off", Toast.LENGTH_SHORT).show();
+                 }
 //                stopCamera();
 //                initCamera();
                 return true;
@@ -1158,25 +1248,26 @@ public class MainActivity extends AppCompatActivity {
 //                stopCamera();
 //                initCamera();
 //                return true;
-            case BLANK_SCREEN_KEY:
-            case BLANK_SCREEN_KB_KEY:
-                blankScreen = !blankScreen;
+            //case BLANK_SCREEN_KEY:
+            //case BLANK_SCREEN_KB_KEY:
+                //Toast.makeText(this, "Blank Screen - not implemented", Toast.LENGTH_SHORT).show();
+                //blankScreen = !blankScreen;
 
-                String id = String.valueOf(mCameraCaptureSession.getDevice().getId());
-                Toast.makeText(this, (blankScreen ? "Id: " + id + " Blank Screen" : "UnBlank Screen"), Toast.LENGTH_SHORT).show();
-                if (blankScreen) {
-                    //mSurfaceView0.setVisibility(View.GONE);
-                    //mSurfaceView2.setVisibility(View.GONE);
+                //String id = String.valueOf(mCameraCaptureSession.getDevice().getId());
+                //Toast.makeText(this, (blankScreen ? "Id: " + id + " Blank Screen" : "UnBlank Screen"), Toast.LENGTH_SHORT).show();
+//                if (blankScreen) {
+//                    //mSurfaceView0.setVisibility(View.GONE);
+//                    //mSurfaceView2.setVisibility(View.GONE);
+//                    countdownTextView.setVisibility(View.GONE);
+//                } else {
+//                    //mSurfaceView0.setVisibility(View.VISIBLE);
+//                    //mSurfaceView2.setVisibility(View.VISIBLE);
+//                    //stopCamera();
+//                    //initCamera();
+//                    countdownTextView.setVisibility(View.VISIBLE);
+//                }
 
-                } else {
-                    //mSurfaceView0.setVisibility(View.VISIBLE);
-                    //mSurfaceView2.setVisibility(View.VISIBLE);
-                    stopCamera();
-                    initCamera();
-
-                }
-
-                return true;
+            //    return true;
             default:
                 return super.onKeyDown(keyCode, event);
         }
@@ -1321,8 +1412,8 @@ public class MainActivity extends AppCompatActivity {
             rightBitmap = saveImageFile(rightBytes, PHOTO_PREFIX + timestamp, false); // right
             if (aiVisionEnabled) {
                 String response = aiVision.getInformationFromImage(leftBitmap, prompt);
-                //Log.d(TAG, "AI Vision response: " + response);
-                //Toast.makeText(this, "AI Vision response: " + response, Toast.LENGTH_SHORT).show();
+                Log.d(TAG, "AI Vision response: " + response);
+                Toast.makeText(this, "AI Vision response: " + response, Toast.LENGTH_SHORT).show();
             }
             if (saveAnaglyph) {
                 createAndSaveAnaglyph(PHOTO_PREFIX + timestamp, leftBitmap, rightBitmap);
@@ -1751,7 +1842,10 @@ public class MainActivity extends AppCompatActivity {
     void startCountdownSequence(int startCount) {
         if (countdownTimer == null) {
             countdownTimer = new Timer();
-            countdownDigit = startCount;
+            countdownDigit = startCount+1;
+            countdownTextView.setText(Integer.toString(countdownDigit));
+            countdownTextView.setVisibility(View.VISIBLE);
+
             // define a task to decrement the countdown digit every second
             TimerTask task = new TimerTask() {
                 public void run() {
@@ -1760,9 +1854,27 @@ public class MainActivity extends AppCompatActivity {
                         // stop the timer when the countdown reaches 0
                         countdownTimer.cancel();
                         countdownTimer = null;
-                        // hide digit display
-                        captureImages(); // take a picture
-                    } else {
+                        MainActivity.this.runOnUiThread(new Runnable() {
+                            public void run() {
+                                countdownTextView.setText("");
+                                countdownTextView.setVisibility(View.GONE);
+                                // hide digit display
+                                captureImages(); // take a picture
+                            }
+                        });
+                     } else {
+                        MainActivity.this.runOnUiThread(new Runnable() {
+                            public void run() {
+                                if (countdownDigit == 0) {
+                                    countdownTextView.setText("");
+                                    countdownTextView.setVisibility(View.GONE);
+                                } else {
+                                    countdownTextView.setText(Integer.toString(countdownDigit));
+                                    countdownTextView.setVisibility(View.VISIBLE);
+                                }
+                            }
+                        });
+
                         Log.d(TAG, "countdown=" + countdownDigit); // show digit display
                     }
                 }
