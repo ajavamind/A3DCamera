@@ -2,6 +2,8 @@ package com.andymodla.android3dcamera;
 
 import static android.Manifest.permission.CAMERA;
 
+import static java.lang.System.exit;
+
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
@@ -13,11 +15,12 @@ import androidx.core.content.FileProvider;
 import android.Manifest;
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
-import android.content.ComponentName;
 import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.ContentValues;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.database.Cursor;
@@ -25,14 +28,12 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.ImageFormat;
-import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CaptureRequest;
-import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.OutputConfiguration;
 import android.hardware.camera2.params.SessionConfiguration;
 import android.hardware.camera2.params.TonemapCurve;
@@ -55,26 +56,20 @@ import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
-import android.util.DisplayMetrics;
-import android.widget.FrameLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
 import android.widget.Toast;
 
-import java.nio.ByteOrder;
-import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.InterfaceAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
@@ -87,21 +82,13 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Vector;
 
-import android.opengl.GLES11Ext;
-import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
-import android.opengl.Matrix;
 
 import android.media.AudioManager;
 import android.media.ToneGenerator;
 
-import javax.microedition.khronos.egl.EGLConfig;
-import javax.microedition.khronos.opengles.GL10;
-import com.andymodla.android3dcamera.AnaglyphRenderer;
-
 import netP5.Bytes;
 import netP5.UdpServer1; // network library for UDP Server
-import netP5.AbstractUdpServer1; // network library for UDP Server
 import netP5.NetListener; // network library for UDP Server
 import netP5.NetMessage; // network library for UDP Server
 import netP5.NetStatus; // network library for UDP Server
@@ -115,9 +102,14 @@ public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "A3DCamera";
     private static final int MY_CAMERA_REQUEST_CODE = 100;
+    private SharedPreferences prefs;
+    private static final String PREFS_NAME = "Parameters";
+    private Parameters parameters;
 
     private String BASE_FOLDER = Environment.DIRECTORY_PICTURES;  // Environment.DIRECTORY_DCIM;  //
     private String SAVE_FOLDER = "A3DCamera";
+    private String SAVE_ANA_FOLDER = "Anaglyph";
+    private String SAVE_LR_FOLDER = "LR";
     private String PHOTO_PREFIX = "IMG_";
     private String APP_REVIEW_PACKAGE = "jp.suto.stereoroidpro"; // Review with StereoRoidPro app default
 
@@ -215,12 +207,14 @@ public class MainActivity extends AppCompatActivity {
     private ImageReader mImageReader0, mImageReader2;
 
     // Image Save File modes
-    private volatile boolean saveAnaglyph = false;
+    private volatile boolean saveAnaglyph = true;
     private volatile boolean saveSBS = true;
-    private volatile boolean saveLR = false;
+    private volatile boolean saveLR = true; //true;
     // at least one of above booleans must be true;
     private volatile boolean crossEye = false;  // reverse SBS output to cross eye
+    private volatile boolean mirror = false;  // reverse mirror image
     private volatile boolean isAnaglyphDisplayMode = false; //true;
+    private volatile boolean isAnaglyphMode = false; //true;
 
     // states - work in progress
     private static final int STATE_LIVEVIEW = 0;
@@ -235,6 +229,11 @@ public class MainActivity extends AppCompatActivity {
     volatile Bitmap rightBitmap;
     volatile Bitmap sbsBitmap;
     volatile Bitmap anaglyphBitmap;
+
+    // Stereo Image Alignment parameters (same values as StereoPhotoMaker)
+    //public int parallaxOffset = 0; // 212; // left/right parallax horizontal offset for stereo window placement
+    //public int verticalOffset = 0; // -12; // left/right camera alignment vertical offset for camera correction
+
     String timestamp;
     volatile File reviewSBS;
 
@@ -267,7 +266,7 @@ public class MainActivity extends AppCompatActivity {
     static final int TIMER_KEY = KeyEvent.KEYCODE_DPAD_LEFT;
     static final int SHUTTER_SPEED_KEY = KeyEvent.KEYCODE_DPAD_RIGHT;
     static final int BLANK_SCREEN_KEY = KeyEvent.KEYCODE_BUTTON_SELECT; // 109-82 KeyEvent.KEYCODE_MENU;
-    static final int AEL_KEY = KeyEvent.KEYCODE_BUTTON_START; // 108
+    static final int ANAGLYPH_KEY = KeyEvent.KEYCODE_BUTTON_START; // 108 "+" button
     static final int FN_KEY = KeyEvent.KEYCODE_BUTTON_X; //  99 KeyEvent.KEYCODE_DEL = 67
     static final int MENU_KEY = KeyEvent.KEYCODE_BUTTON_Y;  // 100  KeyEvent.KEYCODE_SPACE = 62
     static final int REVIEW_KEY = KeyEvent.KEYCODE_BUTTON_A;  // 96 KEYCODE_DPAD_CENTER = 23
@@ -285,7 +284,7 @@ public class MainActivity extends AppCompatActivity {
     static final int TIMER_KB_KEY = KeyEvent.KEYCODE_E;
     static final int SHUTTER_SPEED_KB_KEY = KeyEvent.KEYCODE_F;
     static final int BLANK_SCREEN_KB_KEY = KeyEvent.KEYCODE_N;
-    static final int AEL_KB_KEY = KeyEvent.KEYCODE_O;
+    static final int ANAGLYPH_KB_KEY = KeyEvent.KEYCODE_O; // "+" button
     static final int FN_KB_KEY = KeyEvent.KEYCODE_H;
     static final int MENU_KB_KEY = KeyEvent.KEYCODE_I;
     static final int REVIEW_KB_KEY = KeyEvent.KEYCODE_G;
@@ -298,6 +297,14 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // initialize shared preferences
+        prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        parameters = new Parameters(prefs);
+        parameters.init();
+//        parameters.setParallaxOffset(212);
+//        parameters.setVerticalOffset(-12);
+
         String modelName = Build.MODEL;
         String manufacturer = Build.MANUFACTURER;
         String deviceName = manufacturer + " " + modelName;
@@ -334,6 +341,10 @@ public class MainActivity extends AppCompatActivity {
         //System.setProperty("ro.usb.uvc.enabled", String.valueOf(true));
         //Log.d(TAG, "ro.usb.uvc.enabled="+System.getProperty("ro.usb.uvc.enabled"));
 
+        // Establish media storage folders
+        createMediaFolder();
+
+        // Create camera manager
         mCameraManager = (CameraManager) getSystemService(CAMERA_SERVICE);
         if (isAnaglyphDisplayMode) {
             setContentView(R.layout.layout_anaglyph);
@@ -381,6 +392,44 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
+
+    }
+
+    private void createMediaFolder() {
+        File mediaStorageDir = new File(
+                Environment.getExternalStoragePublicDirectory(BASE_FOLDER), SAVE_FOLDER);
+
+        // Create the storage directory if it does not exist
+        if (!mediaStorageDir.exists()) {
+            if (!mediaStorageDir.mkdirs()) {
+                Log.e(TAG, "failed to create directory to save photo: " + mediaStorageDir.getAbsolutePath());
+                Toast.makeText(this, "Error creating folder " + SAVE_FOLDER, Toast.LENGTH_SHORT).show();
+                exit(1); // System exit
+            }
+        }
+        mediaStorageDir = new File(
+                Environment.getExternalStoragePublicDirectory(BASE_FOLDER), SAVE_FOLDER + File.separator + SAVE_ANA_FOLDER);
+
+        // Create the Anaglyph storage directory if it does not exist
+        if (!mediaStorageDir.exists()) {
+            if (!mediaStorageDir.mkdirs()) {
+                Log.e(TAG, "failed to create directory to save photo: " + mediaStorageDir.getAbsolutePath());
+                Toast.makeText(this, "Error creating folder " + SAVE_ANA_FOLDER, Toast.LENGTH_SHORT).show();
+                exit(1); // System exit
+            }
+        }
+
+        mediaStorageDir = new File(
+                Environment.getExternalStoragePublicDirectory(BASE_FOLDER), SAVE_FOLDER + File.separator + SAVE_LR_FOLDER);
+
+        // Create the LR storage directory if it does not exist
+        if (!mediaStorageDir.exists()) {
+            if (!mediaStorageDir.mkdirs()) {
+                Log.e(TAG, "failed to create directory to save photo: " + mediaStorageDir.getAbsolutePath());
+                Toast.makeText(this, "Error creating folder " + SAVE_LR_FOLDER, Toast.LENGTH_SHORT).show();
+                exit(1); // System exit
+            }
+        }
 
     }
 
@@ -752,6 +801,7 @@ public class MainActivity extends AppCompatActivity {
 //        }
 //        return consumed;
 //    }
+
     @Override
     protected void onResume() {
         Log.d(TAG, "onResume()");
@@ -1187,11 +1237,14 @@ public class MainActivity extends AppCompatActivity {
                     Toast.makeText(this, "Nothing to Review", Toast.LENGTH_SHORT).show();
                 }
                 return true;
-            case AEL_KEY:
-            case AEL_KB_KEY:
-                Toast.makeText(this, "Not implemented", Toast.LENGTH_SHORT).show();
-//                stopCamera();
-//                initCamera();
+            case ANAGLYPH_KEY:
+            case ANAGLYPH_KB_KEY:
+                stopCamera();
+                if (!isAnaglyphMode) isAnaglyphMode = true;
+                else isAnaglyphMode = false;
+                if (isAnaglyphMode) Toast.makeText(this, "Anaglyph", Toast.LENGTH_SHORT).show();
+                else Toast.makeText(this, "SBS", Toast.LENGTH_SHORT).show();
+                initCamera();
                 return true;
             case MODE_KEY:
             case MODE_KB_KEY:
@@ -1400,6 +1453,7 @@ public class MainActivity extends AppCompatActivity {
         new android.os.Handler().postDelayed(new Runnable() {
             @Override
             public void run() {
+                toneGen.stopTone();
                 toneGen.release();
             }
         }, 100); // 100 milliseconds is a good duration for a short tone.
@@ -1410,12 +1464,14 @@ public class MainActivity extends AppCompatActivity {
             showToast("Saved IMG" + timestamp);
             leftBitmap = saveImageFile(leftBytes, PHOTO_PREFIX + timestamp, true); // left
             rightBitmap = saveImageFile(rightBytes, PHOTO_PREFIX + timestamp, false); // right
+            leftBytes = null;
+            rightBytes = null;
             if (aiVisionEnabled) {
                 String response = aiVision.getInformationFromImage(leftBitmap, prompt);
                 Log.d(TAG, "AI Vision response: " + response);
                 Toast.makeText(this, "AI Vision response: " + response, Toast.LENGTH_SHORT).show();
             }
-            if (saveAnaglyph) {
+            if (isAnaglyphMode || saveAnaglyph) {
                 createAndSaveAnaglyph(PHOTO_PREFIX + timestamp, leftBitmap, rightBitmap);
             }
             if (saveSBS) {
@@ -1461,19 +1517,7 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        File mediaStorageDir = new File(
-                Environment.getExternalStoragePublicDirectory(BASE_FOLDER), SAVE_FOLDER);
-
-        // Create the storage directory if it does not exist
-        if (!mediaStorageDir.exists()) {
-            if (!mediaStorageDir.mkdirs()) {
-                Log.e(TAG, "failed to create directory to save photo: " + mediaStorageDir.getAbsolutePath());
-                Toast.makeText(this, "Error creating folder " + SAVE_FOLDER, Toast.LENGTH_SHORT).show();
-                return null;
-            }
-        }
-
-        File file = new File(Environment.getExternalStoragePublicDirectory(BASE_FOLDER + File.separator + SAVE_FOLDER), filename);
+        File file = new File(Environment.getExternalStoragePublicDirectory(BASE_FOLDER + File.separator + SAVE_FOLDER + File.separator + SAVE_LR_FOLDER), filename);
 
         try (FileOutputStream output = new FileOutputStream(file)) {
             output.write(bytes);
@@ -1508,50 +1552,11 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        int width = Math.min(leftBitmap.getWidth(), rightBitmap.getWidth());
-        int height = Math.min(leftBitmap.getHeight(), rightBitmap.getHeight());
-
-        // Create anaglyph bitmap
-        anaglyphBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
-
-        int[] leftPixels = new int[width * height];
-        int[] rightPixels = new int[width * height];
-
-        leftBitmap.getPixels(leftPixels, 0, width, 0, 0, width, height);
-        rightBitmap.getPixels(rightPixels, 0, width, 0, 0, width, height);
-
-        int[] anaglyphPixels = new int[width * height];
-
-        for (int i = 0; i < leftPixels.length; i++) {
-            int leftPixel = leftPixels[i];
-            int rightPixel = rightPixels[i];
-
-            // Extract RGB components
-            int leftRed = (leftPixel >> 16) & 0xFF;
-            int rightGreen = (rightPixel >> 8) & 0xFF;
-            int rightBlue = rightPixel & 0xFF;
-
-            // Create anaglyph pixel: left red + right green/blue
-            anaglyphPixels[i] = (0xFF << 24) | (leftRed << 16) | (rightGreen << 8) | rightBlue;
-        }
-
-        anaglyphBitmap.setPixels(anaglyphPixels, 0, width, 0, 0, width, height);
+        anaglyphBitmap = StereoImage.colorAnaglyph(leftBitmap, rightBitmap, parameters.getParallaxOffset(), parameters.getVerticalOffset());
 
         // Save anaglyph image
-        File mediaStorageDir = new File(
-                Environment.getExternalStoragePublicDirectory(BASE_FOLDER), SAVE_FOLDER);
-
-        // Create the storage directory if it does not exist
-        if (!mediaStorageDir.exists()) {
-            if (!mediaStorageDir.mkdirs()) {
-                Log.e(TAG, "failed to create directory to save photo: " + mediaStorageDir.getAbsolutePath());
-                Toast.makeText(this, "Error creating folder " + SAVE_FOLDER, Toast.LENGTH_SHORT).show();
-                return;
-            }
-        }
-
         String filename = timestamp + "_ana.jpg";
-        File file = new File(Environment.getExternalStoragePublicDirectory(BASE_FOLDER + File.separator + SAVE_FOLDER), filename);
+        File file = new File(Environment.getExternalStoragePublicDirectory(BASE_FOLDER + File.separator + SAVE_FOLDER + File.separator + SAVE_ANA_FOLDER), filename);
 
         try (FileOutputStream out = new FileOutputStream(file)) {
             anaglyphBitmap.compress(Bitmap.CompressFormat.JPEG, 100, out);
@@ -1573,35 +1578,13 @@ public class MainActivity extends AppCompatActivity {
             return null;
         }
 
-        // Calculate the dimensions for the combined bitmap.
-        int width = leftBitmap.getWidth() + rightBitmap.getWidth();
-        int height = Math.max(leftBitmap.getHeight(), rightBitmap.getHeight());
-
-        // Create a new bitmap with the combined dimensions.
-        sbsBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
-
-        // Create a canvas to draw on the new bitmap.
-        Canvas canvas = new Canvas(sbsBitmap);
-
-        // Draw the left bitmap at position (0, 0).
-        canvas.drawBitmap(leftBitmap, 0f, 0f, null);
-
-        // Draw the right bitmap immediately to the right of the left one.
-        canvas.drawBitmap(rightBitmap, leftBitmap.getWidth(), 0f, null);
-
-        // Save SBS image
-        File mediaStorageDir = new File(
-                Environment.getExternalStoragePublicDirectory(BASE_FOLDER), SAVE_FOLDER);
-
-        // Create the storage directory if it does not exist
-        if (!mediaStorageDir.exists()) {
-            if (!mediaStorageDir.mkdirs()) {
-                Log.e(TAG, "failed to create directory to save photo: " + mediaStorageDir.getAbsolutePath());
-                Toast.makeText(this, "Error creating folder " + SAVE_FOLDER, Toast.LENGTH_SHORT).show();
-                return null;
-            }
+        sbsBitmap = StereoImage.alignLR(leftBitmap, rightBitmap, parameters.getParallaxOffset(), parameters.getVerticalOffset());
+        if (sbsBitmap == null) {
+            Log.d(TAG, "createAndSaveSBS failed");
+            return null;
         }
 
+        // Save SBS image
         String filename = timestamp + "_2x1.jpg";
         File file = new File(Environment.getExternalStoragePublicDirectory(BASE_FOLDER + File.separator + SAVE_FOLDER), filename);
 
