@@ -3,7 +3,7 @@ A personal 3D Camera Android App Project
 
 This is a personal camera project intended for 3D photography hobbyists and experimenters.
 The app runs on the Xreal Beam Pro device and takes 3D photos exclusively. It is not intended to replace the native camera app.
-It is a starting point for special purpose experimental 3D camera apps using the Xreal Beam Pro camera.
+It is a starting point for special purpose **_experimental_** 3D camera apps using the Xreal Beam Pro camera.
 
 ## Design Goals
 ### Use Cases
@@ -17,14 +17,11 @@ Specific uses I would like to have with a 3D camera app are:
 * Simultaneous multiple 3D cameras remote control
 * Sharing photos via email, for direct printing SBS or Anaglyph, or for review and alignment using 3D apps like [3DSteroidPro](https://play.google.com/store/apps/details?id=jp.suto.stereoroidpro&hl=en_US).
 
-The display of the 3D parallel L/R image should be centered on the display and no larger than 130 cm wide for a stereoscope or free-viewing the image to minimize eye strain. 
+The display of the 3D parallel L/R image should be centered on the display and no larger than 130 cm wide for a stereoscope or for free-viewing the image to minimize eye strain. 
 There is a display mode where only the stereo image appears without controls or other information.
 
-The display can be turned off, while the camera still functions with remote control. Blanking the screen is for photographing wild life without disturing them. 
-Blanking the screen can also conserve battery power with long interval timer captures.
-
 ### Camera Control
-For the above uses cases the app requires remote key control of its functions, not the touch screen.
+For the above uses cases the app requires remote key control of its functions and not with the touch screen.
 
 With the remote control requirements for the app,  a minimum Bluetooth controller is needed. 
 I want to keep the GUI mostly for viewing 3D images and for showing information status or settings.
@@ -33,6 +30,10 @@ Therefore only key input will determine the camera operation.
 I chose the [8BitDo](https://www.8bitdo.com) Micro Bluetooth game key controller in its Android mode. With this controller's 15 keys many camera functions can be set or controlled with a single key.
 The 8BitDo Micro is sold as key programmable in its keyboard mode, but I found it impossible to modify key codes using the manufacturer's [Google Play Store app](https://play.google.com/store/apps/details?id=com.abitdo.advance). 
 Fortunately the out of the box Android key mode is good enough.
+
+There is also a keyboard mode with the 8BitDo Micro. See the key diagram below. 
+The app uses these equivalent keys so a standard Bluetooth keyboard device can also be used simulatneously with the game controller.
+With keyboard input, a command line interface is present for debugging and camera parameter setup until a Settings GUI feature is coded.
 
 ## Camera Functions
 ### Camera Mode
@@ -53,13 +54,16 @@ The photographer can set the type of exposure metering: Frame Average, Center We
 ### Image Storage
 The app stores image files in the "Pictures/A3DCamera" folder. The base folder can be changed to "DCIM/A3DCamera" in the code.
 
-There are options for storing 3D photos in several formats. Left and Right Camera images are stored respectively as "_l" and "_r" suffix filename jpg files.
+The app stores 3D photos in several formats. Left and Right Camera images are stored respectively as "_l" and "_r" suffix filename jpg files.
 Side by Side parallel left and right images are stored as "_2x1" suffix filename jpg files.
 Anaglyph 3D images are stored as "_ana" suffix filename jpg files.
-The default is SBS image storage and cannot be altered until the app implements menu settings.
+
+* The A3DCamera folder stores the SBS photos.
+* The A3DCamera/Anaglyph subfolder stores the Anaglyph photos.
+* The A3DCamera/LR subfolder stores the single left and right photos.
 
 Left and right images contain limited EXIF capture information: for example- IMG20250904_r.jpg f2.2, 1/3 second, 2.16mm, ISO413
-Each camera image captured is 4080 x 3072 pixels (4/3 ratio) the full sensor size of each left and right camera.
+Each camera photo captured is 4080 x 3072 pixels, the full maximum sensor size of each left and right camera. Note the aspect ratio is not 4:3.
 
 ### Display
 The app display is a centered viewfinder sized to permit use of stereoscopic "free-viewing". This is a learned eye relaxing technique you can use to help see your subject in 3D with parallal side by side left and right eye images. 
@@ -70,10 +74,13 @@ When free-viewing I use a pair of +4.0 reading glasses to get closer to the scre
 
 The SBS display is sized at 130 mm for viewing in a stereoscope.
 
-The app does not vertically align the left and right images nor adjust the stereo window. As a hobbyist app the user is encouraged to use [Stereo Photo Maker (English)](https://stereo.jpn.org/eng/stphmkr/) 
+The app does not vertically align the left and right images nor adjust the stereo window in Live view mode. As a hobbyist app the user is encouraged to use [Stereo Photo Maker (English)](https://stereo.jpn.org/eng/stphmkr/) 
 to align left and right images vertically, correct any horizontal perspective distortion, and set the most pleasing stereo window.
 
 The app implements a image review feature by launching a separate app like 3DSteroidPro.
+
+When using the Command Line feature below you can set the vertical misalignment and the stereo window to your preference.
+These values persist after app restart and adjust the saved photos, except for single left and right photos.
 
 ### Camera Control
 #### On Camera
@@ -84,7 +91,7 @@ app by default to view the photo.
 If this app is not installed, you can select the app you will use for review.
 
 #### Wired Remote Control
-A wired USB-C connected Android keyboard can control the camera with keys (not fully worked out).
+A wired USB-C connected Android keyboard can control the camera with keys similar to wireless keyboards or game controllers.
 
 #### Bluetooth Remote Control
 Here is the current key mapping for a 8BitDo Bluetooth game controller in Android mode. The controller must be paired with the Beam Pro. 
@@ -94,24 +101,25 @@ A Bluetooth Android keyboard may also be used, but the app needs an update for a
 * FOCUS   - Cycle through fixed focus distances: Hyperfocal, Photo Booth, Macro
 * MODE    - Select Auto, Manual, and Shutter Priority (only Auto implemented)
 * BURST   - Start continous photo capture at about 1 photo per second until the key is pressed and released again, or 60 images captured. In Photo Booth mode take only 4 images.
-* DISP    - Toggle change Live View display mode (SBS, not working: Anaglyph, L/R, Blank)
+* DISP    - Toggle change Review display mode (SBS,  Anaglyph, L/R) (Not implement for either Live view or Review mode)
 * TIMER   - Set 3 second delay time to take a photo or burst for Photo Booth mode. Toggle no delay or Photo Booth.
 * ISO     - Set the ISO (not implemented)
 * SPEED   - Set the Shutter speed (not implemented)
 * FN      - Cycle through exposure metering: Frame Average, Center Weighted, Spot Metering
 * MENU    - Settings, etc. not implemented
 * BACK    - Only active with menu, not implemented
-* OK/REVIEW - Review the last photo taken in [3DSteroid Pro (StereoRoidPro)](https://play.google.com/store/apps/details?id=jp.suto.stereoroidpro&hl=en_US) or another viewer. OK function for menus when camera is not active
+* OK/REVIEW - Review the last photo taken in [3DSteroid Pro (StereoRoidPro)](https://play.google.com/store/apps/details?id=jp.suto.stereoroidpro&hl=en_US) or another viewer. OK function for menus and setting when camera is not active
 * SHARE    - Share the last photo taken with Email, Messaging, Photo Viewing, Printer, etc. apps.
 
 ![8BitDo Micro Bluetooth Controller](images/A3DCamera_Layout_1080.png)
 
-Here are the Android keyboard keys matching the function keys of the 8BitDo Micro controller in keyboard mode:
+The app can also be controlled with a WiFi ASCII keyboard. Here are the Android keyboard keys matching the function keys of the 8BitDo Micro controller when switched to keyboard mode:
 ![8BitDo Micro Bluetooth Controller](images/A3DCamera_KB_Layout_1080.png)
 
 #### WiFi Remote Control
-The app can listen for UDP broadcast messages to control the camera. Only shutter control is working. Turned off at present, this is a work in progress.
-This feature can be used to trigger multiple cameras at the same time. More on this later.
+The app can listen for UDP broadcast messages to control the camera. Only shutter control is working.
+This feature can be used to trigger multiple cameras at the same time. This is working, but is turned off for now and is a work in progress.
+An Android app at xxx can trigger broadcast messages.
 
 ### Limitations
 Captured images are on par in quality with the native camera app. However, with this camera images may still need adjustments for vertical alignment, contrast, color saturation, and sharpening.
@@ -139,7 +147,28 @@ To enter developer mode, press the Settings -> About This device -> Build number
 In developer mode, use Settings -> System -> Developer options to turn on USB debugging and use Android Studio or Processing.org Android Mode SDK to download an app
 
 ## AI Vision
-There is code to use a local network small multimodal language AI model to get a caption for the last photo taken. Not enabled.
+There is code to use a local network small multimodal language AI model to get a caption for the last photo taken. Currently turned off in the code.
+
+My testing does work with a Google gemma-3-12b-it-Q4_K_M.gguf model on a local Linux computer. This machine has a Nvidia 3060 GPU and uses .....
+
+## Command Line Debug
+There is no GUI for setting camera parameters. The app implements a limited command line interface to set and save some parameters.
+
+After connecting an Android keyboard to the app, the '/' (forward slash) key will show a prompt line to enter a command. Press the enter key to complete the command and see the results.
+
+The following commands are coded:
+1. /p=nnn  This sets the stereo window parallax adjustment (offset). The value comes from Stereo Photo Maker auto alignment of a sample left and right image. nnn is the horizontal alignment after auto alignment.
+2. /p  Show the horizontal parallax offset value.
+3. /v=nnn  This value corrects the vertical alignment of a sample left and right image. nnn is the vertical alignment value after performing an auto alignment. This value can be positive or negative.
+4. /v  Show the vertical alignment offset value.
+
+## Stretch Goals
+Turn off the display, while the camera still functions with remote control. Blanking the screen is for photographing wild life without disturing them. 
+Blanking the screen may conserve battery power with long interval timer captures.
+
+Set image capture aspect ratio: 4:3, 16:9 and 1:1.
+
+GUI interface.
 
 ## Credits
 
