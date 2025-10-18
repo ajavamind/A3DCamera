@@ -3,7 +3,8 @@ A personal 3D Camera Android App Project
 
 This is a personal camera project intended for 3D photography hobbyists and experimenters.
 The app runs on the Xreal Beam Pro device and takes 3D photos exclusively. It is not intended to replace the native camera app.
-It is a starting point for special purpose **_experimental_** 3D camera apps using the Xreal Beam Pro camera.
+
+It is a starting point for special purpose **_experimental_** 3D camera apps using the Xreal Beam Pro and Leia LumePad 2 cameras.
 
 ## Design Goals
 ### Use Cases
@@ -12,7 +13,7 @@ Specific uses I would like to have with a 3D camera app are:
 
 * 3D Photo Booth (work in progress)
 * 3D live view, photo capture, or photo viewing using any stereoscope
-* Live 3D demonstrations of the stereo window (work in progress)
+* Live Anaglyph 3D demonstrations of the stereo window (work in progress)
 * Remote control of the camera using Bluetooth or a local WiFi network (work in progress)
 * Simultaneous multiple 3D cameras remote control
 * Sharing photos via email, for direct printing SBS or Anaglyph, or for review and alignment using 3D apps like [3DSteroidPro](https://play.google.com/store/apps/details?id=jp.suto.stereoroidpro&hl=en_US).
@@ -101,8 +102,8 @@ A Bluetooth Android keyboard may also be used, but the app needs an update for a
 * FOCUS   - Cycle through fixed focus distances: Hyperfocal, Photo Booth, Macro
 * MODE    - Select Auto, Manual, and Shutter Priority (only Auto implemented)
 * BURST   - Start continous photo capture at about 1 photo per second until the key is pressed and released again, or 60 images captured. In Photo Booth mode take only 4 images.
-* DISP    - Toggle change Review display mode (SBS,  Anaglyph, L/R) (Not implement for either Live view or Review mode)
-* TIMER   - Set 3 second delay time to take a photo or burst for Photo Booth mode. Toggle no delay or Photo Booth.
+* DISP    - Toggle change Review display mode (SBS,  Anaglyph, L/R) (Not implemented for either Live view or Review mode)
+* TIMER   - Set 3 second delay time to take a photo or burst in Photo Booth mode. Toggle no delay or Photo Booth.
 * ISO     - Set the ISO (not implemented)
 * SPEED   - Set the Shutter speed (not implemented)
 * FN      - Cycle through exposure metering: Frame Average, Center Weighted, Spot Metering
@@ -119,7 +120,7 @@ The app can also be controlled with a WiFi ASCII keyboard. Here are the Android 
 #### WiFi Remote Control
 The app can listen for UDP broadcast messages to control the camera. Only shutter control is working.
 This feature can be used to trigger multiple cameras at the same time. This is working, but is turned off for now and is a work in progress.
-An Android app at xxx can trigger broadcast messages.
+An Android app at [RemoteCapture ](https://github.com/ajavamind/RemoteCapture) can trigger broadcast messages.
 
 ### Limitations
 Captured images are on par in quality with the native camera app. However, with this camera images may still need adjustments for vertical alignment, contrast, color saturation, and sharpening.
@@ -147,12 +148,12 @@ You will be asked to scan the file for security, respond yes.
 My Beam Pro is in developers mode, but you do not have to be in that mode to install.
 
 To enter developer mode, press the Settings -> About This device -> Build number (key) 7 times to enter this mode.
-In developer mode, use Settings -> System -> Developer options to turn on USB debugging and use Android Studio or Processing.org Android Mode SDK to download an app
+In developer mode, use Settings -> System -> Developer options to turn on USB debugging and use Android Studio or Processing.org Android Mode SDK to download an app.
 
 ## AI Vision
 There is code to use a local network small multimodal language AI model to get a caption for the last photo taken. Currently turned off in the code.
 
-My testing does work with a Google gemma-3-12b-it-Q4_K_M.gguf model on a local Linux computer. This machine has a Nvidia 3060 GPU and uses .....
+My testing does work with a Google gemma-3-12b-it-Q4_K_M.gguf multimodal model on a local Linux computer. This machine has a Nvidia 3060 GPU and uses [llama-cpp-server](https://github.com/ggml-org/llama.cpp)
 
 ## Command Line Debug
 There is no GUI for setting camera parameters. The app implements a limited command line interface to set and save some parameters.
@@ -160,19 +161,27 @@ There is no GUI for setting camera parameters. The app implements a limited comm
 After connecting an Android keyboard to the app, the '/' (forward slash) key will show a prompt line to enter a command. Press the enter key to complete the command and see the results.
 
 The following commands are coded:
-1. /p=nnn  This sets the stereo window parallax adjustment (offset). The value comes from Stereo Photo Maker auto alignment of a sample left and right image. nnn is the horizontal alignment after auto alignment.
+1. /p=nnn  This sets the stereo window parallax adjustment (offset). The value comes from Stereo Photo Maker auto alignment of a sample left and right image from the XBP. nnn is the horizontal alignment after auto alignment. Example /p=212
 2. /p  Show the horizontal parallax offset value.
-3. /v=nnn  This value corrects the vertical alignment of a sample left and right image. nnn is the vertical alignment value after performing an auto alignment. This value can be positive or negative.
+3. /v=nnn  This value corrects the vertical alignment of a sample left and right image. nnn is the vertical alignment value after performing an auto alignment. This value can be positive or negative. Example /v=-12
 4. /v  Show the vertical alignment offset value.
 
+These two commands do not affect the live view image, but do change the alignment of stored photos for SBS and anaglyph.
+
+## Software Issues
+1. The XBP should be held horizontally when starting to make sure the camera starts. Otherwise a blank screen will appear. Exit the app with the navigation bar.
+2. There is no exit key implemented yet. To exit the app, swipe from the right edge to the left, to show the navigation bar. Press the box or circle to exit (but not close the app).
+
 ## Stretch Goals
-Turn off the display, while the camera still functions with remote control. Blanking the screen is for photographing wild life without disturing them. 
-Blanking the screen may conserve battery power with long interval timer captures.
+Turn off the display, while allowing the camera to continue functioning with remote control. Blanking the screen is for photographing wild life without disturing them. 
+Blanking the screen may also conserve battery power with long interval timer captures.
 
 Set image capture aspect ratio: 4:3, 16:9 and 1:1.
 
-GUI interface.
+Anaglyph Live view mode
+
+GUI interface. Settings menu
 
 ## Credits
 
-Thanks to Wilbert Brants for his code example for 3D camera operation. 
+Thanks to Wilbert Brants for his code example of 3D camera operation. 
