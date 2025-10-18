@@ -1,44 +1,46 @@
 package com.andymodla.android3dcamera;
 
-
-import android.content.Context;
-import android.content.SharedPreferences;
-import android.os.Bundle;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
-import android.widget.EditText;
-import android.widget.TextView;
-import androidx.appcompat.app.AppCompatActivity;
+import com.google.android.material.snackbar.Snackbar;
 
-public class CommandLine extends AppCompatActivity {
-    private EditText inputField;
-    private TextView outputDisplay;
-    private StringBuilder cmdBuffer;
-    private SharedPreferences prefs;
-    private static final String PREFS_NAME = "CommandLineVars";
+public class CommandLine {
+    private final StringBuilder cmdBuffer;
+    private Snackbar mSnackbar;
+    View rootView;
+    Parameters mParameters;
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        //setContentView(R.layout.activity_command_line);
-
-        //inputField = findViewById(R.id.input_field);
-        //outputDisplay = findViewById(R.id.output_display);
+    /*
+     * Command line instructions for Parameter values
+     * Debugging feature until Graphical User Interface is implemented
+     *
+     *
+     * Constructor
+     * @param mainActivity
+     * @param parameters
+     * @return
+     */
+    public CommandLine(MainActivity mainActivity, Parameters parameters, String initialMessage) {
         cmdBuffer = new StringBuilder();
-        prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-
-        inputField.setOnKeyListener(new View.OnKeyListener() {
-            @Override
-            public boolean onKey(View v, int keyCode, KeyEvent event) {
-                if (event.getAction() == KeyEvent.ACTION_DOWN) {
-                    return handleKeyDown(keyCode, event);
-                }
-                return false;
-            }
-        });
+        rootView = mainActivity.findViewById(R.id.overlay_text); // Or any appropriate view
+        mParameters = parameters;
+        mSnackbar = Snackbar.make(rootView, initialMessage, Snackbar.LENGTH_SHORT);
+        mSnackbar.show();
     }
-
-    private boolean handleKeyDown(int keyCode, KeyEvent event) {
+ 
+    public boolean processCommandLineKey(int keyCode, KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_SLASH) {
+            cmdBuffer.setLength(0); // Clear the buffer
+            cmdBuffer.append('/');
+            mSnackbar.setDuration(Snackbar.LENGTH_INDEFINITE);
+            updateDisplay();
+            return true;
+        }
+        if (cmdBuffer.length() == 0) {
+            return false;
+        }
+    
         if (keyCode == KeyEvent.KEYCODE_ENTER) {
             processCommand();
             return true;
@@ -47,7 +49,7 @@ public class CommandLine extends AppCompatActivity {
         if (keyCode == KeyEvent.KEYCODE_DEL) {
             if (cmdBuffer.length() > 0) {
                 cmdBuffer.deleteCharAt(cmdBuffer.length() - 1);
-                updateInputDisplay();
+                updateDisplay();
             }
             return true;
         }
@@ -56,16 +58,16 @@ public class CommandLine extends AppCompatActivity {
         char c = (char) event.getUnicodeChar();
         if (c != 0) {
             cmdBuffer.append(c);
-            updateInputDisplay();
+            updateDisplay();
             return true;
         }
 
         return false;
     }
 
-    private void updateInputDisplay() {
-        inputField.setText(cmdBuffer.toString());
-        inputField.setSelection(cmdBuffer.length());
+    private void updateDisplay() {
+        mSnackbar.setText(cmdBuffer.toString());
+        mSnackbar.show();
     }
 
     private void processCommand() {
@@ -73,23 +75,18 @@ public class CommandLine extends AppCompatActivity {
         cmdBuffer.setLength(0);
 
         if (cmd.isEmpty() || cmd.charAt(0) != '/') {
-            displayOutput("Error: Command must start with /");
-            updateInputDisplay();
+            displayOutput("--> Error: Command must start with /");
             return;
         }
 
         // Remove the / prefix
         String cmdContent = cmd.substring(1).trim();
-
         if (cmdContent.isEmpty()) {
-            displayOutput("Error: No command specified");
-            updateInputDisplay();
+            displayOutput("--> Error: No command specified");
             return;
         }
-
         String result = parseAndExecute(cmdContent);
         displayOutput(result);
-        updateInputDisplay();
     }
 
     private String parseAndExecute(String cmdContent) {
@@ -102,12 +99,9 @@ public class CommandLine extends AppCompatActivity {
                 return "Error: Variable name is empty";
             }
 
-            String value = prefs.getString(varName, null);
-            if (value == null) {
-                return varName + " = (undefined)";
-            }
-            return varName + " = " + value;
-
+            String result  = mParameters.findParam(varName, null, false);
+            System.out.println("result=" + result);
+            return result;
         } else {
             // SET operation - store variable value
             String varName = cmdContent.substring(0, equalsPos).trim();
@@ -118,66 +112,16 @@ public class CommandLine extends AppCompatActivity {
             }
 
             // Save to SharedPreferences
-            SharedPreferences.Editor editor = prefs.edit();
-            editor.putString(varName, value);
-            editor.apply();
-
-            return varName + " = " + value;
+            return mParameters.findParam(varName, value, true);
         }
     }
 
     private void displayOutput(String output) {
-        String current = outputDisplay.getText().toString();
-        if (!current.isEmpty()) {
-            current += "\n";
-        }
-        current += "> " + cmdBuffer.toString() + "\n" + output;
-        outputDisplay.setText(current);
+        cmdBuffer.append(output);
+        mSnackbar.setText(cmdBuffer.toString());
+        cmdBuffer.setLength(0);
+        mSnackbar.setDuration(Snackbar.LENGTH_SHORT);
+        mSnackbar.show();
+   }
 
-        // Scroll to bottom
-        final TextView tv = outputDisplay;
-        tv.post(new Runnable() {
-            @Override
-            public void run() {
-               // tv.setSelection(tv.getText().length());
-            }
-        });
-    }
 }
-
-/*
- * XML Layout file (res/layout/activity_command_line.xml):
- *
- * <?xml version="1.0" encoding="utf-8"?>
- * <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
- *     android:layout_width="match_parent"
- *     android:layout_height="match_parent"
- *     android:orientation="vertical"
- *     android:padding="16dp"
- *     android:background="#000000">
- *
- *     <TextView
- *         android:id="@+id/output_display"
- *         android:layout_width="match_parent"
- *         android:layout_height="0dp"
- *         android:layout_weight="1"
- *         android:textColor="#00FF00"
- *         android:fontFamily="monospace"
- *         android:textSize="14sp"
- *         android:scrollbars="vertical"
- *         android:padding="8dp"/>
- *
- *     <EditText
- *         android:id="@+id/input_field"
- *         android:layout_width="match_parent"
- *         android:layout_height="wrap_content"
- *         android:textColor="#00FF00"
- *         android:fontFamily="monospace"
- *         android:textSize="14sp"
- *         android:background="#222222"
- *         android:padding="8dp"
- *         android:hint="Enter command..."
- *         android:textColorHint="#006600"/>
- *
- * </LinearLayout>
- */

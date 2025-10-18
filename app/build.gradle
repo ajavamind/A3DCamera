@@ -15,6 +15,9 @@ android {
 
         //testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
+    buildFeatures {
+        buildConfig = true
+    }
     packagingOptions {
         pickFirst 'META-INF/DEPENDENCIES' // This tells Gradle to pick the first encountered file
         // or

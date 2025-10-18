@@ -293,7 +293,8 @@ public class MainActivity extends AppCompatActivity {
     static final int SHARE_KB_KEY = KeyEvent.KEYCODE_S;
 
     private TextView countdownTextView;
-
+    private CommandLine commandLine;
+    private String splashMessage = "Welcome to A3DCamera by Andy Modla";
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -578,6 +579,9 @@ public class MainActivity extends AppCompatActivity {
         super.onStart();
         Log.d(TAG, "onStart()");
         setVisibility();
+        if (commandLine == null) {
+            commandLine = new CommandLine(this, parameters, splashMessage + " Version: " + BuildConfig.VERSION_NAME);
+        }
     }
 
     private static final int MAXPARAM_SIZE = 16;
@@ -1148,9 +1152,12 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public boolean onKeyUp(int keyCode, KeyEvent event) {
         Log.d(TAG, "onKeyUp " + keyCode);
+        if (commandLine.processCommandLineKey(keyCode, event)) {
+            return true;
+        }
         switch (keyCode) {
             case KeyEvent.KEYCODE_VOLUME_UP:
-                //case KeyEvent.KEYCODE_VOLUME_DOWN:
+            //case KeyEvent.KEYCODE_VOLUME_DOWN:
             case KeyEvent.KEYCODE_3D_MODE: // camera key - first turn off auto launch of native camera app
             case SHUTTER_KEY:
             case SHUTTER_KB_KEY:
