@@ -185,6 +185,8 @@ You can also simultaneously trigger any Android device running the [MultRemoteCa
 I created this app by modifying the Open Camera (open soucre) app several years ago. My objective then was to use two phones for stereo photography.
 It reqires a local WiFi network.
 
+Just imagine how many stereo bases and views you could get with multiple Beam Pro cameras!
+
 ### AI Vision
 There is code to use a local network small multimodal language AI model to get a caption for the last photo taken. Currently turned off in the code.
 
