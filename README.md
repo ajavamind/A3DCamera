@@ -5,6 +5,7 @@ This is a personal camera project intended for 3D photography hobbyists and expe
 The app runs on the Xreal Beam Pro device and takes 3D photos exclusively. It is not intended to replace the native camera app.
 
 It is a starting point for special purpose **_experimental_** 3D camera apps using the Xreal Beam Pro and Leia LumePad 2 cameras.
+It's a software playground for experimenting. See Experiments section below.
 
 ## Design Goals
 ### Use Cases
@@ -21,11 +22,11 @@ Specific uses I would like to have with a 3D camera app are:
 The display of the 3D parallel L/R image should be centered on the display and no larger than 130 cm wide for a stereoscope or for free-viewing the image to minimize eye strain. 
 There is a display mode where only the stereo image appears without controls or other information.
 
-### Camera Control
+### Camera App Design
 For the above uses cases the app requires remote key control of its functions and not with the touch screen.
 
-With the remote control requirements for the app,  a minimum Bluetooth controller is needed. 
-I want to keep the GUI mostly for viewing 3D images and for showing information status or settings.
+With the remote control requirements for the app, a minimum Bluetooth controller is needed. 
+I want to keep the GUI mostly for viewing 3D images and for showing brief information status or settings.
 Therefore only key input will determine the camera operation.
 
 I chose the [8BitDo](https://www.8bitdo.com) Micro Bluetooth game key controller in its Android mode. With this controller's 15 keys many camera functions can be set or controlled with a single key.
@@ -117,26 +118,20 @@ A Bluetooth Android keyboard may also be used, but the app needs an update for a
 The app can also be controlled with a WiFi ASCII keyboard. Here are the Android keyboard keys matching the function keys of the 8BitDo Micro controller when switched to keyboard mode:
 ![8BitDo Micro Bluetooth Controller](images/A3DCamera_KB_Layout_1080.png)
 
-#### WiFi Remote Control
-The app can listen for UDP broadcast messages to control the camera. Only shutter control is working.
-This feature can be used to trigger multiple cameras at the same time. This is working, but is turned off for now and is a work in progress.
-An Android app at [RemoteCapture ](https://github.com/ajavamind/RemoteCapture) can trigger broadcast messages.
-
 ### Limitations
-Captured images are on par in quality with the native camera app. However, with this camera images may still need adjustments for vertical alignment, contrast, color saturation, and sharpening.
+Captured images are on par in quality with the native camera app. However, with this camera images may still need adjustments for vertical alignment, horizontal perspective, contrast, color saturation, and sharpening.
 
 Color balance adjustments are not implemented. Exposure lock is not implemented.
 
 There are no camera leveling, tilt, or subject distance suggestions from the app.
 
 ## Usage
-1. I discovered my camera lens vertical alignment is only off by 3 pixels so that live free-viewing is possible without eye strain for me. But the camera can not be too close to the subject.
+1. I discovered my camera lens vertical alignment is only off by 12 pixels so that live free-viewing is possible without eye strain for me. But the camera can not be too close to the subject.
 2. Distance to the subject should be about 1.5 meter to match the 50mm camera lens interaxial separation distance.
 3. Synchronization of the camera lens shutters is not known. However the shutter speed is automatically set by the camera so motion blur is possible.
 4. I use a Bluetooth remote to take photos instead of the button keys on the camera. This requires pairing with a remote controller or keyboard.
 
 ## App Download Link
-
 Latest version:
 [Version 1.5 A3DCamera Android app](https://drive.google.com/file/d/1IIXaQYrzeHks_mF9WRLy_3Vlho43zcuf/view?usp=sharing)
 
@@ -149,11 +144,6 @@ My Beam Pro is in developers mode, but you do not have to be in that mode to ins
 
 To enter developer mode, press the Settings -> About This device -> Build number (key) 7 times to enter this mode.
 In developer mode, use Settings -> System -> Developer options to turn on USB debugging and use Android Studio or Processing.org Android Mode SDK to download an app.
-
-## AI Vision
-There is code to use a local network small multimodal language AI model to get a caption for the last photo taken. Currently turned off in the code.
-
-My testing does work with a Google gemma-3-12b-it-Q4_K_M.gguf multimodal model on a local Linux computer. This machine has a Nvidia 3060 GPU and uses [llama-cpp-server](https://github.com/ggml-org/llama.cpp)
 
 ## Command Line Debug
 There is no GUI for setting camera parameters. The app implements a limited command line interface to set and save some parameters.
@@ -180,8 +170,43 @@ Set image capture aspect ratio: 4:3, 16:9 and 1:1.
 
 Anaglyph Live view mode
 
-GUI interface. Settings menu
+Time Interval captures.
+
+A GUI interface: Settings menu, etc.
+
+## Experiments
+#### WiFi Remote Control
+The app can listen for UDP broadcast messages to control the camera. Only shutter control is working.
+This feature can be used to trigger multiple Beam Pro  cameras at the same time. This is working, but is turned off for now and is a work in progress.
+
+An Android app at [RemoteCapture ](https://github.com/ajavamind/RemoteCapture) can trigger broadcast messages.
+
+You can also simultaneously trigger any Android device running the [MultRemoteCamera app](https://sourceforge.net/p/multi-remote-camera/wiki/Home/) Android app.
+I created this app by modifying the Open Camera (open soucre) app several years ago. My objective then was to use two phones for stereo photography.
+It reqires a local WiFi network.
+
+### AI Vision
+There is code to use a local network small multimodal language AI model to get a caption for the last photo taken. Currently turned off in the code.
+
+My testing does show it working with a Google gemma-3-12b-it-Q4_K_M.gguf multimodal model on a local network Linux computer. This machine has a Nvidia 3060 GPU and uses [llama-cpp-server](https://github.com/ggml-org/llama.cpp)
+
+### Scrcpy Remote Viewing
+With the screen copy utility (Scrcpy) from https://github.com/Genymobile/scrcpy you can display the Beam Pro screen on your Windows, Linux, or iOS computer.
+In addition you can conrol your Beam Pro device with a mouse or keyboard! And you can use either wired USB or WiFi (after you initialize with USB first).
+To use Scrcpy fully you need to set your Beam Pro to developer's mode. (I have not tested without entering developer's mode though, so I may be wrong).
+
+The steps are first to show the A3DCamera stereo image (SBS parallal) screen output using Scrcpy.
+Next run a Processing.org Java mode sketch to extract the screen stereo and convert to Anaglyph for display in the sketch window.
+The sketch uses space bar key to record the current sketch output.
+
+See the sketch code in [WindowsStereoScreenCapture.pde](https://github.com/ajavamind/A3DCamera/tree/main/WindowsStereoScreenCapture)
+There a screen shots of the output and images captured.
+
+Scrcpy can send windows keyboard keys to the A3DCamera app. You can get remote control with this technique. 
+You have to make the scrcpy window active, so that keys get directed to scrcpy. Do this by a mouse click on the scrcpy window showing the Beam Pro A3DCamera app display. 
+
+Sitting in another room I can see live view output of the camera and capture images with either Bluetooth or WiFi.
 
 ## Credits
 
-Thanks to Wilbert Brants for his code example of 3D camera operation. 
+Thanks to Wilbert Brants for his code example of 3D camera setup and operation. 
