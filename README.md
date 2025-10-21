@@ -185,20 +185,43 @@ You can also simultaneously trigger any Android device running the [MultRemoteCa
 I created this app by modifying the Open Camera (open soucre) app several years ago. My objective then was to use two phones for stereo photography.
 It reqires a local WiFi network.
 
-Just imagine how many stereo bases and views you could get with multiple Beam Pro cameras!
+**Just imagine how many stereo base views or lenticular images you could get with multiple Beam Pro cameras!**
 
 ### AI Vision
 There is code to use a local network small multimodal language AI model to get a caption for the last photo taken. Currently turned off in the code.
 
-My testing does show it working with a Google gemma-3-12b-it-Q4_K_M.gguf multimodal model on a local network Linux computer. This machine has a Nvidia 3060 GPU and uses [llama-cpp-server](https://github.com/ggml-org/llama.cpp)
+My testing does show it working with a Google gemma-3-12b-it-Q4_K_M.gguf multimodal model served on a local network Linux computer. 
+This Ubuntu Linux computer has a Nvidia 3060 GPU and uses [llama-cpp-server](https://github.com/ggml-org/llama.cpp) as the LLM server with a OpenAI API.
 
-### Scrcpy Remote Viewing
+### Beam Pro Remote Viewing Using Scrcpy
 With the screen copy utility (Scrcpy) from https://github.com/Genymobile/scrcpy you can display the Beam Pro screen on your Windows, Linux, or iOS computer.
-In addition you can conrol your Beam Pro device with a mouse or keyboard! And you can use either wired USB or WiFi (after you initialize with USB first).
+In addition you can conrol your Beam Pro device with your computer mouse or keyboard, either USB wired or wireless! You have to  initialize with wired USB first. 
+See Scrcpy documentation.
+
 To use Scrcpy fully you need to set your Beam Pro to developer's mode. (I have not tested without entering developer's mode though, so I may be wrong).
 
-The steps are first to show the A3DCamera stereo image (SBS parallal) screen output using Scrcpy.
-Next run a Processing.org Java mode sketch to extract the screen stereo and convert to Anaglyph for display in the sketch window.
+Here is an example command line script for running scrcpy wireless connected to XBP from my computer:
+
+```bash
+
+C:\Users\andym\Tools\scrcpy-win64-v3.3.3>scrcpy --tcpip=192.168.1.101:5555 --window-borderless --window-x=0 --window-y=0
+
+scrcpy 3.3.3 <https://github.com/Genymobile/scrcpy>
+INFO: Connecting to 192.168.1.101:5555...
+INFO: Connected to 192.168.1.101:5555
+C:\Users\andym\Tools\scrcpy-win64-v3.3.3\scrcpy-server: 1 file pushed, 0 skipped. 3.1 MB/s (90164 bytes in 0.028s)
+[server] INFO: Device: [XREAL] XREAL X4000 (Android 14)
+INFO: Renderer: direct3d
+INFO: Texture: 2400x1080
+[server] WARN: Could not get initial audio timestamp
+INFO: Texture: 1080x2400
+INFO: Texture: 2400x1080
+
+```
+
+With this experiment the firs step is to show the A3DCamera stereo image (SBS parallal) screen output using Scrcpy.
+
+Next run a Processing.org Java mode sketch that gets a screen shot to extract the SBS stereo image and convert to Anaglyph for display in the sketch window.
 The sketch uses space bar key to record the current sketch output.
 
 See the sketch code in [WindowsStereoScreenCapture.pde](https://github.com/ajavamind/A3DCamera/tree/main/WindowsStereoScreenCapture)
@@ -207,7 +230,7 @@ There a screen shots of the output and images captured.
 Scrcpy can send windows keyboard keys to the A3DCamera app. You can get remote control with this technique. 
 You have to make the scrcpy window active, so that keys get directed to scrcpy. Do this by a mouse click on the scrcpy window showing the Beam Pro A3DCamera app display. 
 
-Sitting in another room I can see live view output of the camera and capture images with either Bluetooth or WiFi.
+Sitting in another room I can see live view output of the camera and capture images with either a Bluetooth controller or WiFi using the computer keyboard.
 
 ## Credits
 
