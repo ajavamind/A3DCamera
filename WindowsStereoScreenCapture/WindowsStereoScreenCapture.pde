@@ -1,6 +1,6 @@
 /*
 
- C:\Users\andym\Tools\scrcpy-win64-v3.3.3>scrcpy --window-borderless --window-x=0 --window-y=0
+ C:\Users\andym\Tools\scrcpy-win64-v3.3.3>scrcpy --window-borderless --window-x=0 --window-y=0 -m 2400
  scrcpy 3.3.3 <https://github.com/Genymobile/scrcpy>
  INFO: ADB device found:
  INFO:     -->   (usb)  R4LM47B1186245                  device  X4000
@@ -20,7 +20,7 @@
  More details: https://github.com/Genymobile/scrcpy/blob/master/doc/connection.md#tcpip-wireless
  
  
- C:\Users\andym\Tools\scrcpy-win64-v3.3.3>scrcpy --tcpip  --window-borderless --window-x=0 --window-y=0
+ C:\Users\andym\Tools\scrcpy-win64-v3.3.3>scrcpy --tcpip  --window-borderless --window-x=0 --window-y=0 -m 2400
  scrcpy 3.3.3 <https://github.com/Genymobile/scrcpy>
  INFO: ADB device found:
  INFO:     --> (tcpip)  192.168.1.101:5555              device  X4000
@@ -38,21 +38,37 @@ import java.awt.AWTException;
 import processing.opengl.*;
 
 PImage screenshotL, screenshotR;
-int xWindow = 0;
-int yWindow = 0;
-int widthWindow = 2400;
-int heightWindow = 1080;
-float fps = 30;
-boolean anaglyph = true;
-boolean fullScreen = false;
+PImage screenshot;
 
+// assumes 4K computer monitor being used
+int xWindow = 0; // top left corner of computer screen
+int yWindow = 0;
+int widthWindow = 2400;  // size of XBP screen - scrcpy shows this size using parameter -m 2400
+int heightWindow = 1080; // size of XBP screen - scrcpy shows this size using parameter -m 2400
+
+int leftx = 140;
+int lefty = 156;
+int leftw = 1026;
+int lefth = 770;
+
+int rightx = 1200;
+int righty = 156;
+int rightw = 1026;
+int righth = 770;
+
+float fps = 30;
+static final int SCREEN = 0;
+static final int SBS = 1;
+static final int ANAGLYPH = 2;
+int mode = SCREEN; //ANAGLYPH;
+float AR;
 PImage stereoImage;
 Robot robot;
 
 // Parallax and vertical alignment adjustments in pixels
 int parallax = 50;
 int verticalAlignment = 0;
-float AR = 1020.0/768.0;
+
 ;
 
 // Note: a lot of hard coded values to get window with stereo image from scrcpy display
@@ -64,12 +80,13 @@ This code assumes a sbs image at top left corner from A3DCamera app running on X
 
 void setup() {
   // Set the size of your sketch window for anaglyph image
-  size(1020, 768, P2D);
-
+  //size(1020, 768, P2D);
+  size(2052, 1080, P2D);
+  AR = (float)width/(float)height; // your sketch screen aspect ratio
   frameRate(fps);
 
   try {
-    robot = new Robot();
+    robot = new Robot();  // screenshot capture robot
   }
   catch (AWTException e) {
     e.printStackTrace();
@@ -81,9 +98,9 @@ void draw() {
 
   takeScreenshot();
 
-  if (screenshotL != null && screenshotR !=null) {
+  if (screenshot != null || screenshotL != null && screenshotR !=null) {
     // Display the captured screenshot within your sketch
-    if (anaglyph) {
+    if (mode == ANAGLYPH) {
       int w = screenshotL.width;
       int h = screenshotL.height;
       AR = (float) w / (float) h;
@@ -114,41 +131,36 @@ void draw() {
       rect(width-parallax/2, 0, parallax/2, height);
       popMatrix();
       endPGL();
-    } else {  // show SBS stereo image, needs a size() adjustment in the setup code
+    } else if (mode == SBS) {  // show SBS stereo image, needs a size() adjustment in the setup code
       PGL pgl = beginPGL();
       pgl.colorMask(true, true, true, true);
-      image(screenshotL, 0, 0, 1020, 768);
-      image(screenshotR, 1020, 0, 1020, 768);
+      image(screenshotL, 0, 0, leftw, lefth);
+      image(screenshotR, leftw, 0, rightw, righth);
+    } else {
+      PGL pgl = beginPGL();
+      pgl.colorMask(true, true, true, true);
+      float sar = (float)screenshot.width/(float)screenshot.height;
+      image(screenshot, 0, 0, width, (float)width/sar);
     }
   }
 }
 
 void takeScreenshot() {
-  //try {
-  //Robot robot = new Robot();
-  // Define the area of the screen to capture (e.g., entire display)
-  // You can adjust these values to capture a specific portion :
-  //screenshot = new PImage(robot.createScreenCapture(new Rectangle(xWindow, yWindow, widthWindow, heightWindow)));
 
-  if (fullScreen) {
-    screenshotL = new PImage(robot.createScreenCapture(new Rectangle(0, 0, displayWidth/2, displayHeight)));
-    screenshotR = new PImage(robot.createScreenCapture(new Rectangle(1920, 0, displayWidth/2, displayHeight)));
+  if (mode == SCREEN) {
+    screenshot = new PImage(robot.createScreenCapture(new Rectangle(xWindow, yWindow, widthWindow, heightWindow)));
   } else {
-    // scrcpy window top left of desktop display
-    screenshotL = new PImage(robot.createScreenCapture(new Rectangle(140, 156, 1020, 768)));
-    screenshotR = new PImage(robot.createScreenCapture(new Rectangle(1200, 156, 1020, 768)));
+    screenshotL = new PImage(robot.createScreenCapture(new Rectangle(leftx, lefty, leftw, lefth)));
+    screenshotR = new PImage(robot.createScreenCapture(new Rectangle(rightx, righty, rightw, righth)));
   }
-  //}
-  //catch (AWTException e) {
-  //  e.printStackTrace();
-  //}
 }
 
 void keyReleased() {
   if (key == ' ') {
     save("screenhotLR.jpg");
   } else if (key == '.') {
-    anaglyph = !anaglyph;
+    mode++;
+    if (mode >ANAGLYPH) mode = SCREEN;
   } else if (key == '+') {
     parallax += 2;
   } else if (key == '-') {
