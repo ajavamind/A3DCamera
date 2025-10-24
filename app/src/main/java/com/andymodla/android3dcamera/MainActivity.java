@@ -112,6 +112,7 @@ public class MainActivity extends AppCompatActivity {
     private String SAVE_LR_FOLDER = "LR";
     private String PHOTO_PREFIX = "IMG_";
     private String APP_REVIEW_PACKAGE = "jp.suto.stereoroidpro"; // Review with StereoRoidPro app default
+    private String APP_PHOTO_REVIEW_PACKAGE = "com.google.android.apps.photosgo"; // Review with Gallery
 
     volatile boolean allPermissionsGranted = false;
     volatile boolean shutterSound = true;
@@ -236,6 +237,8 @@ public class MainActivity extends AppCompatActivity {
 
     String timestamp;
     volatile File reviewSBS;
+    volatile File reviewAnaglyph;
+    volatile File reviewLR;
 
     // UDP Server variables
     private volatile UdpServer1 udpServer;    // Broadcast receiver
@@ -244,8 +247,11 @@ public class MainActivity extends AppCompatActivity {
     public static String sCount = ""; // Photo counter received from Broadcast message
 
     public enum Stereo {MONO, LEFT, RIGHT} // no suffix, left suffix, right suffix
-
     public static Stereo suffixSelection = Stereo.MONO; // no suffix, left suffix, right suffix
+
+    public enum DisplayMode {SBS, ANAGLYPH, LR};
+    public int displayMode = DisplayMode.SBS.ordinal();
+
     public static String lastSavedFilePath = null;
 
     private boolean isWiFiRemoteEnabled = false; //true;
@@ -314,6 +320,7 @@ public class MainActivity extends AppCompatActivity {
             // back cameras
             leftCameraId = "0";
             rightCameraId = "2";
+            crossEye = true;
             stereoCameraId = "4";  // logical (left "0" and right "2") back cameras
             cameraWidth = 4656; // 16Mp Back camera width lens pixels
             cameraHeight = 3496;// 16MP Back camera height lens pixels
@@ -1193,10 +1200,9 @@ public class MainActivity extends AppCompatActivity {
                 }
                 return true;
             case KeyEvent.KEYCODE_BACK:
+            case KeyEvent.KEYCODE_ESCAPE:
             case BACK_KB_KEY:
                 Toast.makeText(this, "Back", Toast.LENGTH_SHORT).show();
-                return true;
-            case KeyEvent.KEYCODE_ESCAPE:
                 return true;
             case SHARE_KEY:
             case SHARE_KB_KEY:
@@ -1239,7 +1245,11 @@ public class MainActivity extends AppCompatActivity {
             case REVIEW_KEY:
             case REVIEW_KB_KEY:
                 if (reviewSBS != null) {
-                    shareImage2(reviewSBS, APP_REVIEW_PACKAGE);
+                    if (displayMode == 0) {
+                        shareImage2(reviewSBS, APP_REVIEW_PACKAGE);
+                    } else {
+                        shareImage2(reviewAnaglyph, null);
+                    }
                 } else {
                     Toast.makeText(this, "Nothing to Review", Toast.LENGTH_SHORT).show();
                 }
@@ -1292,7 +1302,15 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             case DISP_KEY:
             case DISP_KB_KEY:
-                Toast.makeText(this, "DISP - not implemented", Toast.LENGTH_SHORT).show();
+                displayMode++;
+                if (displayMode >= DisplayMode.values().length) displayMode = 0;
+                if (displayMode == 0){
+                    Toast.makeText(this, "Display Mode SBS", Toast.LENGTH_SHORT).show();
+                } else if (displayMode == 1){
+                    Toast.makeText(this, "Display Mode Anaglyph", Toast.LENGTH_SHORT).show();
+                } else if (displayMode == 2){
+                    Toast.makeText(this, "Display Mode LR", Toast.LENGTH_SHORT).show();
+                }
 //                stopCamera();
 //                initCamera();
                 return true;
@@ -1479,7 +1497,7 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(this, "AI Vision response: " + response, Toast.LENGTH_SHORT).show();
             }
             if (isAnaglyphMode || saveAnaglyph) {
-                createAndSaveAnaglyph(PHOTO_PREFIX + timestamp, leftBitmap, rightBitmap);
+                reviewAnaglyph = createAndSaveAnaglyph(PHOTO_PREFIX + timestamp, leftBitmap, rightBitmap);
             }
             if (saveSBS) {
                 if (burstCounter > 0)
@@ -1552,11 +1570,11 @@ public class MainActivity extends AppCompatActivity {
         return bytes;
     }
 
-    private void createAndSaveAnaglyph(String timestamp, Bitmap leftBitmap, Bitmap rightBitmap) {
+    private File createAndSaveAnaglyph(String timestamp, Bitmap leftBitmap, Bitmap rightBitmap) {
         Log.d(TAG, "createAndSaveAnaglyph");
         if (leftBitmap == null || rightBitmap == null) {
             Log.d(TAG, "createAndSaveAnaglyph failed Bitmaps null " + timestamp);
-            return;
+            return null;
         }
 
         anaglyphBitmap = StereoImage.colorAnaglyph(leftBitmap, rightBitmap, parameters.getParallaxOffset(), parameters.getVerticalOffset());
@@ -1574,8 +1592,9 @@ public class MainActivity extends AppCompatActivity {
             Log.d(TAG, "Anaglyph image saved: " + file.getAbsolutePath());
         } catch (IOException e) {
             Log.e(TAG, "Error saving anaglyph image", e);
+            return null;
         }
-
+        return file;
     }
 
     private File createAndSaveSBS(String timestamp, Bitmap leftBitmap, Bitmap rightBitmap) {
@@ -1625,7 +1644,9 @@ public class MainActivity extends AppCompatActivity {
                                 shareIntent.putExtra(Intent.EXTRA_STREAM, contentUri);
                                 shareIntent.setType("image/*");
                                 shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                                startActivity(Intent.createChooser(shareIntent, "Share image..."));
+                                shareIntent.setPackage(APP_PHOTO_REVIEW_PACKAGE); //  actual package name
+                                this.startActivity(shareIntent);
+                                //startActivity(Intent.createChooser(shareIntent, "Share image..."));
                             }
                         }
                     });
@@ -1697,7 +1718,7 @@ public class MainActivity extends AppCompatActivity {
             } catch (ActivityNotFoundException e) {
                 // Handle the case where the target app is not installed
                 Log.d(TAG, "Failed to launch 3DSteroid Pro.");
-                Toast.makeText(this, "3DSteroidPro not installed", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, appPackage + " not installed", Toast.LENGTH_SHORT).show();
                 // Toast message or direct the user to the Play Store
                 Intent intent = new Intent(Intent.ACTION_SEND);
                 intent.putExtra(Intent.EXTRA_STREAM, contentUri);
