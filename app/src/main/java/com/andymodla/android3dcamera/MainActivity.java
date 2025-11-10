@@ -81,6 +81,10 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.Locale;
 import java.util.Vector;
+import android.view.InputDevice;
+import android.view.MotionEvent;
+import android.view.PointerIcon;
+import android.view.View;
 
 import android.opengl.GLSurfaceView;
 
@@ -113,6 +117,7 @@ public class MainActivity extends AppCompatActivity {
     private String PHOTO_PREFIX = "IMG_";
     private String APP_REVIEW_PACKAGE = "jp.suto.stereoroidpro"; // Review with StereoRoidPro app default
     private String APP_PHOTO_REVIEW_PACKAGE = "com.google.android.apps.photosgo"; // Review with Gallery
+    private String APP_CANON_PRINT_SERVICE_PACKAGE = "jp.co.canon.android.printservice.plugin";
 
     volatile boolean allPermissionsGranted = false;
     volatile boolean shutterSound = true;
@@ -238,7 +243,8 @@ public class MainActivity extends AppCompatActivity {
     String timestamp;
     volatile File reviewSBS;
     volatile File reviewAnaglyph;
-    volatile File reviewLR;
+    volatile File reviewLeft;
+    volatile File reviewRight;
 
     // UDP Server variables
     private volatile UdpServer1 udpServer;    // Broadcast receiver
@@ -271,7 +277,7 @@ public class MainActivity extends AppCompatActivity {
     static final int ISO_KEY = KeyEvent.KEYCODE_DPAD_DOWN;
     static final int TIMER_KEY = KeyEvent.KEYCODE_DPAD_LEFT;
     static final int SHUTTER_SPEED_KEY = KeyEvent.KEYCODE_DPAD_RIGHT;
-    static final int BLANK_SCREEN_KEY = KeyEvent.KEYCODE_BUTTON_SELECT; // 109-82 KeyEvent.KEYCODE_MENU;
+    static final int PRINT_KEY = KeyEvent.KEYCODE_BUTTON_SELECT; // 109-82 KeyEvent.KEYCODE_MENU;
     static final int ANAGLYPH_KEY = KeyEvent.KEYCODE_BUTTON_START; // 108 "+" button
     static final int FN_KEY = KeyEvent.KEYCODE_BUTTON_X; //  99 KeyEvent.KEYCODE_DEL = 67
     static final int MENU_KEY = KeyEvent.KEYCODE_BUTTON_Y;  // 100  KeyEvent.KEYCODE_SPACE = 62
@@ -289,7 +295,7 @@ public class MainActivity extends AppCompatActivity {
     static final int ISO_KB_KEY = KeyEvent.KEYCODE_D;
     static final int TIMER_KB_KEY = KeyEvent.KEYCODE_E;
     static final int SHUTTER_SPEED_KB_KEY = KeyEvent.KEYCODE_F;
-    static final int BLANK_SCREEN_KB_KEY = KeyEvent.KEYCODE_N;
+    static final int PRINT_KB_KEY = KeyEvent.KEYCODE_N;
     static final int ANAGLYPH_KB_KEY = KeyEvent.KEYCODE_O; // "+" button
     static final int FN_KB_KEY = KeyEvent.KEYCODE_H;
     static final int MENU_KB_KEY = KeyEvent.KEYCODE_I;
@@ -361,6 +367,14 @@ public class MainActivity extends AppCompatActivity {
             setContentView(R.layout.layout);
             setupSurfaces();
         }
+
+        View decorView = getWindow().getDecorView();
+        // Set the pointer icon to null (invisible)
+        decorView.setPointerIcon(PointerIcon.getSystemIcon(this, PointerIcon.TYPE_NULL)) ;
+        decorView.setOnGenericMotionListener((view, motionEvent) -> {
+            // Handle the event here
+            return handleMouseEvent(motionEvent);
+        });
 
         checkPermissions();
         setupUdpServer();  // listens for broadcast messages to control camera remotely
@@ -709,110 +723,107 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-//    Extra events for controlling the app, mouse
-//    @Override
-//    public boolean onGenericMotionEvent(MotionEvent event) {
-//        boolean consumed = false;
-//        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-//        mouseCapture = sharedPreferences.getBoolean(PreferenceKeys.MouseCapturePreferenceKey, false);
-//
-//        if (!mouseCapture) {
-//            consumed = super.onGenericMotionEvent(event);
-//            return consumed;
-//        }
-//        if (!consumed  && (0 != (event.getSource() & InputDevice.SOURCE_MOUSE))) {
-//            //if (0 != (event.getSource() & InputDevice.SOURCE_CLASS_POINTER)) {
-//            if (MyDebug.LOG) Log.d(TAG, "mouse button state="+event.getButtonState());
-//            if (mainUI.popupIsOpen() || settingsIsOpen())
-//                return false;
-//            consumed = true;
-//            int buttonState = event.getButtonState();
-//            int actionmasked = event.getActionMasked();
-//            if (MyDebug.LOG) Log.d(TAG, "action mask=" + actionmasked);
-//            if (actionmasked == MotionEvent.ACTION_HOVER_ENTER) {
-//                if (MyDebug.LOG) Log.d(TAG, "HOOVER ENTER");
-//                consumed = true;
-//            } else if (actionmasked == MotionEvent.ACTION_HOVER_EXIT) {
-//                if (MyDebug.LOG) Log.d(TAG, "HOVER EXIT");
-//                //
-//                consumed = true;
-//            } else if (buttonState == MotionEvent.BUTTON_PRIMARY) {
-//                int action = event.getAction();
-//                if (action == MotionEvent.ACTION_BUTTON_PRESS) {
-//                    if (MyDebug.LOG) Log.d(TAG, "Primary Mouse button press");
-//                    if (!preview.isVideo()) {
-//                        sCount = "";
-//                        MainActivity.this.runOnUiThread(new Runnable() {
-//                            public void run() {
-//                                takePicture(false);
-//                            }
-//                        });
-//                    }
-//                    else {
-//                        sCount = "";
-//                        MainActivity.this.runOnUiThread(new Runnable() {
-//                            public void run() {
-//                                if (preview.isVideoRecording())
-//                                    preview.stopVideo(true);
-//                                else
-//                                    takePicture(false);
-//                            }
-//                        });
-//                    }
-//                }
-//                consumed = true;
-//            } else if (buttonState == MotionEvent.BUTTON_SECONDARY) {
-//                if (MyDebug.LOG) Log.d(TAG, "Secondary Mouse button press");
-//                sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-//                String volume_keys = sharedPreferences.getString(PreferenceKeys.VolumeKeysPreferenceKey, "volume_take_photo");
-//                if (volume_keys.equals("volume_focus")) {
-//                    getPreview().requestAutoFocus();
-//                    consumed = true;
-//                }
-//                else{
-//                    openGallery();
-//                    consumed = true;
-//                }
-//            } else if (buttonState == MotionEvent.BUTTON_TERTIARY) {
-//                if (MyDebug.LOG) Log.d(TAG, "Tertiary Mouse button press");
-//                if (!preview.isVideo()) {
-//                    if (!preview.isFocusWaiting()) {
-//                        if( MyDebug.LOG ) Log.d(TAG, "remote request focus");
-//                        MainActivity.this.runOnUiThread(new Runnable() {
-//                            public void run() {
-//                                preview.requestAutoFocus();
-//                            }
-//                        });
-//                    }
-//                }
-//                consumed = true;
-//            } else switch (event.getAction()) {
-//                case MotionEvent.ACTION_SCROLL:
-//                    float speed = event.getAxisValue(MotionEvent.AXIS_VSCROLL);
-//                    if (MyDebug.LOG) Log.d(TAG, "scroll="+speed);
-//                    // zoom camera  here (ZOOM_STEP * speed);
-//                    if (speed < 0)
-//                        zoomOut();
-//                    else
-//                        zoomIn();
-//                    consumed = true;
-//                    break;
-//                case MotionEvent.ACTION_BUTTON_PRESS:
-//                    if (MyDebug.LOG) Log.d(TAG, "ACTION_BUTTON_PRESS");
-//                    consumed = true;
-//                    break;
-//                case MotionEvent.ACTION_BUTTON_RELEASE:
-//                    if (MyDebug.LOG) Log.d(TAG, "ACTION_BUTTON_RELEASE");
-//                    consumed = true;
-//                    break;
-//            }
+    private boolean handleMouseEvent(MotionEvent motionEvent) {
+        // Check if the event is from a mouse
+        if (motionEvent.isFromSource(InputDevice.SOURCE_MOUSE)) {
+            switch (motionEvent.getActionMasked()) {
+                case MotionEvent.ACTION_BUTTON_PRESS:
+                    // Button pressed
+                    handleButtonPress(motionEvent.getButtonState());
+                    return true;
+                case MotionEvent.ACTION_BUTTON_RELEASE:
+                    // Button released
+                    handleButtonRelease(motionEvent.getButtonState());
+                    return true;
+                case MotionEvent.ACTION_MOVE:
+                    // Mouse movement (use getX(), getY()) not used and consumed
+                    return true;
+                // You can also handle ACTION_HOVER_MOVE for hover events
+            }
+        }
+        return false;
+    }
 
-    /// /            consumed = true;
-//            return consumed;
-//        }
-//        return consumed;
-//    }
+    private void handleButtonPress(int buttonState) {
+        if ((buttonState & MotionEvent.BUTTON_PRIMARY) != 0) {
+            // Left mouse button pressed
+            Log.d(TAG, "Left button pressed");
+            capturePhoto();
+        }
+        if ((buttonState & MotionEvent.BUTTON_TERTIARY) != 0) {
+            // Middle mouse button pressed
+            Log.d(TAG, "Middle button pressed");
+            displayMode = DisplayMode.SBS.ordinal();
+            reviewPhotos(displayMode);
+        }
+        if ((buttonState & MotionEvent.BUTTON_SECONDARY) != 0) {
+            // Right mouse button pressed
+            Log.d(TAG, "Right button pressed");
+            printImageType();
+        }
+        // Other buttons like BUTTON_BACK, BUTTON_FORWARD can also be checked
+    }
 
+    private void printImageType() {
+        if (displayMode == DisplayMode.SBS.ordinal()) {
+            sharePrintImage(reviewSBS);
+        } else if (displayMode == DisplayMode.ANAGLYPH.ordinal()) {
+            sharePrintImage(reviewAnaglyph);
+        } else {
+            sharePrintImage(reviewLeft);
+        }
+
+    }
+
+    private void handleButtonRelease(int buttonState) {
+        // Handle button release events similarly
+    }
+
+    private void capturePhoto() {
+        if (isPhotobooth && (countdownDigit < 0)) {
+            startCountdownSequence(countdownStart);
+        } else {
+            countdownTextView.setVisibility(View.GONE);
+            MainActivity.this.runOnUiThread(new Runnable() {
+                public void run() {
+                    captureImages();
+                }
+            });
+        }
+    }
+
+    private void captureBurstPhoto() {
+        if (burstModeFeature && burstMode) {
+            //Toast.makeText(this, "Burst Mode ", Toast.LENGTH_SHORT).show();
+            if (isPhotobooth && (countdownDigit < 0) && burstCounter == 0) {
+                startCountdownSequence(countdownStart);  // calls captureImages() after count down finished
+                burstCounter = BURST_COUNT;
+            } else {
+                if (burstCounter > 0) {
+                    burstCounter = 0;
+                    //Toast.makeText(this, "Burst Mode Canceled ", Toast.LENGTH_SHORT).show();
+                } else {
+                    burstCounter = BURST_COUNT;
+                    captureImages();
+                }
+            }
+        } else {
+            Toast.makeText(this, "Burst Mode Not Enabled", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    void reviewPhotos(int displayMode) {
+        if (reviewSBS != null) {
+            if (displayMode == DisplayMode.SBS.ordinal()) {
+                shareImage2(reviewSBS, APP_REVIEW_PACKAGE);
+            } else {
+                shareImage2(reviewAnaglyph, null);
+            }
+        } else {
+            Toast.makeText(this, "Nothing to Review", Toast.LENGTH_SHORT).show();
+        }
+    }
+    
     @Override
     protected void onResume() {
         Log.d(TAG, "onResume()");
@@ -1168,36 +1179,11 @@ public class MainActivity extends AppCompatActivity {
             case KeyEvent.KEYCODE_3D_MODE: // camera key - first turn off auto launch of native camera app
             case SHUTTER_KEY:
             case SHUTTER_KB_KEY:
-                if (isPhotobooth && (countdownDigit < 0)) {
-                    startCountdownSequence(countdownStart);
-                } else {
-                    countdownTextView.setVisibility(View.GONE);
-                    MainActivity.this.runOnUiThread(new Runnable() {
-                        public void run() {
-                            captureImages();
-                        }
-                    });
-                }
+                capturePhoto();
                 return true;
             case BURST_KEY:
             case BURST_KB_KEY: // start and cancel Burst capture mode
-                if (burstModeFeature && burstMode) {
-                    //Toast.makeText(this, "Burst Mode ", Toast.LENGTH_SHORT).show();
-                    if (isPhotobooth && (countdownDigit < 0) && burstCounter == 0) {
-                        startCountdownSequence(countdownStart);  // calls captureImages() after count down finished
-                        burstCounter = BURST_COUNT;
-                    } else {
-                        if (burstCounter > 0) {
-                            burstCounter = 0;
-                            //Toast.makeText(this, "Burst Mode Canceled ", Toast.LENGTH_SHORT).show();
-                        } else {
-                            burstCounter = BURST_COUNT;
-                            captureImages();
-                        }
-                    }
-                } else {
-                    Toast.makeText(this, "Burst Mode Not Enabled", Toast.LENGTH_SHORT).show();
-                }
+                captureBurstPhoto();
                 return true;
             case KeyEvent.KEYCODE_BACK:
             case KeyEvent.KEYCODE_ESCAPE:
@@ -1244,15 +1230,7 @@ public class MainActivity extends AppCompatActivity {
             case KeyEvent.KEYCODE_VOLUME_DOWN:
             case REVIEW_KEY:
             case REVIEW_KB_KEY:
-                if (reviewSBS != null) {
-                    if (displayMode == 0) {
-                        shareImage2(reviewSBS, APP_REVIEW_PACKAGE);
-                    } else {
-                        shareImage2(reviewAnaglyph, null);
-                    }
-                } else {
-                    Toast.makeText(this, "Nothing to Review", Toast.LENGTH_SHORT).show();
-                }
+                reviewPhotos(displayMode);
                 return true;
             case ANAGLYPH_KEY:
             case ANAGLYPH_KB_KEY:
@@ -1303,12 +1281,12 @@ public class MainActivity extends AppCompatActivity {
             case DISP_KEY:
             case DISP_KB_KEY:
                 displayMode++;
-                if (displayMode >= DisplayMode.values().length) displayMode = 0;
-                if (displayMode == 0){
+                if (displayMode >= DisplayMode.values().length) displayMode = DisplayMode.SBS.ordinal();
+                if (displayMode == DisplayMode.SBS.ordinal()){
                     Toast.makeText(this, "Display Mode SBS", Toast.LENGTH_SHORT).show();
-                } else if (displayMode == 1){
+                } else if (displayMode == DisplayMode.ANAGLYPH.ordinal()){
                     Toast.makeText(this, "Display Mode Anaglyph", Toast.LENGTH_SHORT).show();
-                } else if (displayMode == 2){
+                } else if (displayMode == DisplayMode.LR.ordinal()){
                     Toast.makeText(this, "Display Mode LR", Toast.LENGTH_SHORT).show();
                 }
 //                stopCamera();
@@ -1319,6 +1297,10 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(this, "MENU - not implemented", Toast.LENGTH_SHORT).show();
 //                stopCamera();
 //                initCamera();
+                return true;
+            case PRINT_KEY:
+            case PRINT_KB_KEY:
+                printImageType();
                 return true;
 //            case VIDEO_RECORD_KEY:
 //            case VIDEO_RECORD_KB_KEY:
@@ -1553,6 +1535,7 @@ public class MainActivity extends AppCompatActivity {
                     new String[]{"image/jpeg"}, null);
 
             Log.d(TAG, "Image saved: " + file.getAbsolutePath());
+            if (left) reviewLeft = file; else reviewRight = file;
         } catch (IOException e) {
             Log.e(TAG, "Error saving image", e);
             return null;
@@ -1797,6 +1780,42 @@ public class MainActivity extends AppCompatActivity {
             intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
             this.startActivity(Intent.createChooser(intent, "Share using:")); // Allows the user to select the print service
             //this.startActivity(intent); // SEND only
+        } else {
+            // Handle the case where the insertion failed
+            Log.d(TAG, "Failed to share image");
+        }
+    }
+
+    public void sharePrintImage(File imageFile) {
+        Uri contentUri = FileProvider.getUriForFile(this, getPackageName() + ".fileprovider", imageFile);
+        ContentResolver resolver = getContentResolver();
+        ContentValues contentValues = new ContentValues();
+        contentValues.put(MediaStore.Images.Media.DISPLAY_NAME, imageFile.getName());
+
+        String fileName = imageFile.getName();
+        String mimeType;
+
+        if (fileName.toLowerCase().endsWith(".png")) {
+            mimeType = "image/png";
+        } else if (fileName.toLowerCase().endsWith(".jpg") || fileName.toLowerCase().endsWith(".jpeg")) {
+            mimeType = "image/jpeg";
+        } else if (fileName.toLowerCase().endsWith(".gif")) {
+            mimeType = "image/gif";
+        } else {
+            Log.d(TAG, "Unsupported image format: " + fileName);
+            return; // Exit if the format is not supported
+        }
+
+        contentValues.put(MediaStore.Images.Media.MIME_TYPE, mimeType); // Or the correct MIME type
+        //Uri contentUri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues);
+
+        if (contentUri != null) {
+            Intent intent = new Intent(Intent.ACTION_SEND);
+            intent.putExtra(Intent.EXTRA_STREAM, contentUri);
+            intent.setType(mimeType); // Or the correct MIME type
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            intent.setPackage(APP_CANON_PRINT_SERVICE_PACKAGE); // Printer app actual package name
+            startActivity(Intent.createChooser(intent, "Print using:")); // Allows the user to select the print service
         } else {
             // Handle the case where the insertion failed
             Log.d(TAG, "Failed to share image");
