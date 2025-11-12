@@ -110,7 +110,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String PREFS_NAME = "Parameters";
     private Parameters parameters;
 
-    private String BASE_FOLDER = Environment.DIRECTORY_PICTURES;  // Environment.DIRECTORY_DCIM;  //
+    private String BASE_FOLDER =  Environment.DIRECTORY_DCIM; //Environment.DIRECTORY_PICTURES;    //
     private String SAVE_FOLDER = "A3DCamera";
     private String SAVE_ANA_FOLDER = "Anaglyph";
     private String SAVE_LR_FOLDER = "LR";
@@ -127,7 +127,8 @@ public class MainActivity extends AppCompatActivity {
     //
     static final float MACRO_FOCUS_DISTANCE = 10.0f;  // 100mm
     static final float HYPERFOCAL_FOCUS_DISTANCE = 0.60356647f;  // 1.66 meters
-    static final float PHOTO_BOOTH_FOCUS_DISTANCE = 1.43f;  // 700mm  was 1.0f;  1 meter
+    //static final float PHOTO_BOOTH_FOCUS_DISTANCE = 1.43f;  // 700mm  1 meter
+    static final float PHOTO_BOOTH_FOCUS_DISTANCE = 2.0f;  // 500mm
     static final float AUTO_FOCUS_DISTANCE = 0.0f;
     static final float[] FOCUS_DISTANCE = {HYPERFOCAL_FOCUS_DISTANCE, PHOTO_BOOTH_FOCUS_DISTANCE, MACRO_FOCUS_DISTANCE, AUTO_FOCUS_DISTANCE};
     static final String[] FOCUS_DISTANCE_NAMES = {"HYPERFOCAL FOCUS DISTANCE", "PHOTO BOOTH FOCUS DISTANCE", "MACRO FOCUS DISTANCE", "AUTO FOCUS"};
@@ -765,6 +766,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void printImageType() {
+        if (reviewSBS == null || reviewAnaglyph == null || reviewLeft == null) {
+            Toast.makeText(this, "Nothing to Print", Toast.LENGTH_SHORT).show();
+            return;
+        }
         if (displayMode == DisplayMode.SBS.ordinal()) {
             sharePrintImage(reviewSBS);
         } else if (displayMode == DisplayMode.ANAGLYPH.ordinal()) {
@@ -823,7 +828,7 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(this, "Nothing to Review", Toast.LENGTH_SHORT).show();
         }
     }
-    
+
     @Override
     protected void onResume() {
         Log.d(TAG, "onResume()");
