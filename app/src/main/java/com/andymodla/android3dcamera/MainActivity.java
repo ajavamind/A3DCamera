@@ -26,8 +26,8 @@ import android.content.pm.ResolveInfo;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Canvas;
 import android.graphics.ImageFormat;
+
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
@@ -47,15 +47,17 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
-import android.os.Looper;
+import android.os.HandlerThread;
+
 import android.provider.MediaStore;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.KeyEvent;
-import android.view.Surface;
+
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
+
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.view.WindowInsets;
@@ -84,7 +86,6 @@ import java.util.Vector;
 import android.view.InputDevice;
 import android.view.MotionEvent;
 import android.view.PointerIcon;
-import android.view.View;
 
 import android.opengl.GLSurfaceView;
 
@@ -100,7 +101,7 @@ import netP5.NetStatus; // network library for UDP Server
 // README:   https://github.com/ajavamind/A3DCamera/blob/main/README.md
 
 /**
- * Copyright 2025 Andy Modla  All Rights Reserved
+ * Copyright 2025 Andy Modla All Rights Reserved
  */
 public class MainActivity extends AppCompatActivity {
 
@@ -196,6 +197,8 @@ public class MainActivity extends AppCompatActivity {
     private CameraCaptureSession mCameraCaptureSession;
     private CaptureRequest.Builder captureRequestBuilder;
     private Handler mainHandler;
+    private HandlerThread mCameraThread;
+    private Handler mCameraHandler;
 
     // Display surfaces
     private SurfaceView mSurfaceView0, mSurfaceView2;
@@ -207,11 +210,9 @@ public class MainActivity extends AppCompatActivity {
     private boolean aiVisionEnabled = false;
     String prompt = "Generate a caption shorter than 6 words.";
 
-    private View view;
-    private Surface surface;
-
     // Image capture
-    private ImageReader mImageReader0, mImageReader2;
+    private ImageReader mImageReader0, mImageReader2;  // for SBS display
+    //private ImageReader aImageReader0, aImageReader2;  // for anaglyph display
 
     // Image Save File modes
     private volatile boolean saveAnaglyph = true;
@@ -308,6 +309,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView countdownTextView;
     private CommandLine commandLine;
     private String splashMessage = "Welcome to A3DCamera by Andy Modla";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -361,13 +363,9 @@ public class MainActivity extends AppCompatActivity {
 
         // Create camera manager
         mCameraManager = (CameraManager) getSystemService(CAMERA_SERVICE);
-        if (isAnaglyphDisplayMode) {
-            setContentView(R.layout.layout_anaglyph);
-            setupAnaglyphSurfaces();
-        } else {
-            setContentView(R.layout.layout);
-            setupSurfaces();
-        }
+        setContentView(R.layout.layout);
+        setupSurfaces();
+
 
         View decorView = getWindow().getDecorView();
         // Set the pointer icon to null (invisible)
@@ -379,13 +377,13 @@ public class MainActivity extends AppCompatActivity {
 
         checkPermissions();
         setupUdpServer();  // listens for broadcast messages to control camera remotely
+
+        // setup AI vision connection to local network vision small LM
         if (aiVisionEnabled) {
             aiVision = new AIvision(this);
         }
 
         countdownTextView = findViewById(R.id.overlay_text);
-        // Corrected code
-        //RelativeLayout myRelativeLayout = (RelativeLayout) findViewById(R.id.overlay_text);
 
         // This is a crucial step: we need to wait for the view to be laid out
         // before we can get its dimensions.
@@ -415,7 +413,28 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
+        mainHandler = new Handler(getMainLooper());
+    }
 
+    private void startCameraThread() {
+            mCameraThread = new HandlerThread("CameraBackgroundThread"); // Name your thread
+            mCameraThread.start();
+            mCameraHandler = new Handler(mCameraThread.getLooper());
+
+            mCameraHandler = new Handler(getMainLooper());
+    }
+
+    private void stopCameraThread() {
+        if (mCameraThread != null) {
+            mCameraThread.quitSafely(); // Safely shut down the looper
+            try {
+                mCameraThread.join(); // Wait for the thread to finish
+                mCameraThread = null;
+                mCameraHandler = null;
+            } catch (InterruptedException e) {
+                Log.e(TAG, "Interrupted while stopping camera thread", e);
+            }
+        }
     }
 
     private void createMediaFolder() {
@@ -508,7 +527,7 @@ public class MainActivity extends AppCompatActivity {
                             if (!isVideo) {
                                 MainActivity.this.runOnUiThread(new Runnable() {
                                     public void run() {
-                                        captureImages(); //takePicture(false);
+                                        createCameraCaptureSession(); //takePicture(false);
                                     }
                                 });
                             } else {
@@ -523,7 +542,7 @@ public class MainActivity extends AppCompatActivity {
                                         if (isVideoRecording())
                                             stopVideo(true);
                                         else
-                                            captureImages();//takePicture(false);
+                                            createCameraCaptureSession();//takePicture(false);
                                     }
                                 });
                             } else {
@@ -705,7 +724,6 @@ public class MainActivity extends AppCompatActivity {
             Log.d(TAG, "onStop");
         super.onStop();
         // we stop location listening in onPause, but done here again just to be certain!
-        //applicationInterface.getLocationSupplier().freeLocationListeners();
     }
 
     // stop UDP server for broadcast message reception
@@ -791,7 +809,7 @@ public class MainActivity extends AppCompatActivity {
             countdownTextView.setVisibility(View.GONE);
             MainActivity.this.runOnUiThread(new Runnable() {
                 public void run() {
-                    captureImages();
+                    createCameraCaptureSession();
                 }
             });
         }
@@ -801,7 +819,7 @@ public class MainActivity extends AppCompatActivity {
         if (burstModeFeature && burstMode) {
             //Toast.makeText(this, "Burst Mode ", Toast.LENGTH_SHORT).show();
             if (isPhotobooth && (countdownDigit < 0) && burstCounter == 0) {
-                startCountdownSequence(countdownStart);  // calls captureImages() after count down finished
+                startCountdownSequence(countdownStart);  // calls createCameraCaptureSession() after count down finished
                 burstCounter = BURST_COUNT;
             } else {
                 if (burstCounter > 0) {
@@ -809,7 +827,7 @@ public class MainActivity extends AppCompatActivity {
                     //Toast.makeText(this, "Burst Mode Canceled ", Toast.LENGTH_SHORT).show();
                 } else {
                     burstCounter = BURST_COUNT;
-                    captureImages();
+                    createCameraCaptureSession();
                 }
             }
         } else {
@@ -833,6 +851,10 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         Log.d(TAG, "onResume()");
         super.onResume();
+        if (shutterSound) {
+            CameraInfo.mustPlayShutterSound();
+        }
+        Log.d(TAG, "shutter sound " + ((shutterSound) ? "on" : "off"));
 
         // for debugging and test
         if (allPermissionsGranted) {
@@ -844,7 +866,8 @@ public class MainActivity extends AppCompatActivity {
             CameraInfoUtil.checkCameraSyncType(this, list);
             CameraInfoUtil.logFocusDistanceCalibration(this);  // for debug
 
-            initCamera();
+            startCameraThread();
+            openCamera();
         }
     }
 
@@ -852,7 +875,8 @@ public class MainActivity extends AppCompatActivity {
     protected void onPause() {
         Log.d(TAG, "onPause()");
         super.onPause();
-        stopCamera();
+        closeCamera();
+        stopCameraThread();
     }
 
 
@@ -863,13 +887,6 @@ public class MainActivity extends AppCompatActivity {
 
         mSurfaceHolder0 = mSurfaceView0.getHolder();
         mSurfaceHolder2 = mSurfaceView2.getHolder();
-
-        // Setup anaglyph surface view TODO
-        //mAnaglyphSurfaceView = findViewById(R.id.surfaceView3);  // anaglyph surface
-        //mAnaglyphSurfaceView.getHolder().setFormat(PixelFormat.RGBA_8888);
-        //mAnaglyphSurfaceView.setVisibility(SurfaceView.GONE);  // initially hide
-        // ... later, when you want to show it:
-        // mAnaglyphSurfaceView.setVisibility(View.VISIBLE);
 
         SurfaceHolder.Callback shCallback = new SurfaceHolder.Callback() {
             @Override
@@ -891,50 +908,6 @@ public class MainActivity extends AppCompatActivity {
 
         mSurfaceHolder0.addCallback(shCallback);
         mSurfaceHolder2.addCallback(shCallback);
-    }
-
-    private void setupAnaglyphSurfaces() {
-        Log.d(TAG, "setupAnaglyphSurfaces()");
-        // Setup GLSurfaceView
-        glSurfaceView = new GLSurfaceView(this);
-        glSurfaceView.setEGLContextClientVersion(2);
-        anaglyphRenderer = new AnaglyphRenderer();
-        glSurfaceView.setRenderer(anaglyphRenderer);
-        glSurfaceView.setRenderMode(GLSurfaceView.RENDERMODE_CONTINUOUSLY);
-        anaglyphRenderer.setupSurfaces();
-//        mSurfaceView0 = findViewById(R.id.glSurfaceView);
-//        mSurfaceView2 = mSurfaceView0; //findViewById(R.id.surfaceView2);
-//
-//        mSurfaceHolder0 = mSurfaceView0.getHolder();
-//        mSurfaceHolder2 = mSurfaceHolder0; // mSurfaceView2.getHolder();
-
-        // Setup anaglyph surface view TODO
-        //mAnaglyphSurfaceView = findViewById(R.id.surfaceView3);  // anaglyph surface
-        //mAnaglyphSurfaceView.getHolder().setFormat(PixelFormat.RGBA_8888);
-        //mAnaglyphSurfaceView.setVisibility(SurfaceView.GONE);  // initially hide
-        // ... later, when you want to show it:
-        // mAnaglyphSurfaceView.setVisibility(View.VISIBLE);
-
-//        SurfaceHolder.Callback shCallback = new SurfaceHolder.Callback() {
-//            @Override
-//            public void surfaceCreated(@NonNull SurfaceHolder holder) {
-//            }
-//
-//            @Override
-//            public void surfaceChanged(@NonNull SurfaceHolder holder, int format, int width, int height) {
-//            }
-//
-//            @Override
-//            public void surfaceDestroyed(@NonNull SurfaceHolder holder) {
-//                if (null != mCameraDevice) {
-//                    mCameraDevice.close();
-//                    mCameraDevice = null;
-//                }
-//            }
-//        };
-
-        //mSurfaceHolder0.addCallback(shCallback);
-        //mSurfaceHolder2.addCallback(shCallback);
     }
 
     private void checkPermissions() {
@@ -974,13 +947,11 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void initCamera() {
-        Log.d(TAG, "initCamera()");
-        if (shutterSound) {
-            CameraInfo.mustPlayShutterSound();
-        }
-        Log.d(TAG, "shutter sound " + ((shutterSound) ? "on" : "off"));
-        mainHandler = new Handler(getMainLooper());
+    private void openCamera() {
+        Log.d(TAG, "openCamera()");
+        //mainHandler = new Handler(getMainLooper());
+
+        Log.d(TAG, "openCamera() cameraWidth=" + cameraWidth + " cameraHeight=" + cameraHeight);
 
         // Setup ImageReaders for capture
         mImageReader0 = ImageReader.newInstance(cameraWidth, cameraHeight, ImageFormat.JPEG, 2);  // 2 maxImages
@@ -988,7 +959,7 @@ public class MainActivity extends AppCompatActivity {
 
         if (ActivityCompat.checkSelfPermission(this, CAMERA) == PackageManager.PERMISSION_GRANTED) {
             try {
-                mCameraManager.openCamera(stereoCameraId, stateCallback, mainHandler); // logical camera 3 combines 1 and 2
+                mCameraManager.openCamera(stereoCameraId, mStateCallback, mCameraHandler); // logical camera 3 combines 1 and 2
                 Log.d(TAG, "openCamera(3)");
             } catch (CameraAccessException e) {
                 Log.e(TAG, "Camera access exception", e);
@@ -996,12 +967,15 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private final CameraDevice.StateCallback stateCallback = new CameraDevice.StateCallback() {
+    private final CameraDevice.StateCallback mStateCallback = new CameraDevice.StateCallback() {
         @Override
         public void onOpened(@NonNull CameraDevice camera) { // Open camera
             mCameraDevice = camera;
+            //createCameraViewSession();
             if (mSurfaceView0.isAttachedToWindow() && mSurfaceView2.isAttachedToWindow()) {
                 createCameraViewSession();
+            } else {
+                Log.d(TAG, "Surface not attached to window");
             }
         }
 
@@ -1015,31 +989,20 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public void onError(@NonNull CameraDevice camera, int error) {
+            mCameraDevice.close();
+            mCameraDevice = null;
             Log.e(TAG, "Camera " + camera.getId() + " hardware failure");
         }
     };
 
-    private void stopMainHandlerThread() {
-        if (mainHandler != null) {
-            Looper looper = mainHandler.getLooper();
-            looper.quitSafely();
-//            try {
-//                Thread lThread = looper.getThread();
-//                lThread.join();
-//            } catch (InterruptedException e) {
-//                e.printStackTrace();
-//            }
-            mainHandler = null;
-        }
-    }
-
-    private void stopCamera() {
-        Log.d(TAG, "stopCamera()");
+    private void closeCamera() {
+        Log.d(TAG, "closeCamera()");
         if (mCameraCaptureSession != null) {
             try {
                 if (mCameraCaptureSession.isReprocessable()) {
                     mCameraCaptureSession.stopRepeating();
                     mCameraCaptureSession.abortCaptures();
+                    mCameraCaptureSession.close();
                 }
             } catch (CameraAccessException e) {
                 throw new RuntimeException(e);
@@ -1052,7 +1015,7 @@ public class MainActivity extends AppCompatActivity {
                 mCameraDevice.close();
             }
             mCameraDevice = null;
-            //stopMainHandlerThread(); // problem causes main thread to quit - not allowed
+            //stopCameraThread(); // stop camera thread
         }
     }
 
@@ -1083,6 +1046,8 @@ public class MainActivity extends AppCompatActivity {
                                 captureRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
                                 captureRequestBuilder.addTarget(mSurfaceHolder0.getSurface());
                                 captureRequestBuilder.addTarget(mSurfaceHolder2.getSurface());
+                                //captureRequestBuilder.addTarget(aImageReader0.getSurface());
+                                //captureRequestBuilder.addTarget(aImageReader2.getSurface());
                                 captureRequestBuilder.set(CaptureRequest.TONEMAP_MODE, CaptureRequest.TONEMAP_MODE_CONTRAST_CURVE);
                                 captureRequestBuilder.set(CaptureRequest.TONEMAP_CURVE, new TonemapCurve(curve_srgb, curve_srgb, curve_srgb));
                                 if (FOCUS_DISTANCE[focusDistanceIndex] == AUTO_FOCUS_DISTANCE) {
@@ -1096,7 +1061,7 @@ public class MainActivity extends AppCompatActivity {
 
                                 captureRequestBuilder.set(CaptureRequest.NOISE_REDUCTION_MODE, 1); // NOISE_REDUCTION_MODE
                                 captureRequestBuilder.set(CaptureRequest.EDGE_MODE, 1); // EDGE_MODE
-                                mCameraCaptureSession.setRepeatingRequest(captureRequestBuilder.build(), null, null);
+                                mCameraCaptureSession.setRepeatingRequest(captureRequestBuilder.build(), null, mCameraHandler);
                             } catch (CameraAccessException e) {
                                 Log.e(TAG, "Camera access exception in session config", e);
                             }
@@ -1109,6 +1074,7 @@ public class MainActivity extends AppCompatActivity {
                     });
 
             mCameraDevice.createCaptureSession(sessionConfiguration);
+            Log.d(TAG, "createCameraViewSession() done");
 
         } catch (CameraAccessException e) {
             Log.e(TAG, "Camera access exception", e);
@@ -1205,32 +1171,32 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             case FN_KEY:
             case FN_KB_KEY:
-                stopCamera();
+                closeCamera();
                 meteringIndex++;
                 if (meteringIndex >= METERING.length) meteringIndex = 0;
                 Toast.makeText(this, METERING_NAMES[meteringIndex], Toast.LENGTH_SHORT).show();
-                initCamera();
+                openCamera();
                 return true;
             case FOCUS_KEY: // change focus distance, should be sub menu
             case FOCUS_KB_KEY: // change focus distance, should be sub menu
-                stopCamera();
+                closeCamera();
                 int i = focusDistanceIndex + 1;
                 if (i >= FOCUS_DISTANCE.length) i = 0;
                 focusDistanceIndex = i;
-                initCamera();
+                openCamera();
                 Toast.makeText(this, FOCUS_DISTANCE_NAMES[focusDistanceIndex], Toast.LENGTH_SHORT).show();
                 return true;
 //            case KeyEvent.KEYCODE_ENTER:
 //            case OK_KEY:
             //           case OK_KB_KEY:
 //                Toast.makeText(this, " OK/Review - not implemented", Toast.LENGTH_SHORT).show();
-//                stopCamera();
-//                initCamera();
+//                closeCamera();
+//                openCamera();
 //                return true;
             case KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE: // 85 not used with 8BitDo
                 Toast.makeText(this, "Not implemented", Toast.LENGTH_SHORT).show();
-//                stopCamera();
-//                initCamera();
+//                closeCamera();
+//                openCamera();
                 return true;
             case KeyEvent.KEYCODE_VOLUME_DOWN:
             case REVIEW_KEY:
@@ -1239,24 +1205,24 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             case ANAGLYPH_KEY:
             case ANAGLYPH_KB_KEY:
-                stopCamera();
+                closeCamera();
                 if (!isAnaglyphMode) isAnaglyphMode = true;
                 else isAnaglyphMode = false;
                 if (isAnaglyphMode) Toast.makeText(this, "Anaglyph", Toast.LENGTH_SHORT).show();
                 else Toast.makeText(this, "SBS", Toast.LENGTH_SHORT).show();
-                initCamera();
+                openCamera();
                 return true;
             case MODE_KEY:
             case MODE_KB_KEY:
                 Toast.makeText(this, "Auto Exposure - Manual, Shutter Priority", Toast.LENGTH_SHORT).show();
-//                stopCamera();
-//                initCamera();
+//                closeCamera();
+//                openCamera();
                 return true;
             case SHUTTER_SPEED_KEY:
             case SHUTTER_SPEED_KB_KEY:
                 Toast.makeText(this, "Shutter Speed - not implemented", Toast.LENGTH_SHORT).show();
-//                stopCamera();
-//                initCamera();
+//                closeCamera();
+//                openCamera();
                 return true;
             case TIMER_KEY:
             case TIMER_KB_KEY:
@@ -1274,14 +1240,14 @@ public class MainActivity extends AppCompatActivity {
                  else {
                      Toast.makeText(this, "Timer Off", Toast.LENGTH_SHORT).show();
                  }
-//                stopCamera();
-//                initCamera();
+//                closeCamera();
+//                openCamera();
                 return true;
             case ISO_KEY:
             case ISO_KB_KEY:
                 Toast.makeText(this, "ISO - not implemented", Toast.LENGTH_SHORT).show();
-//                stopCamera();
-//                initCamera();
+//                closeCamera();
+//                openCamera();
                 return true;
             case DISP_KEY:
             case DISP_KB_KEY:
@@ -1294,14 +1260,14 @@ public class MainActivity extends AppCompatActivity {
                 } else if (displayMode == DisplayMode.LR.ordinal()){
                     Toast.makeText(this, "Display Mode LR", Toast.LENGTH_SHORT).show();
                 }
-//                stopCamera();
-//                initCamera();
+//                closeCamera();
+//                openCamera();
                 return true;
             case MENU_KEY:
             case MENU_KB_KEY:
                 Toast.makeText(this, "MENU - not implemented", Toast.LENGTH_SHORT).show();
-//                stopCamera();
-//                initCamera();
+//                closeCamera();
+//                openCamera();
                 return true;
             case PRINT_KEY:
             case PRINT_KB_KEY:
@@ -1310,8 +1276,8 @@ public class MainActivity extends AppCompatActivity {
 //            case VIDEO_RECORD_KEY:
 //            case VIDEO_RECORD_KB_KEY:
 //                Toast.makeText(this, "Video Record - not implemented", Toast.LENGTH_SHORT).show();
-//                stopCamera();
-//                initCamera();
+//                closeCamera();
+//                openCamera();
 //                return true;
             //case BLANK_SCREEN_KEY:
             //case BLANK_SCREEN_KB_KEY:
@@ -1327,8 +1293,8 @@ public class MainActivity extends AppCompatActivity {
 //                } else {
 //                    //mSurfaceView0.setVisibility(View.VISIBLE);
 //                    //mSurfaceView2.setVisibility(View.VISIBLE);
-//                    //stopCamera();
-//                    //initCamera();
+//                    //closeCamera();
+//                    //openCamera();
 //                    countdownTextView.setVisibility(View.VISIBLE);
 //                }
 
@@ -1364,10 +1330,12 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    public void captureImages() {
-        Log.d(TAG, "captureImages()");
+    public void createCameraCaptureSession() {
+        Log.d(TAG, "createCameraCaptureSession()");
         if (mCameraDevice == null || mCameraCaptureSession == null) {
             Toast.makeText(this, "Camera not ready", Toast.LENGTH_SHORT).show();
+            if (mCameraDevice == null) Log.e(TAG, "mCameraDevice is null");
+            if (mCameraCaptureSession == null) Log.e(TAG, "mCameraCaptureSession is null");
             return;
         }
         try {
@@ -1424,7 +1392,7 @@ public class MainActivity extends AppCompatActivity {
                         saveImageFiles();
                     }
                 }
-            }, mainHandler);
+            }, mCameraHandler);
 
             mImageReader2.setOnImageAvailableListener(new OnImageAvailableListener() {
                 @Override
@@ -1437,11 +1405,12 @@ public class MainActivity extends AppCompatActivity {
                         saveImageFiles();
                     }
                 }
-            }, mainHandler);
+            }, mCameraHandler);
+
             if (shutterSound) {
                 playShutterSound();
             }
-            mCameraCaptureSession.capture(captureBuilder.build(), null, mainHandler);
+            mCameraCaptureSession.capture(captureBuilder.build(), null, mCameraHandler);
 
         } catch (CameraAccessException e) {
             Log.e(TAG, "Error capturing images", e);
@@ -1497,7 +1466,7 @@ public class MainActivity extends AppCompatActivity {
                 if (burstCounter > 0) {
                     burstCounter = burstCounter - 1;
                     if (burstCounter > 0) {
-                        captureImages();
+                        createCameraCaptureSession();
                     }
                 }
             }
@@ -1554,7 +1523,7 @@ public class MainActivity extends AppCompatActivity {
         ByteBuffer buffer = planes[0].getBuffer();
         byte[] bytes = new byte[buffer.remaining()];
         buffer.get(bytes);
-        Log.d(TAG, "convertToBytes Image Format: " + image.getFormat() + " planes " + planes.length);
+        //Log.d(TAG, "convertToBytes Image Format: " + image.getFormat() + " planes " + planes.length);
         return bytes;
     }
 
@@ -1894,7 +1863,7 @@ public class MainActivity extends AppCompatActivity {
                                 countdownTextView.setText("");
                                 countdownTextView.setVisibility(View.GONE);
                                 // hide digit display
-                                captureImages(); // take a picture
+                                createCameraCaptureSession(); // take a picture
                             }
                         });
                      } else {
@@ -1960,5 +1929,6 @@ public class MainActivity extends AppCompatActivity {
                       }
         );
     }
+
 }
 

@@ -9,9 +9,9 @@ android {
     defaultConfig {
         applicationId "com.andymodla.android3dcamera"
         minSdk 31
-        targetSdk 33
+        targetSdk 34
         versionCode 7
-        versionName "1.6"
+        versionName "1.7"
 
         //testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -56,7 +56,7 @@ dependencies {
     // oscP5.jar used for receiving broadcast messages over UDP
     // exclude Apache httpclient and http core from build as we use okhttp3 always
     implementation files('libs/oscP5.jar')
-
+//    implementation fileTree(include: ['*.jar'], dir: 'libs')
 //    testImplementation libs.junit
 //    androidTestImplementation libs.androidx.junit
 //    androidTestImplementation libs.androidx.espresso.core

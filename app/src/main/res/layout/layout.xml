@@ -34,12 +34,4 @@
 		android:textSize="100sp"
 		android:background="#00000000" />
 
-<!--	<SurfaceView-->
-<!--        android:id="@+id/surfaceView3"-->
-<!--        android:layout_width="1024px"-->
-<!--        android:layout_height="768px"-->
-<!--        android:layout_marginTop="40px"-->
-<!--        android:layout_centerInParent="true"-->
-<!--        android:background="#80000000" />-->
-
 </RelativeLayout>
