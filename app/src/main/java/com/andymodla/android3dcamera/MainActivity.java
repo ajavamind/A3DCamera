@@ -912,7 +912,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void checkPermissions() {
         Log.d(TAG, "checkPermissions");
-        String[] permissions = {Manifest.permission.CAMERA}; // Manifest.permission.WRITE_EXTERNAL_STORAGE};
+        String[] permissions = {Manifest.permission.CAMERA};
         boolean needsPermission = false;
 
         for (String permission : permissions) {
