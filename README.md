@@ -99,7 +99,7 @@ A wired USB-C connected Android keyboard can control the camera with keys simila
 Here is the current key mapping for a 8BitDo Bluetooth game controller in Android mode. The controller must be paired with the Beam Pro. 
 A Bluetooth Android keyboard may also be used, but the app needs an update for a normal keyboard to work. Not all function keys are working.
 
-* SHUTTER - Take a photo on key release. In Photo Booth mode show count down seconds delay.
+* SHUTTER - Take a photo on key release. In Photo Booth mode show count down seconds delay, until photo capture.
 * FOCUS   - Cycle through fixed focus distances: Hyperfocal, Photo Booth, Macro
 * MODE    - Select Auto, Manual, and Shutter Priority (only Auto implemented)
 * BURST   - Start continous photo capture at about 1 photo per second until the key is pressed and released again, or 60 images captured. In Photo Booth mode take only 4 images.
@@ -175,7 +175,7 @@ Time Interval captures.
 A GUI interface: Settings menu, etc.
 
 ## Experiments
-#### WiFi Remote Control
+### 1. WiFi Remote Control
 The app can listen for UDP broadcast messages to control the camera. Only shutter control is working.
 This feature can be used to trigger multiple Beam Pro  cameras at the same time. This is working, but is turned off for now and is a work in progress.
 
@@ -187,13 +187,13 @@ It reqires a local WiFi network.
 
 **Just imagine how many stereo base views or lenticular images you could get with multiple Beam Pro cameras!**
 
-### AI Vision
+### 2. AI Vision
 There is code to use a local network small multimodal language AI model to get a caption for the last photo taken. Currently turned off in the code.
 
 My testing does show it working with a Google gemma-3-12b-it-Q4_K_M.gguf multimodal model served on a local network Linux computer. 
 This Ubuntu Linux computer has a Nvidia 3060 GPU and uses [llama-cpp-server](https://github.com/ggml-org/llama.cpp) as the LLM server with a OpenAI API.
 
-### Beam Pro Remote Viewing Using Scrcpy
+### 3. Beam Pro Remote Control and Viewing Using Scrcpy
 With the screen copy utility (Scrcpy) from https://github.com/Genymobile/scrcpy you can display the Beam Pro screen on your Windows, Linux, or iOS computer.
 In addition you can conrol your Beam Pro device with your computer mouse or keyboard, either USB wired or wireless! You have to  initialize with wired USB first. 
 See Scrcpy documentation.
@@ -219,7 +219,7 @@ INFO: Texture: 2400x1080
 
 ```
 
-With this experiment the firs step is to show the A3DCamera stereo image (SBS parallal) screen output using Scrcpy.
+With this experiment the first step is to show the A3DCamera stereo image (SBS parallal) screen output using Scrcpy.
 
 Next run a Processing.org Java mode sketch that gets a screen shot to extract the SBS stereo image and convert to Anaglyph for display in the sketch window.
 The sketch uses space bar key to record the current sketch output.
@@ -231,6 +231,7 @@ Scrcpy can send windows keyboard keys to the A3DCamera app. You can get remote c
 You have to make the scrcpy window active, so that keys get directed to scrcpy. Do this by a mouse click on the scrcpy window showing the Beam Pro A3DCamera app display. 
 
 Sitting in another room I can see live view output of the camera and capture images with either a Bluetooth controller or WiFi using the computer keyboard.
+
 
 ## Credits
 
