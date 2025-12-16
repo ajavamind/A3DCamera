@@ -133,9 +133,7 @@ There are no camera leveling, tilt, or subject distance suggestions from the app
 
 ## App Download Link
 Latest version:
-[Version 1.5 A3DCamera Android app](https://drive.google.com/file/d/1IIXaQYrzeHks_mF9WRLy_3Vlho43zcuf/view?usp=sharing)
-
-[Version 1.4 A3DCamera Android app](https://drive.google.com/file/d/1xkNVHQ7EOTipQxIqTqoDuHsepO7f5MxE/view?usp=drive_link)
+[Version 1.7 A3DCamera Android app](https://drive.google.com/file/d/1QpnxSPUkr-Se1CgkC5bw5PI3DDTpz99X/view?usp=sharing)
 
 Download the apk file into the XBeam Pro "Downloads" folder. Use the "Files" app to find and click on the A3DCamera apk file in the Downloads folder to install it. 
 You will be asked to scan the file for security, respond yes.
@@ -144,6 +142,9 @@ My Beam Pro is in developers mode, but you do not have to be in that mode to ins
 
 To enter developer mode, press the Settings -> About This device -> Build number (key) 7 times to enter this mode.
 In developer mode, use Settings -> System -> Developer options to turn on USB debugging and use Android Studio or Processing.org Android Mode SDK to download an app.
+
+The Beam Pro device may be configured to use the camera key to launch the native 3D camera app. This will interfere with the A3DCamera app operation.
+You should close all other camera apps before using A3DCamera.
 
 ## Command Line Debug
 There is no GUI for setting camera parameters. The app implements a limited command line interface to set and save some parameters.
@@ -159,8 +160,7 @@ The following commands are coded:
 These two commands do not affect the live view image, but do change the alignment of stored photos for SBS and anaglyph.
 
 ## Software Issues
-1. The XBP should be held horizontally when starting to make sure the camera starts. Otherwise a blank screen will appear. Exit the app with the navigation bar.
-2. There is no exit key implemented yet. To exit the app, swipe from the right edge to the left, to show the navigation bar. Press the box or circle to exit (but not close the app).
+1. There is no exit key implemented yet. To exit the app, swipe from the right edge to the left, to show the navigation bar. Press the box or circle to exit (however neither will close the app, unless you swipe it off or close all apps).
 
 ## Stretch Goals
 Turn off the display, while allowing the camera to continue functioning with remote control. Blanking the screen is for photographing wild life without disturing them. 
