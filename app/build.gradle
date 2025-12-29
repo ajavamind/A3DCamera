@@ -4,7 +4,7 @@ plugins {
 
 android {
     namespace 'com.andymodla.android3dcamera'
-    compileSdk 34
+    compileSdk 36
 
     defaultConfig {
         applicationId "com.andymodla.android3dcamera"
@@ -19,15 +19,16 @@ android {
         buildConfig = true
     }
     packagingOptions {
-        pickFirst 'META-INF/DEPENDENCIES' // This tells Gradle to pick the first encountered file
-        // or
-        // exclude 'META-INF/DEPENDENCIES' // This tells Gradle to exclude all files at this path
+        resources {
+            pickFirsts += ['META-INF/DEPENDENCIES']
+        }
     }
 
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.debug
         }
     }
     compileOptions {
@@ -42,7 +43,7 @@ dependencies {
     implementation 'androidx.constraintlayout:constraintlayout:2.2.1'
 
     // CameraX core library
-    def camerax_version = "1.4.2"
+    def camerax_version = "1.5.2"
     //def camerax_version = "1.3.1"
     implementation "androidx.camera:camera-core:${camerax_version}"
     // CameraX Camera2 extensions

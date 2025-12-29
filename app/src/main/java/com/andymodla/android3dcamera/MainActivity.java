@@ -1,9 +1,7 @@
 package com.andymodla.android3dcamera;
 
 import static android.Manifest.permission.CAMERA;
-
 import static java.lang.System.exit;
-
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
@@ -12,7 +10,6 @@ import androidx.camera.core.CameraInfo;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.FileProvider;
 
-import android.Manifest;
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.ContentResolver;
@@ -28,12 +25,15 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.ImageFormat;
 
+import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
+import android.hardware.camera2.CaptureFailure;
 import android.hardware.camera2.CaptureRequest;
+import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.OutputConfiguration;
 import android.hardware.camera2.params.SessionConfiguration;
 import android.hardware.camera2.params.TonemapCurve;
@@ -42,7 +42,7 @@ import android.media.ImageReader;
 import android.media.ImageReader.OnImageAvailableListener;
 import android.media.MediaScannerConnection;
 import android.net.Uri;
-import android.os.AsyncTask;
+
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
@@ -51,6 +51,7 @@ import android.os.HandlerThread;
 
 import android.provider.MediaStore;
 import android.util.Log;
+import android.util.Size;
 import android.util.TypedValue;
 import android.view.KeyEvent;
 
@@ -83,11 +84,11 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.Locale;
 import java.util.Vector;
+import java.util.concurrent.Executor;
+
 import android.view.InputDevice;
 import android.view.MotionEvent;
 import android.view.PointerIcon;
-
-import android.opengl.GLSurfaceView;
 
 import android.media.AudioManager;
 import android.media.ToneGenerator;
@@ -122,7 +123,7 @@ public class MainActivity extends AppCompatActivity {
 
     volatile boolean allPermissionsGranted = false;
     volatile boolean shutterSound = true;
-    //volatile boolean autoFocus = true;
+    private static final int MAX_NUM_CAMERAS = 6;
 
     volatile int focusDistanceIndex = 0;  // default HYPERFOCAL
     //
@@ -143,7 +144,7 @@ public class MainActivity extends AppCompatActivity {
 
     // aspect ratio
     int aspectRatioIndex = 0;  // default
-    String[] ASPECT_RATIO_NAMES = {"DEFAULT", "4:3", "16:9", "1:1"};
+    final String[] ASPECT_RATIO_NAMES = {"DEFAULT", "4:3", "16:9", "1:1"};
     int CAMERA_WIDTH_AR_DEFAULT = 4080;
     int CAMERA_HEIGHT_AR_DEFAULT = 3072;
     int CAMERA_WIDTH_AR_4_3 = 4000;
@@ -196,23 +197,24 @@ public class MainActivity extends AppCompatActivity {
     private CameraManager mCameraManager;
     private CameraCaptureSession mCameraCaptureSession;
     private CaptureRequest.Builder captureRequestBuilder;
-    private Handler mainHandler;
+
     private HandlerThread mCameraThread;
     private Handler mCameraHandler;
+    private Executor cameraExecutor;
 
     // Display surfaces
-    private SurfaceView mSurfaceView0, mSurfaceView2;
-    private SurfaceHolder mSurfaceHolder0, mSurfaceHolder2;
-    private GLSurfaceView glSurfaceView;
-    private AnaglyphRenderer anaglyphRenderer;
+    private volatile SurfaceView mSurfaceView0;
+    private volatile SurfaceView mSurfaceView2;
+    private volatile SurfaceHolder mSurfaceHolder0;
+    private volatile SurfaceHolder mSurfaceHolder2;
 
     private AIvision aiVision;  // local network small multimodal vision AI model server (Google Gemma 3 8B 4_K_M GGUF)
     private boolean aiVisionEnabled = false;
     String prompt = "Generate a caption shorter than 6 words.";
 
     // Image capture
-    private ImageReader mImageReader0, mImageReader2;  // for SBS display
-    //private ImageReader aImageReader0, aImageReader2;  // for anaglyph display
+    private volatile ImageReader mImageReader0;
+    private volatile ImageReader mImageReader2;  // for SBS display
 
     // Image Save File modes
     private volatile boolean saveAnaglyph = true;
@@ -264,7 +266,7 @@ public class MainActivity extends AppCompatActivity {
 
     private boolean isWiFiRemoteEnabled = false; //true;
     private boolean isVideo = false;
-
+    private boolean exitApp = false;
     private boolean isPhotobooth = false;  // work in progress
     Timer countdownTimer;
     int countdownStart = 3;
@@ -318,8 +320,10 @@ public class MainActivity extends AppCompatActivity {
         prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         parameters = new Parameters(prefs);
         parameters.init();
-//        parameters.setParallaxOffset(212);
-//        parameters.setVerticalOffset(-12);
+
+        // set parameters for my XReal Beam Pro stereo window adjustment
+        parameters.setParallaxOffset(212);
+        parameters.setVerticalOffset(-12);
 
         String modelName = Build.MODEL;
         String manufacturer = Build.MANUFACTURER;
@@ -358,14 +362,13 @@ public class MainActivity extends AppCompatActivity {
         //System.setProperty("ro.usb.uvc.enabled", String.valueOf(true));
         //Log.d(TAG, "ro.usb.uvc.enabled="+System.getProperty("ro.usb.uvc.enabled"));
 
-        // Establish media storage folders
+        // Establish media storage folders for saving photos
         createMediaFolder();
 
         // Create camera manager
         mCameraManager = (CameraManager) getSystemService(CAMERA_SERVICE);
-        setContentView(R.layout.layout);
-        setupSurfaces();
 
+        setContentView(R.layout.layout);
 
         View decorView = getWindow().getDecorView();
         // Set the pointer icon to null (invisible)
@@ -413,15 +416,25 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
-        mainHandler = new Handler(getMainLooper());
+
+        decorView.post(new Runnable() {
+            @Override
+            public void run() {
+                setupSurfaces();
+                openCamera();
+            }
+        });
+
     }
 
     private void startCameraThread() {
-            mCameraThread = new HandlerThread("CameraBackgroundThread"); // Name your thread
+        Log.d(TAG,"startCameraThread");
+        if (mCameraThread == null) {
+            mCameraThread = new HandlerThread("CameraBackgroundThread"); // Name the thread
             mCameraThread.start();
             mCameraHandler = new Handler(mCameraThread.getLooper());
-
-            mCameraHandler = new Handler(getMainLooper());
+            cameraExecutor = new com.andymodla.stereocamera.HandlerExecutor(mCameraHandler);
+        }
     }
 
     private void stopCameraThread() {
@@ -431,6 +444,7 @@ public class MainActivity extends AppCompatActivity {
                 mCameraThread.join(); // Wait for the thread to finish
                 mCameraThread = null;
                 mCameraHandler = null;
+                cameraExecutor = null;
             } catch (InterruptedException e) {
                 Log.e(TAG, "Interrupted while stopping camera thread", e);
             }
@@ -733,7 +747,7 @@ public class MainActivity extends AppCompatActivity {
             Vector list = udpServer.getListeners();
             if (MyDebug.LOG) Log.d(TAG, "NetListener size=" + list.size());
             for (int i = 0; i < list.size(); i++) {
-                udpServer.removeListener((netP5.NetListener) list.get(i));
+                udpServer.removeListener((NetListener) list.get(i));
                 if (MyDebug.LOG) Log.d(TAG, "remove NetListener " + list.get(i).toString());
             }
             udpServer.stop();
@@ -867,6 +881,7 @@ public class MainActivity extends AppCompatActivity {
             CameraInfoUtil.logFocusDistanceCalibration(this);  // for debug
 
             startCameraThread();
+
             openCamera();
         }
     }
@@ -874,37 +889,41 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         Log.d(TAG, "onPause()");
-        super.onPause();
         closeCamera();
         stopCameraThread();
+        super.onPause();
     }
 
+    SurfaceHolder.Callback shCallback = new SurfaceHolder.Callback() {
+        @Override
+        public void surfaceCreated(@NonNull SurfaceHolder holder) {
+            Log.d(TAG, "surfaceCreated");
+            if (mSurfaceView0.isAttachedToWindow() && mSurfaceView2.isAttachedToWindow()) {
+                createCameraPreviewSession();
+            }
+        }
+
+        @Override
+        public void surfaceChanged(@NonNull SurfaceHolder holder, int format, int width, int height) {
+        }
+
+        @Override
+        public void surfaceDestroyed(@NonNull SurfaceHolder holder) {
+            if (null != mCameraDevice) {
+                mCameraDevice.close();
+                mCameraDevice = null;
+            }
+        }
+    };
 
     private void setupSurfaces() {
         Log.d(TAG, "setupSurfaces()");
+
         mSurfaceView0 = findViewById(R.id.surfaceView);
         mSurfaceView2 = findViewById(R.id.surfaceView2);
 
         mSurfaceHolder0 = mSurfaceView0.getHolder();
         mSurfaceHolder2 = mSurfaceView2.getHolder();
-
-        SurfaceHolder.Callback shCallback = new SurfaceHolder.Callback() {
-            @Override
-            public void surfaceCreated(@NonNull SurfaceHolder holder) {
-            }
-
-            @Override
-            public void surfaceChanged(@NonNull SurfaceHolder holder, int format, int width, int height) {
-            }
-
-            @Override
-            public void surfaceDestroyed(@NonNull SurfaceHolder holder) {
-                if (null != mCameraDevice) {
-                    mCameraDevice.close();
-                    mCameraDevice = null;
-                }
-            }
-        };
 
         mSurfaceHolder0.addCallback(shCallback);
         mSurfaceHolder2.addCallback(shCallback);
@@ -912,7 +931,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void checkPermissions() {
         Log.d(TAG, "checkPermissions");
-        String[] permissions = {Manifest.permission.CAMERA};
+        String[] permissions = {CAMERA};
         boolean needsPermission = false;
 
         for (String permission : permissions) {
@@ -949,7 +968,6 @@ public class MainActivity extends AppCompatActivity {
 
     private void openCamera() {
         Log.d(TAG, "openCamera()");
-        //mainHandler = new Handler(getMainLooper());
 
         Log.d(TAG, "openCamera() cameraWidth=" + cameraWidth + " cameraHeight=" + cameraHeight);
 
@@ -960,7 +978,7 @@ public class MainActivity extends AppCompatActivity {
         if (ActivityCompat.checkSelfPermission(this, CAMERA) == PackageManager.PERMISSION_GRANTED) {
             try {
                 mCameraManager.openCamera(stereoCameraId, mStateCallback, mCameraHandler); // logical camera 3 combines 1 and 2
-                Log.d(TAG, "openCamera(3)");
+                Log.d(TAG, "mCameraManager.openCamera( "+stereoCameraId+" )");
             } catch (CameraAccessException e) {
                 Log.e(TAG, "Camera access exception", e);
             }
@@ -971,9 +989,8 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onOpened(@NonNull CameraDevice camera) { // Open camera
             mCameraDevice = camera;
-            //createCameraViewSession();
-            if (mSurfaceView0.isAttachedToWindow() && mSurfaceView2.isAttachedToWindow()) {
-                createCameraViewSession();
+            if ((mSurfaceView0 != null && mSurfaceView2.isAttachedToWindow()) && mSurfaceView2 != null && mSurfaceView2.isAttachedToWindow()) {
+                createCameraPreviewSession();
             } else {
                 Log.d(TAG, "Surface not attached to window");
             }
@@ -1015,14 +1032,28 @@ public class MainActivity extends AppCompatActivity {
                 mCameraDevice.close();
             }
             mCameraDevice = null;
-            //stopCameraThread(); // stop camera thread
         }
     }
 
-    private void createCameraViewSession() {
-        Log.d(TAG, "createCameraViewSession()");
+    /**
+     * Create camera view session for live preview
+     */
+    private void createCameraPreviewSession() {
+        Log.d(TAG, "createCameraPreviewSession()");
+        if (mSurfaceHolder0 == null || mSurfaceHolder0.getSurface() == null) {
+            Log.e("CameraApp", "Surface 0 is not ready yet!");
+            return;
+        }
+        if (mSurfaceHolder2 == null || mSurfaceHolder2.getSurface() == null) {
+            Log.e("CameraApp", "Surface 2 is not ready yet!");
+            return;
+        }
         try {
-
+            if (!mSurfaceHolder0.getSurface().isValid() || !mSurfaceHolder2.getSurface().isValid()) {
+                Log.d(TAG, "Surface not valid");
+               return;
+            }
+            OutputConfiguration opcL = new OutputConfiguration(new Size(176, 144), SurfaceTexture.class);
             OutputConfiguration opc0 = new OutputConfiguration(mSurfaceHolder0.getSurface());
             opc0.setPhysicalCameraId(leftCameraId);
             OutputConfiguration opc1 = new OutputConfiguration(mSurfaceHolder2.getSurface());
@@ -1033,10 +1064,10 @@ public class MainActivity extends AppCompatActivity {
             OutputConfiguration opcCapture1 = new OutputConfiguration(mImageReader2.getSurface());
             opcCapture1.setPhysicalCameraId(rightCameraId);
 
-            List<OutputConfiguration> outputConfigsAll = Arrays.asList(opc0, opc1, opcCapture0, opcCapture1);
+            List<OutputConfiguration> outputConfigsAll = Arrays.asList(opcL, opc0, opc1, opcCapture0, opcCapture1);
 
             SessionConfiguration sessionConfiguration = new SessionConfiguration(
-                    SessionConfiguration.SESSION_REGULAR, outputConfigsAll, AsyncTask.SERIAL_EXECUTOR,
+                    SessionConfiguration.SESSION_REGULAR, outputConfigsAll, cameraExecutor,
                     new CameraCaptureSession.StateCallback() {
                         @Override
                         public void onConfigured(@NonNull CameraCaptureSession cameraCaptureSession) {
@@ -1046,8 +1077,7 @@ public class MainActivity extends AppCompatActivity {
                                 captureRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
                                 captureRequestBuilder.addTarget(mSurfaceHolder0.getSurface());
                                 captureRequestBuilder.addTarget(mSurfaceHolder2.getSurface());
-                                //captureRequestBuilder.addTarget(aImageReader0.getSurface());
-                                //captureRequestBuilder.addTarget(aImageReader2.getSurface());
+
                                 captureRequestBuilder.set(CaptureRequest.TONEMAP_MODE, CaptureRequest.TONEMAP_MODE_CONTRAST_CURVE);
                                 captureRequestBuilder.set(CaptureRequest.TONEMAP_CURVE, new TonemapCurve(curve_srgb, curve_srgb, curve_srgb));
                                 if (FOCUS_DISTANCE[focusDistanceIndex] == AUTO_FOCUS_DISTANCE) {
@@ -1074,7 +1104,7 @@ public class MainActivity extends AppCompatActivity {
                     });
 
             mCameraDevice.createCaptureSession(sessionConfiguration);
-            Log.d(TAG, "createCameraViewSession() done");
+            Log.d(TAG, "createCameraPreviewSession() done");
 
         } catch (CameraAccessException e) {
             Log.e(TAG, "Camera access exception", e);
@@ -1089,7 +1119,7 @@ public class MainActivity extends AppCompatActivity {
             Log.e(TAG, "CameraManager service not available");
         } else {
 
-            for (int cameraNum = 0; cameraNum < 6; cameraNum++) {
+            for (int cameraNum = 0; cameraNum < MAX_NUM_CAMERAS; cameraNum++) {
                 cameraId = String.valueOf(cameraNum);
                 //String[] cameraIds = {leftCameraId, frontCameraId, rightCameraId, stereoCameraId, "4", "5"};
                 try {
@@ -1124,16 +1154,24 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
-        //Log.d(TAG, "onKeyDown "+keyCode);
+        Log.d(TAG, "onKeyDown "+keyCode);
         switch (keyCode) {
             case KeyEvent.KEYCODE_VOLUME_UP:
             case KeyEvent.KEYCODE_VOLUME_DOWN:
             case KeyEvent.KEYCODE_ENTER:
             case SHUTTER_KEY:
+                exitApp = false;
                 return true;
             case KeyEvent.KEYCODE_3D_MODE: // ignore so that this key does not launch XReal camera app
+                exitApp = false;
+                return true;
+            case BACK_KB_KEY:
+            case BACK_KEY:
+            case KeyEvent.KEYCODE_ESCAPE:
+            case KeyEvent.KEYCODE_BUTTON_B:
                 return true;
             default:
+                exitApp = false;
                 return super.onKeyDown(keyCode, event);
         }
     }
@@ -1159,7 +1197,13 @@ public class MainActivity extends AppCompatActivity {
             case KeyEvent.KEYCODE_BACK:
             case KeyEvent.KEYCODE_ESCAPE:
             case BACK_KB_KEY:
-                Toast.makeText(this, "Back", Toast.LENGTH_SHORT).show();
+            case KeyEvent.KEYCODE_BUTTON_B:
+                Toast.makeText(this, "Exit?", Toast.LENGTH_SHORT).show();
+                if (exitApp) {
+                    finish();
+                } else {
+                    exitApp = true;
+                }
                 return true;
             case SHARE_KEY:
             case SHARE_KB_KEY:
@@ -1304,6 +1348,28 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    public void playShutterSound() {
+        // Create a ToneGenerator instance.
+        // The AudioManager.STREAM_SYSTEM is important here to ensure the sound plays through the system volume.
+        // The volume parameter (100) is a percentage of the maximum volume.
+        ToneGenerator toneGen = new ToneGenerator(AudioManager.STREAM_SYSTEM, 100);
+
+        // Play the tone.
+        // TONE_PROP_BEEP is a short, distinct sound that works well as a shutter click.
+        toneGen.startTone(ToneGenerator.TONE_PROP_BEEP);
+
+        // Release the ToneGenerator resources after a short delay.
+        // It's crucial to release the resources to avoid memory leaks.
+        // We use a Handler to delay the release so the sound has time to play.
+        new Handler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                toneGen.stopTone();
+                toneGen.release();
+            }
+        }, 100); // 100 milliseconds is a good duration for a short tone.
+    }
+
     private void reviewImages() {
         Log.d(TAG, "reviewImages()");
         if (reviewSBS != null) {
@@ -1315,8 +1381,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void reviewImage() {
-
-        //
+        // TO DO
         // if in live view state
         //   turn off and shutdown camera
         //   set review state
@@ -1327,9 +1392,11 @@ public class MainActivity extends AppCompatActivity {
         //    turn camera back on and switch layouts
         //    set live view state
         //
-
     }
 
+    /**
+     * Create a camera capture session to take a picture
+     */
     public void createCameraCaptureSession() {
         Log.d(TAG, "createCameraCaptureSession()");
         if (mCameraDevice == null || mCameraCaptureSession == null) {
@@ -1345,11 +1412,11 @@ public class MainActivity extends AppCompatActivity {
             captureBuilder.addTarget(mImageReader2.getSurface());
             // default TONEMAP_MODE_CONTRAST_CURVE assumed for best contrast, color and detail capture
             captureBuilder.set(CaptureRequest.TONEMAP_CURVE, new TonemapCurve(curve_srgb, curve_srgb, curve_srgb));
-            //
+
             if (FOCUS_DISTANCE[focusDistanceIndex] == AUTO_FOCUS_DISTANCE) {
-                captureRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
+                captureBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
             } else {
-                captureRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_OFF);
+                captureBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_OFF);
             }
 
             captureBuilder.set(EXPOSURE_METERING, METERING[meteringIndex]);
@@ -1380,17 +1447,12 @@ public class MainActivity extends AppCompatActivity {
                 anaglyphBitmap = null;
             }
 
-            // Setup image capture listeners
+            //mImageReader0.setOnImageAvailableListenerWithExecutor(new OnImageAvailableListener() {
             mImageReader0.setOnImageAvailableListener(new OnImageAvailableListener() {
                 @Override
                 public void onImageAvailable(ImageReader reader) {
                     imageL = reader.acquireLatestImage();
-                    if (imageL != null) {
-                        leftBytes = convertToBytes(imageL);
-                        imageL.close();
-                        // Save frames
-                        saveImageFiles();
-                    }
+                    saveImageFiles(imageL, imageR);
                 }
             }, mCameraHandler);
 
@@ -1398,46 +1460,69 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void onImageAvailable(ImageReader reader) {
                     imageR = reader.acquireLatestImage();
-                    if (imageR != null) {
-                        rightBytes = convertToBytes(imageR);
-                        imageR.close();
-                        // Save frames
-                        saveImageFiles();
-                    }
+                    saveImageFiles(imageL, imageR);
                 }
             }, mCameraHandler);
 
-            if (shutterSound) {
-                playShutterSound();
-            }
-            mCameraCaptureSession.capture(captureBuilder.build(), null, mCameraHandler);
+            //mCameraCaptureSession.capture(captureBuilder.build(), null, mCameraHandler);
+            CameraCaptureSession.CaptureCallback captureSingleRequestListener =
+                    new CameraCaptureSession.CaptureCallback() {
+                        @Override
+                        public void onCaptureCompleted(
+                                CameraCaptureSession session,
+                                CaptureRequest request,
+                                TotalCaptureResult result) {
+                            // This method is called when the capture is complete
+                            // You can process the result here if needed
+                            Log.d(TAG, "Capture completed successfully");
+
+                            //session.close();
+                        }
+
+                        @Override
+                        public void onCaptureFailed(
+                                CameraCaptureSession session,
+                                CaptureRequest request,
+                                CaptureFailure failure) {
+                            Log.e(TAG, "Capture failed: " +
+                                    "Reason: " + failure.getReason() +
+                                    ", Sequence ID: " + failure.getSequenceId() +
+                                    ", Frame number: " + failure.getFrameNumber());
+
+                            switch (failure.getReason()) {
+                                case CaptureFailure.REASON_ERROR:
+                                    Log.e(TAG, "Capture failed due to an error");
+                                    break;
+                                case CaptureFailure.REASON_FLUSHED:
+                                    Log.e(TAG, "Capture failed due to stream flush");
+                                    break;
+                                 default:
+                                    Log.e(TAG, "Capture failed for unknown reason");
+                            }
+                            //session.close();
+                        }
+                    };
+
+           mCameraCaptureSession.captureSingleRequest(captureBuilder.build(), cameraExecutor, captureSingleRequestListener);
 
         } catch (CameraAccessException e) {
             Log.e(TAG, "Error capturing images", e);
             Toast.makeText(this, "Error capturing images", Toast.LENGTH_SHORT).show();
         }
+        if (shutterSound) {
+            playShutterSound();
+        }
     }
 
-    public void playShutterSound() {
-        // Create a ToneGenerator instance.
-        // The AudioManager.STREAM_SYSTEM is important here to ensure the sound plays through the system volume.
-        // The volume parameter (100) is a percentage of the maximum volume.
-        ToneGenerator toneGen = new ToneGenerator(AudioManager.STREAM_SYSTEM, 100);
+    private void saveImageFiles(Image left, Image right) {
+        if (left != null && right != null) {
+            leftBytes = convertToBytes(left);
+            rightBytes = convertToBytes(right);
+            left.close();
+            right.close();
+            saveImageFiles();
+        }
 
-        // Play the tone.
-        // TONE_PROP_BEEP is a short, distinct sound that works well as a shutter click.
-        toneGen.startTone(ToneGenerator.TONE_PROP_BEEP);
-
-        // Release the ToneGenerator resources after a short delay.
-        // It's crucial to release the resources to avoid memory leaks.
-        // We use a Handler to delay the release so the sound has time to play.
-        new android.os.Handler().postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                toneGen.stopTone();
-                toneGen.release();
-            }
-        }, 100); // 100 milliseconds is a good duration for a short tone.
     }
 
     private void saveImageFiles() {
