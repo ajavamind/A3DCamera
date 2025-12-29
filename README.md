@@ -99,7 +99,7 @@ A wired USB-C connected Android keyboard can control the camera with keys simila
 Here is the current key mapping for a 8BitDo Bluetooth game controller in Android mode. The controller must be paired with the Beam Pro. 
 A Bluetooth Android keyboard may also be used, but the app needs an update for a normal keyboard to work. Not all function keys are working.
 
-* SHUTTER - Take a photo on key release. In Photo Booth mode show count down seconds delay.
+* SHUTTER - Take a photo on key release. In Photo Booth mode show count down seconds delay, until photo capture.
 * FOCUS   - Cycle through fixed focus distances: Hyperfocal, Photo Booth, Macro
 * MODE    - Select Auto, Manual, and Shutter Priority (only Auto implemented)
 * BURST   - Start continous photo capture at about 1 photo per second until the key is pressed and released again, or 60 images captured. In Photo Booth mode take only 4 images.
@@ -133,9 +133,7 @@ There are no camera leveling, tilt, or subject distance suggestions from the app
 
 ## App Download Link
 Latest version:
-[Version 1.5 A3DCamera Android app](https://drive.google.com/file/d/1IIXaQYrzeHks_mF9WRLy_3Vlho43zcuf/view?usp=sharing)
-
-[Version 1.4 A3DCamera Android app](https://drive.google.com/file/d/1xkNVHQ7EOTipQxIqTqoDuHsepO7f5MxE/view?usp=drive_link)
+[Version 1.7 A3DCamera Android app](https://drive.google.com/file/d/1QpnxSPUkr-Se1CgkC5bw5PI3DDTpz99X/view?usp=sharing)
 
 Download the apk file into the XBeam Pro "Downloads" folder. Use the "Files" app to find and click on the A3DCamera apk file in the Downloads folder to install it. 
 You will be asked to scan the file for security, respond yes.
@@ -144,6 +142,9 @@ My Beam Pro is in developers mode, but you do not have to be in that mode to ins
 
 To enter developer mode, press the Settings -> About This device -> Build number (key) 7 times to enter this mode.
 In developer mode, use Settings -> System -> Developer options to turn on USB debugging and use Android Studio or Processing.org Android Mode SDK to download an app.
+
+The Beam Pro device may be configured to use the camera key to launch the native 3D camera app. This will interfere with the A3DCamera app operation.
+You should close all other camera apps before using A3DCamera.
 
 ## Command Line Debug
 There is no GUI for setting camera parameters. The app implements a limited command line interface to set and save some parameters.
@@ -159,8 +160,7 @@ The following commands are coded:
 These two commands do not affect the live view image, but do change the alignment of stored photos for SBS and anaglyph.
 
 ## Software Issues
-1. The XBP should be held horizontally when starting to make sure the camera starts. Otherwise a blank screen will appear. Exit the app with the navigation bar.
-2. There is no exit key implemented yet. To exit the app, swipe from the right edge to the left, to show the navigation bar. Press the box or circle to exit (but not close the app).
+1. There is no exit key implemented yet. To exit the app, swipe from the right edge to the left, to show the navigation bar. Press the box or circle to exit (however neither will close the app, unless you swipe it off or close all apps).
 
 ## Stretch Goals
 Turn off the display, while allowing the camera to continue functioning with remote control. Blanking the screen is for photographing wild life without disturing them. 
@@ -175,7 +175,7 @@ Time Interval captures.
 A GUI interface: Settings menu, etc.
 
 ## Experiments
-#### WiFi Remote Control
+### 1. WiFi Remote Control
 The app can listen for UDP broadcast messages to control the camera. Only shutter control is working.
 This feature can be used to trigger multiple Beam Pro  cameras at the same time. This is working, but is turned off for now and is a work in progress.
 
@@ -187,13 +187,13 @@ It reqires a local WiFi network.
 
 **Just imagine how many stereo base views or lenticular images you could get with multiple Beam Pro cameras!**
 
-### AI Vision
+### 2. AI Vision
 There is code to use a local network small multimodal language AI model to get a caption for the last photo taken. Currently turned off in the code.
 
 My testing does show it working with a Google gemma-3-12b-it-Q4_K_M.gguf multimodal model served on a local network Linux computer. 
 This Ubuntu Linux computer has a Nvidia 3060 GPU and uses [llama-cpp-server](https://github.com/ggml-org/llama.cpp) as the LLM server with a OpenAI API.
 
-### Beam Pro Remote Viewing Using Scrcpy
+### 3. Beam Pro Remote Control and Viewing Using Scrcpy
 With the screen copy utility (Scrcpy) from https://github.com/Genymobile/scrcpy you can display the Beam Pro screen on your Windows, Linux, or iOS computer.
 In addition you can conrol your Beam Pro device with your computer mouse or keyboard, either USB wired or wireless! You have to  initialize with wired USB first. 
 See Scrcpy documentation.
@@ -219,7 +219,7 @@ INFO: Texture: 2400x1080
 
 ```
 
-With this experiment the firs step is to show the A3DCamera stereo image (SBS parallal) screen output using Scrcpy.
+With this experiment the first step is to show the A3DCamera stereo image (SBS parallal) screen output using Scrcpy.
 
 Next run a Processing.org Java mode sketch that gets a screen shot to extract the SBS stereo image and convert to Anaglyph for display in the sketch window.
 The sketch uses space bar key to record the current sketch output.
@@ -231,6 +231,7 @@ Scrcpy can send windows keyboard keys to the A3DCamera app. You can get remote c
 You have to make the scrcpy window active, so that keys get directed to scrcpy. Do this by a mouse click on the scrcpy window showing the Beam Pro A3DCamera app display. 
 
 Sitting in another room I can see live view output of the camera and capture images with either a Bluetooth controller or WiFi using the computer keyboard.
+
 
 ## Credits
 
