@@ -108,7 +108,6 @@ public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "A3DCamera";
     private static final int MY_CAMERA_REQUEST_CODE = 100;
-    private SharedPreferences prefs;
     private static final String PREFS_NAME = "Parameters";
     private Parameters parameters;
 
@@ -259,7 +258,7 @@ public class MainActivity extends AppCompatActivity {
     public enum Stereo {MONO, LEFT, RIGHT} // no suffix, left suffix, right suffix
     public static Stereo suffixSelection = Stereo.MONO; // no suffix, left suffix, right suffix
 
-    public enum DisplayMode {SBS, ANAGLYPH, LR};
+    public enum DisplayMode {SBS, ANAGLYPH, LR}
     public int displayMode = DisplayMode.SBS.ordinal();
 
     public static String lastSavedFilePath = null;
@@ -312,12 +311,13 @@ public class MainActivity extends AppCompatActivity {
     private CommandLine commandLine;
     private String splashMessage = "Welcome to A3DCamera by Andy Modla";
 
+    // Activity methods ----------------------------------------------------------------------------
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         // initialize shared preferences
-        prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         parameters = new Parameters(prefs);
         parameters.init();
 
@@ -1091,6 +1091,7 @@ public class MainActivity extends AppCompatActivity {
 
                                 captureRequestBuilder.set(CaptureRequest.NOISE_REDUCTION_MODE, 1); // NOISE_REDUCTION_MODE
                                 captureRequestBuilder.set(CaptureRequest.EDGE_MODE, 1); // EDGE_MODE
+                                captureRequestBuilder.set(CaptureRequest.CONTROL_EXTENDED_SCENE_MODE, 1);  // sync left and right cameras
                                 mCameraCaptureSession.setRepeatingRequest(captureRequestBuilder.build(), null, mCameraHandler);
                             } catch (CameraAccessException e) {
                                 Log.e(TAG, "Camera access exception in session config", e);
@@ -1424,7 +1425,7 @@ public class MainActivity extends AppCompatActivity {
 
             captureBuilder.set(CaptureRequest.NOISE_REDUCTION_MODE, 1); // NOISE_REDUCTION_MODE
             captureBuilder.set(CaptureRequest.EDGE_MODE, 1); // EDGE_MODE
-
+            captureBuilder.set(CaptureRequest.CONTROL_EXTENDED_SCENE_MODE, 1);  // sync left and right cameras
             timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
             imageL = null;
             imageR = null;
@@ -1447,7 +1448,6 @@ public class MainActivity extends AppCompatActivity {
                 anaglyphBitmap = null;
             }
 
-            //mImageReader0.setOnImageAvailableListenerWithExecutor(new OnImageAvailableListener() {
             mImageReader0.setOnImageAvailableListener(new OnImageAvailableListener() {
                 @Override
                 public void onImageAvailable(ImageReader reader) {
@@ -1464,7 +1464,6 @@ public class MainActivity extends AppCompatActivity {
                 }
             }, mCameraHandler);
 
-            //mCameraCaptureSession.capture(captureBuilder.build(), null, mCameraHandler);
             CameraCaptureSession.CaptureCallback captureSingleRequestListener =
                     new CameraCaptureSession.CaptureCallback() {
                         @Override
@@ -1475,8 +1474,6 @@ public class MainActivity extends AppCompatActivity {
                             // This method is called when the capture is complete
                             // You can process the result here if needed
                             Log.d(TAG, "Capture completed successfully");
-
-                            //session.close();
                         }
 
                         @Override
@@ -1499,7 +1496,6 @@ public class MainActivity extends AppCompatActivity {
                                  default:
                                     Log.e(TAG, "Capture failed for unknown reason");
                             }
-                            //session.close();
                         }
                     };
 
