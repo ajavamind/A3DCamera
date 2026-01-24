@@ -140,6 +140,7 @@ There are no camera leveling, tilt, or subject distance suggestions from the app
 ## App Download Link
 Latest version:
 [Version 1.7 A3DCamera Android app](https://drive.google.com/file/d/1QpnxSPUkr-Se1CgkC5bw5PI3DDTpz99X/view?usp=sharing)
+[Version_1.9_A3DCamera_Android_app](https://drive.google.com/file/d/1fq16spW2mNs7cChwZ4SOZS8CpNSVJP64/view?usp=drive_link)
 
 Download the apk file into the XBeam Pro "Downloads" folder. Use the "Files" app to find and click on the A3DCamera apk file in the Downloads folder to install it. 
 You will be asked to scan the file for security, respond yes.
