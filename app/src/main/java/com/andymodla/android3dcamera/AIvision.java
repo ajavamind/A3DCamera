@@ -74,12 +74,11 @@ public class AIvision {
     Executor executor;
     Handler handler;
     Context context;
-    MainActivity mainActivity;
     OpenAIClient client;
+    String prompt = "Generate a caption shorter than 6 words.";
 
-    public AIvision(MainActivity context) {
+    public AIvision(Context context) {
         this.context = context;
-        this.mainActivity = context;
         executor = Executors.newSingleThreadExecutor();
         handler = new Handler(Looper.getMainLooper());
 
@@ -188,4 +187,13 @@ public class AIvision {
 
         ready = true;
     }
+
+    void setPrompt(String prompt) {
+        this.prompt = prompt;
+    }
+
+    String getPrompt() {
+        return prompt;
+    }
+
 }

@@ -1,4 +1,4 @@
-package com.andymodla.stereocamera;
+package com.andymodla.android3dcamera;
 
 import android.os.Handler;
 

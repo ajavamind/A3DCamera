@@ -1,13 +1,12 @@
 package com.andymodla.android3dcamera;
 
-import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import com.google.android.material.snackbar.Snackbar;
 
 public class CommandLine {
     private final StringBuilder cmdBuffer;
-    private Snackbar mSnackbar;
+    private final Snackbar mSnackbar;
     View rootView;
     Parameters mParameters;
 

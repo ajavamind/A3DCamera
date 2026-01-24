@@ -11,7 +11,7 @@ android {
         minSdk 31
         targetSdk 34
         versionCode 7
-        versionName "1.8"
+        versionName "1.9"
 
         //testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -65,7 +65,7 @@ dependencies {
 //    androidTestImplementation libs.androidx.ui.test.junit4
 }
 
-// MODIFIED TASK: This task now extracts JARs from AAR files.
+// MODIFIED TASK: This task extracts JARs from AAR files.
 task collectJars {
     doLast {
         def destDir = file("$buildDir/allJars")

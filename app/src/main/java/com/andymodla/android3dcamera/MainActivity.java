@@ -1,30 +1,13 @@
 package com.andymodla.android3dcamera;
 
 import static android.Manifest.permission.CAMERA;
-import static java.lang.System.exit;
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.camera.core.CameraInfo;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.FileProvider;
 
 import android.app.Activity;
-import android.content.ActivityNotFoundException;
-import android.content.ContentResolver;
-import android.content.ContentUris;
-import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.content.pm.ResolveInfo;
-import android.database.Cursor;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.ImageFormat;
-
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
@@ -37,88 +20,61 @@ import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.OutputConfiguration;
 import android.hardware.camera2.params.SessionConfiguration;
 import android.hardware.camera2.params.TonemapCurve;
+import android.media.AudioManager;
 import android.media.Image;
 import android.media.ImageReader;
 import android.media.ImageReader.OnImageAvailableListener;
-import android.media.MediaScannerConnection;
+import android.media.ToneGenerator;
 import android.net.Uri;
-
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
-
-import android.provider.MediaStore;
 import android.util.Log;
 import android.util.Size;
 import android.util.TypedValue;
+import android.view.InputDevice;
 import android.view.KeyEvent;
-
+import android.view.MotionEvent;
+import android.view.PointerIcon;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
-
-import android.widget.RelativeLayout;
-import android.widget.TextView;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
+import android.widget.RelativeLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.camera.core.CameraInfo;
+import androidx.core.app.ActivityCompat;
+
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
-
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.net.InterfaceAddress;
-import java.net.NetworkInterface;
-import java.net.SocketException;
-import java.nio.ByteBuffer;
-import java.text.SimpleDateFormat;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.Enumeration;
-import java.util.List;
-import java.util.Locale;
-import java.util.Vector;
 import java.util.concurrent.Executor;
 
-import android.view.InputDevice;
-import android.view.MotionEvent;
-import android.view.PointerIcon;
-
-import android.media.AudioManager;
-import android.media.ToneGenerator;
-
-import netP5.Bytes;
-import netP5.UdpServer1; // network library for UDP Server
-import netP5.NetListener; // network library for UDP Server
-import netP5.NetMessage; // network library for UDP Server
-import netP5.NetStatus; // network library for UDP Server
 
 // README:   https://github.com/ajavamind/A3DCamera/blob/main/README.md
 
 /**
+ * A3DCamera app
  * Copyright 2025 Andy Modla All Rights Reserved
  */
 public class MainActivity extends AppCompatActivity {
 
-    private static final String TAG = "A3DCamera";
+    public static final String TAG = "A3DCamera";
     private static final int MY_CAMERA_REQUEST_CODE = 100;
     private static final String PREFS_NAME = "Parameters";
     private Parameters parameters;
-
-    private String BASE_FOLDER =  Environment.DIRECTORY_DCIM; //Environment.DIRECTORY_PICTURES;    //
-    private String SAVE_FOLDER = "A3DCamera";
-    private String SAVE_ANA_FOLDER = "Anaglyph";
-    private String SAVE_LR_FOLDER = "LR";
-    private String PHOTO_PREFIX = "IMG_";
-    private String APP_REVIEW_PACKAGE = "jp.suto.stereoroidpro"; // Review with StereoRoidPro app default
-    private String APP_PHOTO_REVIEW_PACKAGE = "com.google.android.apps.photosgo"; // Review with Gallery
-    private String APP_CANON_PRINT_SERVICE_PACKAGE = "jp.co.canon.android.printservice.plugin";
 
     volatile boolean allPermissionsGranted = false;
     volatile boolean shutterSound = true;
@@ -135,11 +91,11 @@ public class MainActivity extends AppCompatActivity {
     static final String[] FOCUS_DISTANCE_NAMES = {"HYPERFOCAL FOCUS DISTANCE", "PHOTO BOOTH FOCUS DISTANCE", "MACRO FOCUS DISTANCE", "AUTO FOCUS"};
 
     volatile boolean burstModeFeature = true;
-    volatile boolean burstMode = true;
-    private static final int BURST_COUNT_DEFAULT = 60;
-    private static final int BURST_COUNT_PHOTO_BOOTH = 4;
-    private int BURST_COUNT = BURST_COUNT_DEFAULT;  // approximately 1 capture per second
-    volatile int burstCounter = 0;
+    volatile boolean burstMode = false;  //
+    public static final int BURST_COUNT_DEFAULT = 60;
+    public static final int BURST_COUNT_PHOTO_BOOTH = 4;
+    public int BURST_COUNT = BURST_COUNT_DEFAULT;  // approximately 1 capture per second
+    public volatile int burstCounter = 0;
 
     // aspect ratio
     int aspectRatioIndex = 0;  // default
@@ -208,22 +164,17 @@ public class MainActivity extends AppCompatActivity {
     private volatile SurfaceHolder mSurfaceHolder2;
 
     private AIvision aiVision;  // local network small multimodal vision AI model server (Google Gemma 3 8B 4_K_M GGUF)
+    private Media media;
+    private Camera cameraController;
+
     private boolean aiVisionEnabled = false;
-    String prompt = "Generate a caption shorter than 6 words.";
+
+    private boolean isWiFiRemoteEnabled = false; //true;
+    private UdpRemoteControl udpRemoteControl;
 
     // Image capture
     private volatile ImageReader mImageReader0;
     private volatile ImageReader mImageReader2;  // for SBS display
-
-    // Image Save File modes
-    private volatile boolean saveAnaglyph = true;
-    private volatile boolean saveSBS = true;
-    private volatile boolean saveLR = true; //true;
-    // at least one of above booleans must be true;
-    private volatile boolean crossEye = false;  // reverse SBS output to cross eye
-    private volatile boolean mirror = false;  // reverse mirror image
-    private volatile boolean isAnaglyphDisplayMode = false; //true;
-    private volatile boolean isAnaglyphMode = false; //true;
 
     // states - work in progress
     private static final int STATE_LIVEVIEW = 0;
@@ -234,37 +185,13 @@ public class MainActivity extends AppCompatActivity {
     volatile Image imageR;
     volatile byte[] leftBytes;
     volatile byte[] rightBytes;
-    volatile Bitmap leftBitmap;
-    volatile Bitmap rightBitmap;
-    volatile Bitmap sbsBitmap;
-    volatile Bitmap anaglyphBitmap;
 
     // Stereo Image Alignment parameters (same values as StereoPhotoMaker)
     //public int parallaxOffset = 0; // 212; // left/right parallax horizontal offset for stereo window placement
     //public int verticalOffset = 0; // -12; // left/right camera alignment vertical offset for camera correction
 
-    String timestamp;
-    volatile File reviewSBS;
-    volatile File reviewAnaglyph;
-    volatile File reviewLeft;
-    volatile File reviewRight;
-
-    // UDP Server variables
-    private volatile UdpServer1 udpServer;    // Broadcast receiver
-    private int port = 8000;  // Broadcast port
-    public static String httpUrl = "";
-    public static String sCount = ""; // Photo counter received from Broadcast message
-
-    public enum Stereo {MONO, LEFT, RIGHT} // no suffix, left suffix, right suffix
-    public static Stereo suffixSelection = Stereo.MONO; // no suffix, left suffix, right suffix
-
-    public enum DisplayMode {SBS, ANAGLYPH, LR}
     public int displayMode = DisplayMode.SBS.ordinal();
 
-    public static String lastSavedFilePath = null;
-
-    private boolean isWiFiRemoteEnabled = false; //true;
-    private boolean isVideo = false;
     private boolean exitApp = false;
     private boolean isPhotobooth = false;  // work in progress
     Timer countdownTimer;
@@ -311,19 +238,42 @@ public class MainActivity extends AppCompatActivity {
     private CommandLine commandLine;
     private String splashMessage = "Welcome to A3DCamera by Andy Modla";
 
-    // Activity methods ----------------------------------------------------------------------------
+    public int getDisplayMode() {
+        return displayMode;
+    }
+
+    public boolean getBurstMode() {
+        return burstMode;
+    }
+
+    public int getBurstCounter() {
+        return burstCounter;
+    }
+
+    public void setBurstCounter(int burstCounter) {
+        this.burstCounter = burstCounter;
+    }
+
+    /*==================================================================
+     * Activity Lifecycle methods
+     ===================================================================*/
+
+    /**
+     * Create MainActivity
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // initialize shared preferences
+        // initialize Parmeters from storage
+        // shared preferences
         SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         parameters = new Parameters(prefs);
         parameters.init();
 
         // set parameters for my XReal Beam Pro stereo window adjustment
-        parameters.setParallaxOffset(212);
-        parameters.setVerticalOffset(-12);
+        parameters.writeParallaxOffset(114);
+        parameters.writeVerticalOffset(-12);
 
         String modelName = Build.MODEL;
         String manufacturer = Build.MANUFACTURER;
@@ -333,7 +283,7 @@ public class MainActivity extends AppCompatActivity {
             // back cameras
             leftCameraId = "0";
             rightCameraId = "2";
-            crossEye = true;
+            //crossEye = true;
             stereoCameraId = "4";  // logical (left "0" and right "2") back cameras
             cameraWidth = 4656; // 16Mp Back camera width lens pixels
             cameraHeight = 3496;// 16MP Back camera height lens pixels
@@ -345,8 +295,8 @@ public class MainActivity extends AppCompatActivity {
 //            cameraWidth = 4656; // 16Mp Back camera width lens pixels
 //            cameraHeight = 3496;// 16MP Back camera height lens pixels
 
-            APP_REVIEW_PACKAGE = "com.leialoft.leiaplayer"; // Review with Leia Player app default
-            BASE_FOLDER = Environment.DIRECTORY_DCIM;  // change base to DCIM folder for cameras
+            //APP_REVIEW_PACKAGE = "com.leialoft.leiaplayer"; // Review with Leia Player app default todo
+
             Log.d(TAG, "set stereo cameras for " + deviceName);
         } else if (modelName.equals("LPD-10W")) {
             stereoCameraId = "4";  // logical (left "0" and right "2") back cameras
@@ -363,7 +313,8 @@ public class MainActivity extends AppCompatActivity {
         //Log.d(TAG, "ro.usb.uvc.enabled="+System.getProperty("ro.usb.uvc.enabled"));
 
         // Establish media storage folders for saving photos
-        createMediaFolder();
+        media = new Media(this, parameters, aiVision);
+        media.createMediaFolder();
 
         // Create camera manager
         mCameraManager = (CameraManager) getSystemService(CAMERA_SERVICE);
@@ -372,14 +323,20 @@ public class MainActivity extends AppCompatActivity {
 
         View decorView = getWindow().getDecorView();
         // Set the pointer icon to null (invisible)
-        decorView.setPointerIcon(PointerIcon.getSystemIcon(this, PointerIcon.TYPE_NULL)) ;
+        decorView.setPointerIcon(PointerIcon.getSystemIcon(this, PointerIcon.TYPE_NULL));
         decorView.setOnGenericMotionListener((view, motionEvent) -> {
             // Handle the event here
             return handleMouseEvent(motionEvent);
         });
 
         checkPermissions();
-        setupUdpServer();  // listens for broadcast messages to control camera remotely
+
+        // set up UDP remote control
+        if (isWiFiRemoteEnabled) {
+            udpRemoteControl = new UdpRemoteControl(this);
+            udpRemoteControl.setup();
+        }
+
 
         // setup AI vision connection to local network vision small LM
         if (aiVisionEnabled) {
@@ -410,7 +367,7 @@ public class MainActivity extends AppCompatActivity {
                 countdownTextView.setTextSize(TypedValue.COMPLEX_UNIT_PX, newTextSize);
                 Log.d(TAG, "countdownTextView height=" + countdownTextView.getHeight());
                 Log.d(TAG, "parent height=" + parentHeight);
-                countdownTextView.setY(parentHeight/3.0f);
+                countdownTextView.setY(parentHeight / 3.0f);
                 countdownTextView.setVisibility(View.GONE);
                 countdownTextView.requestLayout();
 
@@ -427,13 +384,82 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    @Override
+    protected void onStart() {
+        super.onStart();
+        Log.d(TAG, "onStart()");
+        setVisibility();
+        if (commandLine == null) {
+            commandLine = new CommandLine(this, parameters, splashMessage + " Version: " + BuildConfig.VERSION_NAME);
+        }
+    }
+
+    @Override
+    protected void onStop() {
+        if (MyDebug.LOG)
+            Log.d(TAG, "onStop");
+        super.onStop();
+        // we stop location listening in onPause, but done here again just to be certain!
+    }
+
+    @Override
+    protected void onPause() {
+        Log.d(TAG, "onPause()");
+        closeCamera();
+        stopCameraThread();
+        super.onPause();
+    }
+
+    @Override
+    protected void onResume() {
+        Log.d(TAG, "onResume()");
+        super.onResume();
+        if (shutterSound) {
+            CameraInfo.mustPlayShutterSound();
+        }
+        Log.d(TAG, "shutter sound " + ((shutterSound) ? "on" : "off"));
+
+        // for debugging and test
+        if (allPermissionsGranted) {
+            String[] list = getCameraIdList();  // debug what cameras are available
+            for (String id : list) {
+                Log.d(TAG, "Available CameraId: |" + id + "|");
+            }
+
+            CameraInfoUtil.checkCameraSyncType(this, list);
+            CameraInfoUtil.logFocusDistanceCalibration(this);  // for debug
+
+            startCameraThread();
+
+            openCamera();
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (mCameraDevice != null) {
+            mCameraDevice.close();
+            mCameraDevice = null;
+        }
+        if (mImageReader0 != null) {
+            mImageReader0.close();
+        }
+        if (mImageReader2 != null) {
+            mImageReader2.close();
+        }
+
+        udpRemoteControl.destroy();
+
+    }
+
     private void startCameraThread() {
-        Log.d(TAG,"startCameraThread");
+        Log.d(TAG, "startCameraThread");
         if (mCameraThread == null) {
             mCameraThread = new HandlerThread("CameraBackgroundThread"); // Name the thread
             mCameraThread.start();
             mCameraHandler = new Handler(mCameraThread.getLooper());
-            cameraExecutor = new com.andymodla.stereocamera.HandlerExecutor(mCameraHandler);
+            cameraExecutor = new HandlerExecutor(mCameraHandler);
         }
     }
 
@@ -451,44 +477,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void createMediaFolder() {
-        File mediaStorageDir = new File(
-                Environment.getExternalStoragePublicDirectory(BASE_FOLDER), SAVE_FOLDER);
-
-        // Create the storage directory if it does not exist
-        if (!mediaStorageDir.exists()) {
-            if (!mediaStorageDir.mkdirs()) {
-                Log.e(TAG, "failed to create directory to save photo: " + mediaStorageDir.getAbsolutePath());
-                Toast.makeText(this, "Error creating folder " + SAVE_FOLDER, Toast.LENGTH_SHORT).show();
-                exit(1); // System exit
-            }
-        }
-        mediaStorageDir = new File(
-                Environment.getExternalStoragePublicDirectory(BASE_FOLDER), SAVE_FOLDER + File.separator + SAVE_ANA_FOLDER);
-
-        // Create the Anaglyph storage directory if it does not exist
-        if (!mediaStorageDir.exists()) {
-            if (!mediaStorageDir.mkdirs()) {
-                Log.e(TAG, "failed to create directory to save photo: " + mediaStorageDir.getAbsolutePath());
-                Toast.makeText(this, "Error creating folder " + SAVE_ANA_FOLDER, Toast.LENGTH_SHORT).show();
-                exit(1); // System exit
-            }
-        }
-
-        mediaStorageDir = new File(
-                Environment.getExternalStoragePublicDirectory(BASE_FOLDER), SAVE_FOLDER + File.separator + SAVE_LR_FOLDER);
-
-        // Create the LR storage directory if it does not exist
-        if (!mediaStorageDir.exists()) {
-            if (!mediaStorageDir.mkdirs()) {
-                Log.e(TAG, "failed to create directory to save photo: " + mediaStorageDir.getAbsolutePath());
-                Toast.makeText(this, "Error creating folder " + SAVE_LR_FOLDER, Toast.LENGTH_SHORT).show();
-                exit(1); // System exit
-            }
-        }
-
-    }
-
 //    @Override
 //    public void onBackPressed() {
 //        // Check if a specific condition is met, for example, if a drawer is open
@@ -501,260 +489,10 @@ public class MainActivity extends AppCompatActivity {
 //        // }
 //    }
 
-    /**
-     * UDP server setup
-     * Create the UDP server to listen for incoming broadcast messages,
-     * create a listener for the server.
-     * A listener will receive NetMessages which contain camera commands.
-     * NetListener is an interface and requires methods netEvent
-     * and netStatus.
-     */
-    private void setupUdpServer() {
-        if (isWiFiRemoteEnabled) {
-            if (udpServer == null) {
-                // create listener for UDP messages
-                NetListener udpListener = new NetListener() {
-                    public void netEvent(NetMessage m) {
-                        if (MyDebug.LOG)
-                            Log.d(TAG, "netEvent from ip address=" + m.getDatagramPacket().getAddress());
-                        byte[] data = m.getData();
-                        byte[] b = new byte[1];
-                        b[0] = data[0];
-                        String command = Bytes.getAsString(b);
-                        if (MyDebug.LOG) Log.d(TAG, "netEvent (UDP Server) command=" + command);
-                        if (command.startsWith("F")) {
-                            if (!isVideo) {
-                                if (!isFocusWaiting()) {
-                                    if (MyDebug.LOG) Log.d(TAG, "remote request focus");
-                                    MainActivity.this.runOnUiThread(new Runnable() {
-                                        public void run() {
-                                            requestAutoFocus();
-                                        }
-                                    });
-                                }
-                            } else {
-                                showToast("Remote Not In Photo Mode");
-                            }
-                        } else if (command.startsWith("S") || command.startsWith("C")) {
-                            sCount = getParam(data);
-                            if (MyDebug.LOG) Log.d(TAG, "remote takePicture() " + sCount);
-                            if (!isVideo) {
-                                MainActivity.this.runOnUiThread(new Runnable() {
-                                    public void run() {
-                                        createCameraCaptureSession(); //takePicture(false);
-                                    }
-                                });
-                            } else {
-                                showToast("Remote Not In Photo Mode");
-                            }
-                        } else if (command.startsWith("V")) { // record/stop video
-                            sCount = getParam(data);
-                            if (MyDebug.LOG) Log.d(TAG, "remote record video " + sCount);
-                            if (isVideo) {
-                                MainActivity.this.runOnUiThread(new Runnable() {
-                                    public void run() {
-                                        if (isVideoRecording())
-                                            stopVideo(true);
-                                        else
-                                            createCameraCaptureSession();//takePicture(false);
-                                    }
-                                });
-                            } else {
-                                showToast("Remote Not In Video Mode");
-                            }
-                        } else if (command.startsWith("P")) { // pause
-                            if (MyDebug.LOG) Log.d(TAG, "remote pause Video ");
-                            if (isVideo) {
-                                MainActivity.this.runOnUiThread(new Runnable() {
-                                    public void run() {
-                                        if (isVideoRecording()) {
-                                            pauseVideo();
-                                        }
-                                    }
-                                });
-                            } else {
-                                showToast("Remote Not In Video Mode");
-                            }
-                        } else if (command.startsWith("R")) { // reset / information request
-                            httpUrl = getHostnameUrl();
-                            if (MyDebug.LOG) Log.d(TAG, "Reset information request " + httpUrl);
-                            showToast(httpUrl);
-                        }
-                    }
-
-                    public void netStatus(NetStatus s) {
-                        if (MyDebug.LOG) Log.d(TAG, "netStatus (UDP Server) : " + s);
-                    }
-                };
-                // UDP server for receiving Broadcast messages
-                if (udpServer == null) {
-                    udpServer = new UdpServer1(udpListener, port);
-                    if (udpServer == null) {
-                        if (MyDebug.LOG) Log.d(TAG, "UdpServer error");
-                        showToast("Remote Message Server not running");
-                    } else {
-                        if (udpServer.socket() == null) {
-                            if (MyDebug.LOG) Log.d(TAG, "UdpServer not connected retry");
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private void requestAutoFocus() {
-    }
-
-    private void stopVideo(boolean b) {
-    }
-
-    private boolean isVideoRecording() {
-        return false;
-    }
-
-    private void pauseVideo() {
-    }
-
-    /**
-     * Show half second Toast
-     *
-     * @param message Text message to display
-     */
-    private void showToast(String message) {
-        //    Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
-        ToastHelper.showToast(this, message);
-    }
-
-    private boolean isFocusWaiting() {
-        return false;
-    }
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-        Log.d(TAG, "onStart()");
-        setVisibility();
-        if (commandLine == null) {
-            commandLine = new CommandLine(this, parameters, splashMessage + " Version: " + BuildConfig.VERSION_NAME);
-        }
-    }
-
-    private static final int MAXPARAM_SIZE = 16;
-
-    private String getParam(byte[] data) {
-        String param = "";
-        byte[] s = new byte[MAXPARAM_SIZE];
-        boolean done = false;
-        for (int i = 0; i < MAXPARAM_SIZE; i++) {
-            byte b = data[i + 1];
-            if (done || b == 0 || b == '\r' || b == '\n') {
-                s[i] = ' ';
-                done = true;
-            } else {
-                s[i] = data[i + 1];
-            }
-        }
-        param = Bytes.getAsString(s).trim();
-        return param;
-    }
-
-    public String getHostnameUrl() {
-        String hostname = getHostnameAddress();
-        //httpUrl = "http://" + hostname + ":" + serverPort +"/";
-        httpUrl = "http://" + hostname + "/";
-        return httpUrl;
-    }
-
-//    public String getHostnameAddress() {
-//        WifiManager wifiMan = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
-//        WifiInfo wifiInf = wifiMan.getConnectionInfo();
-//        int ipAddress = wifiInf.getIpAddress();
-//        String ip = String.format("%d.%d.%d.%d", (ipAddress & 0xff), (ipAddress >> 8 & 0xff), (ipAddress >> 16 & 0xff), (ipAddress >> 24 & 0xff));
-//        return ip;
-//    }
-
-    public String getHostnameAddress() {
-        try {
-            for (Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces(); en
-                    .hasMoreElements(); ) {
-                NetworkInterface intf = en.nextElement();
-                Enumeration<NetworkInterface> niEnum = NetworkInterface.getNetworkInterfaces();
-                String last = null;
-                while (niEnum.hasMoreElements()) {
-                    NetworkInterface ni = niEnum.nextElement();
-                    if (!ni.isLoopback() && !ni.isPointToPoint()) {
-                        for (InterfaceAddress interfaceAddress : ni.getInterfaceAddresses()) {
-                            if (MyDebug.LOG)
-                                Log.d(TAG, "network prefix length=" + interfaceAddress.getNetworkPrefixLength());
-                            if (interfaceAddress.getAddress() != null) {
-                                if (MyDebug.LOG)
-                                    Log.d(TAG, interfaceAddress.getAddress().getHostAddress());
-                                last = (interfaceAddress.getAddress().getHostAddress());
-                                if (last.matches("\\d*\\.\\d*\\.\\d*\\.\\d*")) {
-                                    return last;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        } catch (SocketException ex) {
-            if (MyDebug.LOG) {
-                Log.d(TAG, "Socket Exception");
-            }
-        }
-        return null;
-    }
-
-    public String getBroadcastAddress() {
-        try {
-            for (Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces(); en
-                    .hasMoreElements(); ) {
-                NetworkInterface intf = en.nextElement();
-                Enumeration<NetworkInterface> niEnum = NetworkInterface.getNetworkInterfaces();
-                while (niEnum.hasMoreElements()) {
-                    NetworkInterface ni = niEnum.nextElement();
-                    if (!ni.isLoopback()) {
-                        for (InterfaceAddress interfaceAddress : ni.getInterfaceAddresses()) {
-                            if (interfaceAddress.getBroadcast() != null) {
-                                //println(interfaceAddress.getBroadcast().toString());
-                                return (interfaceAddress.getBroadcast().toString().substring(1));
-                            }
-                        }
-                    }
-                }
-            }
-        } catch (SocketException ex) {
-            if (MyDebug.LOG) {
-                Log.d(TAG, "Socket Exception");
-            }
-        }
-        return null;
-    }
-
-    @Override
-    protected void onStop() {
-        if (MyDebug.LOG)
-            Log.d(TAG, "onStop");
-        super.onStop();
-        // we stop location listening in onPause, but done here again just to be certain!
-    }
-
-    // stop UDP server for broadcast message reception
-    void destroyUDPServer() {
-        if (MyDebug.LOG) Log.d(TAG, "Destroy UDP server");
-        if (udpServer != null) {
-            Vector list = udpServer.getListeners();
-            if (MyDebug.LOG) Log.d(TAG, "NetListener size=" + list.size());
-            for (int i = 0; i < list.size(); i++) {
-                udpServer.removeListener((NetListener) list.get(i));
-                if (MyDebug.LOG) Log.d(TAG, "remove NetListener " + list.get(i).toString());
-            }
-            udpServer.stop();
-            udpServer.dispose();
-            udpServer = null;
-        }
-    }
+     /*==================================================================
+     * OnGenericMotionListener implementation methods
+     * Mouse Events
+     ===================================================================*/
 
     private boolean handleMouseEvent(MotionEvent motionEvent) {
         // Check if the event is from a mouse
@@ -786,30 +524,15 @@ public class MainActivity extends AppCompatActivity {
         if ((buttonState & MotionEvent.BUTTON_TERTIARY) != 0) {
             // Middle mouse button pressed
             Log.d(TAG, "Middle button pressed");
-            displayMode = DisplayMode.SBS.ordinal();
-            reviewPhotos(displayMode);
+            media.printImageType();
         }
         if ((buttonState & MotionEvent.BUTTON_SECONDARY) != 0) {
             // Right mouse button pressed
             Log.d(TAG, "Right button pressed");
-            printImageType();
+            displayMode = DisplayMode.SBS.ordinal();
+            media.reviewPhotos(displayMode);
         }
         // Other buttons like BUTTON_BACK, BUTTON_FORWARD can also be checked
-    }
-
-    private void printImageType() {
-        if (reviewSBS == null || reviewAnaglyph == null || reviewLeft == null) {
-            Toast.makeText(this, "Nothing to Print", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        if (displayMode == DisplayMode.SBS.ordinal()) {
-            sharePrintImage(reviewSBS);
-        } else if (displayMode == DisplayMode.ANAGLYPH.ordinal()) {
-            sharePrintImage(reviewAnaglyph);
-        } else {
-            sharePrintImage(reviewLeft);
-        }
-
     }
 
     private void handleButtonRelease(int buttonState) {
@@ -829,75 +552,49 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void captureBurstPhoto() {
-        if (burstModeFeature && burstMode) {
-            //Toast.makeText(this, "Burst Mode ", Toast.LENGTH_SHORT).show();
-            if (isPhotobooth && (countdownDigit < 0) && burstCounter == 0) {
-                startCountdownSequence(countdownStart);  // calls createCameraCaptureSession() after count down finished
-                burstCounter = BURST_COUNT;
-            } else {
-                if (burstCounter > 0) {
-                    burstCounter = 0;
-                    //Toast.makeText(this, "Burst Mode Canceled ", Toast.LENGTH_SHORT).show();
+    private void startContinuousCapturePhoto() {
+        if (burstModeFeature) {
+            if (burstMode) {
+                Toast.makeText(this, "Start Burst Mode ", Toast.LENGTH_SHORT).show();
+                if (isPhotobooth && (countdownDigit < 0) ) {
+                    startCountdownSequence(countdownStart);  // calls createCameraCaptureSession() after count down finished
+                    burstCounter = BURST_COUNT;
+                    createCameraCaptureSession();
                 } else {
                     burstCounter = BURST_COUNT;
                     createCameraCaptureSession();
                 }
+//                else
+//                { // cancel burst when burst is in progress because burstCounter > 0
+//                    if (burstCounter > 0) {
+//                        burstCounter = 0;
+//                        Toast.makeText(this, "Burst Mode Canceled ", Toast.LENGTH_SHORT).show();
+//                    } else {  // start burst
+//                        burstCounter = BURST_COUNT;
+//                        createCameraCaptureSession();
+//                    }
+//                }
             }
         } else {
             Toast.makeText(this, "Burst Mode Not Enabled", Toast.LENGTH_SHORT).show();
         }
     }
 
-    void reviewPhotos(int displayMode) {
-        if (reviewSBS != null) {
-            if (displayMode == DisplayMode.SBS.ordinal()) {
-                shareImage2(reviewSBS, APP_REVIEW_PACKAGE);
-            } else {
-                shareImage2(reviewAnaglyph, null);
+    public void nextContinuousCapturePhoto() {
+        Log.d(TAG, "nextContinuousCapturePhoto()");
+        if (burstModeFeature && burstMode) {
+            if (burstCounter > 0) {
+                burstCounter--;
+                Log.d(TAG, "burstCounter=" + burstCounter);
+                createCameraCaptureSession();
             }
-        } else {
-            Toast.makeText(this, "Nothing to Review", Toast.LENGTH_SHORT).show();
         }
-    }
-
-    @Override
-    protected void onResume() {
-        Log.d(TAG, "onResume()");
-        super.onResume();
-        if (shutterSound) {
-            CameraInfo.mustPlayShutterSound();
-        }
-        Log.d(TAG, "shutter sound " + ((shutterSound) ? "on" : "off"));
-
-        // for debugging and test
-        if (allPermissionsGranted) {
-            String[] list = getCameraIdList();  // debug what cameras are available
-            for (String id : list) {
-                Log.d(TAG, "Available CameraId: |" + id + "|");
-            }
-
-            CameraInfoUtil.checkCameraSyncType(this, list);
-            CameraInfoUtil.logFocusDistanceCalibration(this);  // for debug
-
-            startCameraThread();
-
-            openCamera();
-        }
-    }
-
-    @Override
-    protected void onPause() {
-        Log.d(TAG, "onPause()");
-        closeCamera();
-        stopCameraThread();
-        super.onPause();
     }
 
     SurfaceHolder.Callback shCallback = new SurfaceHolder.Callback() {
         @Override
         public void surfaceCreated(@NonNull SurfaceHolder holder) {
-            Log.d(TAG, "surfaceCreated");
+            Log.d(TAG, "Surface holder surfaceCreated");
             if (mSurfaceView0.isAttachedToWindow() && mSurfaceView2.isAttachedToWindow()) {
                 createCameraPreviewSession();
             }
@@ -928,6 +625,10 @@ public class MainActivity extends AppCompatActivity {
         mSurfaceHolder0.addCallback(shCallback);
         mSurfaceHolder2.addCallback(shCallback);
     }
+
+    /*==================================================================
+     * Permissions
+     ===================================================================*/
 
     private void checkPermissions() {
         Log.d(TAG, "checkPermissions");
@@ -978,7 +679,7 @@ public class MainActivity extends AppCompatActivity {
         if (ActivityCompat.checkSelfPermission(this, CAMERA) == PackageManager.PERMISSION_GRANTED) {
             try {
                 mCameraManager.openCamera(stereoCameraId, mStateCallback, mCameraHandler); // logical camera 3 combines 1 and 2
-                Log.d(TAG, "mCameraManager.openCamera( "+stereoCameraId+" )");
+                Log.d(TAG, "mCameraManager.openCamera( " + stereoCameraId + " )");
             } catch (CameraAccessException e) {
                 Log.e(TAG, "Camera access exception", e);
             }
@@ -1051,7 +752,7 @@ public class MainActivity extends AppCompatActivity {
         try {
             if (!mSurfaceHolder0.getSurface().isValid() || !mSurfaceHolder2.getSurface().isValid()) {
                 Log.d(TAG, "Surface not valid");
-               return;
+                return;
             }
             OutputConfiguration opcL = new OutputConfiguration(new Size(176, 144), SurfaceTexture.class);
             OutputConfiguration opc0 = new OutputConfiguration(mSurfaceHolder0.getSurface());
@@ -1153,9 +854,10 @@ public class MainActivity extends AppCompatActivity {
         return rList;
     }
 
+
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
-        Log.d(TAG, "onKeyDown "+keyCode);
+        Log.d(TAG, "onKeyDown " + keyCode);
         switch (keyCode) {
             case KeyEvent.KEYCODE_VOLUME_UP:
             case KeyEvent.KEYCODE_VOLUME_DOWN:
@@ -1185,32 +887,48 @@ public class MainActivity extends AppCompatActivity {
         }
         switch (keyCode) {
             case KeyEvent.KEYCODE_VOLUME_UP:
-            //case KeyEvent.KEYCODE_VOLUME_DOWN:
+                //case KeyEvent.KEYCODE_VOLUME_DOWN:
             case KeyEvent.KEYCODE_3D_MODE: // camera key - first turn off auto launch of native camera app
             case SHUTTER_KEY:
             case SHUTTER_KB_KEY:
-                capturePhoto();
+                if (burstMode) {
+                    return true; // ignore key
+                } else {
+                    capturePhoto();
+                }
                 return true;
             case BURST_KEY:
-            case BURST_KB_KEY: // start and cancel Burst capture mode
-                captureBurstPhoto();
+            case BURST_KB_KEY: // start continuous capture mode
+                if (burstModeFeature) {
+                    if (burstMode) {
+                        return true;  // ignore key
+                    } else {
+                        burstMode = true;
+                        startContinuousCapturePhoto();
+                    }
+                }
                 return true;
             case KeyEvent.KEYCODE_BACK:
             case KeyEvent.KEYCODE_ESCAPE:
             case BACK_KB_KEY:
             case KeyEvent.KEYCODE_BUTTON_B:
-                Toast.makeText(this, "Exit?", Toast.LENGTH_SHORT).show();
+                if (burstMode) {
+                    burstMode = false;
+                    Toast.makeText(this, "Burst Mode Canceled ", Toast.LENGTH_SHORT).show();
+                    return true;
+                }
+
                 if (exitApp) {
                     finish();
                 } else {
+                    Toast.makeText(this, "Exit?", Toast.LENGTH_SHORT).show();
                     exitApp = true;
                 }
                 return true;
             case SHARE_KEY:
             case SHARE_KB_KEY:
-                if (reviewSBS != null) {
-                    shareImage2(reviewSBS, null);
-                } else {
+                boolean ok = media.shareReviewImage();
+                if (!ok) {
                     Toast.makeText(this, "Nothing to Share", Toast.LENGTH_SHORT).show();
                 }
                 return true;
@@ -1246,16 +964,16 @@ public class MainActivity extends AppCompatActivity {
             case KeyEvent.KEYCODE_VOLUME_DOWN:
             case REVIEW_KEY:
             case REVIEW_KB_KEY:
-                reviewPhotos(displayMode);
+                media.reviewPhotos(displayMode);
                 return true;
             case ANAGLYPH_KEY:
             case ANAGLYPH_KB_KEY:
-                closeCamera();
-                if (!isAnaglyphMode) isAnaglyphMode = true;
-                else isAnaglyphMode = false;
-                if (isAnaglyphMode) Toast.makeText(this, "Anaglyph", Toast.LENGTH_SHORT).show();
-                else Toast.makeText(this, "SBS", Toast.LENGTH_SHORT).show();
-                openCamera();
+//                closeCamera();
+//                if (!isAnaglyphMode) isAnaglyphMode = true;
+//                else isAnaglyphMode = false;
+//                if (isAnaglyphMode) Toast.makeText(this, "Anaglyph", Toast.LENGTH_SHORT).show();
+//                else Toast.makeText(this, "SBS", Toast.LENGTH_SHORT).show();
+//                openCamera();
                 return true;
             case MODE_KEY:
             case MODE_KB_KEY:
@@ -1271,7 +989,7 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             case TIMER_KEY:
             case TIMER_KB_KEY:
-                 if (isPhotobooth) {
+                if (isPhotobooth) {
                     isPhotobooth = false;
                     BURST_COUNT = BURST_COUNT_DEFAULT;
                 } else {
@@ -1279,12 +997,11 @@ public class MainActivity extends AppCompatActivity {
                     BURST_COUNT = BURST_COUNT_PHOTO_BOOTH;
                 }
                 countdownDigit = -1;
-                 if (isPhotobooth) {
-                     Toast.makeText(this, "Photo Booth Countdown=" + Integer.toString(countdownStart), Toast.LENGTH_SHORT).show();
-                 }
-                 else {
-                     Toast.makeText(this, "Timer Off", Toast.LENGTH_SHORT).show();
-                 }
+                if (isPhotobooth) {
+                    Toast.makeText(this, "Photo Booth Countdown=" + Integer.toString(countdownStart), Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(this, "Timer Off", Toast.LENGTH_SHORT).show();
+                }
 //                closeCamera();
 //                openCamera();
                 return true;
@@ -1297,12 +1014,13 @@ public class MainActivity extends AppCompatActivity {
             case DISP_KEY:
             case DISP_KB_KEY:
                 displayMode++;
-                if (displayMode >= DisplayMode.values().length) displayMode = DisplayMode.SBS.ordinal();
-                if (displayMode == DisplayMode.SBS.ordinal()){
+                if (displayMode >= DisplayMode.values().length)
+                    displayMode = DisplayMode.SBS.ordinal();
+                if (displayMode == DisplayMode.SBS.ordinal()) {
                     Toast.makeText(this, "Display Mode SBS", Toast.LENGTH_SHORT).show();
-                } else if (displayMode == DisplayMode.ANAGLYPH.ordinal()){
+                } else if (displayMode == DisplayMode.ANAGLYPH.ordinal()) {
                     Toast.makeText(this, "Display Mode Anaglyph", Toast.LENGTH_SHORT).show();
-                } else if (displayMode == DisplayMode.LR.ordinal()){
+                } else if (displayMode == DisplayMode.LR.ordinal()) {
                     Toast.makeText(this, "Display Mode LR", Toast.LENGTH_SHORT).show();
                 }
 //                closeCamera();
@@ -1316,7 +1034,7 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             case PRINT_KEY:
             case PRINT_KB_KEY:
-                printImageType();
+                media.printImageType();
                 return true;
 //            case VIDEO_RECORD_KEY:
 //            case VIDEO_RECORD_KB_KEY:
@@ -1326,11 +1044,11 @@ public class MainActivity extends AppCompatActivity {
 //                return true;
             //case BLANK_SCREEN_KEY:
             //case BLANK_SCREEN_KB_KEY:
-                //Toast.makeText(this, "Blank Screen - not implemented", Toast.LENGTH_SHORT).show();
-                //blankScreen = !blankScreen;
+            //Toast.makeText(this, "Blank Screen - not implemented", Toast.LENGTH_SHORT).show();
+            //blankScreen = !blankScreen;
 
-                //String id = String.valueOf(mCameraCaptureSession.getDevice().getId());
-                //Toast.makeText(this, (blankScreen ? "Id: " + id + " Blank Screen" : "UnBlank Screen"), Toast.LENGTH_SHORT).show();
+            //String id = String.valueOf(mCameraCaptureSession.getDevice().getId());
+            //Toast.makeText(this, (blankScreen ? "Id: " + id + " Blank Screen" : "UnBlank Screen"), Toast.LENGTH_SHORT).show();
 //                if (blankScreen) {
 //                    //mSurfaceView0.setVisibility(View.GONE);
 //                    //mSurfaceView2.setVisibility(View.GONE);
@@ -1349,7 +1067,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public void playShutterSound() {
+    private void playShutterSound() {
         // Create a ToneGenerator instance.
         // The AudioManager.STREAM_SYSTEM is important here to ensure the sound plays through the system volume.
         // The volume parameter (100) is a percentage of the maximum volume.
@@ -1369,30 +1087,6 @@ public class MainActivity extends AppCompatActivity {
                 toneGen.release();
             }
         }, 100); // 100 milliseconds is a good duration for a short tone.
-    }
-
-    private void reviewImages() {
-        Log.d(TAG, "reviewImages()");
-        if (reviewSBS != null) {
-            shareImage(reviewSBS);
-        } else {
-            Toast.makeText(this, "Photo Albums Available", Toast.LENGTH_SHORT).show();
-            shareImage(reviewSBS);
-        }
-    }
-
-    private void reviewImage() {
-        // TO DO
-        // if in live view state
-        //   turn off and shutdown camera
-        //   set review state
-        //   switch layouts and show first saved image
-        // else in review mode
-        //   get next image to show in review and show it
-        //    if no more images to show
-        //    turn camera back on and switch layouts
-        //    set live view state
-        //
     }
 
     /**
@@ -1426,27 +1120,11 @@ public class MainActivity extends AppCompatActivity {
             captureBuilder.set(CaptureRequest.NOISE_REDUCTION_MODE, 1); // NOISE_REDUCTION_MODE
             captureBuilder.set(CaptureRequest.EDGE_MODE, 1); // EDGE_MODE
             captureBuilder.set(CaptureRequest.CONTROL_EXTENDED_SCENE_MODE, 1);  // sync left and right cameras
-            timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
             imageL = null;
             imageR = null;
             leftBytes = null;
             rightBytes = null;
-            if (leftBitmap != null) {
-                leftBitmap.recycle();
-                leftBitmap = null;
-            }
-            if (rightBitmap != null) {
-                rightBitmap.recycle();
-                rightBitmap = null;
-            }
-            if (sbsBitmap != null) {
-                sbsBitmap.recycle();
-                sbsBitmap = null;
-            }
-            if (anaglyphBitmap != null) {
-                anaglyphBitmap.recycle();
-                anaglyphBitmap = null;
-            }
+            media.recycleBitmaps();
 
             mImageReader0.setOnImageAvailableListener(new OnImageAvailableListener() {
                 @Override
@@ -1493,13 +1171,13 @@ public class MainActivity extends AppCompatActivity {
                                 case CaptureFailure.REASON_FLUSHED:
                                     Log.e(TAG, "Capture failed due to stream flush");
                                     break;
-                                 default:
+                                default:
                                     Log.e(TAG, "Capture failed for unknown reason");
                             }
                         }
                     };
 
-           mCameraCaptureSession.captureSingleRequest(captureBuilder.build(), cameraExecutor, captureSingleRequestListener);
+            mCameraCaptureSession.captureSingleRequest(captureBuilder.build(), cameraExecutor, captureSingleRequestListener);
 
         } catch (CameraAccessException e) {
             Log.e(TAG, "Error capturing images", e);
@@ -1516,87 +1194,15 @@ public class MainActivity extends AppCompatActivity {
             rightBytes = convertToBytes(right);
             left.close();
             right.close();
-            saveImageFiles();
+            if (leftBytes != null && rightBytes != null) {
+                media.saveImageFiles(leftBytes, rightBytes);
+                leftBytes = null;
+                rightBytes = null;
+            }
         }
 
     }
 
-    private void saveImageFiles() {
-        if (leftBytes != null && rightBytes != null) {
-            showToast("Saved IMG" + timestamp);
-            leftBitmap = saveImageFile(leftBytes, PHOTO_PREFIX + timestamp, true); // left
-            rightBitmap = saveImageFile(rightBytes, PHOTO_PREFIX + timestamp, false); // right
-            leftBytes = null;
-            rightBytes = null;
-            if (aiVisionEnabled) {
-                String response = aiVision.getInformationFromImage(leftBitmap, prompt);
-                Log.d(TAG, "AI Vision response: " + response);
-                Toast.makeText(this, "AI Vision response: " + response, Toast.LENGTH_SHORT).show();
-            }
-            if (isAnaglyphMode || saveAnaglyph) {
-                reviewAnaglyph = createAndSaveAnaglyph(PHOTO_PREFIX + timestamp, leftBitmap, rightBitmap);
-            }
-            if (saveSBS) {
-                if (burstCounter > 0)
-                    timestamp += "_" + String.valueOf(BURST_COUNT - burstCounter + 1);
-                if (crossEye) {
-                    reviewSBS = createAndSaveSBS(PHOTO_PREFIX + timestamp, rightBitmap, leftBitmap);
-                } else {
-                    reviewSBS = createAndSaveSBS(PHOTO_PREFIX + timestamp, leftBitmap, rightBitmap);
-                }
-                if (burstCounter > 0) {
-                    burstCounter = burstCounter - 1;
-                    if (burstCounter > 0) {
-                        createCameraCaptureSession();
-                    }
-                }
-            }
-            //Toast.makeText(this, "Saved IMG" + timestamp, Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    private Bitmap saveImageFile(byte[] bytes, String filename, boolean left) {
-        Bitmap bitmap = null;
-
-        if (left) {
-            filename += "_l.jpg";
-        } else {
-            filename += "_r.jpg";
-        }
-
-        BitmapFactory.Options options = new BitmapFactory.Options();
-        // options.inSampleSize = 2; // Try reducing image size
-        // options.inPreferredConfig = Bitmap.Config.ARGB_8888; // Try specifying a config
-
-        Log.d(TAG, "SaveImageFile " + filename);
-        bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length, options);
-        if (bitmap == null) {
-            Log.e(TAG, "Image decoding failed! " + (left ? "left" : "right"));
-            return null;
-        } else {
-            if (!saveLR) {
-                return bitmap;
-            }
-        }
-
-        File file = new File(Environment.getExternalStoragePublicDirectory(BASE_FOLDER + File.separator + SAVE_FOLDER + File.separator + SAVE_LR_FOLDER), filename);
-
-        try (FileOutputStream output = new FileOutputStream(file)) {
-            output.write(bytes);
-            //xxx.compress(Bitmap.CompressFormat.JPEG, 100, output);
-
-            // Trigger media scanner to make image visible in gallery
-            MediaScannerConnection.scanFile(this, new String[]{file.getAbsolutePath()},
-                    new String[]{"image/jpeg"}, null);
-
-            Log.d(TAG, "Image saved: " + file.getAbsolutePath());
-            if (left) reviewLeft = file; else reviewRight = file;
-        } catch (IOException e) {
-            Log.e(TAG, "Error saving image", e);
-            return null;
-        }
-        return bitmap;
-    }
 
     private byte[] convertToBytes(Image image) {
         // Get the JPEG image data, add other formats if needed
@@ -1608,326 +1214,14 @@ public class MainActivity extends AppCompatActivity {
         return bytes;
     }
 
-    private File createAndSaveAnaglyph(String timestamp, Bitmap leftBitmap, Bitmap rightBitmap) {
-        Log.d(TAG, "createAndSaveAnaglyph");
-        if (leftBitmap == null || rightBitmap == null) {
-            Log.d(TAG, "createAndSaveAnaglyph failed Bitmaps null " + timestamp);
-            return null;
-        }
 
-        anaglyphBitmap = StereoImage.colorAnaglyph(leftBitmap, rightBitmap, parameters.getParallaxOffset(), parameters.getVerticalOffset());
-
-        // Save anaglyph image
-        String filename = timestamp + "_ana.jpg";
-        File file = new File(Environment.getExternalStoragePublicDirectory(BASE_FOLDER + File.separator + SAVE_FOLDER + File.separator + SAVE_ANA_FOLDER), filename);
-
-        try (FileOutputStream out = new FileOutputStream(file)) {
-            anaglyphBitmap.compress(Bitmap.CompressFormat.JPEG, 100, out);
-
-            MediaScannerConnection.scanFile(this, new String[]{file.getAbsolutePath()},
-                    new String[]{"image/jpeg"}, null);
-
-            Log.d(TAG, "Anaglyph image saved: " + file.getAbsolutePath());
-        } catch (IOException e) {
-            Log.e(TAG, "Error saving anaglyph image", e);
-            return null;
-        }
-        return file;
-    }
-
-    private File createAndSaveSBS(String timestamp, Bitmap leftBitmap, Bitmap rightBitmap) {
-        Log.d(TAG, "createAndSaveSBS");
-        if (leftBitmap == null || rightBitmap == null) {
-            Log.d(TAG, "createAndSaveSBS failed Bitmaps null " + timestamp);
-            return null;
-        }
-
-        sbsBitmap = StereoImage.alignLR(leftBitmap, rightBitmap, parameters.getParallaxOffset(), parameters.getVerticalOffset());
-        if (sbsBitmap == null) {
-            Log.d(TAG, "createAndSaveSBS failed");
-            return null;
-        }
-
-        // Save SBS image
-        String filename = timestamp + "_2x1.jpg";
-        File file = new File(Environment.getExternalStoragePublicDirectory(BASE_FOLDER + File.separator + SAVE_FOLDER), filename);
-
-        try (FileOutputStream out = new FileOutputStream(file)) {
-            sbsBitmap.compress(Bitmap.CompressFormat.JPEG, 100, out);
-            //sbsBitmap.compress(Bitmap.CompressFormat.PNG, 100, out);
-            MediaScannerConnection.scanFile(this, new String[]{file.getAbsolutePath()},
-                    new String[]{"image/*"}, null);
-
-            Log.d(TAG, "SBS image saved: " + file.getAbsolutePath());
-        } catch (IOException e) {
-            Log.e(TAG, "Error saving SBS image", e);
-            return null;
-        }
-        return file;
-    }
-
-    public void shareImage(File imageFile) {
-        Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-        photoPickerLauncher.launch(intent);
-    }
-
-    private final ActivityResultLauncher<Intent> photoPickerLauncher =
-            registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),
-                    result -> {
-                        if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
-                            Uri contentUri = result.getData().getData();
-                            if (contentUri != null) {
-                                // Start the share intent with the URI from the Photo Picker
-                                Intent shareIntent = new Intent(Intent.ACTION_SEND);
-                                shareIntent.putExtra(Intent.EXTRA_STREAM, contentUri);
-                                shareIntent.setType("image/*");
-                                shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                                shareIntent.setPackage(APP_PHOTO_REVIEW_PACKAGE); //  actual package name
-                                this.startActivity(shareIntent);
-                                //startActivity(Intent.createChooser(shareIntent, "Share image..."));
-                            }
-                        }
-                    });
-
-    private Uri getContentUriForFile(String filePath) {
-        File file = new File(filePath);
-        if (!file.exists()) {
-            return null;
-        }
-
-        ContentResolver resolver = getContentResolver();
-
-        // First try to find existing MediaStore entry
-        String[] projection = {MediaStore.Images.Media._ID};
-        String selection = MediaStore.Images.Media.DATA + "=?";
-        String[] selectionArgs = {file.getAbsolutePath()};
-
-        Cursor cursor = resolver.query(
-                MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                projection,
-                selection,
-                selectionArgs,
-                null
-        );
-
-        if (cursor != null && cursor.moveToFirst()) {
-            int idColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID);
-            long id = cursor.getLong(idColumn);
-            cursor.close();
-            return ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id);
-        }
-
-        if (cursor != null) {
-            cursor.close();
-        }
-
-        // If not found, add to MediaStore
-        ContentValues contentValues = new ContentValues();
-        contentValues.put(MediaStore.Images.Media.DISPLAY_NAME, file.getName());
-        contentValues.put(MediaStore.Images.Media.MIME_TYPE, getMimeType(file.getName()));
-        contentValues.put(MediaStore.Images.Media.DATA, file.getAbsolutePath());
-        contentValues.put(MediaStore.Images.Media.DATE_ADDED, System.currentTimeMillis() / 1000);
-
-        return resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues);
-    }
-
-    private String getMimeType(String fileName) {
-        if (fileName.toLowerCase().endsWith(".jpg") || fileName.toLowerCase().endsWith(".jpeg")) {
-            return "image/jpeg";
-        } else if (fileName.toLowerCase().endsWith(".png")) {
-            return "image/png";
-        }
-        return "image/*";
-    }
-
-    public void shareImage2(File imageFile, String appPackage) {
-        Uri contentUri = getContentUriForFile(imageFile.getPath());
-
-        if (contentUri != null) {
-            try {
-                Intent intent = new Intent(Intent.ACTION_SEND);
-                intent.putExtra(Intent.EXTRA_STREAM, contentUri);
-                intent.setType("image/*");
-                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                if (appPackage != null) {
-                    intent.setPackage(appPackage); //  actual package name
-                }
-                this.startActivity(intent);
-            } catch (ActivityNotFoundException e) {
-                // Handle the case where the target app is not installed
-                Log.d(TAG, "Failed to launch 3DSteroid Pro.");
-                Toast.makeText(this, appPackage + " not installed", Toast.LENGTH_SHORT).show();
-                // Toast message or direct the user to the Play Store
-                Intent intent = new Intent(Intent.ACTION_SEND);
-                intent.putExtra(Intent.EXTRA_STREAM, contentUri);
-                intent.setType("image/*");
-                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                this.startActivity(Intent.createChooser(intent, "Share image with:"));
-            }
-        } else {
-            Log.e(TAG, "Failed to create MediaStore entry.");
-        }
-    }
-
-    public void findIntent() {
-        // First, find what activities can handle image sharing
-        PackageManager pm = getPackageManager();
-        Intent shareIntent = new Intent(Intent.ACTION_SEND);
-        shareIntent.setType("image/*");
-
-        List<ResolveInfo> activities = pm.queryIntentActivities(shareIntent, 0);
-        for (ResolveInfo activity : activities) {
-            String appName = activity.loadLabel(pm).toString();
-            String packageName = activity.activityInfo.packageName;
-            Log.d(TAG, "App: " + appName + ", Package: " + packageName);
-
-            if (appName.toLowerCase().contains("stereo") ||
-                    packageName.toLowerCase().contains("stereo")) {
-                Log.d(TAG, "StereoRoidPro: " + packageName + " / " + activity.activityInfo.name);
-            }
-        }
-    }
-
-    public void shareImage1(File imageFile) {
-        findIntent();
-        Uri contentUri = FileProvider.getUriForFile(this, this.getPackageName() + ".fileprovider", imageFile);
-        Log.d(TAG, "shareImage1 " + imageFile.getAbsolutePath());
-        if (contentUri != null) {
-
-            Intent shareIntent = new Intent(Intent.ACTION_SEND);
-            shareIntent.setType("image/*");
-            shareIntent.putExtra(Intent.EXTRA_STREAM, contentUri);
-            shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION); // Required for receiving app
-            shareIntent.setPackage(APP_REVIEW_PACKAGE); // Replace with the actual package name
-
-            try {
-                this.startActivity(shareIntent);
-            } catch (ActivityNotFoundException e) {
-                // Handle the case where the target app is not installed
-                Log.d(TAG, "Failed to launch stereoroidpro.");
-                Toast.makeText(this, "StereoRoidPro not installed", Toast.LENGTH_SHORT).show();
-                // Toast message or direct the user to the Play Store
-            }
-        }
-    }
-
-    public void shareImages(File imageFile) {
-        //Uri contentUri = FileProvider.getUriForFile(this, this.getPackageName() + ".fileprovider", imageFile);
-        ContentResolver resolver = this.getContentResolver();
-        ContentValues contentValues = new ContentValues();
-        try {
-            contentValues.put(MediaStore.Images.Media.DISPLAY_NAME, imageFile.getCanonicalPath());
-        } catch (IOException e) {
-            contentValues.put(MediaStore.Images.Media.DISPLAY_NAME, imageFile.getPath());
-        }
-        String fileName = imageFile.getName();
-        String path = imageFile.getPath();
-        String mimeType = "image/*";
-
-        contentValues.put(MediaStore.Images.Media.MIME_TYPE, mimeType);
-        Log.d(TAG, "Filename: " + fileName + " Path=" + path);
-        Uri contentUri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues);
-
-        if (contentUri != null) {
-            Intent intent = new Intent(Intent.ACTION_SEND);
-            intent.putExtra(Intent.EXTRA_STREAM, contentUri);
-            intent.setType(mimeType); // Or the correct MIME type
-            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-            this.startActivity(Intent.createChooser(intent, "Share using:")); // Allows the user to select the print service
-            //this.startActivity(intent); // SEND only
-        } else {
-            // Handle the case where the insertion failed
-            Log.d(TAG, "Failed to share image");
-        }
-    }
-
-    public void sharePrintImage(File imageFile) {
-        Uri contentUri = FileProvider.getUriForFile(this, getPackageName() + ".fileprovider", imageFile);
-        ContentResolver resolver = getContentResolver();
-        ContentValues contentValues = new ContentValues();
-        contentValues.put(MediaStore.Images.Media.DISPLAY_NAME, imageFile.getName());
-
-        String fileName = imageFile.getName();
-        String mimeType;
-
-        if (fileName.toLowerCase().endsWith(".png")) {
-            mimeType = "image/png";
-        } else if (fileName.toLowerCase().endsWith(".jpg") || fileName.toLowerCase().endsWith(".jpeg")) {
-            mimeType = "image/jpeg";
-        } else if (fileName.toLowerCase().endsWith(".gif")) {
-            mimeType = "image/gif";
-        } else {
-            Log.d(TAG, "Unsupported image format: " + fileName);
-            return; // Exit if the format is not supported
-        }
-
-        contentValues.put(MediaStore.Images.Media.MIME_TYPE, mimeType); // Or the correct MIME type
-        //Uri contentUri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues);
-
-        if (contentUri != null) {
-            Intent intent = new Intent(Intent.ACTION_SEND);
-            intent.putExtra(Intent.EXTRA_STREAM, contentUri);
-            intent.setType(mimeType); // Or the correct MIME type
-            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-            intent.setPackage(APP_CANON_PRINT_SERVICE_PACKAGE); // Printer app actual package name
-            startActivity(Intent.createChooser(intent, "Print using:")); // Allows the user to select the print service
-        } else {
-            // Handle the case where the insertion failed
-            Log.d(TAG, "Failed to share image");
-        }
-    }
-
-    // TODO anaglyph live view display
-    private void toggleDisplayMode() {
-        isAnaglyphDisplayMode = !isAnaglyphDisplayMode;
-
-        if (isAnaglyphDisplayMode) {
-            // Switch to anaglyph mode - create anaglyph view programmatically
-
-            //createAnaglyphView();
-            Toast.makeText(this, "Anaglyph mode enabled", Toast.LENGTH_SHORT).show();
-        } else {
-            // Switch to side-by-side mode
-            setContentView(R.layout.layout);
-            setupSurfaces();
-            Toast.makeText(this, "Side-by-side mode enabled", Toast.LENGTH_SHORT).show();
-        }
-
-        // Recreate camera session
-        if (mCameraDevice != null) {
-            try {
-                if (mCameraCaptureSession != null) {
-                    mCameraCaptureSession.close();
-                }
-                //createCameraCaptureSession();
-            } catch (Exception e) {
-                Log.e(TAG, "Error recreating camera session", e);
-            }
-        }
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        if (mCameraDevice != null) {
-            mCameraDevice.close();
-            mCameraDevice = null;
-        }
-        if (mImageReader0 != null) {
-            mImageReader0.close();
-        }
-        if (mImageReader2 != null) {
-            mImageReader2.close();
-        }
-        //destroyHTTPServer();
-        destroyUDPServer();
-
-    }
-
+    /*
+     * Start countdown sequence for Photo booth function
+     */
     void startCountdownSequence(int startCount) {
         if (countdownTimer == null) {
             countdownTimer = new Timer();
-            countdownDigit = startCount+1;
+            countdownDigit = startCount + 1;
             countdownTextView.setText(Integer.toString(countdownDigit));
             countdownTextView.setVisibility(View.VISIBLE);
 
@@ -1947,7 +1241,7 @@ public class MainActivity extends AppCompatActivity {
                                 createCameraCaptureSession(); // take a picture
                             }
                         });
-                     } else {
+                    } else {
                         MainActivity.this.runOnUiThread(new Runnable() {
                             public void run() {
                                 if (countdownDigit == 0) {
@@ -1968,6 +1262,35 @@ public class MainActivity extends AppCompatActivity {
             countdownTimer.schedule(task, 0, 1000);
         }
     }
+
+    /**
+     * Show half second Toast message
+     *
+     * @param message Text message to display
+     */
+    private void showToast(String message) {
+        //    Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+        ToastHelper.showToast(this, message);
+    }
+
+    public final ActivityResultLauncher<Intent> photoPickerLauncher =
+            registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),
+                    result -> {
+                        if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
+                            Uri contentUri = result.getData().getData();
+                            if (contentUri != null) {
+                                // Start the share intent with the URI from the Photo Picker
+                                Intent shareIntent = new Intent(Intent.ACTION_SEND);
+                                shareIntent.putExtra(Intent.EXTRA_STREAM, contentUri);
+                                shareIntent.setType("image/*");
+                                shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                                shareIntent.setPackage(Media.APP_PHOTO_REVIEW_PACKAGE); //  actual package name
+                                this.startActivity(shareIntent);
+                                //startActivity(Intent.createChooser(shareIntent, "Share image..."));
+                            }
+                        }
+                    });
+
 
     private void setVisibility() {
         //if (DEBUG) println("setVisibility width = "+width + " height="+height);

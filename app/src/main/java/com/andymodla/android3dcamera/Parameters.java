@@ -33,7 +33,7 @@ class ParamStore {
  */
 public class Parameters {
     private final String TAG = "Parameters";
-    private SharedPreferences prefs;
+    private final SharedPreferences prefs;
 
 
     // Stereo Image Alignment parameters
@@ -54,7 +54,7 @@ public class Parameters {
             return method.invoke(this);
         } catch (Exception e) {
             // Handle potential exceptions like NoSuchMethodException, etc.
-            e.printStackTrace();
+            Log.e(TAG, "Error Parameters calling getter: " + e.getMessage());
             return null;
         }
     }
@@ -69,7 +69,7 @@ public class Parameters {
             else method.invoke(this, value);
         } catch (Exception e) {
             // Handle potential exceptions
-            e.printStackTrace();
+            Log.e(TAG, "Error Parameters calling setter: " + e.getMessage());
         }
     }
 
@@ -91,7 +91,7 @@ public class Parameters {
         return parallaxOffset;
     }
 
-    public void setParallaxOffset(int parallaxOffset) {
+    public void writeParallaxOffset(int parallaxOffset) {
         this.parallaxOffset = parallaxOffset;
         // Save to SharedPreferences
         SharedPreferences.Editor editor = prefs.edit();
@@ -108,7 +108,7 @@ public class Parameters {
         return verticalOffset;
     }
 
-    public void setVerticalOffset(int verticalOffset) {
+    public void writeVerticalOffset(int verticalOffset) {
         this.verticalOffset = verticalOffset;
         // Save to SharedPreferences
         SharedPreferences.Editor editor = prefs.edit();
@@ -128,7 +128,8 @@ public class Parameters {
 
     public String findParam(String abbr, String value, boolean set) {
         ParamStore store = null;
-        String result = null;
+        String result;
+        result = null;
         for (ParamStore paramStore : paramStores) {
             if (paramStore.abbr.toLowerCase().equals(abbr)) {
                 store = paramStore;
@@ -141,7 +142,7 @@ public class Parameters {
                 callSetter(store, value);
             }
             else {
-                result = store.name + " = " +  String.valueOf(callGetter(store));
+                result = store.name + " = " +  callGetter(store);
             }
             return result;
         }
