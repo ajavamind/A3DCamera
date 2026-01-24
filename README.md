@@ -20,14 +20,14 @@ Specific uses I would like to have with a 3D camera app are:
 * Sharing photos via email, for direct printing SBS or Anaglyph, or for review and alignment using 3D apps like [3DSteroidPro](https://play.google.com/store/apps/details?id=jp.suto.stereoroidpro&hl=en_US).
 
 The display of the 3D parallel L/R image should be centered on the display and no larger than 130 cm wide for a stereoscope or for free-viewing the image to minimize eye strain. 
-There is a display mode where only the stereo image appears without controls or other information.
+The default display mode show the stereo image without GUI controls or other information.
 
 ### Camera App Design
 For the above uses cases the app requires remote key control of its functions and not with the touch screen.
 
 With the remote control requirements for the app, a minimum Bluetooth controller is needed. 
 I want to keep the GUI mostly for viewing 3D images and for showing brief information status or settings.
-Therefore only key input will determine the camera operation.
+Therefore only key or mouse input will determine the camera operation.
 
 I chose the [8BitDo](https://www.8bitdo.com) Micro Bluetooth game key controller in its Android mode. With this controller's 15 keys many camera functions can be set or controlled with a single key.
 The 8BitDo Micro is sold as key programmable in its keyboard mode, but I found it impossible to modify key codes using the manufacturer's [Google Play Store app](https://play.google.com/store/apps/details?id=com.abitdo.advance). 
@@ -54,7 +54,7 @@ Auto exposure sets the best subject lighting by automatically changing shutter s
 The photographer can set the type of exposure metering: Frame Average, Center Weighted, and Spot Metering.
 
 ### Image Storage
-The app stores image files in the "Pictures/A3DCamera" folder. The base folder can be changed to "DCIM/A3DCamera" in the code.
+The app stores image files in the "DCIM/A3DCamera" folder. The base folder can be changed to "Pictures/A3DCamera" in the code.
 
 The app stores 3D photos in several formats. Left and Right Camera images are stored respectively as "_l" and "_r" suffix filename jpg files.
 Side by Side parallel left and right images are stored as "_2x1" suffix filename jpg files.
@@ -69,10 +69,10 @@ Each camera photo captured is 4080 x 3072 pixels, the full maximum sensor size o
 
 ### Display
 The app display is a centered viewfinder sized to permit use of stereoscopic "free-viewing". This is a learned eye relaxing technique you can use to help see your subject in 3D with parallal side by side left and right eye images. 
-See 
+More about free-viewing can be found at: 
 [Learning To Free View](https://stereoscopy.blog/2022/03/11/learning-to-free-view-see-stereoscopic-images-with-the-naked-eye/).
 
-When free-viewing I use a pair of +4.0 reading glasses to get closer to the screen. A +5.0 reading glasses would be ideal, if I could find one without lens distortion. 
+When free-viewing I sometimes use a pair of +4.0 reading glasses to get closer to the screen. A +5.0 reading glasses would be ideal, if I could find a +5.0 without excessive lens distortion. 
 
 The SBS display is sized at 130 mm for viewing in a stereoscope.
 
@@ -97,21 +97,27 @@ A wired USB-C connected Android keyboard can control the camera with keys simila
 
 #### Bluetooth Remote Control
 Here is the current key mapping for a 8BitDo Bluetooth game controller in Android mode. The controller must be paired with the Beam Pro. 
-A Bluetooth Android keyboard may also be used, but the app needs an update for a normal keyboard to work. Not all function keys are working.
+A Bluetooth Android keyboard may also be used.
 
 * SHUTTER - Take a photo on key release. In Photo Booth mode show count down seconds delay, until photo capture.
 * FOCUS   - Cycle through fixed focus distances: Hyperfocal, Photo Booth, Macro
 * MODE    - Select Auto, Manual, and Shutter Priority (only Auto implemented)
-* BURST   - Start continous photo capture at about 1 photo per second until the key is pressed and released again, or 60 images captured. In Photo Booth mode take only 4 images.
+* BURST   - Start continous photo capture at about 1 photo per second until the Back key is pressed and released again, or until 60 images are captured. In Photo Booth mode take a maximum of 4 images (bug, not working).
 * DISP    - Toggle change Review display mode (SBS,  Anaglyph, L/R) (Not implemented for either Live view or Review mode)
 * TIMER   - Set 3 second delay time to take a photo or burst in Photo Booth mode. Toggle no delay or Photo Booth.
 * ISO     - Set the ISO (not implemented)
 * SPEED   - Set the Shutter speed (not implemented)
 * FN      - Cycle through exposure metering: Frame Average, Center Weighted, Spot Metering
 * MENU    - Settings, etc. not implemented
-* BACK    - Only active with menu, not implemented
+* BACK    - Cancel continuous capture. To exit/pause the app, press the back button twice.
 * OK/REVIEW - Review the last photo taken in [3DSteroid Pro (StereoRoidPro)](https://play.google.com/store/apps/details?id=jp.suto.stereoroidpro&hl=en_US) or another viewer. OK function for menus and setting when camera is not active
 * SHARE    - Share the last photo taken with Email, Messaging, Photo Viewing, Printer, etc. apps.
+
+A Bluetooth Mouse controls the app with the following buttons: (intended for use with a photo booth control (buzzer style) box)
+
+* Left Button - Start a countdown display if configured with TIMER and take a photo
+* Middle Button - Review the last photo. During review the Left Mouse Button functions as a Print share function
+* Right Button - Toggle SBS/Anaglyph Display Mode (not implemented)
 
 ![8BitDo Micro Bluetooth Controller](images/A3DCamera_Layout_1080.png)
 
@@ -160,7 +166,14 @@ The following commands are coded:
 These two commands do not affect the live view image, but do change the alignment of stored photos for SBS and anaglyph.
 
 ## Software Issues
-1. There is no exit key implemented yet. To exit the app, swipe from the right edge to the left, to show the navigation bar. Press the box or circle to exit (however neither will close the app, unless you swipe it off or close all apps).
+1. To exit/clear the app, swipe from the right edge to the left, to show the navigation bar. Press the box or circle to exit (however neither will close the app, unless you swipe it off or clear/close all apps).
+
+## Hardware Isssues
+1. The 8BitDo Micro Bluetooth Controller times out after 10 minutes.
+2. The XReal BP camera will time out at a maximum of 30 minutes ( Settings->screen timeout). 
+   This can be extended by entering Developer mode, use developer options to set stay awake on. You will also have to keep the device charged with the power cable connected.
+   The USB data connector is connected to a small portable monitor and is powered by the camera when charging.
+   This is the camera setup for the photo booth (tested for at least 4 hours ofoperation).
 
 ## Stretch Goals
 Turn off the display, while allowing the camera to continue functioning with remote control. Blanking the screen is for photographing wild life without disturing them. 
