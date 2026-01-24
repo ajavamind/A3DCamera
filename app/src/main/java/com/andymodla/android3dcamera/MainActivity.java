@@ -92,8 +92,8 @@ public class MainActivity extends AppCompatActivity {
 
     volatile boolean burstModeFeature = true;
     volatile boolean burstMode = false;  //
-    public static final int BURST_COUNT_DEFAULT = 60;
-    public static final int BURST_COUNT_PHOTO_BOOTH = 4;
+    public static final int BURST_COUNT_DEFAULT = 59; //(one less 60)
+    public static final int BURST_COUNT_PHOTO_BOOTH = 3; //(one less 4)
     public int BURST_COUNT = BURST_COUNT_DEFAULT;  // approximately 1 capture per second
     public volatile int burstCounter = 0;
 
@@ -558,8 +558,8 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(this, "Start Burst Mode ", Toast.LENGTH_SHORT).show();
                 if (isPhotobooth && (countdownDigit < 0) ) {
                     startCountdownSequence(countdownStart);  // calls createCameraCaptureSession() after count down finished
-                    burstCounter = BURST_COUNT;
-                    createCameraCaptureSession();
+                    burstCounter = BURST_COUNT_PHOTO_BOOTH;
+                    //createCameraCaptureSession();
                 } else {
                     burstCounter = BURST_COUNT;
                     createCameraCaptureSession();
@@ -587,6 +587,10 @@ public class MainActivity extends AppCompatActivity {
                 burstCounter--;
                 Log.d(TAG, "burstCounter=" + burstCounter);
                 createCameraCaptureSession();
+                if (burstCounter == 0) {
+                    burstMode = false;
+                    Toast.makeText(this, "Burst Mode Completed ", Toast.LENGTH_SHORT).show();
+                }
             }
         }
     }
