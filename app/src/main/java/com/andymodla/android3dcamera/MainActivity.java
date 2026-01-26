@@ -564,16 +564,6 @@ public class MainActivity extends AppCompatActivity {
                     burstCounter = BURST_COUNT;
                     createCameraCaptureSession();
                 }
-//                else
-//                { // cancel burst when burst is in progress because burstCounter > 0
-//                    if (burstCounter > 0) {
-//                        burstCounter = 0;
-//                        Toast.makeText(this, "Burst Mode Canceled ", Toast.LENGTH_SHORT).show();
-//                    } else {  // start burst
-//                        burstCounter = BURST_COUNT;
-//                        createCameraCaptureSession();
-//                    }
-//                }
             }
         } else {
             Toast.makeText(this, "Burst Mode Not Enabled", Toast.LENGTH_SHORT).show();
