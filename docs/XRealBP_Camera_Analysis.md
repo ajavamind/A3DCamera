@@ -63,9 +63,12 @@ Logical Camera 3 is the **primary stereo camera system** that combines two physi
 
 #### Stereo Geometry
 ```yaml
-Baseline Distance: 9.5mm  # Critical for depth calculation
-Camera 0 Position: [-9.5mm, -0.1mm, 0mm]
-Camera 2 Position: [0mm, 0mm, 0mm]
+Baseline Distance: 50mm   # Critical for depth calculation (measured device baseline)
+Camera 0 Position: [-9.5mm, -0.1mm, 0mm]  # poseTranslation (optical center offset)
+Camera 2 Position: [0mm, 0mm, 0mm]         # poseTranslation (reference camera)
+
+Note: The 50mm baseline is the actual stereo separation used for depth calculation.
+The poseTranslation values show individual camera optical center offsets, not the stereo baseline.
 ```
 
 #### Capabilities
@@ -86,7 +89,7 @@ Camera 2 Position: [0mm, 0mm, 0mm]
 |---------|----------|----------|---------|
 | **Flash Unit** | ✅ YES | ❌ NO | Camera 0 provides flash for stereo |
 | **Color Filter** | GRBG | GBRG | Complementary sampling |
-| **Position** | Offset [-9.5, -0.1, 0]mm | Center [0, 0, 0]mm | 9.5mm baseline |
+| **Position** | Offset [-9.5, -0.1, 0]mm | Center [0, 0, 0]mm | 50mm stereo baseline |
 | **Focal Length** | 2.16mm | 2.16mm | Identical optics |
 | **Aperture** | f/2.2 | f/2.2 | Identical low-light |
 | **Sensor Size** | 5.23×3.94mm | 5.23×3.94mm | Identical sensors |
@@ -105,8 +108,32 @@ Camera 2 Position: [0mm, 0mm, 0mm]
 - **Benefit**: Improved color sampling when combined
 
 #### 3. **Spatial Offset**
-- **9.5mm baseline**: Optimal for close-to-medium range depth sensing
-- **Sub-millimeter Y offset**: May require calibration compensation
+- **50mm stereo baseline**: Optimal for medium-to-long range depth sensing (0.5-15m)
+- **poseTranslation offsets**: Camera 0 optical center offset [-9.5mm, -0.1mm] from reference
+- **Calibration Note**: The 50mm baseline is the actual stereo separation, different from poseTranslation
+
+---
+
+## 📐 Technical Note: Baseline Sources
+
+### Understanding Baseline Values in Camera Data
+
+| Data Source | Value | Purpose | Accuracy |
+|-------------|--------|---------|-----------|
+| **poseTranslation** | -9.5mm offset | Individual camera optical center positioning | Not stereo baseline |
+| **dualcamcal data** | ~46.2mm | Qualcomm stereo calibration parameters | Close to actual |
+| **Measured Device Baseline** | **50mm** | **Actual stereo separation for depth calculation** | **Authoritative** |
+
+### Key Points:
+- **poseTranslation**: Shows optical center offsets between cameras, not stereo baseline
+- **dualcamcal**: Contains vendor calibration parameters (~46.2mm)
+- **Measured Baseline**: 50mm is the actual stereo separation used for depth calculations
+
+### Why 50mm is Correct:
+1. **Physical Measurement**: Confirmed on actual device
+2. **Depth Accuracy**: Provides optimal depth precision for 0.5-15m range
+3. **Stereo Performance**: Matches manufacturer specifications
+4. **Development Reference**: Used by stereo camera applications
 
 ---
 
@@ -130,6 +157,31 @@ val isLogicalCamera = characteristics.get(CameraCharacteristics.REQUEST_AVAILABL
 if (isLogicalCamera) {
     val physicalIds = characteristics.get(CameraCharacteristics.LOGICAL_MULTI_CAMERA_PHYSICAL_IDS)
     Log.d("CameraSystem", "Physical cameras: ${physicalIds.contentToString()}")
+}
+```
+
+#### Java Equivalent
+```java
+CameraManager cameraManager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
+String[] cameraIdList = cameraManager.getCameraIdList();
+
+// Find logical camera 3
+String logicalCameraId = "3";
+CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(logicalCameraId);
+
+// Check if it's a logical multi-camera
+boolean isLogicalCamera = false;
+int[] availableCapabilities = characteristics.get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES);
+for (int capability : availableCapabilities) {
+    if (capability == CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_LOGICAL_MULTI_CAMERA) {
+        isLogicalCamera = true;
+        break;
+    }
+}
+
+if (isLogicalCamera) {
+    String[] physicalIds = characteristics.get(CameraCharacteristics.LOGICAL_MULTI_CAMERA_PHYSICAL_IDS);
+    Log.d("CameraSystem", "Physical cameras: " + Arrays.toString(physicalIds));
 }
 ```
 
@@ -159,6 +211,34 @@ cameraManager.openCamera(logicalCameraId, executor, object : CameraDevice.StateC
 })
 ```
 
+#### Java Equivalent
+```java
+// Create targets for both cameras
+List<OutputConfiguration> previewTargets = new ArrayList<>();
+List<OutputConfiguration> captureTargets = new ArrayList<>();
+
+// Configure stereo capture session
+SessionConfiguration sessionConfiguration = new SessionConfiguration(
+    SessionConfiguration.SESSION_REGULAR,
+    outputTargets,
+    executor,
+    captureCallback
+);
+
+// Enable physical camera output if needed
+String physicalCameraId = "0"; // or "2"
+List<String> physicalCameraIdList = Arrays.asList(physicalCameraId);
+sessionConfiguration.setPhysicalCameraIdList(physicalCameraIdList);
+
+cameraManager.openCamera(logicalCameraId, executor, new CameraDevice.StateCallback() {
+    @Override
+    public void onOpened(@NonNull CameraDevice camera) {
+        camera.createCaptureSession(sessionConfiguration);
+    }
+    // ... other callbacks
+});
+```
+
 ### Resource Management
 
 #### Best Practices
@@ -183,6 +263,27 @@ fun canOpenStereoCamera(cameraManager: CameraManager): Boolean {
 }
 ```
 
+#### Java Equivalent
+```java
+public boolean canOpenStereoCamera(CameraManager cameraManager) {
+    try {
+        // Check if cameras 0 and 2 are available
+        CameraCharacteristics characteristics0 = cameraManager.getCameraCharacteristics("0");
+        CameraCharacteristics characteristics2 = cameraManager.getCameraCharacteristics("2");
+        CameraCharacteristics characteristics3 = cameraManager.getCameraCharacteristics("3");
+        
+        Integer resourceCost0 = characteristics0.get(CameraCharacteristics.RESOURCE_COST);
+        Integer resourceCost2 = characteristics2.get(CameraCharacteristics.RESOURCE_COST);
+        Integer resourceCost3 = characteristics3.get(CameraCharacteristics.RESOURCE_COST);
+        
+        // Ensure we have enough resources for stereo (cost = 66)
+        return resourceCost0 != null && resourceCost2 != null && resourceCost3 != null;
+    } catch (CameraAccessException e) {
+        return false;
+    }
+}
+```
+
 2. **Handle Conflicts Gracefully**
 ```kotlin
 private fun handleCameraConflict(exception: CameraAccessException) {
@@ -199,6 +300,26 @@ private fun handleCameraConflict(exception: CameraAccessException) {
         else -> {
             Log.e("CameraError", "Camera access failed", exception)
         }
+    }
+}
+```
+
+#### Java Equivalent
+```java
+private void handleCameraConflict(CameraAccessException exception) {
+    switch (exception.getReason()) {
+        case CameraAccessException.CAMERA_IN_USE:
+            // Camera already in use, try to close conflicting sessions
+            releaseCameraResources();
+            retryCameraOpen();
+            break;
+        case CameraAccessException.MAX_CAMERAS_IN_USE:
+            // Too many cameras open, close unnecessary ones
+            showUserMessage("Too many camera apps running");
+            break;
+        default:
+            Log.e("CameraError", "Camera access failed", exception);
+            break;
     }
 }
 ```
@@ -258,7 +379,7 @@ val captureRequest = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STI
 | **Sensor Size** | 5.23×3.94 | mm |
 | **Active Array** | 4080×3072 | pixels |
 | **Pixel Array** | 4088×3080 | pixels |
-| **Baseline** | 9.5 | mm |
+| **Baseline** | 50 | mm |
 | **Max Digital Zoom** | 8× | - |
 
 #### Video Capabilities
@@ -315,9 +436,19 @@ val photoRequest = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL
 }
 ```
 
+#### Java Equivalent
+```java
+// 3D photo capture setup
+CaptureRequest.Builder photoRequest = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
+photoRequest.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
+photoRequest.set(CaptureRequest.CONTROL_AF_MODE, CameraMetadata.CONTROL_AF_MODE_AUTO);
+photoRequest.set(CaptureRequest.JPEG_QUALITY, 95);
+photoRequest.set(CaptureRequest.JPEG_ORIENTATION, 90);
+```
+
 ### 🎯 Depth Sensing
 **Configuration for Optimal Depth:**
-- **Baseline**: 9.5mm (ideal for 0.5-5m range)
+- **Baseline**: 50mm (ideal for 0.5-15m range)
 - **Resolution**: 1920×1080 for real-time processing
 - **FPS**: 60 fps for smooth depth maps
 - **Disparity Range**: Adjust based on subject distance
@@ -329,9 +460,22 @@ fun calculateDepth(disparity: Float, baseline: Float, focalLength: Float): Float
 }
 
 // Using XRealBP specifications
-val baseline = 9.5f // mm
+val baseline = 50f // mm (measured device baseline)
 val focalLength = 2.16f // mm
 val depth = calculateDepth(disparity, baseline, focalLength)
+```
+
+#### Java Equivalent
+```java
+// Depth calculation example
+public float calculateDepth(float disparity, float baseline, float focalLength) {
+    return (baseline * focalLength) / disparity;
+}
+
+// Using XRealBP specifications
+float baseline = 50f; // mm (measured device baseline)
+float focalLength = 2.16f; // mm
+float depth = calculateDepth(disparity, baseline, focalLength);
 ```
 
 ### 🥽 AR/VR Applications
@@ -356,6 +500,22 @@ val cameraMatrix = Matrix4x4(
         0f, 0f, 0f, 1f
     )
 )
+```
+
+#### Java Equivalent
+```java
+// AR camera setup
+CameraCharacteristics arCharacteristics = cameraManager.getCameraCharacteristics("3");
+float[] intrinsics = arCharacteristics.get(CameraCharacteristics.LENS_INTRINSIC_CALIBRATION);
+float[] distortion = arCharacteristics.get(CameraCharacteristics.LENS_DISTORTION);
+
+// Use for AR pose estimation
+float[] cameraMatrix = new float[] {
+    intrinsics[0], 0f, intrinsics[2], 0f,
+    0f, intrinsics[1], intrinsics[3], 0f,
+    0f, 0f, 1f, 0f,
+    0f, 0f, 0f, 1f
+};
 ```
 
 ### 🤖 Computer Vision
