@@ -260,17 +260,17 @@ public class Media {
             reviewAnaglyph = createAndSaveAnaglyph(PHOTO_PREFIX + timestamp, leftBitmap, rightBitmap);
         }
         if (saveSBS) {
-            int burstCounter = ((MainActivity) context).getBurstCounter();
-            Log.d(TAG, "burstCounter=" + burstCounter);
-            if (((MainActivity) context).getBurstMode()) {
-                timestamp += "_" + (((MainActivity) context).BURST_COUNT - burstCounter + 1);
+            int counter = ((MainActivity) context).getContinuousCounter();
+            Log.d(TAG, "ContinuousCounter=" + counter);
+            if (((MainActivity) context).getContinuousMode()) {
+                timestamp += "_" + (((MainActivity) context).CONTINUOUS_COUNT - counter + 1);
             }
             if (crossEye) {
                 reviewSBS = createAndSaveSBS(PHOTO_PREFIX + timestamp, rightBitmap, leftBitmap);
             } else {
                 reviewSBS = createAndSaveSBS(PHOTO_PREFIX + timestamp, leftBitmap, rightBitmap);
             }
-            if (((MainActivity) context).getBurstMode() && burstCounter > 0) {
+            if (((MainActivity) context).getContinuousMode() && counter > 0) {
                 ((MainActivity) context).nextContinuousCapturePhoto();
             }
         }

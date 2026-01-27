@@ -89,18 +89,18 @@ public class MainActivity extends AppCompatActivity {
     int countdownStart = 3;
     int countdownDigit = -1;
 
-    volatile boolean burstModeFeature = true;
-    volatile boolean burstMode = false;  // continuous capture is active
-    public static final int BURST_COUNT_DEFAULT = 59; //(one less 60)
-    public static final int BURST_COUNT_PHOTO_BOOTH = 3; //(one less 4)
-    public int BURST_COUNT = BURST_COUNT_DEFAULT;  // approximately 1 capture per second
-    public volatile int burstCounter = 0;
+    volatile boolean continuousModeFeature = true;
+    volatile boolean continuousMode = false;  // continuous capture is active
+    public static final int CONTINUOUS_COUNT_DEFAULT = 59; //(one less 60)
+    public static final int CONTINUOUS_COUNT_PHOTO_BOOTH = 3; //(one less 4)
+    public int CONTINUOUS_COUNT = CONTINUOUS_COUNT_DEFAULT;  // approximately 1 capture per second
+    public volatile int continuousCounter = 0;
 
     // Key codes for 8BitDo Micro Bluetooth Keyboard controller (Android mode)
     static final int SHUTTER_KEY = KeyEvent.KEYCODE_BUTTON_R1;
     static final int FOCUS_KEY = KeyEvent.KEYCODE_BUTTON_R2;
     static final int MODE_KEY = KeyEvent.KEYCODE_BUTTON_L2;
-    static final int BURST_KEY = KeyEvent.KEYCODE_BUTTON_L1;
+    static final int CONTINUOUS_KEY = KeyEvent.KEYCODE_BUTTON_L1;
     static final int DISP_KEY = KeyEvent.KEYCODE_DPAD_UP;
     static final int ISO_KEY = KeyEvent.KEYCODE_DPAD_DOWN;
     static final int TIMER_KEY = KeyEvent.KEYCODE_DPAD_LEFT;
@@ -118,7 +118,7 @@ public class MainActivity extends AppCompatActivity {
     static final int SHUTTER_KB_KEY = KeyEvent.KEYCODE_M;
     static final int FOCUS_KB_KEY = KeyEvent.KEYCODE_R;
     static final int MODE_KB_KEY = KeyEvent.KEYCODE_L;
-    static final int BURST_KB_KEY = KeyEvent.KEYCODE_K;
+    static final int CONTINUOUS_KB_KEY = KeyEvent.KEYCODE_K;
     static final int DISP_KB_KEY = KeyEvent.KEYCODE_C;
     static final int ISO_KB_KEY = KeyEvent.KEYCODE_D;
     static final int TIMER_KB_KEY = KeyEvent.KEYCODE_E;
@@ -441,19 +441,19 @@ public class MainActivity extends AppCompatActivity {
             case KeyEvent.KEYCODE_3D_MODE: // camera key - first turn off auto launch of native camera app
             case SHUTTER_KEY:
             case SHUTTER_KB_KEY:
-                if (burstMode) {
+                if (continuousMode) {
                     return true; // ignore key
                 } else {
                     capturePhoto();
                 }
                 return true;
-            case BURST_KEY:
-            case BURST_KB_KEY: // start continuous capture mode
-                if (burstModeFeature) {
-                    if (burstMode) {
+            case CONTINUOUS_KEY:
+            case CONTINUOUS_KB_KEY: // start continuous capture mode
+                if (continuousModeFeature) {
+                    if (continuousMode) {
                         return true;  // ignore key
                     } else {
-                        burstMode = true;
+                        continuousMode = true;
                         startContinuousCapturePhoto();
                     }
                 }
@@ -462,12 +462,12 @@ public class MainActivity extends AppCompatActivity {
             case KeyEvent.KEYCODE_ESCAPE:
             case BACK_KB_KEY:
             case KeyEvent.KEYCODE_BUTTON_B:
-//                if (burstMode) {
-//                    burstMode = false;
-//                    Toast.makeText(this, "Burst Mode Canceled ", Toast.LENGTH_SHORT).show();
-//                    return true;
-//                }
-                setBurstMode(false);
+                if (continuousMode) {
+                    setContinuousMode(false);
+                    Toast.makeText(this, "Continuous Mode Canceled ", Toast.LENGTH_SHORT).show();
+                    return true;
+                }
+
                 if (exitApp) {
                     finish();
                 } else {
@@ -536,10 +536,10 @@ public class MainActivity extends AppCompatActivity {
             case TIMER_KB_KEY:
                 if (isPhotobooth) {
                     isPhotobooth = false;
-                    BURST_COUNT = BURST_COUNT_DEFAULT;
+                    CONTINUOUS_COUNT = CONTINUOUS_COUNT_DEFAULT;
                 } else {
                     isPhotobooth = true;
-                    BURST_COUNT = BURST_COUNT_PHOTO_BOOTH;
+                    CONTINUOUS_COUNT = CONTINUOUS_COUNT_PHOTO_BOOTH;
                 }
                 countdownDigit = -1;
                 if (isPhotobooth) {
@@ -612,59 +612,54 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public void setBurstModeFeature(boolean burstModeFeature) {
-        this.burstModeFeature = burstModeFeature;
+    public void setContinuousModeFeature(boolean continuousModeFeature) {
+        this.continuousModeFeature = continuousModeFeature;
     }
 
-    public void setBurstMode(boolean burstMode) {
-        this.burstMode = burstMode;
-        if (burstMode) {
-            Toast.makeText(this, "Burst Mode Enabled ", Toast.LENGTH_SHORT).show();
-        } else {
-            Toast.makeText(this, "Burst Mode Canceled ", Toast.LENGTH_SHORT).show();
-        }
+    public void setContinuousMode(boolean continuousMode) {
+        this.continuousMode = continuousMode;
     }
 
-    public boolean getBurstMode() {
-        return burstMode;
+    public boolean getContinuousMode() {
+        return continuousMode;
     }
 
-    public int getBurstCounter() {
-        return burstCounter;
+    public int getContinuousCounter() {
+        return continuousCounter;
     }
 
-    public void setBurstCounter(int burstCounter) {
-        this.burstCounter = burstCounter;
+    public void setContinuousCounter(int continuousCounter) {
+        this.continuousCounter = continuousCounter;
     }
 
     private void startContinuousCapturePhoto() {
-        if (burstModeFeature) {
-            if (burstMode) {
-                Toast.makeText(this, "Start Burst Mode ", Toast.LENGTH_SHORT).show();
+        if (continuousModeFeature) {
+            if (continuousMode) {
+                Toast.makeText(this, "Start Continuous Mode ", Toast.LENGTH_SHORT).show();
                 if (isPhotobooth && (countdownDigit < 0)) {
                     startCountdownSequence(countdownStart);  // calls createCameraCaptureSession() after count down finished
-                    burstCounter = BURST_COUNT_PHOTO_BOOTH;
+                    continuousCounter = CONTINUOUS_COUNT_PHOTO_BOOTH;
                     //createCameraCaptureSession();
                 } else {
-                    burstCounter = BURST_COUNT;
+                    continuousCounter = CONTINUOUS_COUNT;
                     camera.createCameraCaptureSession();
                 }
             }
         } else {
-            Toast.makeText(this, "Burst Mode Not Enabled", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Continuous Mode Not Enabled", Toast.LENGTH_SHORT).show();
         }
     }
 
     public void nextContinuousCapturePhoto() {
         Log.d(TAG, "nextContinuousCapturePhoto()");
-        if (burstModeFeature && burstMode) {
-            if (burstCounter > 0) {
-                burstCounter--;
-                Log.d(TAG, "burstCounter=" + burstCounter);
+        if (continuousModeFeature && continuousMode) {
+            if (continuousCounter > 0) {
+                continuousCounter--;
+                Log.d(TAG, "continuousCounter=" + continuousCounter);
                 camera.createCameraCaptureSession();
-                if (burstCounter == 0) {
-                    burstMode = false;
-                    Toast.makeText(this, "Burst Mode Completed ", Toast.LENGTH_SHORT).show();
+                if (continuousCounter == 0) {
+                    continuousMode = false;
+                    Toast.makeText(this, "Continuous Mode Completed ", Toast.LENGTH_SHORT).show();
                 }
             }
         }
