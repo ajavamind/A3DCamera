@@ -2,7 +2,6 @@ package com.andymodla.android3dcamera;
 
 import static java.lang.System.exit;
 
-import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.ContentResolver;
 import android.content.ContentUris;
@@ -21,25 +20,8 @@ import android.provider.MediaStore;
 import android.util.Log;
 import android.widget.Toast;
 
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.core.content.FileProvider;
-import android.media.MediaScannerConnection;
-import android.net.Uri;
-import android.app.Activity;
-import android.content.ActivityNotFoundException;
-import android.content.ContentResolver;
-import android.content.ContentUris;
-import android.content.ContentValues;
-import android.content.Context;
-import android.content.Intent;
-import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
-import android.content.pm.ResolveInfo;
-import android.database.Cursor;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.ImageFormat;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -119,6 +101,7 @@ public class Media {
             anaglyphBitmap = null;
         }
     }
+
     public void createMediaFolder() {
         File mediaStorageDir = new File(
                 Environment.getExternalStoragePublicDirectory(BASE_FOLDER), SAVE_FOLDER);
@@ -277,9 +260,9 @@ public class Media {
             reviewAnaglyph = createAndSaveAnaglyph(PHOTO_PREFIX + timestamp, leftBitmap, rightBitmap);
         }
         if (saveSBS) {
-            int burstCounter = ((MainActivity)context).getBurstCounter();
+            int burstCounter = ((MainActivity) context).getBurstCounter();
             Log.d(TAG, "burstCounter=" + burstCounter);
-            if (((MainActivity)context).getBurstMode()) {
+            if (((MainActivity) context).getBurstMode()) {
                 timestamp += "_" + (((MainActivity) context).BURST_COUNT - burstCounter + 1);
             }
             if (crossEye) {
@@ -287,8 +270,8 @@ public class Media {
             } else {
                 reviewSBS = createAndSaveSBS(PHOTO_PREFIX + timestamp, leftBitmap, rightBitmap);
             }
-            if (((MainActivity)context).getBurstMode() && burstCounter > 0) {
-                ((MainActivity)context).nextContinuousCapturePhoto();
+            if (((MainActivity) context).getBurstMode() && burstCounter > 0) {
+                ((MainActivity) context).nextContinuousCapturePhoto();
             }
         }
         //Toast.makeText(this, "Saved IMG" + timestamp, Toast.LENGTH_SHORT).show();
@@ -336,7 +319,7 @@ public class Media {
 
     public void shareImage(File imageFile) {
         Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-        ((MainActivity)context).photoPickerLauncher.launch(intent);
+        ((MainActivity) context).photoPickerLauncher.launch(intent);
     }
 
     private Uri getContentUriForFile(String filePath) {
