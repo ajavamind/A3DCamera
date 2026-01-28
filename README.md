@@ -97,6 +97,7 @@ A wired USB-C connected Android keyboard can control the camera with keys simila
 
 #### Bluetooth Remote Control
 Three Bluetooth devices can be connected to the Beam Pro tablet simultaneously: Game controller, keyboard, and a mouse.
+A disadvantage of the Game controller is that it disconnect times out after about 15 minutes, whereas the mouse does not disconnect.
 
 ##### Bluetooth Game Controller Remote Control
 Here is the current key mapping for a 8BitDo Bluetooth game controller in Android mode. The controller must be paired with the Beam Pro. 
