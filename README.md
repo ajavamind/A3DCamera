@@ -96,8 +96,11 @@ If this app is not installed, you can select the app you will use for review.
 A wired USB-C connected Android keyboard can control the camera with keys similar to wireless keyboards or game controllers.
 
 #### Bluetooth Remote Control
+Three Bluetooth devices can be connected to the Beam Pro tablet simultaneously: Game controller, keyboard, and a mouse.
+A disadvantage of the Game controller is that it disconnect times out after about 15 minutes, whereas the mouse does not disconnect.
+
+##### Bluetooth Game Controller Remote Control
 Here is the current key mapping for a 8BitDo Bluetooth game controller in Android mode. The controller must be paired with the Beam Pro. 
-A Bluetooth Android keyboard may also be used.
 
 * SHUTTER - Take a photo on key release. In Photo Booth mode show count down seconds delay, until photo capture.
 * FOCUS   - Cycle through fixed focus distances: Hyperfocal, Photo Booth, Macro
@@ -112,17 +115,25 @@ A Bluetooth Android keyboard may also be used.
 * BACK    - Cancel continuous capture. To exit/pause the app, press the back button twice.
 * OK/REVIEW - Review the last photo taken in [3DSteroid Pro (StereoRoidPro)](https://play.google.com/store/apps/details?id=jp.suto.stereoroidpro&hl=en_US) or another viewer. OK function for menus and setting when camera is not active
 * SHARE    - Share the last photo taken with Email, Messaging, Photo Viewing, Printer, etc. apps.
-
-A Bluetooth Mouse controls the app with the following buttons: (intended for use with a photo booth control (buzzer style) box)
-
-* Left Button - Start a countdown display if configured with TIMER and take a photo
-* Middle Button - Review the last photo. During review the Left Mouse Button functions as a Print share function
-* Right Button - Toggle SBS/Anaglyph Display Mode (not implemented)
-
 ![8BitDo Micro Bluetooth Controller](images/A3DCamera_Layout_1080.png)
 
-The app can also be controlled with a WiFi ASCII keyboard. Here are the Android keyboard keys matching the function keys of the 8BitDo Micro controller when switched to keyboard mode:
+##### Bluetooth Keyboard Remote Control
+The app can also be controlled with any Bluetooth ASCII keyboard. 
+Here are the Android keyboard keys matching the function keys of the 8BitDo Micro controller when switched to keyboard mode:
 ![8BitDo Micro Bluetooth Controller](images/A3DCamera_KB_Layout_1080.png)
+
+##### Bluetooth Mouse Remote Control
+Connect a Bluetooth Mouse to control the camera app with the mouse buttons. A mouse can be rewired in a buzzer style box as a photo booth controller.
+
+###### Normal Camera Mode
+* Left Button - Capture a photo like a shutter button. 
+* Middle Button - Share the photo with a printer or other selected app.
+* Right Button - Review the last photo using a  default app like 3DSteroid.
+
+###### Photo Booth Camera Mode (Not implemented)
+* Left Button - In photo booth mode start a countdown display as configured with TIMER and capture a photo. 
+* Middle Button - Toggle SBS/Anaglyph Display Mode (not implemented)
+* Right Button - Review the last photo. During review the Left Mouse Button functions as a Print share function.
 
 ### Limitations
 Captured images are on par in quality with the native camera app. However, with this camera images may still need adjustments for vertical alignment, horizontal perspective, contrast, color saturation, and sharpening.
