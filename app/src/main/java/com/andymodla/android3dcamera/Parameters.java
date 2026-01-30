@@ -35,11 +35,16 @@ public class Parameters {
     private final String TAG = "Parameters";
     private final SharedPreferences prefs;
 
-
     // Stereo Image Alignment parameters
     // same values as StereoPhotoMaker displays after automatic alignment of a reference calibration stereo photo.
-    public int parallaxOffset = 0; // 212; // left/right horizontal offset parallax for stereo window placement
-    public int verticalOffset = 0; // -12; // left/right camera vertical offset alignment for camera correction
+    public int parallaxOffset = 0;  // left/right horizontal offset parallax for stereo window placement
+    public int verticalOffset = 0;  // left/right camera vertical offset alignment for camera correction
+    public boolean isSoundOn = true;
+
+    // photo booth parameters
+    public boolean isPhotoBooth = false;
+    public boolean anaglyphMode = false; // for photo booth only
+    public boolean mirrorImage = false; // for photo booth only
 
     // default constructor
     public Parameters(SharedPreferences prefs) {

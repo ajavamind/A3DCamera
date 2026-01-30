@@ -17,8 +17,10 @@ import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.PointerIcon;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
+import android.widget.FrameLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -32,12 +34,16 @@ import androidx.core.app.ActivityCompat;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import processing.android.CompatUtils;
+import processing.android.PFragment;
+import processing.core.PApplet;
+
 
 // README:   https://github.com/ajavamind/A3DCamera/blob/main/README.md
 
 /**
  * A3DCamera app
- * Copyright 2025 Andy Modla All Rights Reserved
+ * Copyright 2025-2026, Andy Modla All Rights Reserved
  */
 public class MainActivity extends AppCompatActivity {
 
@@ -83,8 +89,13 @@ public class MainActivity extends AppCompatActivity {
 
     public int displayMode = DisplayMode.SBS.ordinal();
 
-    private boolean exitApp = false;
-    private boolean isPhotobooth = false;  // work in progress
+    private boolean exitApp = false; // exit app flag with back or esc button
+
+    private boolean isPhotobooth = true;  // work in progress
+    private PhotoBoothSketch photoBoothSketch;  // photo booth sketch
+    PFragment photoBoothFragment;  // processing library photo booth fragment
+    View decorView; // screen window view for camera app
+
     Timer countdownTimer;
     int countdownStart = 3;
     int countdownDigit = -1;
@@ -140,6 +151,20 @@ public class MainActivity extends AppCompatActivity {
         return displayMode;
     }
 
+    /**
+     * Preload libyuv to initialize native library
+     */
+    private void initLibYuv() {
+        try {
+            // Trigger class loading which will load the native library
+            // This is a lightweight operation that forces the static initializer to run
+            Class.forName("io.github.crow_misia.libyuv.Yuv");
+        } catch (ClassNotFoundException e) {
+            android.util.Log.e(TAG, "Failed to preload libyuv", e);
+        }
+    }
+
+
     /*==================================================================
      * Activity Lifecycle methods
      ===================================================================*/
@@ -150,6 +175,8 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        initLibYuv(); // Initialize native yuvlib library
 
         // initialize Parmeters from storage
         // shared preferences
@@ -165,11 +192,72 @@ public class MainActivity extends AppCompatActivity {
         media = new Media(this, parameters, aiVision);
         media.createMediaFolder();
 
+        // set up UDP remote control for broadcast message reception
+        if (isWiFiRemoteEnabled) {
+            udpRemoteControl = new UdpRemoteControl(this);
+            udpRemoteControl.setup();
+        }
+
+        // setup AI vision connection to local network vision small multimodal LLM
+        if (aiVisionEnabled) {
+            aiVision = new AIvision(this);
+        }
+
         camera = new Camera(this, media);
 
-        setContentView(R.layout.layout);
+        if (isPhotobooth) {
+            FrameLayout frame = new FrameLayout(this);
+            frame.setId(CompatUtils.getUniqueViewId());
+            setContentView(frame, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT));
 
-        View decorView = getWindow().getDecorView();
+            photoBoothSketch = new PhotoBoothSketch();
+
+            photoBoothFragment = new PFragment(photoBoothSketch);
+            photoBoothFragment.setView(frame, this);
+
+        } else {
+            setContentView(R.layout.layout);
+        }
+
+        checkPermissions();
+
+        // countdownTextView will be null for photo booth
+        // because photo booth uses sketch graphics
+        countdownTextView = findViewById(R.id.overlay_text);
+
+        // This is a crucial step: we need to wait for the view to be laid out
+        // before we can get its dimensions.
+        if (countdownTextView != null) {
+            countdownTextView.post(new Runnable() {
+                @Override
+                public void run() {
+                    // Get the total height of the parent FrameLayout
+                    int parentHeight = ((RelativeLayout) countdownTextView.getParent()).getHeight();
+
+                    // Calculate one-third of the parent height
+                    int countdownHeight = parentHeight / 3;
+
+                    // Set the TextView's height to one-third of the parent height
+                    countdownTextView.getLayoutParams().height = countdownHeight;
+
+                    // Adjust the font size to fit within this new height
+                    // You can use a library or a helper method to do this dynamically
+                    // For a simpler approach, you can set a large fixed value
+                    // and let the TextView handle scaling, but dynamic sizing is better
+                    float newTextSize = (float) (countdownHeight * 0.75); // Use 75% of the height as a good starting point for the font size
+                    countdownTextView.setTextSize(TypedValue.COMPLEX_UNIT_PX, newTextSize);
+                    Log.d(TAG, "countdownTextView height=" + countdownTextView.getHeight());
+                    Log.d(TAG, "parent height=" + parentHeight);
+                    countdownTextView.setY(parentHeight / 3.0f);
+                    countdownTextView.setVisibility(View.GONE);
+                    countdownTextView.requestLayout();
+
+                }
+            });
+        }
+
+        decorView = getWindow().getDecorView();
         // Set the pointer icon to null (invisible)
         decorView.setPointerIcon(PointerIcon.getSystemIcon(this, PointerIcon.TYPE_NULL));
         decorView.setOnGenericMotionListener((view, motionEvent) -> {
@@ -177,56 +265,14 @@ public class MainActivity extends AppCompatActivity {
             return handleMouseEvent(motionEvent);
         });
 
-        checkPermissions();
-
-        // set up UDP remote control
-        if (isWiFiRemoteEnabled) {
-            udpRemoteControl = new UdpRemoteControl(this);
-            udpRemoteControl.setup();
-        }
-
-
-        // setup AI vision connection to local network vision small LM
-        if (aiVisionEnabled) {
-            aiVision = new AIvision(this);
-        }
-
-        countdownTextView = findViewById(R.id.overlay_text);
-
-        // This is a crucial step: we need to wait for the view to be laid out
-        // before we can get its dimensions.
-        countdownTextView.post(new Runnable() {
-            @Override
-            public void run() {
-                // Get the total height of the parent FrameLayout
-                int parentHeight = ((RelativeLayout) countdownTextView.getParent()).getHeight();
-
-                // Calculate one-third of the parent height
-                int countdownHeight = parentHeight / 3;
-
-                // Set the TextView's height to one-third of the parent height
-                countdownTextView.getLayoutParams().height = countdownHeight;
-
-                // Adjust the font size to fit within this new height
-                // You can use a library or a helper method to do this dynamically
-                // For a simpler approach, you can set a large fixed value
-                // and let the TextView handle scaling, but dynamic sizing is better
-                float newTextSize = (float) (countdownHeight * 0.75); // Use 75% of the height as a good starting point for the font size
-                countdownTextView.setTextSize(TypedValue.COMPLEX_UNIT_PX, newTextSize);
-                Log.d(TAG, "countdownTextView height=" + countdownTextView.getHeight());
-                Log.d(TAG, "parent height=" + parentHeight);
-                countdownTextView.setY(parentHeight / 3.0f);
-                countdownTextView.setVisibility(View.GONE);
-                countdownTextView.requestLayout();
-
-            }
-        });
-
         decorView.post(new Runnable() {
             @Override
             public void run() {
-                camera.init();
+                camera.init(isPhotobooth);
                 camera.openCamera();
+                if (photoBoothSketch != null) {
+                    photoBoothSketch.setCamera(camera);
+                }
             }
         });
 
@@ -237,17 +283,11 @@ public class MainActivity extends AppCompatActivity {
         super.onStart();
         Log.d(TAG, "onStart()");
         setVisibility();
-        if (commandLine == null) {
-            commandLine = new CommandLine(this, parameters, splashMessage + " Version: " + BuildConfig.VERSION_NAME);
+        if (!isPhotobooth) {
+            if (commandLine == null) {
+                commandLine = new CommandLine(this, parameters, splashMessage + " Version: " + BuildConfig.VERSION_NAME);
+            }
         }
-    }
-
-    @Override
-    protected void onStop() {
-        if (MyDebug.LOG)
-            Log.d(TAG, "onStop");
-        super.onStop();
-        // we stop location listening in onPause, but done here again just to be certain!
     }
 
     @Override
@@ -280,11 +320,21 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onStop() {
+        if (MyDebug.LOG)
+            Log.d(TAG, "onStop");
+        super.onStop();
+        // we stop location listening in onPause, but done here again just to be certain!
+    }
+
+    @Override
     protected void onDestroy() {
+        Log.d(TAG, "onDestroy()");
         super.onDestroy();
         camera.destroy();
-        udpRemoteControl.destroy();
-
+        if (udpRemoteControl != null) {
+            udpRemoteControl.destroy();
+        }
     }
 
 
@@ -351,7 +401,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void capturePhoto() {
-        if (isPhotobooth && (countdownDigit < 0)) {
+        if ((countdownDigit < 0)) {
             startCountdownSequence(countdownStart);
         } else {
             countdownTextView.setVisibility(View.GONE);
@@ -432,7 +482,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public boolean onKeyUp(int keyCode, KeyEvent event) {
         Log.d(TAG, "onKeyUp " + keyCode);
-        if (commandLine.processCommandLineKey(keyCode, event)) {
+        if (commandLine != null && commandLine.processCommandLineKey(keyCode, event)) {
             return true;
         }
         switch (keyCode) {
@@ -470,6 +520,7 @@ public class MainActivity extends AppCompatActivity {
 
                 if (exitApp) {
                     finish();
+                    System.exit(0);
                 } else {
                     Toast.makeText(this, "Exit?", Toast.LENGTH_SHORT).show();
                     exitApp = true;
@@ -534,21 +585,18 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             case TIMER_KEY:
             case TIMER_KB_KEY:
-                if (isPhotobooth) {
-                    isPhotobooth = false;
+                if (!isPhotobooth) {
                     CONTINUOUS_COUNT = CONTINUOUS_COUNT_DEFAULT;
                 } else {
-                    isPhotobooth = true;
                     CONTINUOUS_COUNT = CONTINUOUS_COUNT_PHOTO_BOOTH;
                 }
                 countdownDigit = -1;
                 if (isPhotobooth) {
-                    Toast.makeText(this, "Photo Booth Countdown=" + Integer.toString(countdownStart), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Set Photo Booth Countdown=" + Integer.toString(countdownStart), Toast.LENGTH_SHORT).show();
                 } else {
-                    Toast.makeText(this, "Timer Off", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Set Timer Countdown=" + Integer.toString(countdownStart), Toast.LENGTH_SHORT).show();
                 }
-//                closeCamera();
-//                openCamera();
+
                 return true;
             case ISO_KEY:
             case ISO_KB_KEY:
@@ -636,7 +684,7 @@ public class MainActivity extends AppCompatActivity {
         if (continuousModeFeature) {
             if (continuousMode) {
                 Toast.makeText(this, "Start Continuous Mode ", Toast.LENGTH_SHORT).show();
-                if (isPhotobooth && (countdownDigit < 0)) {
+                if ((countdownDigit < 0)) {
                     startCountdownSequence(countdownStart);  // calls createCameraCaptureSession() after count down finished
                     continuousCounter = CONTINUOUS_COUNT_PHOTO_BOOTH;
                     //createCameraCaptureSession();
@@ -667,9 +715,13 @@ public class MainActivity extends AppCompatActivity {
 
 
     /*
-     * Start countdown sequence for Photo booth function
+     * Start countdown sequence logic for camera app (not photo booth)
      */
     void startCountdownSequence(int startCount) {
+        Log.d(TAG, "startCountdownSequence startCount=" + startCount);
+        if (isPhotobooth) {
+            return;
+        }
         if (countdownTimer == null) {
             countdownTimer = new Timer();
             countdownDigit = startCount + 1;

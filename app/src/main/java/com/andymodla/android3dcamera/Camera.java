@@ -4,6 +4,7 @@ import static android.Manifest.permission.CAMERA;
 
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
 import android.graphics.ImageFormat;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
@@ -41,12 +42,16 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import processing.core.PApplet;
+import processing.core.PImage;
 
 public class Camera {
     public static final String TAG = "A3DCamera";
     Context context;
     Media media;
-
+    private boolean useProcessing = false;
     private CameraManager mCameraManager;
     private CameraDevice mCameraDevice;
     private CameraCaptureSession mCameraCaptureSession;
@@ -55,6 +60,10 @@ public class Camera {
     private HandlerThread mCameraThread;
     private Handler mCameraHandler;
     private Executor cameraExecutor;
+
+    // Image Reader threads
+    private HandlerThread mImageReaderThread0;
+    private volatile Handler mImageReaderHandler0;
 
     private static final int MAX_NUM_CAMERAS = 6;
     // Camera Ids for Xreal Beam Pro
@@ -88,7 +97,7 @@ public class Camera {
     private int cameraWidth = CAMERA_WIDTH_AR_DEFAULT; // camera width lens pixels
     private int cameraHeight = CAMERA_HEIGHT_AR_DEFAULT;// camera height lens pixels
 
-    // Display surfaces
+    // Display surfaces for preview
     private volatile SurfaceView mSurfaceView0;
     private volatile SurfaceView mSurfaceView2;
     private volatile SurfaceHolder mSurfaceHolder0;
@@ -97,6 +106,10 @@ public class Camera {
     // Image capture
     private volatile ImageReader mImageReader0;
     private volatile ImageReader mImageReader2;  // for SBS display
+
+    // Processing preview ImageReader
+    private volatile ImageReader imageReader0;
+    private volatile ImageReader imageReader2;
 
     volatile Image imageL;
     volatile Image imageR;
@@ -124,7 +137,17 @@ public class Camera {
 
     // Sharpness 0 - 6, default 2
     private static final CaptureRequest.Key<Integer> SHARPNESS = new CaptureRequest.Key<>("org.codeaurora.qcamera3.sharpness.strength", Integer.class);
+
     volatile boolean shutterSound = true;
+    public volatile boolean available = false; // PImage available to access
+
+    // Image processing got preview
+    private final AtomicBoolean isProcessingLeft = new AtomicBoolean(false);
+    private final AtomicBoolean isProcessingRight = new AtomicBoolean(false);
+    private volatile Image imageLeft;
+    private volatile Image imageRight;
+    volatile public PImage self;
+    volatile public PImage self2;
 
     // Constructor
     public Camera(Context context, Media media) {
@@ -166,23 +189,27 @@ public class Camera {
             Log.d(TAG, "set stereo cameras for " + deviceName);
 
         }
-        // check system property for usb uvc webcam
+        // check system property for usb uvc webcam for discovery
         Log.d(TAG, "ro.usb.uvc.enabled=" + System.getProperty("ro.usb.uvc.enabled"));
         //System.setProperty("ro.usb.uvc.enabled", String.valueOf(true));
         //Log.d(TAG, "ro.usb.uvc.enabled="+System.getProperty("ro.usb.uvc.enabled"));
     }
 
-    public void init() {
-        Log.d(TAG, "setupSurfaces()");
-        // set up display surfaces
-        mSurfaceView0 = ((MainActivity) context).findViewById(R.id.surfaceView);
-        mSurfaceView2 = ((MainActivity) context).findViewById(R.id.surfaceView2);
+    public void init(boolean isPhotobooth) {
+        if (isPhotobooth) {
+            useProcessing = isPhotobooth;
+        } else {
+            Log.d(TAG, "setupSurfaces()");
+            // set up display surfaces
+            mSurfaceView0 = ((MainActivity) context).findViewById(R.id.surfaceView);
+            mSurfaceView2 = ((MainActivity) context).findViewById(R.id.surfaceView2);
 
-        mSurfaceHolder0 = mSurfaceView0.getHolder();
-        mSurfaceHolder2 = mSurfaceView2.getHolder();
+            mSurfaceHolder0 = mSurfaceView0.getHolder();
+            mSurfaceHolder2 = mSurfaceView2.getHolder();
 
-        mSurfaceHolder0.addCallback(shCallback);
-        mSurfaceHolder2.addCallback(shCallback);
+            mSurfaceHolder0.addCallback(shCallback);
+            mSurfaceHolder2.addCallback(shCallback);
+        }
     }
 
     public void destroy() {
@@ -196,6 +223,12 @@ public class Camera {
         if (mImageReader2 != null) {
             mImageReader2.close();
         }
+        if (imageReader0 != null) {
+            imageReader0.close();
+        }
+        if (imageReader2 != null) {
+            imageReader2.close();
+        }
 
     }
 
@@ -207,22 +240,50 @@ public class Camera {
             mCameraHandler = new Handler(mCameraThread.getLooper());
             cameraExecutor = new HandlerExecutor(mCameraHandler);
         }
+        if (mImageReaderThread0 == null) {
+            mImageReaderThread0 = new HandlerThread("ImageReaderThread0");
+            mImageReaderThread0.start();
+            mImageReaderHandler0 = new Handler(mImageReaderThread0.getLooper());
+        }
     }
 
     public void stopCameraThread() {
         if (mCameraThread != null) {
+            mImageReaderHandler0.removeCallbacksAndMessages(null);
             mCameraThread.quitSafely(); // Safely shut down the looper
+            mImageReaderThread0.quitSafely();
             try {
                 mCameraThread.join(); // Wait for the thread to finish
                 mCameraThread = null;
                 mCameraHandler = null;
                 cameraExecutor = null;
+
+                mImageReaderThread0.join();
+                mImageReaderThread0 = null;
+                mImageReaderHandler0 = null;
             } catch (InterruptedException e) {
                 Log.e(TAG, "Interrupted while stopping camera thread", e);
             }
         }
     }
-
+//    private void stopCameraThread() {
+//        if (DEBUG_CAMERA) PApplet.println("stopCameraThread");
+//        if (mCameraThread != null) {
+//            mCameraThread.quitSafely();
+//            mImageReaderThread0.quitSafely();
+//            try {
+//                mCameraThread.join();
+//                mCameraThread = null;
+//                mCameraHandler = null;
+//                mImageReaderThread0.join();
+//                mImageReaderThread0 = null;
+//                mImageReaderHandler0 = null;
+//            } catch (InterruptedException e) {
+//                Thread.currentThread().interrupt();
+//                e.printStackTrace();
+//            }
+//        }
+//    }
     SurfaceHolder.Callback shCallback = new SurfaceHolder.Callback() {
         @Override
         public void surfaceCreated(@NonNull SurfaceHolder holder) {
@@ -245,6 +306,92 @@ public class Camera {
         }
     };
 
+    /**
+     * Image available listener for left preview frames
+     */
+    private final ImageReader.OnImageAvailableListener imageAvailableListener =
+            new ImageReader.OnImageAvailableListener() {
+                @Override
+                public void onImageAvailable(ImageReader reader) {
+                    try {
+                        // Acquire and immediately discard all but the latest image
+                        Image image = reader.acquireLatestImage();
+                        if (image == null) return;
+                        // if we are already busy processing a frame
+                        if (isProcessingLeft.get()) {
+                            // Drop the frame by closing it immediately to free the buffer
+                            image.close();
+                            return;
+                        }
+                        // Mark as busy and process in a background thread
+                        isProcessingLeft.set(true);
+                        imageLeft = image;
+
+                        processPreviewFrames();
+                    } catch (IllegalStateException e) {
+                        Log.d(TAG,  e.toString());
+                        if (imageLeft != null) imageLeft.close();
+                        imageLeft = null;
+                        isProcessingLeft.set(false);
+                        return;
+                    } finally {
+
+                    }
+                }
+            };
+
+    /**
+     * Image available listener for right preview frames
+     */
+    private final ImageReader.OnImageAvailableListener imageAvailableListener2 =
+            new ImageReader.OnImageAvailableListener() {
+
+                @Override
+                public void onImageAvailable(ImageReader reader) {
+                    try {
+                        // Acquire and immediately discard all but the latest image
+                        Image image = reader.acquireLatestImage();
+                        if (image == null) return;
+                        // if we are already busy processing a frame
+                        if (isProcessingRight.get()) {
+                            // Drop the frame by closing it immediately to free the buffer
+                            image.close();
+                            return;
+                        }
+                        // Mark as busy and process in a background thread
+                        isProcessingRight.set(true);
+                        imageRight = image;
+
+                        processPreviewFrames();
+                    } catch (IllegalStateException e) {
+                        Log.d(TAG, e.toString());
+                        if (imageRight != null) imageRight.close();
+                        imageRight = null;
+                        isProcessingRight.set(false);
+                        return;
+                    } finally {
+
+                    }
+                }
+            };
+
+    private void processPreviewFrames() {
+        if (imageLeft != null && imageRight != null) {
+            YuvConverter.yuvToBitmap(imageLeft, (Bitmap) self.getNative());
+            YuvConverter.yuvToBitmap(imageRight, (Bitmap) self2.getNative());
+            imageLeft.close();
+            imageLeft = null;
+            isProcessingLeft.set(false);
+            imageRight.close();
+            imageRight = null;
+            isProcessingRight.set(false);
+            self.loadPixels();
+            self.updatePixels();
+            self2.loadPixels();
+            self2.updatePixels();
+            available = true;
+        }
+    }
 
     public void openCamera() {
         Log.d(TAG, "openCamera() cameraWidth=" + cameraWidth + " cameraHeight=" + cameraHeight);
@@ -252,13 +399,21 @@ public class Camera {
         // Setup ImageReaders for capture
         mImageReader0 = ImageReader.newInstance(cameraWidth, cameraHeight, ImageFormat.JPEG, 2);  // 2 maxImages
         mImageReader2 = ImageReader.newInstance(cameraWidth, cameraHeight, ImageFormat.JPEG, 2);  // 2 maxImages
+        if (useProcessing) {
+            // Create ImageReader for YUV preview with minimal buffer count
+            imageReader0 = ImageReader.newInstance(cameraWidth, cameraHeight, ImageFormat.YUV_420_888, 4);
+            imageReader0.setOnImageAvailableListener(imageAvailableListener, mImageReaderHandler0);
+            imageReader2 = ImageReader.newInstance(cameraWidth, cameraHeight, ImageFormat.YUV_420_888, 4);
+            imageReader2.setOnImageAvailableListener(imageAvailableListener2, mImageReaderHandler0);
 
-        if (ActivityCompat.checkSelfPermission(context, CAMERA) == PackageManager.PERMISSION_GRANTED) {
-            try {
-                mCameraManager.openCamera(stereoCameraId, mStateCallback, mCameraHandler); // logical camera 3 combines 1 and 2
-                Log.d(TAG, "mCameraManager.openCamera( " + stereoCameraId + " )");
-            } catch (CameraAccessException e) {
-                Log.e(TAG, "Camera access exception", e);
+        } else {
+            if (ActivityCompat.checkSelfPermission(context, CAMERA) == PackageManager.PERMISSION_GRANTED) {
+                try {
+                    mCameraManager.openCamera(stereoCameraId, mStateCallback, mCameraHandler); // logical camera 3 combines 1 and 2
+                    Log.d(TAG, "mCameraManager.openCamera( " + stereoCameraId + " )");
+                } catch (CameraAccessException e) {
+                    Log.e(TAG, "Camera access exception", e);
+                }
             }
         }
     }
