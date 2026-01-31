@@ -91,21 +91,24 @@ public class MainActivity extends AppCompatActivity {
 
     private boolean exitApp = false; // exit app flag with back or esc button
 
+    // Photo booth variables
     private boolean isPhotobooth = true;  // work in progress
+    private boolean isPhotoboothReview = false;
+
     private PhotoBoothSketch photoBoothSketch;  // photo booth sketch
     PFragment photoBoothFragment;  // processing library photo booth fragment
     View decorView; // screen window view for camera app
 
     Timer countdownTimer;
-    int countdownStart = 3;
+    int countdownStart = 0;
     int countdownDigit = -1;
 
     volatile boolean continuousModeFeature = true;
     volatile boolean continuousMode = false;  // continuous capture is active
+    public volatile int continuousCounter = 0;
     public static final int CONTINUOUS_COUNT_DEFAULT = 59; //(one less 60)
     public static final int CONTINUOUS_COUNT_PHOTO_BOOTH = 3; //(one less 4)
-    public int CONTINUOUS_COUNT = CONTINUOUS_COUNT_DEFAULT;  // approximately 1 capture per second
-    public volatile int continuousCounter = 0;
+    public int CONTINUOUS_COUNT = 0;
 
     // Key codes for 8BitDo Micro Bluetooth Keyboard controller (Android mode)
     static final int SHUTTER_KEY = KeyEvent.KEYCODE_BUTTON_R1;
@@ -203,8 +206,6 @@ public class MainActivity extends AppCompatActivity {
             aiVision = new AIvision(this);
         }
 
-        camera = new Camera(this, media);
-
         if (isPhotobooth) {
             FrameLayout frame = new FrameLayout(this);
             frame.setId(CompatUtils.getUniqueViewId());
@@ -212,7 +213,6 @@ public class MainActivity extends AppCompatActivity {
                     ViewGroup.LayoutParams.MATCH_PARENT));
 
             photoBoothSketch = new PhotoBoothSketch();
-
             photoBoothFragment = new PFragment(photoBoothSketch);
             photoBoothFragment.setView(frame, this);
 
@@ -221,6 +221,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         checkPermissions();
+        camera = new Camera(this, media, photoBoothSketch);
 
         // countdownTextView will be null for photo booth
         // because photo booth uses sketch graphics
@@ -332,6 +333,7 @@ public class MainActivity extends AppCompatActivity {
         Log.d(TAG, "onDestroy()");
         super.onDestroy();
         camera.destroy();
+        photoBoothFragment.onDestroy();
         if (udpRemoteControl != null) {
             udpRemoteControl.destroy();
         }
@@ -380,18 +382,30 @@ public class MainActivity extends AppCompatActivity {
         if ((buttonState & MotionEvent.BUTTON_PRIMARY) != 0) {
             // Left mouse button pressed
             Log.d(TAG, "Left button pressed");
-            capturePhoto();
+            if (isPhotobooth) {
+                if (isPhotoboothReview) {
+                    media.printImageType();
+                } else {
+                    capturePhoto();
+                }
+            } else {
+                capturePhoto();
+            }
         }
-        if ((buttonState & MotionEvent.BUTTON_TERTIARY) != 0) {
+        else if ((buttonState & MotionEvent.BUTTON_TERTIARY) != 0) {
             // Middle mouse button pressed
             Log.d(TAG, "Middle button pressed");
-            media.printImageType();
-        }
-        if ((buttonState & MotionEvent.BUTTON_SECONDARY) != 0) {
-            // Right mouse button pressed
-            Log.d(TAG, "Right button pressed");
             displayMode = DisplayMode.SBS.ordinal();
             media.reviewPhotos(displayMode);
+        }
+        else if ((buttonState & MotionEvent.BUTTON_SECONDARY) != 0) {
+            // Right mouse button pressed
+            Log.d(TAG, "Right button pressed");
+            if (isPhotobooth) {
+                photoBoothSketch.toggleAnaglyph();
+            } else {
+                media.printImageType();
+            }
         }
         // Other buttons like BUTTON_BACK, BUTTON_FORWARD can also be checked
     }
@@ -585,19 +599,20 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             case TIMER_KEY:
             case TIMER_KB_KEY:
-                if (!isPhotobooth) {
-                    CONTINUOUS_COUNT = CONTINUOUS_COUNT_DEFAULT;
+                if (CONTINUOUS_COUNT > 0) {
+                    CONTINUOUS_COUNT = 0;
                 } else {
-                    CONTINUOUS_COUNT = CONTINUOUS_COUNT_PHOTO_BOOTH;
+                    if (isPhotobooth) {
+                        CONTINUOUS_COUNT = CONTINUOUS_COUNT_PHOTO_BOOTH;
+                    } else {
+                        CONTINUOUS_COUNT = CONTINUOUS_COUNT_DEFAULT;
+                    }
                 }
+                Toast.makeText(this, "Set Timer Countdown=" + Integer.toString(CONTINUOUS_COUNT), Toast.LENGTH_SHORT).show();
                 countdownDigit = -1;
-                if (isPhotobooth) {
-                    Toast.makeText(this, "Set Photo Booth Countdown=" + Integer.toString(countdownStart), Toast.LENGTH_SHORT).show();
-                } else {
-                    Toast.makeText(this, "Set Timer Countdown=" + Integer.toString(countdownStart), Toast.LENGTH_SHORT).show();
-                }
-
+                countdownStart = CONTINUOUS_COUNT;
                 return true;
+
             case ISO_KEY:
             case ISO_KB_KEY:
                 Toast.makeText(this, "ISO - not implemented", Toast.LENGTH_SHORT).show();
@@ -713,13 +728,15 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-
     /*
      * Start countdown sequence logic for camera app (not photo booth)
      */
     void startCountdownSequence(int startCount) {
         Log.d(TAG, "startCountdownSequence startCount=" + startCount);
         if (isPhotobooth) {
+            if (startCount == 0) {
+                camera.createCameraCaptureSession(); // take a picture
+            }
             return;
         }
         if (countdownTimer == null) {

@@ -27,6 +27,7 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.util.Log;
+import android.util.Range;
 import android.util.Size;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -51,11 +52,13 @@ public class Camera {
     public static final String TAG = "A3DCamera";
     Context context;
     Media media;
+
+    PApplet pApplet; // Processing sketch base class
     private boolean useProcessing = false;
     private CameraManager mCameraManager;
     private CameraDevice mCameraDevice;
     private CameraCaptureSession mCameraCaptureSession;
-    private CaptureRequest.Builder captureRequestBuilder;
+    private CaptureRequest.Builder previewRequestBuilder;
 
     private HandlerThread mCameraThread;
     private Handler mCameraHandler;
@@ -74,6 +77,7 @@ public class Camera {
 
     int CAMERA_WIDTH_AR_DEFAULT = 4080;
     int CAMERA_HEIGHT_AR_DEFAULT = 3072;
+    // todo
     int CAMERA_WIDTH_AR_4_3 = 4000;
     int CAMERA_HEIGHT_AR_4_3 = 3000;
     int CAMERA_WIDTH_AR_16_9 = 3840;
@@ -82,6 +86,8 @@ public class Camera {
     int CAMERA_HEIGHT_AR_1_1 = 3072;
     int CAMERA_WIDTH_AR_SMALL = 1080;
     int CAMERA_HEIGHT_AR_SMALL = 1080;
+    int XBP_CAMERA_WIDTH = 1280;//4080;
+    int XBP_CAMERA_HEIGHT = 960;//3072
 
     volatile int focusDistanceIndex = 0;  // default HYPERFOCAL
     //
@@ -132,7 +138,7 @@ public class Camera {
 
     // Saturation 0 - 10, default 5
     private static final CaptureRequest.Key<Integer> SATURATION = new CaptureRequest.Key<>("org.codeaurora.qcamera3.saturation.use_saturation", Integer.class);
-    //    captureRequestBuilder.set(SATURATION, 5);
+    //    previewRequestBuilder.set(SATURATION, 5);
     //    captureBuilder.set(SATURATION, 5);
 
     // Sharpness 0 - 6, default 2
@@ -150,12 +156,12 @@ public class Camera {
     volatile public PImage self2;
 
     // Constructor
-    public Camera(Context context, Media media) {
+    public Camera(Context context, Media media, PApplet pApplet) {
         this.context = context;
         this.media = media;
+        this.pApplet = pApplet;
         // Create camera manager
         mCameraManager = (CameraManager) context.getSystemService(Context.CAMERA_SERVICE);
-
 
         String modelName = Build.MODEL;
         String manufacturer = Build.MANUFACTURER;
@@ -169,8 +175,7 @@ public class Camera {
             stereoCameraId = "4";  // logical (left "0" and right "2") back cameras
             cameraWidth = 4656; // 16Mp Back camera width lens pixels
             cameraHeight = 3496;// 16MP Back camera height lens pixels
-
-            // front cameras
+// for DEBUG reference front cameras
 //            leftCameraId = "1";
 //            rightCameraId = "3";
 //            stereoCameraId = "5";  // logical (left "1" and right "3") front cameras
@@ -193,6 +198,10 @@ public class Camera {
         Log.d(TAG, "ro.usb.uvc.enabled=" + System.getProperty("ro.usb.uvc.enabled"));
         //System.setProperty("ro.usb.uvc.enabled", String.valueOf(true));
         //Log.d(TAG, "ro.usb.uvc.enabled="+System.getProperty("ro.usb.uvc.enabled"));
+    }
+
+    public void setpApplet(PApplet pApplet) {
+        this.pApplet = pApplet;
     }
 
     public void init(boolean isPhotobooth) {
@@ -248,6 +257,7 @@ public class Camera {
     }
 
     public void stopCameraThread() {
+        Log.d(TAG, "stopCameraThread");
         if (mCameraThread != null) {
             mImageReaderHandler0.removeCallbacksAndMessages(null);
             mCameraThread.quitSafely(); // Safely shut down the looper
@@ -266,24 +276,7 @@ public class Camera {
             }
         }
     }
-//    private void stopCameraThread() {
-//        if (DEBUG_CAMERA) PApplet.println("stopCameraThread");
-//        if (mCameraThread != null) {
-//            mCameraThread.quitSafely();
-//            mImageReaderThread0.quitSafely();
-//            try {
-//                mCameraThread.join();
-//                mCameraThread = null;
-//                mCameraHandler = null;
-//                mImageReaderThread0.join();
-//                mImageReaderThread0 = null;
-//                mImageReaderHandler0 = null;
-//            } catch (InterruptedException e) {
-//                Thread.currentThread().interrupt();
-//                e.printStackTrace();
-//            }
-//        }
-//    }
+
     SurfaceHolder.Callback shCallback = new SurfaceHolder.Callback() {
         @Override
         public void surfaceCreated(@NonNull SurfaceHolder holder) {
@@ -329,7 +322,7 @@ public class Camera {
 
                         processPreviewFrames();
                     } catch (IllegalStateException e) {
-                        Log.d(TAG,  e.toString());
+                        Log.d(TAG, e.toString());
                         if (imageLeft != null) imageLeft.close();
                         imageLeft = null;
                         isProcessingLeft.set(false);
@@ -397,35 +390,50 @@ public class Camera {
         Log.d(TAG, "openCamera() cameraWidth=" + cameraWidth + " cameraHeight=" + cameraHeight);
 
         // Setup ImageReaders for capture
+        cameraWidth = CAMERA_WIDTH_AR_DEFAULT; // camera width lens pixels
+        cameraHeight = CAMERA_HEIGHT_AR_DEFAULT;
         mImageReader0 = ImageReader.newInstance(cameraWidth, cameraHeight, ImageFormat.JPEG, 2);  // 2 maxImages
         mImageReader2 = ImageReader.newInstance(cameraWidth, cameraHeight, ImageFormat.JPEG, 2);  // 2 maxImages
+
         if (useProcessing) {
-            // Create ImageReader for YUV preview with minimal buffer count
+            // Create ImageReaders for YUV preview with buffer count
+            cameraWidth = XBP_CAMERA_WIDTH;
+            cameraHeight = XBP_CAMERA_HEIGHT;
+
             imageReader0 = ImageReader.newInstance(cameraWidth, cameraHeight, ImageFormat.YUV_420_888, 4);
             imageReader0.setOnImageAvailableListener(imageAvailableListener, mImageReaderHandler0);
             imageReader2 = ImageReader.newInstance(cameraWidth, cameraHeight, ImageFormat.YUV_420_888, 4);
             imageReader2.setOnImageAvailableListener(imageAvailableListener2, mImageReaderHandler0);
+            self = pApplet.createImage(cameraWidth, cameraHeight, PImage.ARGB);
+            self.setNative(Bitmap.createBitmap(cameraWidth, cameraHeight, Bitmap.Config.ARGB_8888));
+            self2 = pApplet.createImage(cameraWidth, cameraHeight, PImage.ARGB);
+            self2.setNative(Bitmap.createBitmap(cameraWidth, cameraHeight, Bitmap.Config.ARGB_8888));
 
-        } else {
-            if (ActivityCompat.checkSelfPermission(context, CAMERA) == PackageManager.PERMISSION_GRANTED) {
-                try {
-                    mCameraManager.openCamera(stereoCameraId, mStateCallback, mCameraHandler); // logical camera 3 combines 1 and 2
-                    Log.d(TAG, "mCameraManager.openCamera( " + stereoCameraId + " )");
-                } catch (CameraAccessException e) {
-                    Log.e(TAG, "Camera access exception", e);
-                }
+        }
+
+        if (ActivityCompat.checkSelfPermission(context, CAMERA) == PackageManager.PERMISSION_GRANTED) {
+            try {
+                mCameraManager.openCamera(stereoCameraId, mStateCallback, mCameraHandler); // logical camera 3 combines 1 and 2
+                Log.d(TAG, "mCameraManager.openCamera( " + stereoCameraId + " )");
+            } catch (CameraAccessException e) {
+                Log.e(TAG, "Camera access exception", e);
             }
         }
+
     }
 
     private final CameraDevice.StateCallback mStateCallback = new CameraDevice.StateCallback() {
         @Override
         public void onOpened(@NonNull CameraDevice camera) { // Open camera
             mCameraDevice = camera;
-            if ((mSurfaceView0 != null && mSurfaceView2.isAttachedToWindow()) && mSurfaceView2 != null && mSurfaceView2.isAttachedToWindow()) {
-                createCameraPreviewSession();
+            if (useProcessing) {
+                createProcessingPreviewSession();
             } else {
-                Log.d(TAG, "Surface not attached to window");
+                if ((mSurfaceView0 != null && mSurfaceView2.isAttachedToWindow()) && mSurfaceView2 != null && mSurfaceView2.isAttachedToWindow()) {
+                    createCameraPreviewSession();
+                } else {
+                    Log.d(TAG, "Surface not attached to window");
+                }
             }
         }
 
@@ -469,7 +477,7 @@ public class Camera {
     }
 
     /**
-     * Create camera view session for live preview
+     * Create camera view session for camera live preview
      */
     public void createCameraPreviewSession() {
         Log.d(TAG, "createCameraPreviewSession()");
@@ -503,29 +511,29 @@ public class Camera {
                     SessionConfiguration.SESSION_REGULAR, outputConfigsAll, cameraExecutor,
                     new CameraCaptureSession.StateCallback() {
                         @Override
-                        public void onConfigured(@NonNull CameraCaptureSession cameraCaptureSession) {
+                        public void onConfigured(@NonNull CameraCaptureSession session) {
                             if (null == mCameraDevice) return;
-                            mCameraCaptureSession = cameraCaptureSession;
+                            mCameraCaptureSession = session;
                             try {
-                                captureRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
-                                captureRequestBuilder.addTarget(mSurfaceHolder0.getSurface());
-                                captureRequestBuilder.addTarget(mSurfaceHolder2.getSurface());
+                                previewRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+                                previewRequestBuilder.addTarget(mSurfaceHolder0.getSurface());
+                                previewRequestBuilder.addTarget(mSurfaceHolder2.getSurface());
 
-                                captureRequestBuilder.set(CaptureRequest.TONEMAP_MODE, CaptureRequest.TONEMAP_MODE_CONTRAST_CURVE);
-                                captureRequestBuilder.set(CaptureRequest.TONEMAP_CURVE, new TonemapCurve(curve_srgb, curve_srgb, curve_srgb));
+                                previewRequestBuilder.set(CaptureRequest.TONEMAP_MODE, CaptureRequest.TONEMAP_MODE_CONTRAST_CURVE);
+                                previewRequestBuilder.set(CaptureRequest.TONEMAP_CURVE, new TonemapCurve(curve_srgb, curve_srgb, curve_srgb));
                                 if (FOCUS_DISTANCE[focusDistanceIndex] == AUTO_FOCUS_DISTANCE) {
-                                    captureRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
+                                    previewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
                                 } else {
-                                    captureRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_OFF);
+                                    previewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_OFF);
                                 }
                                 //
-                                captureRequestBuilder.set(EXPOSURE_METERING, METERING[meteringIndex]);
-                                captureRequestBuilder.set(CaptureRequest.LENS_FOCUS_DISTANCE, FOCUS_DISTANCE[focusDistanceIndex]);
+                                previewRequestBuilder.set(EXPOSURE_METERING, METERING[meteringIndex]);
+                                previewRequestBuilder.set(CaptureRequest.LENS_FOCUS_DISTANCE, FOCUS_DISTANCE[focusDistanceIndex]);
 
-                                captureRequestBuilder.set(CaptureRequest.NOISE_REDUCTION_MODE, 1); // NOISE_REDUCTION_MODE
-                                captureRequestBuilder.set(CaptureRequest.EDGE_MODE, 1); // EDGE_MODE
-                                captureRequestBuilder.set(CaptureRequest.CONTROL_EXTENDED_SCENE_MODE, 1);  // sync left and right cameras
-                                mCameraCaptureSession.setRepeatingRequest(captureRequestBuilder.build(), null, mCameraHandler);
+                                previewRequestBuilder.set(CaptureRequest.NOISE_REDUCTION_MODE, 1); // NOISE_REDUCTION_MODE
+                                previewRequestBuilder.set(CaptureRequest.EDGE_MODE, 1); // EDGE_MODE
+                                previewRequestBuilder.set(CaptureRequest.CONTROL_EXTENDED_SCENE_MODE, 1);  // sync left and right cameras
+                                mCameraCaptureSession.setRepeatingRequest(previewRequestBuilder.build(), null, mCameraHandler);
                             } catch (CameraAccessException e) {
                                 Log.e(TAG, "Camera access exception in session config", e);
                             }
@@ -544,6 +552,107 @@ public class Camera {
             Log.e(TAG, "Camera access exception", e);
         }
     }
+
+    /**
+     * Create Processing camera view session for camera live preview
+     */
+    public void createProcessingPreviewSession() {
+        Log.d(TAG, "createProcessingPreviewSession()");
+
+        OutputConfiguration opcL = new OutputConfiguration(new Size(cameraWidth, cameraHeight), SurfaceTexture.class);
+        OutputConfiguration opcCapture0 = new OutputConfiguration(imageReader0.getSurface());
+        opcCapture0.setPhysicalCameraId(leftCameraId);
+        OutputConfiguration opcCapture2 = new OutputConfiguration(imageReader2.getSurface());
+        opcCapture2.setPhysicalCameraId(rightCameraId);
+        Log.d(TAG, "PreviewRequestBuilder " + imageReader0.getSurface().toString()
+                + " " + imageReader2.getSurface().toString());
+
+        OutputConfiguration popcCapture0 = new OutputConfiguration(mImageReader0.getSurface());
+        popcCapture0.setPhysicalCameraId(leftCameraId);
+        OutputConfiguration popcCapture2 = new OutputConfiguration(mImageReader2.getSurface());
+        popcCapture2.setPhysicalCameraId(rightCameraId);
+
+        List<OutputConfiguration> outputConfigsAll = Arrays.asList(opcL, opcCapture0, opcCapture2, popcCapture0, popcCapture2);
+
+        CameraCaptureSession.StateCallback sessionCallback = new CameraCaptureSession.StateCallback() {
+            @Override
+            public void onConfigured(CameraCaptureSession session) {
+                if (mCameraDevice == null || session == null) {
+                    return;
+                }
+                Log.d(TAG, "Camera Id: " + mCameraDevice.getId() + " Preview session configured");
+                mCameraCaptureSession = session;
+                try {
+                    previewRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+
+                    previewRequestBuilder.addTarget(imageReader0.getSurface());
+                    previewRequestBuilder.addTarget(imageReader2.getSurface());
+
+                    // Set auto focus
+                    //previewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
+                    previewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_OFF);
+                    previewRequestBuilder.set(CaptureRequest.LENS_FOCUS_DISTANCE, FOCUS_DISTANCE[focusDistanceIndex]);
+
+                    // Set auto exposure
+                    previewRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON);
+                    previewRequestBuilder.set(CaptureRequest.TONEMAP_MODE, CaptureRequest.TONEMAP_MODE_CONTRAST_CURVE);
+                    previewRequestBuilder.set(CaptureRequest.TONEMAP_CURVE, new TonemapCurve(curve_srgb, curve_srgb, curve_srgb));
+                    previewRequestBuilder.set(CaptureRequest.NOISE_REDUCTION_MODE, CaptureRequest.NOISE_REDUCTION_MODE_FAST); // NOISE_REDUCTION_MODE 1
+                    previewRequestBuilder.set(CaptureRequest.EDGE_MODE, CaptureRequest.EDGE_MODE_FAST); // EDGE_MODE 1
+                    previewRequestBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, new Range<>(30, 30));
+                    //previewRequestBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, bestRange);
+                    //previewRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE, CameraMetadata.CONTROL_AE_MODE_ON_LOW_LIGHT_BOOST_BRIGHTNESS_PRIORITY); // Android 15+
+                    previewRequestBuilder.set(EXPOSURE_METERING, METERING[meteringIndex]);
+                    // Set scene mode
+                    previewRequestBuilder.set(CaptureRequest.CONTROL_EXTENDED_SCENE_MODE, 1);
+                    // Set flash mode
+//                    if (enableFlash) {
+//                        previewRequestBuilder.set(CaptureRequest.FLASH_MODE, CaptureRequest.FLASH_MODE_TORCH);
+//                    } else {
+//                        previewRequestBuilder.set(CaptureRequest.FLASH_MODE, CaptureRequest.FLASH_MODE_OFF);
+//                    }
+
+                    session.setRepeatingRequest(previewRequestBuilder.build(), previewCallback, mCameraHandler);
+
+                    Log.d(TAG, "Camera Id: " + mCameraDevice.getId() + " Preview session started");
+                } catch (CameraAccessException e) {
+                    Log.d(TAG, "Camera Id: " + mCameraDevice.getId() + " Failed to start preview: " + e.getMessage());
+                }
+            }
+
+            @Override
+            public void onConfigureFailed(CameraCaptureSession session) {
+                Log.d(TAG, "Failed to configure camera session");
+            }
+        };
+
+        SessionConfiguration sessionConfiguration = new SessionConfiguration(
+                SessionConfiguration.SESSION_REGULAR,
+                outputConfigsAll,
+                cameraExecutor,
+                sessionCallback
+        );
+
+        try {
+            mCameraDevice.createCaptureSession(sessionConfiguration);
+            Log.d(TAG, "Camera Id: " + mCameraDevice.getId() + " Preview session created");
+        } catch (CameraAccessException e) {
+            Log.d(TAG, "Camera Id: " + mCameraDevice.getId() + " access exception: " + e.getMessage());
+        }
+        Log.d(TAG, "createProcessingViewSession() done");
+    }
+
+    /**
+     * Capture callback for preview frames
+     */
+    private CameraCaptureSession.CaptureCallback previewCallback =
+            new CameraCaptureSession.CaptureCallback() {
+                @Override
+                public void onCaptureCompleted(CameraCaptureSession session, CaptureRequest request,
+                                               TotalCaptureResult result) {
+
+                }
+            };
 
     public String[] getCameraIdList() {
         ArrayList<String> list = new ArrayList<String>();
@@ -602,6 +711,7 @@ public class Camera {
             CaptureRequest.Builder captureBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
             captureBuilder.addTarget(mImageReader0.getSurface());
             captureBuilder.addTarget(mImageReader2.getSurface());
+
             // default TONEMAP_MODE_CONTRAST_CURVE assumed for best contrast, color and detail capture
             captureBuilder.set(CaptureRequest.TONEMAP_CURVE, new TonemapCurve(curve_srgb, curve_srgb, curve_srgb));
 
@@ -683,6 +793,14 @@ public class Camera {
         if (shutterSound) {
             playShutterSound();
         }
+    }
+
+    public void dispose() {
+        ((Bitmap) self.getNative()).recycle();
+        ((Bitmap) self2.getNative()).recycle();
+        self = null;
+        self2 = null;
+        System.gc();
     }
 
     private void saveImageFiles(Image left, Image right) {
