@@ -47,7 +47,7 @@ Note the code uses 0.60356647 diopters to set the hyper focal distance.
 The hyper focal distance in cm is one divided by this value.
 It is considered sharp from 83 cm (half the hyperfocal distance) and beyond.
 The camera reports its LENS_FOCUS_DISTANCE_CALIBRATION as APPROXIMATE.
-The focus distance options are hyper focal 1.66 meters, photo booth 1 meter, and macro 100 cm. Macro may not be useful for 3D but shows how the lens can focus close.
+The focus distance options are hyper focal 1.66 meters, Photo Booth 1 meter, and macro 100 cm. Macro may not be useful for 3D but shows how the lens can focus close.
 
 ### Exposure
 Auto exposure sets the best subject lighting by automatically changing shutter speed and ISO. There is no manual exposure control implemented. 
@@ -57,7 +57,7 @@ The photographer can set the type of exposure metering: Frame Average, Center We
 The app stores image files in the "DCIM/A3DCamera" folder. The base folder can be changed to "Pictures/A3DCamera" in the code.
 
 The app stores 3D photos in several formats. Left and Right Camera images are stored respectively as "_l" and "_r" suffix filename jpg files.
-Side by Side parallel left and right images are stored as "_2x1" suffix filename jpg files.
+Side by Side (SBS) parallel left and right images are stored as "_2x1" suffix filename jpg files.
 Anaglyph 3D images are stored as "_ana" suffix filename jpg files.
 
 * The A3DCamera folder stores the SBS photos.
@@ -68,7 +68,7 @@ Left and right images contain limited EXIF capture information: for example- IMG
 Each camera photo captured is 4080 x 3072 pixels, the full maximum sensor size of each left and right camera. Note the aspect ratio is not 4:3.
 
 ### Display
-The app display is a centered viewfinder sized to permit use of stereoscopic "free-viewing". This is a learned eye relaxing technique you can use to help see your subject in 3D with parallal side by side left and right eye images. 
+The app display is a centered viewfinder sized to permit use of stereoscopic "free-viewing". This is a learned eye relaxing technique you can use to help see your subject in 3D with parallal SBS left and right eye images. 
 More about free-viewing can be found at: 
 [Learning To Free View](https://stereoscopy.blog/2022/03/11/learning-to-free-view-see-stereoscopic-images-with-the-naked-eye/).
 
@@ -105,9 +105,10 @@ Here is the current key mapping for a 8BitDo Bluetooth game controller in Androi
 * SHUTTER - Take a photo on key release. In Photo Booth mode show count down seconds delay, until photo capture.
 * FOCUS   - Cycle through fixed focus distances: Hyperfocal, Photo Booth, Macro
 * MODE    - Select Auto, Manual, and Shutter Priority (only Auto implemented)
-* BURST   - Start continous photo capture at about 1 photo per second until the Back key is pressed and released again, or until 60 images are captured. In Photo Booth mode take a maximum of 4 images (bug, not working).
+* BURST   - Start continous photo capture at about 1 photo every two seconds (or less depending on the number of files stored),
+   until the Back key is pressed and released again, or until 60 images are captured. In Photo Booth mode take a maximum of 4 images.
 * DISP    - Toggle change Review display mode (SBS,  Anaglyph, L/R) (Not implemented for either Live view or Review mode)
-* TIMER   - Set 3 second delay time to take a photo or burst in Photo Booth mode. Toggle no delay or Photo Booth.
+* TIMER   - Set countdown delay time before taking a photo with the shutter or burst key. This value is also used in Photo Booth mode.
 * ISO     - Set the ISO (not implemented)
 * SPEED   - Set the Shutter speed (not implemented)
 * FN      - Cycle through exposure metering: Frame Average, Center Weighted, Spot Metering
@@ -123,18 +124,21 @@ Here are the Android keyboard keys matching the function keys of the 8BitDo Micr
 ![8BitDo Micro Bluetooth Controller](images/A3DCamera_KB_Layout_1080.png)
 
 ##### Bluetooth Mouse Remote Control
-Connect a Bluetooth Mouse to control the camera app with the mouse buttons. A mouse can be rewired in a buzzer style box as a photo booth controller.
+Connect a Bluetooth Mouse to control the camera app with the mouse buttons. A mouse can be rewired in a buzzer style box as a Photo Booth controller.
 
 ###### Normal Camera Mode
-* Left Button - Capture a photo like a shutter button. 
-* Middle Button - Share the photo with a printer or other selected app.
-* Right Button - Review the last photo using a  default app like 3DSteroid.
+* LEFT Button - Capture a photo (shutter button). In photo review mode this button sends a photo to the printer
+* MIDDLE Button - Review the last photo using a default app like 3DSteroid.
+* RIGHT Button - Share the photo with a selected app.
 
-###### Photo Booth Camera Mode (Not implemented)
-* Left Button - In photo booth mode start a countdown display as configured with TIMER and capture a photo. 
-* Middle Button - Toggle SBS/Anaglyph Display Mode (not implemented)
-* Right Button - Review the last photo. During review the Left Mouse Button functions as a Print share function.
+###### Photo Booth Camera Mode (Buzzer Box)
+The Buzzer box is a repurposed Bluetooth wireless mouse. The box has 3 contact switches. 
+The switches connect to buttons in the wireless mouse.
 
+* LEFT Button: Start the countdown sequence to capture a photo. In photo review mode this button sends the review photo to the printer
+* MIDDLE Button: Toggle between live view and review of last captured photo in either SBS and Anaglyph display modes.
+* RIGHT Button: Toggle between SBS or Anaglyph live view display of the subject. The Anaglyph view needs red-cyan glasses for viewing stereoscopically. This Anaglyph mode is very helpful for giving the subject a reference about where to position themselves in relation to the stereo window so they can pop out the window.
+   
 ### Limitations
 Captured images are on par in quality with the native camera app. However, with this camera images may still need adjustments for vertical alignment, horizontal perspective, contrast, color saturation, and sharpening.
 
@@ -181,14 +185,15 @@ The following commands are coded:
 These two commands do not affect the live view image, but do change the alignment of stored photos for SBS and anaglyph.
 
 ## Software Issues
-1. To exit/clear the app, swipe from the right edge to the left, to show the navigation bar. Press the box or circle to exit (however neither will close the app, unless you swipe it off or clear/close all apps).
+1. To exit/clear the app without using the BACK key, swipe from the right edge to the left, to show the navigation bar.
+2. Press the box or circle to exit (however neither will close the app, unless you swipe it off or clear/close all apps).
 
 ## Hardware Isssues
 1. The 8BitDo Micro Bluetooth Controller times out after 10 minutes.
 2. The XReal BP camera will time out at a maximum of 30 minutes ( Settings->screen timeout). 
    This can be extended by entering Developer mode, use developer options to set stay awake on. You will also have to keep the device charged with the power cable connected.
    The USB data connector is connected to a small portable monitor and is powered by the camera when charging.
-   This is the camera setup for the photo booth (tested for at least 4 hours ofoperation).
+   This is the camera setup for the Photo Booth (tested for at least 4 hours ofoperation).
 
 ## Stretch Goals
 Turn off the display, while allowing the camera to continue functioning with remote control. Blanking the screen is for photographing wild life without disturing them. 
