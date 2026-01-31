@@ -447,7 +447,9 @@ public class Camera {
 
         @Override
         public void onError(@NonNull CameraDevice camera, int error) {
-            mCameraDevice.close();
+            if (mCameraDevice != null) {
+                mCameraDevice.close();
+            }
             mCameraDevice = null;
             Log.e(TAG, "Camera " + camera.getId() + " hardware failure");
         }

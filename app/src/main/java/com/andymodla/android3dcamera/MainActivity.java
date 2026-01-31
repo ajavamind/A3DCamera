@@ -83,10 +83,6 @@ public class MainActivity extends AppCompatActivity {
     private static final int STATE_REVIEW = 1;
     private int state = STATE_LIVEVIEW;
 
-    // Stereo Image Alignment parameters (same values as StereoPhotoMaker)
-    //public int parallaxOffset = 0; // 212; // left/right parallax horizontal offset for stereo window placement
-    //public int verticalOffset = 0; // -12; // left/right camera alignment vertical offset for camera correction
-
     public int displayMode = DisplayMode.SBS.ordinal();
 
     private boolean exitApp = false; // exit app flag with back or esc button
@@ -188,7 +184,11 @@ public class MainActivity extends AppCompatActivity {
         parameters.init();
 
         // set parameters for my XReal Beam Pro stereo window adjustment
-        parameters.writeParallaxOffset(114);
+        // Stereo Image Alignment parameters (same values as StereoPhotoMaker)
+        // 212  left/right parallax horizontal offset for stereo window placement
+        // -12  left/right camera alignment vertical offset for camera correction
+
+        parameters.writeParallaxOffset(212);
         parameters.writeVerticalOffset(-12);
 
         // Establish media storage folders for saving photos
@@ -272,7 +272,7 @@ public class MainActivity extends AppCompatActivity {
                 camera.init(isPhotobooth);
                 camera.openCamera();
                 if (photoBoothSketch != null) {
-                    photoBoothSketch.setCamera(camera);
+                    photoBoothSketch.setCamera(camera, parameters);
                 }
             }
         });
@@ -312,8 +312,9 @@ public class MainActivity extends AppCompatActivity {
                 Log.d(TAG, "Available CameraId: |" + id + "|");
             }
 
-            CameraInfoUtil.checkCameraSyncType(this, list);
-            CameraInfoUtil.logFocusDistanceCalibration(this);  // for debug
+            // Debug information
+            //CameraInfoUtil.checkCameraSyncType(this, list);
+            //CameraInfoUtil.logFocusDistanceCalibration(this);  // for debug
 
             camera.startCameraThread();
             camera.openCamera();
@@ -495,8 +496,9 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onKeyUp(int keyCode, KeyEvent event) {
-        Log.d(TAG, "onKeyUp " + keyCode);
-        if (commandLine != null && commandLine.processCommandLineKey(keyCode, event)) {
+        char ch = (char) event.getUnicodeChar();
+        Log.d(TAG, "onKeyUp " + keyCode + " "+ ch);
+        if (commandLine != null && commandLine.processCommandLineKey(keyCode,ch)) {
             return true;
         }
         switch (keyCode) {

@@ -28,7 +28,7 @@ public class CommandLine {
         mSnackbar.show();
     }
  
-    public boolean processCommandLineKey(int keyCode, KeyEvent event) {
+    public boolean processCommandLineKey(int keyCode, char ch) {
         if (keyCode == KeyEvent.KEYCODE_SLASH) {
             cmdBuffer.setLength(0); // Clear the buffer
             cmdBuffer.append('/');
@@ -54,9 +54,9 @@ public class CommandLine {
         }
 
         // Get the character from the key event
-        char c = (char) event.getUnicodeChar();
-        if (c != 0) {
-            cmdBuffer.append(c);
+        //char c = (char) event.getUnicodeChar();
+        if (ch != 0) {
+            cmdBuffer.append(ch);
             updateDisplay();
             return true;
         }

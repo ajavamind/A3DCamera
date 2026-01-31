@@ -16,9 +16,11 @@ import java.util.Date;
 import java.util.Locale;
 
 public class PhotoBoothSketch extends PApplet {
-    private static final boolean DEBUG = true;
+    private static boolean DEBUG = true;
 
     Camera camStereo;  // The stereo camera used with the device
+    Parameters parameters; // Application parameters
+
     int XBP_CAMERA_WIDTH = 1280;
     int XBP_CAMERA_HEIGHT = 960;
 
@@ -30,10 +32,15 @@ public class PhotoBoothSketch extends PApplet {
     // Parallax and vertical alignment adjustments in pixels for XBP
     public volatile int parallax = 240;
     public volatile int verticalAlignment = 8;
-    public volatile boolean mirror = true;
+    public volatile boolean mirror = false;
     public volatile int brightness = -6;
     volatile boolean anaglyph = false;
     volatile boolean update = true;
+    volatile boolean zoom = false;
+    int offsetX = 0;
+    int offsetY = 0;
+    float zoomPercent = 50f/100f;
+
     float AR = 1.33333333f;  // aspect ratio for Xreal Beam Pro camera image sensor
 
     // Display frame inside full screen
@@ -62,8 +69,13 @@ public class PhotoBoothSketch extends PApplet {
         if (DEBUG) PApplet.println("StereoCamera setup done");
     }
 
-    public void setCamera(Camera camera) {
+    public void setCamera(Camera camera, Parameters parameters) {
         camStereo = camera;
+        this.parameters = parameters;
+    }
+
+    public void update() {
+        update = true;
     }
 
     public void toggleAnaglyph() {
@@ -76,6 +88,10 @@ public class PhotoBoothSketch extends PApplet {
         update = true;
     }
 
+    void toggleZoom() {
+        zoom = !zoom;
+        update = true;
+    }
     public void setParallax(int parallax) {
         this.parallax = parallax;
         update = true;
@@ -89,6 +105,9 @@ public class PhotoBoothSketch extends PApplet {
     public void draw() {
         if (update) {
             background(0);  // clear screen for draw update
+//            parallax = parameters.getParallaxOffset();
+//            verticalAlignment = parameters.getVerticalOffset();
+
             update = false;
         }
 
@@ -99,7 +118,16 @@ public class PhotoBoothSketch extends PApplet {
             } else {
                 drawSBS(camStereo.self, camStereo.self2);
             }
+            if (DEBUG) {
+                textSize(48);
+                fill(color(255,255,128)); //fill(128);
+                textAlign(LEFT);
+                text("parallax = "+(parallax) + " mirror = " + mirror + " zoom = " + zoom, 50, height -96);
+                text("vertical = "+(verticalAlignment), 50, height -48);
+            }
+
         }
+
     }
 
     public void drawSBS(PImage imgLeft, PImage imgRight) {
@@ -142,17 +170,30 @@ public class PhotoBoothSketch extends PApplet {
         pgl.viewport(0, 0, width, height);
         pgl.colorMask(true, false, false, true);
         pushMatrix();
-
+        float offsetX= 0;
+        float offsetY = 0;
         if (mirror) {
             translate(width / 2 - parallax / 2, -verticalAlignment / 2);
-            scale(-1, 1); // Mirror horizontally
-            image(imgLeft, -width / 2 + ((float) width - (float) height * AR) / 2, 0, (float) height * AR, height);
+            scale(-1, 1); // Mirror - flip horizontally
+            if (zoom) {
+                scale((1.0f + zoomPercent), 1.0f + zoomPercent);
+                offsetX = ((float)width/2)*zoomPercent - (float)width/4;
+                offsetY = ((float)height/2)*zoomPercent;
+            }
+            image(imgRight, -width / 2 - offsetX + ((float) width - (float) height * AR) / 2, -offsetY, (float) height * AR, height);
         } else {
             translate(-parallax / 2, -verticalAlignment / 2);
-            image(imgLeft, ((float) width - (float) height * AR) / 2, 0, (float) height * AR, height);
+            if (zoom) {
+                scale(1.0f + zoomPercent, 1.0f + zoomPercent);
+                offsetX = ((float)width/2)*zoomPercent;
+                offsetY = ((float)height/2)*zoomPercent;
+            }
+            image(imgLeft, ((float) width -offsetX - (float) height * AR) / 2, - offsetY, (float) height * AR, height);
         }
         popMatrix();
         endPGL();
+        offsetX = 0;
+        offsetY = 0;
 
         pgl = beginPGL();
         pgl.colorMask(false, true, true, true);
@@ -160,11 +201,21 @@ public class PhotoBoothSketch extends PApplet {
         pushMatrix();
         if (mirror) {
             translate(width / 2 + parallax / 2, verticalAlignment / 2);
-            scale(-1, 1); // Mirror horizontally
-            image(imgRight, -width / 2 + ((float) width - (float) height * AR) / 2, 0, (float) height * AR, height);
+            scale(-1, 1); // Mirror - flip horizontally
+            if (zoom) {
+                scale((1.0f + zoomPercent), 1.0f + zoomPercent);
+                offsetX = ((float)width/2)*zoomPercent - (float)width/4;
+                offsetY = ((float)height/2)*zoomPercent;
+            }
+            image(imgLeft, -width / 2 - offsetX + ((float) width - (float) height * AR) / 2, -offsetY, (float) height * AR, height);
         } else {
             translate(parallax / 2, verticalAlignment / 2);
-            image(imgRight, ((float) width - (float) height * AR) / 2, 0, (float) height * AR, height);
+            if (zoom) {
+                scale(1.0f + zoomPercent, 1.0f + zoomPercent);
+                offsetX = ((float)width/2)*zoomPercent;
+                offsetY = ((float)height/2)*zoomPercent;
+            }
+            image(imgRight, ((float) width -offsetX - (float) height * AR) / 2, - offsetY, (float) height * AR, height);
         }
         popMatrix();
         endPGL();
@@ -183,5 +234,29 @@ public class PhotoBoothSketch extends PApplet {
         rect(width - 2 * parallax, 0, 2 * parallax, height);
     }
 
+    public void keyPressed() {
+        if (key == ' ') {
+            toggleMirror();
+        } else if (key == 'a') {
+            toggleAnaglyph();
+        } else if (key == '+') {
+            setParallax(parallax + 10);
+        } else if (key == '=') {
+            setParallax(parallax - 10);
+        } else if (key == '_') {
+            setVerticalAlignment(verticalAlignment + 1);
+        } else if (key == '-') {
+            setVerticalAlignment(verticalAlignment - 1);
+        } else if (key == '.') {
+            toggleMirror();
+        } else if (key == '?') {
+            DEBUG = !DEBUG;
+        } else if (key == 'z') {
+            toggleZoom();
+        } else if (key == 'v') {
+            setVerticalAlignment(verticalAlignment + 10);
+        }
+
+    }
 }
 
