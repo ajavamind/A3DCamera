@@ -419,7 +419,7 @@ public class MainActivity extends AppCompatActivity {
                 media.printImageType();
             }
         }
-        // Other buttons like BUTTON_BACK, BUTTON_FORWARD can also be checked
+        // Other buttons like BUTTON_BACK, BUTTON_FORWARD can also be checked here
     }
 
     private void handleButtonRelease(int buttonState) {

@@ -379,15 +379,15 @@ public class PhotoBoothSketch extends PApplet {
         }
 
 
-//        } else if (key == '+') {
-//            setParallax(parallax + 4);
-//        } else if (key == '=') {
-//            setParallax(parallax - 4);
-//        } else if (key == '_') {
-//            setVerticalAlignment(verticalAlignment + 1);
-//        } else if (key == '-') {
-//            setVerticalAlignment(verticalAlignment - 1);
-//
+        if (lastKey == '+') {
+            setParallax(parallax + 4);
+        } else if (lastKey == '=') {
+            setParallax(parallax - 4);
+        } else if (lastKey == '_') {
+            setVerticalAlignment(verticalAlignment + 1);
+        } else if (lastKey == '-') {
+            setVerticalAlignment(verticalAlignment - 1);
+        }
 
     }
 }
