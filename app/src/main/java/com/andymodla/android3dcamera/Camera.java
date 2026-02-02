@@ -152,8 +152,8 @@ public class Camera {
     private final AtomicBoolean isProcessingRight = new AtomicBoolean(false);
     private volatile Image imageLeft;
     private volatile Image imageRight;
-    volatile public PImage self;
-    volatile public PImage self2;
+    volatile public PImage leftImage;
+    volatile public PImage rightImage;
 
     // Constructor
     public Camera(Context context, Media media, PApplet pApplet) {
@@ -370,18 +370,18 @@ public class Camera {
 
     private void processPreviewFrames() {
         if (imageLeft != null && imageRight != null) {
-            YuvConverter.yuvToBitmap(imageLeft, (Bitmap) self.getNative());
-            YuvConverter.yuvToBitmap(imageRight, (Bitmap) self2.getNative());
+            YuvConverter.yuvToBitmap(imageLeft, (Bitmap) leftImage.getNative());
+            YuvConverter.yuvToBitmap(imageRight, (Bitmap) rightImage.getNative());
             imageLeft.close();
             imageLeft = null;
             isProcessingLeft.set(false);
             imageRight.close();
             imageRight = null;
             isProcessingRight.set(false);
-            self.loadPixels();
-            self.updatePixels();
-            self2.loadPixels();
-            self2.updatePixels();
+            leftImage.loadPixels();
+            leftImage.updatePixels();
+            rightImage.loadPixels();
+            rightImage.updatePixels();
             available = true;
         }
     }
@@ -404,10 +404,10 @@ public class Camera {
             imageReader0.setOnImageAvailableListener(imageAvailableListener, mImageReaderHandler0);
             imageReader2 = ImageReader.newInstance(cameraWidth, cameraHeight, ImageFormat.YUV_420_888, 4);
             imageReader2.setOnImageAvailableListener(imageAvailableListener2, mImageReaderHandler0);
-            self = pApplet.createImage(cameraWidth, cameraHeight, PImage.ARGB);
-            self.setNative(Bitmap.createBitmap(cameraWidth, cameraHeight, Bitmap.Config.ARGB_8888));
-            self2 = pApplet.createImage(cameraWidth, cameraHeight, PImage.ARGB);
-            self2.setNative(Bitmap.createBitmap(cameraWidth, cameraHeight, Bitmap.Config.ARGB_8888));
+            leftImage = pApplet.createImage(cameraWidth, cameraHeight, PImage.ARGB);
+            leftImage.setNative(Bitmap.createBitmap(cameraWidth, cameraHeight, Bitmap.Config.ARGB_8888));
+            rightImage = pApplet.createImage(cameraWidth, cameraHeight, PImage.ARGB);
+            rightImage.setNative(Bitmap.createBitmap(cameraWidth, cameraHeight, Bitmap.Config.ARGB_8888));
 
         }
 
@@ -798,10 +798,10 @@ public class Camera {
     }
 
     public void dispose() {
-        ((Bitmap) self.getNative()).recycle();
-        ((Bitmap) self2.getNative()).recycle();
-        self = null;
-        self2 = null;
+        ((Bitmap) leftImage.getNative()).recycle();
+        ((Bitmap) rightImage.getNative()).recycle();
+        leftImage = null;
+        rightImage = null;
         System.gc();
     }
 
