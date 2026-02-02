@@ -31,6 +31,8 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
+import com.andymodla.android3dcamera.sketch.PhotoBoothSketch;
+
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -369,14 +371,23 @@ public class MainActivity extends AppCompatActivity {
                 case MotionEvent.ACTION_BUTTON_RELEASE:
                     // Button released
                     handleButtonRelease(motionEvent.getButtonState());
-                    return true;
+                    return true; // Event handled
                 case MotionEvent.ACTION_MOVE:
                     // Mouse movement (use getX(), getY()) not used and consumed
-                    return true;
+                    return true; // Event handled
                 // You can also handle ACTION_HOVER_MOVE for hover events
             }
+
+            if (motionEvent.getAction() == MotionEvent.ACTION_SCROLL) {
+                // AXIS_VSCROLL provides the vertical scroll delta
+                // Negative values mean scrolling down, positive mean up
+                float delta = motionEvent.getAxisValue(MotionEvent.AXIS_VSCROLL);
+                handleMouseWheel(delta);
+                return true; // Event handled
+            }
         }
-        return false;
+
+        return super.onGenericMotionEvent(motionEvent); //return false;
     }
 
     private void handleButtonPress(int buttonState) {
@@ -414,6 +425,18 @@ public class MainActivity extends AppCompatActivity {
     private void handleButtonRelease(int buttonState) {
         // Handle button release events similarly
     }
+
+    private void handleMouseWheel(float delta) {
+        // Handle mouse wheel events
+        if (delta > 0) {
+            // Scrolled Up (away from user)
+            photoBoothSketch.processKeyCode(KeyEvent.KEYCODE_RIGHT_BRACKET, 0);
+        } else if (delta < 0) {
+            // Scrolled Down (toward user)
+            photoBoothSketch.processKeyCode(KeyEvent.KEYCODE_LEFT_BRACKET, 0);
+        }
+    }
+
 
     private void capturePhoto() {
         if ((countdownDigit < 0)) {

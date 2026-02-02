@@ -1,4 +1,4 @@
-package com.andymodla.android3dcamera;
+package com.andymodla.android3dcamera.sketch;
 
 /**
  * The Photo Booth Processing sketch for the Graphic user interface
@@ -7,10 +7,14 @@ package com.andymodla.android3dcamera;
 
 import android.view.KeyEvent;
 
+import com.andymodla.android3dcamera.Camera;
+import com.andymodla.android3dcamera.Parameters;
+
 import processing.core.PApplet;
 import processing.core.PImage;
+import processing.event.MouseEvent;
 import processing.opengl.PGL;
-
+import android.view.KeyEvent;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
@@ -43,6 +47,8 @@ public class PhotoBoothSketch extends PApplet {
     volatile boolean update = true;
     volatile boolean zoom = true;
     volatile boolean blankScreen = false;
+    volatile int lastKeyCode;
+    volatile int lastKey;
 
     float[] magnifyScale = {1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.1f,
             2.2f, 2.3f, 2.4f, 2.5f, 2.6f, 2.7f, 2.8f, 2.9f, 3.0f};
@@ -312,45 +318,76 @@ public class PhotoBoothSketch extends PApplet {
     }
 
     // debug keys
-    public void keyPressed() {
-        if (key == 'a') {
-            toggleAnaglyph();
-        } else if (key == '+') {
-            setParallax(parallax + 4);
-        } else if (key == '=') {
-            setParallax(parallax - 4);
-        } else if (key == '_') {
-            setVerticalAlignment(verticalAlignment + 1);
-        } else if (key == '-') {
-            setVerticalAlignment(verticalAlignment - 1);
-        } else if (key == 'q') {
-            toggleMirror();
-        } else if (key == '?') {
-            DEBUG = !DEBUG;
-        } else if (key == 'z') {
-            toggleZoom();
-        } else if (key == '<') {
-            if (magnifyIndex > 0) {
-                magnifyIndex--;
-                update = true;
-                zoom = true;
-            }
-            if (DEBUG) println("magnifyScale = " + magnifyScale[magnifyIndex] + " magnifyIndex");
-        } else if (key == '>') {
-            if (magnifyIndex < magnifyScale.length - 1) {
-                magnifyIndex++;
-                update = true;
-                zoom = true;
-            }
-            if (DEBUG) println("magnifyScale = " + magnifyScale[magnifyIndex] + " magnifyIndex");
-        } else if (key == 'b') {
-            toggleBlankScreen();
-        } else if (key == ' ') {
-            testMode = !testMode;
-            update = true;
-        } else {
-            ;
+    void mouseWheel(MouseEvent event) {
+        float e = event.getCount();
+        if (e > 0) {
+            lastKeyCode = KeyEvent.KEYCODE_LEFT_BRACKET;
+            processKeyCode(lastKeyCode, 0);
+        } else if (e < 0) {
+            lastKeyCode = KeyEvent.KEYCODE_RIGHT_BRACKET;
+            processKeyCode(lastKeyCode, 0);
         }
+    }
+
+    public void keyPressed() {
+        lastKey = key;
+        lastKeyCode = keyCode;
+        processKeyCode(lastKeyCode, lastKey);
+    }
+
+    public void processKeyCode(int lastKeyCode, int lastKey) {
+        switch (lastKeyCode) {
+            case KeyEvent.KEYCODE_A:
+                toggleAnaglyph();
+                break;
+            case KeyEvent.KEYCODE_B:
+                toggleBlankScreen();
+                break;
+            case KeyEvent.KEYCODE_LEFT_BRACKET:
+                if (magnifyIndex > 0) {
+                    magnifyIndex--;
+                    update = true;
+                    zoom = true;
+                }
+                if (DEBUG)
+                    println("magnifyScale = " + magnifyScale[magnifyIndex] + " magnifyIndex");
+                break;
+            case KeyEvent.KEYCODE_RIGHT_BRACKET:
+                if (magnifyIndex < magnifyScale.length - 1) {
+                    magnifyIndex++;
+                    update = true;
+                    zoom = true;
+                }
+                if (DEBUG)
+                    println("magnifyScale = " + magnifyScale[magnifyIndex] + " magnifyIndex");
+                break;
+            case KeyEvent.KEYCODE_Q:
+                toggleMirror();
+                break;
+            case KeyEvent.KEYCODE_Z:
+                toggleZoom();
+                break;
+            case KeyEvent.KEYCODE_SPACE:
+                testMode = !testMode;
+                update = true;
+                break;
+            case KeyEvent.KEYCODE_PERIOD:
+                DEBUG = !DEBUG;
+                break;
+            default:
+                break;
+        }
+
+
+//        } else if (key == '+') {
+//            setParallax(parallax + 4);
+//        } else if (key == '=') {
+//            setParallax(parallax - 4);
+//        } else if (key == '_') {
+//            setVerticalAlignment(verticalAlignment + 1);
+//        } else if (key == '-') {
+//            setVerticalAlignment(verticalAlignment - 1);
+//
 
     }
 }
