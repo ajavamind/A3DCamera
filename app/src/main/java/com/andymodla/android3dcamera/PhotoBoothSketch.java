@@ -17,8 +17,9 @@ import java.util.Locale;
 
 public class PhotoBoothSketch extends PApplet {
     private static boolean DEBUG = true;
+    private static boolean testMode = false;
 
-    int yellow = color(255,255,128);
+    int yellow = color(255, 255, 128);
     int black = 0;
     int white = color(255);
     int gray = color(128);
@@ -31,7 +32,6 @@ public class PhotoBoothSketch extends PApplet {
 
     int cameraWidth = XBP_CAMERA_WIDTH;  // default
     int cameraHeight = XBP_CAMERA_HEIGHT;
-    int FPS = 30; // camera frames per second
     int displayFPS = 30; // display frames per second
 
     // Parallax and vertical alignment adjustments in pixels for XBP
@@ -41,12 +41,11 @@ public class PhotoBoothSketch extends PApplet {
     public volatile int brightness = -6;
     volatile boolean anaglyph = false;
     volatile boolean update = true;
-    volatile boolean zoom = false;
+    volatile boolean zoom = true;
     volatile boolean blankScreen = false;
-    int offsetX = 0;
-    int offsetY = 0;
-    float zoomPercent = 50f/100f;
-    float[] magnifyScale = {1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.1f, 2.2f, 2.3f, 2.4f, 2.5f, 2.6f, 2.7f, 2.8f, 2.9f, 3.0f};
+
+    float[] magnifyScale = {1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.1f,
+            2.2f, 2.3f, 2.4f, 2.5f, 2.6f, 2.7f, 2.8f, 2.9f, 3.0f};
     int magnifyIndex = 0;
 
     float AR = 1.33333333f;  // aspect ratio for Xreal Beam Pro camera image sensor
@@ -73,7 +72,7 @@ public class PhotoBoothSketch extends PApplet {
 
         textSize(96);
         textAlign(CENTER, CENTER);
-        text("3D Photo Booth", width / 2, height / 2);
+        text("3D Photo Booth", (float) width / 2, (float) height / 2);
         if (DEBUG) PApplet.println("StereoCamera setup done");
     }
 
@@ -106,6 +105,7 @@ public class PhotoBoothSketch extends PApplet {
         update = true;
 
     }
+
     public void setParallax(int parallax) {
         this.parallax = parallax;
         update = true;
@@ -137,12 +137,12 @@ public class PhotoBoothSketch extends PApplet {
                 }
             }
 
-            if (DEBUG) {
+            if (DEBUG && testMode) {
                 textSize(48);
                 fill(yellow);
                 textAlign(LEFT);
-                text("parallax = "+(parallax) + " mirror = " + mirror + " zoom = " + zoom, 50, height -96);
-                text("vertical = "+(verticalAlignment), 50, height -48);
+                text("parallax = " + (parallax) + " mirror = " + mirror + " zoom = " + zoom, 50, height - 96);
+                text("vertical = " + (verticalAlignment) +" magnify = " + magnifyScale[magnifyIndex], 50, height - 48);
             }
 
         }
@@ -172,69 +172,50 @@ public class PhotoBoothSketch extends PApplet {
                     (float) frameWidth / 2, ((float) frameWidth / 2) / AR); // Draw at adjusted position
             popMatrix();
         } else {
-            //pushMatrix();
+            pushMatrix();
             image(imgLeft, frameX, frameY + 180, (float) frameWidth / 2, ((float) frameWidth / 2) / AR);
-            image(imgRight, (float) frameX + frameWidth / 2, frameY + 180, (float) frameWidth / 2, ((float) frameWidth / 2) / AR);
-            //popMatrix();
+            image(imgRight, (float) frameX + (float)frameWidth / 2, frameY + 180, (float) frameWidth / 2, ((float) frameWidth / 2) / AR);
+            popMatrix();
         }
         drawGrid(false);
     }
 
-    void drawGrid1(boolean full) {
-        strokeWeight(2);
-        if (full) {
-            line(0, height/2, width, height/2);
-            line(width/2, 0, width/2, height);
-        } else {
-            line(0, frameHeight / 2, width, frameHeight / 2);
-            line(frameX + frameWidth / 4, 0, frameX+ frameWidth / 4, frameHeight);
-            line(frameX + 3*frameWidth / 4, 0, frameX+3*frameWidth / 4, frameHeight);
-        }
-    }
-
-    void drawGrid(boolean full) {
-        fill(yellow);
-        int s = 2;
-        if (full) {
-            // Horizontal line (center of canvas)
-            rect(0, height/2 - s/2, width, s);
-            // Vertical line (center of canvas)
-            rect(width/2 - s/2, 0, s, height);
-        } else {
-            // Horizontal line (center of frame)
-            rect(0, frameHeight / 2 - s/2, width, s);
-            // First vertical line (1/4 of frame width)
-            rect(frameX + frameWidth / 4 - s/2, 0, s, frameHeight);
-            // Second vertical line (3/4 of frame width)
-            rect(frameX + 3*frameWidth / 4 - s/2, 0, s, frameHeight);
-        }
-    }
-
     public void drawAnaglyph(PImage imgLeft, PImage imgRight) {
-        float offsetX= 0;
+        float offsetX = 0;
         float offsetY = 0;
+        float anaglyphX = 0;
+        float anaglyphXM = 0;
+        float anaglyphW = 0;
+        float fillX = 0;
+
         PGL pgl;  // Processing Open GL library
         pgl = beginPGL();
         pgl.viewport(0, 0, width, height);
-        pgl.colorMask(true, false, false, true);
+        pgl.colorMask(true, false, false, true);  // Red channel only
         pushMatrix();
         if (mirror) {
-            translate(-parallax / 2, -verticalAlignment / 2);
+            translate(-(float)parallax / 2, -(float)verticalAlignment / 2);
             scale(-1, 1); // Mirror - flip horizontally
             if (zoom) {
                 scale(magnifyScale[magnifyIndex], magnifyScale[magnifyIndex]);
-                offsetX = (width * (1 - 1/magnifyScale[magnifyIndex])) / 2 ;
-                offsetY = (height * (1 - 1/magnifyScale[magnifyIndex])) / 2;
+                offsetX = (width * (1 - 1 / magnifyScale[magnifyIndex])) / 2;
+                offsetY = (height * (1 - 1 / magnifyScale[magnifyIndex])) / 2;
             }
-            image(imgRight, ((float) -width +2*offsetX - (float) height * AR) / 2, -offsetY, (float) height * AR, height);
+            anaglyphXM = ((float) -width + 2 * offsetX - (float) height * AR) / 2;
+            anaglyphW = (float) height * AR;
+            fillX = anaglyphXM;
+            image(imgRight, anaglyphXM, -offsetY, anaglyphW, height);
         } else {
-            translate(-parallax / 2, -verticalAlignment / 2);
+            translate(-(float)parallax / 2, -(float)verticalAlignment / 2);
             if (zoom) {
                 scale(magnifyScale[magnifyIndex], magnifyScale[magnifyIndex]);
-                offsetX = (width * (1 - 1/magnifyScale[magnifyIndex])) / 2;
-                offsetY = (height * (1 - 1/magnifyScale[magnifyIndex])) / 2;
+                offsetX = (width * (1 - 1 / magnifyScale[magnifyIndex])) / 2;
+                offsetY = (height * (1 - 1 / magnifyScale[magnifyIndex])) / 2;
             }
-            image(imgLeft, ((float) width -2*offsetX - (float) height * AR) / 2, - offsetY, (float) height * AR, height);
+            anaglyphW = (float) height * AR;
+            anaglyphX = ((float) width - 2 * offsetX - anaglyphW) / 2;
+            fillX = anaglyphX;
+            image(imgLeft, anaglyphX, -offsetY, anaglyphW, height);
         }
         popMatrix();
         endPGL();
@@ -242,26 +223,30 @@ public class PhotoBoothSketch extends PApplet {
         offsetY = 0;
 
         pgl = beginPGL();
-        pgl.colorMask(false, true, true, true);
+        pgl.colorMask(false, true, true, true);  // Blue and Green channels only
         pgl.viewport(0, 0, width, height);
         pushMatrix();
         if (mirror) {
-            translate(parallax / 2, verticalAlignment / 2);
+            translate((float)parallax / 2, (float)verticalAlignment / 2);
             scale(-1, 1); // Mirror - flip horizontally
             if (zoom) {
                 scale(magnifyScale[magnifyIndex], magnifyScale[magnifyIndex]);
-                offsetX = (width * (1 - 1/magnifyScale[magnifyIndex])) / 2 ;
-                offsetY = (height * (1 - 1/magnifyScale[magnifyIndex])) / 2;
+                offsetX = (width * (1 - 1 / magnifyScale[magnifyIndex])) / 2;
+                offsetY = (height * (1 - 1 / magnifyScale[magnifyIndex])) / 2;
             }
-            image(imgLeft, ((float) -width +2*offsetX - (float) height * AR) / 2, -offsetY, (float) height * AR, height);
+            anaglyphW = (float) height * AR;
+            anaglyphXM = ((float) -width + 2 * offsetX - anaglyphW) / 2;
+            image(imgLeft, anaglyphXM, -offsetY, anaglyphW, height);
         } else {
-            translate(parallax / 2, verticalAlignment / 2);
+            translate((float)parallax / 2, (float)verticalAlignment / 2);
             if (zoom) {
                 scale(magnifyScale[magnifyIndex], magnifyScale[magnifyIndex]);
-                offsetX = (width * (1 - 1/magnifyScale[magnifyIndex])) / 2;
-                offsetY = (height * (1 - 1/magnifyScale[magnifyIndex])) / 2;
+                offsetX = (width * (1 - 1 / magnifyScale[magnifyIndex])) / 2;
+                offsetY = (height * (1 - 1 / magnifyScale[magnifyIndex])) / 2;
             }
-            image(imgRight, ((float) width -2*offsetX - (float) height * AR) / 2, - offsetY, (float) height * AR, height);
+            anaglyphW = (float) height * AR;
+            anaglyphX = ((float) width - 2 * offsetX - anaglyphW) / 2;
+            image(imgRight, anaglyphX, -offsetY, anaglyphW, height);
         }
         popMatrix();
         endPGL();
@@ -269,16 +254,61 @@ public class PhotoBoothSketch extends PApplet {
         // used to draw over anaglyph image for hiding overlay areas outside anaglyph image
         // needed to change colorMask back before filling with rectangles on edges
         pgl = beginPGL();
-        pgl.colorMask(true, true, true, true);
+        pgl.colorMask(true, true, true, true);  // Restore color channels
         pgl.viewport(0, 0, width, height);
         endPGL();
 
-        fill(0);
-        rect(0, 0, width, verticalAlignment);
-        rect(0, height - verticalAlignment, width, verticalAlignment);
-        rect(0, 0, 2 * parallax, height);
-        rect(width - 2 * parallax, 0, 2 * parallax, height);
+        // cover anaglyph alignment edges
+        fill(black);
+        if (verticalAlignment != 0) {
+            rect(0, 0, width, abs(verticalAlignment));  // top of image
+            rect(0, height - abs(verticalAlignment), width, abs(verticalAlignment));  // bottom of image
+        }
+//        if (testMode) {
+//            fill(yellow);
+//            if (parallax != 0) {
+//                if (mirror) {
+//                    rect(fillX - offsetX, 0, abs(parallax), height); // left side
+//                    rect(fillX - offsetX + anaglyphW - abs(parallax), 0, abs(parallax), height); // right side
+//
+//                } else {
+//                    rect(fillX - offsetX, 0, abs(parallax), height); // left side
+//                    rect(fillX + -offsetX + anaglyphW - abs(parallax), 0, abs(parallax), height); // right side
+//                }
+//            }
+//        }
         drawGrid(true);
+    }
+
+    //    void drawGridLine(boolean full) {
+//        strokeWeight(2);
+//        if (full) {
+//            line(0, height / 2, width, height / 2);
+//            line(width / 2, 0, width / 2, height);
+//        } else {
+//            line(0, frameHeight / 2, width, frameHeight / 2);
+//            line(frameX + frameWidth / 4, 0, frameX + frameWidth / 4, frameHeight);
+//            line(frameX + 3 * frameWidth / 4, 0, frameX + 3 * frameWidth / 4, frameHeight);
+//        }
+//    }
+
+    void drawGrid(boolean full) {
+        if (!testMode) return;
+        fill(yellow);
+        int s = 2;
+        if (full) {
+            // Horizontal line (center of canvas)
+            rect(0, height / 2 - s / 2, width, s);
+            // Vertical line (center of canvas)
+            rect(width / 2 - s / 2, 0, s, height);
+        } else {
+            // Horizontal line (center of frame)
+            rect(0, frameHeight / 2 - s / 2, width, s);
+            // First vertical line (1/4 of frame width)
+            rect(frameX + frameWidth / 4 - s / 2, 0, s, frameHeight);
+            // Second vertical line (3/4 of frame width)
+            rect(frameX + 3 * frameWidth / 4 - s / 2, 0, s, frameHeight);
+        }
     }
 
     // debug keys
@@ -293,7 +323,7 @@ public class PhotoBoothSketch extends PApplet {
             setVerticalAlignment(verticalAlignment + 1);
         } else if (key == '-') {
             setVerticalAlignment(verticalAlignment - 1);
-        } else if (key == 'Q') {
+        } else if (key == 'q') {
             toggleMirror();
         } else if (key == '?') {
             DEBUG = !DEBUG;
@@ -306,7 +336,7 @@ public class PhotoBoothSketch extends PApplet {
                 zoom = true;
             }
             if (DEBUG) println("magnifyScale = " + magnifyScale[magnifyIndex] + " magnifyIndex");
-        } else if (key =='>') {
+        } else if (key == '>') {
             if (magnifyIndex < magnifyScale.length - 1) {
                 magnifyIndex++;
                 update = true;
@@ -315,6 +345,11 @@ public class PhotoBoothSketch extends PApplet {
             if (DEBUG) println("magnifyScale = " + magnifyScale[magnifyIndex] + " magnifyIndex");
         } else if (key == 'b') {
             toggleBlankScreen();
+        } else if (key == ' ') {
+            testMode = !testMode;
+            update = true;
+        } else {
+            ;
         }
 
     }
