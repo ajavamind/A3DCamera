@@ -318,17 +318,6 @@ public class PhotoBoothSketch extends PApplet {
     }
 
     // debug keys
-    void mouseWheel(MouseEvent event) {
-        float e = event.getCount();
-        if (e > 0) {
-            lastKeyCode = KeyEvent.KEYCODE_LEFT_BRACKET;
-            processKeyCode(lastKeyCode, 0);
-        } else if (e < 0) {
-            lastKeyCode = KeyEvent.KEYCODE_RIGHT_BRACKET;
-            processKeyCode(lastKeyCode, 0);
-        }
-    }
-
     public void keyPressed() {
         lastKey = key;
         lastKeyCode = keyCode;
@@ -362,6 +351,7 @@ public class PhotoBoothSketch extends PApplet {
                     println("magnifyScale = " + magnifyScale[magnifyIndex] + " magnifyIndex");
                 break;
             case KeyEvent.KEYCODE_Q:
+            case KeyEvent.KEYCODE_FORWARD:  // 125 forward media button on mouse: mirror toggle
                 toggleMirror();
                 break;
             case KeyEvent.KEYCODE_Z:
@@ -374,20 +364,26 @@ public class PhotoBoothSketch extends PApplet {
             case KeyEvent.KEYCODE_PERIOD:
                 DEBUG = !DEBUG;
                 break;
+            case KeyEvent.KEYCODE_MINUS:
+                setParallax(parallax - 4);
+                if (DEBUG) println("parallax = " + parallax);
+                break;
+            case KeyEvent.KEYCODE_PLUS:
+            case KeyEvent.KEYCODE_EQUALS:
+                setParallax(parallax + 4);
+                if (DEBUG) println("parallax = " + parallax);
+                break;
+
+//            case KeyEvent.:
+//                setVerticalAlignment(verticalAlignment + 1);
+//                break;
             default:
                 break;
         }
 
 
-        if (lastKey == '+') {
-            setParallax(parallax + 4);
-        } else if (lastKey == '=') {
-            setParallax(parallax - 4);
-        } else if (lastKey == '_') {
-            setVerticalAlignment(verticalAlignment + 1);
-        } else if (lastKey == '-') {
-            setVerticalAlignment(verticalAlignment - 1);
-        }
+
+
 
     }
 }
