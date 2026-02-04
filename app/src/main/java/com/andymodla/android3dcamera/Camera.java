@@ -2,10 +2,14 @@ package com.andymodla.android3dcamera;
 
 import static android.Manifest.permission.CAMERA;
 
+import static java.lang.Math.abs;
+
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
 import android.graphics.ImageFormat;
+import android.graphics.Rect;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
@@ -52,8 +56,9 @@ public class Camera {
     public static final String TAG = "A3DCamera";
     Context context;
     Media media;
-
+    Parameters parameters;
     PApplet pApplet; // Processing sketch base class
+
     private boolean useProcessing = false;
     private CameraManager mCameraManager;
     private CameraDevice mCameraDevice;
@@ -75,8 +80,8 @@ public class Camera {
     private String rightCameraId = "2";
     private String stereoCameraId = "3";
 
-    int CAMERA_WIDTH_AR_DEFAULT = 4080;
-    int CAMERA_HEIGHT_AR_DEFAULT = 3072;
+    public static int CAMERA_WIDTH_DEFAULT = 4080;
+    public static int CAMERA_HEIGHT_DEFAULT = 3072;
     // todo
     int CAMERA_WIDTH_AR_4_3 = 4000;
     int CAMERA_HEIGHT_AR_4_3 = 3000;
@@ -86,8 +91,10 @@ public class Camera {
     int CAMERA_HEIGHT_AR_1_1 = 3072;
     int CAMERA_WIDTH_AR_SMALL = 1080;
     int CAMERA_HEIGHT_AR_SMALL = 1080;
-    int XBP_CAMERA_WIDTH = 1280;//4080;
-    int XBP_CAMERA_HEIGHT = 960;//3072
+    public static int XBP_CAMERA_WIDTH = 1280; // small for performance - camera aspect ratio
+    public static int XBP_CAMERA_HEIGHT = 960; // small for performance
+    public static int XBP_CAMERA_WIDTH_6x4 = 1080; // small for performance - print aspect ratio
+    public static int XBP_CAMERA_HEIGHT_6x4 = 720; // small for performance
 
     volatile int focusDistanceIndex = 0;  // default HYPERFOCAL
     //
@@ -100,8 +107,10 @@ public class Camera {
     static final String[] FOCUS_DISTANCE_NAMES = {"HYPERFOCAL FOCUS DISTANCE", "PHOTO BOOTH FOCUS DISTANCE", "MACRO FOCUS DISTANCE", "AUTO FOCUS"};
 
 
-    private int cameraWidth = CAMERA_WIDTH_AR_DEFAULT; // camera width lens pixels
-    private int cameraHeight = CAMERA_HEIGHT_AR_DEFAULT;// camera height lens pixels
+    private int cameraWidth = CAMERA_WIDTH_DEFAULT; // camera width lens pixels
+    private int cameraHeight = CAMERA_HEIGHT_DEFAULT;// camera height lens pixels
+    private int parallax;
+    private int verticalAlignment;
 
     // Display surfaces for preview
     private volatile SurfaceView mSurfaceView0;
@@ -152,14 +161,22 @@ public class Camera {
     private final AtomicBoolean isProcessingRight = new AtomicBoolean(false);
     private volatile Image imageLeft;
     private volatile Image imageRight;
-    volatile public PImage leftImage;
-    volatile public PImage rightImage;
+    private volatile Bitmap leftBitmap;
+    private volatile Bitmap rightBitmap;
+    public volatile PImage leftImage;
+    public volatile PImage rightImage;
+
+    public Parameters getParameters() {
+        return parameters;
+    }
 
     // Constructor
-    public Camera(Context context, Media media, PApplet pApplet) {
+    public Camera(Context context, Media media, Parameters parameters, PApplet pApplet) {
         this.context = context;
         this.media = media;
         this.pApplet = pApplet;
+        this.parameters = parameters;
+
         // Create camera manager
         mCameraManager = (CameraManager) context.getSystemService(Context.CAMERA_SERVICE);
 
@@ -194,6 +211,7 @@ public class Camera {
             Log.d(TAG, "set stereo cameras for " + deviceName);
 
         }
+
         // check system property for usb uvc webcam for discovery
         Log.d(TAG, "ro.usb.uvc.enabled=" + System.getProperty("ro.usb.uvc.enabled"));
         //System.setProperty("ro.usb.uvc.enabled", String.valueOf(true));
@@ -370,14 +388,16 @@ public class Camera {
 
     private void processPreviewFrames() {
         if (imageLeft != null && imageRight != null) {
-            YuvConverter.yuvToBitmap(imageLeft, (Bitmap) leftImage.getNative());
-            YuvConverter.yuvToBitmap(imageRight, (Bitmap) rightImage.getNative());
+            YuvConverter.yuvToBitmap(imageLeft, leftBitmap);
+            YuvConverter.yuvToBitmap(imageRight, rightBitmap);
             imageLeft.close();
             imageLeft = null;
             isProcessingLeft.set(false);
             imageRight.close();
             imageRight = null;
             isProcessingRight.set(false);
+            leftImage.setNative(leftBitmap);
+            rightImage.setNative(rightBitmap);
             leftImage.loadPixels();
             leftImage.updatePixels();
             rightImage.loadPixels();
@@ -386,12 +406,43 @@ public class Camera {
         }
     }
 
+    public void transformBitmap(
+            Bitmap sourceBitmap,
+            Bitmap destinationBitmap,
+            int p,
+            int v
+    ) {
+        // Calculate the width and height of the section to copy
+        int sectionWidth = sourceBitmap.getWidth() - abs(p);
+        int sectionHeight = sourceBitmap.getHeight() - abs(v);
+
+        // Ensure the destination bitmap has the correct dimensions
+        if (destinationBitmap.getWidth() != sectionWidth ||
+                destinationBitmap.getHeight() != sectionHeight) {
+            throw new IllegalArgumentException(
+                    "Destination bitmap dimensions must match the section dimensions."
+            );
+        }
+
+        // Create a canvas to draw onto the destination bitmap
+        Canvas canvas = new Canvas(destinationBitmap);
+
+        // Define the source rectangle (the section to copy)
+        Rect srcRect = new Rect(p, v, sourceBitmap.getWidth(), sourceBitmap.getHeight());
+
+        // Define the destination rectangle (where to place the section)
+        Rect dstRect = new Rect(0, 0, sectionWidth, sectionHeight);
+
+        // Draw the section from the source bitmap onto the destination bitmap
+        canvas.drawBitmap(sourceBitmap, srcRect, dstRect, null);
+    }
+
     public void openCamera() {
         Log.d(TAG, "openCamera() cameraWidth=" + cameraWidth + " cameraHeight=" + cameraHeight);
 
         // Setup ImageReaders for capture
-        cameraWidth = CAMERA_WIDTH_AR_DEFAULT; // camera width lens pixels
-        cameraHeight = CAMERA_HEIGHT_AR_DEFAULT;
+        cameraWidth = CAMERA_WIDTH_DEFAULT; // camera width lens pixels
+        cameraHeight = CAMERA_HEIGHT_DEFAULT;
         mImageReader0 = ImageReader.newInstance(cameraWidth, cameraHeight, ImageFormat.JPEG, 2);  // 2 maxImages
         mImageReader2 = ImageReader.newInstance(cameraWidth, cameraHeight, ImageFormat.JPEG, 2);  // 2 maxImages
 
@@ -399,6 +450,8 @@ public class Camera {
             // Create ImageReaders for YUV preview with buffer count
             cameraWidth = XBP_CAMERA_WIDTH;
             cameraHeight = XBP_CAMERA_HEIGHT;
+            //cameraWidth = XBP_CAMERA_WIDTH_6x4;
+            //cameraHeight = XBP_CAMERA_HEIGHT_6x4;
 
             imageReader0 = ImageReader.newInstance(cameraWidth, cameraHeight, ImageFormat.YUV_420_888, 4);
             imageReader0.setOnImageAvailableListener(imageAvailableListener, mImageReaderHandler0);
@@ -410,6 +463,8 @@ public class Camera {
             rightImage.setNative(Bitmap.createBitmap(cameraWidth, cameraHeight, Bitmap.Config.ARGB_8888));
 
         }
+        leftBitmap = Bitmap.createBitmap(cameraWidth, cameraHeight, Bitmap.Config.ARGB_8888);
+        rightBitmap = Bitmap.createBitmap(cameraWidth, cameraHeight, Bitmap.Config.ARGB_8888);
 
         if (ActivityCompat.checkSelfPermission(context, CAMERA) == PackageManager.PERMISSION_GRANTED) {
             try {
@@ -797,7 +852,7 @@ public class Camera {
         }
     }
 
-    public void dispose() {
+    public void disposePImage() {
         ((Bitmap) leftImage.getNative()).recycle();
         ((Bitmap) rightImage.getNative()).recycle();
         leftImage = null;

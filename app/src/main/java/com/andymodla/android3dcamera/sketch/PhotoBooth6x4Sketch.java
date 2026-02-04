@@ -2,9 +2,15 @@ package com.andymodla.android3dcamera.sketch;
 
 /**
  * The Photo Booth Processing sketch for the Graphic user interface
+ * Display set to 6x4 aspect ratio
  *
  */
 
+import static java.lang.Math.abs;
+
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Rect;
 import android.view.KeyEvent;
 
 import com.andymodla.android3dcamera.Camera;
@@ -19,7 +25,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
-public class PhotoBoothSketch extends PApplet {
+public class PhotoBooth6x4Sketch extends PApplet {
     private static boolean DEBUG = true;
     private static boolean testMode = false;
 
@@ -33,11 +39,11 @@ public class PhotoBoothSketch extends PApplet {
 
     int XBP_CAMERA_WIDTH = 1280;
     int XBP_CAMERA_HEIGHT = 960;
-    int XBP_DISPLAY_WIDTH = 2400;
-    int XBP_DISPLAY_HEIGHT = 1080;
 
     int cameraWidth = XBP_CAMERA_WIDTH;  // default
     int cameraHeight = XBP_CAMERA_HEIGHT;
+    int XBP_DISPLAY_WIDTH = 2400;
+    int XBP_DISPLAY_HEIGHT = 1080;
     int displayFPS = 60; // display frames per second
 
     // Parallax and vertical alignment adjustments in pixels for XBP
@@ -57,10 +63,25 @@ public class PhotoBoothSketch extends PApplet {
     int magnifyIndex = 0;
 
     float AR = 1.33333333f;  // aspect ratio for Xreal Beam Pro camera image sensor
+    float ARprint = 1.5f;
 
-    // Display frame inside full screen AR 4:3
-    int frameWidth = 2048;
-    int frameHeight = 1080;
+    // Input Photo dimension
+    int cameraImageWidth = Camera.CAMERA_WIDTH_DEFAULT;
+    int cameraImageHeight = Camera.CAMERA_HEIGHT_DEFAULT;
+
+    // Output Photo dimensions
+    int photoWidth = 3600;
+    int photoHeight = 2400;
+
+//    // Display frame inside full screen AR 4:3
+//    int frameX = 176;  // 2400 pixel screen minus frameWidth/2
+//    int frameY = 0;
+//    int frameWidth = 2048;
+//    int frameHeight = 1080;
+
+    // Display frame inside full screen AR 6:4
+    int frameWidth = 2160;
+    int frameHeight = 720;
     int frameX = (XBP_DISPLAY_WIDTH-frameWidth) / 2;  // 2400 pixel screen minus frameWidth/2
     int frameY = (XBP_DISPLAY_HEIGHT-frameHeight) / 2;
 
@@ -71,7 +92,7 @@ public class PhotoBoothSketch extends PApplet {
     }
 
     public void setup() {
-        if (DEBUG) PApplet.println("PhotoBoothSketch setup");
+        if (DEBUG) PApplet.println("PhotoBooth6x4Sketch setup");
         orientation(LANDSCAPE);
         background(black);
         smooth();
@@ -158,11 +179,11 @@ public class PhotoBoothSketch extends PApplet {
 
     public void drawSBS(PImage imgLeft, PImage imgRight) {
 
-//        PGL pgl;  // Processing Open GL library
-//        pgl = beginPGL();
-//        pgl.viewport(0, 0, width, height);
-//        pgl.colorMask(true, true, true, true);
-//        endPGL();
+        PGL pgl;  // Processing Open GL library
+        pgl = beginPGL();
+        pgl.viewport(0, 0, width, height);
+        pgl.colorMask(true, true, true, true);
+        endPGL();
 
         if (mirror) {
             pushMatrix();
@@ -314,6 +335,53 @@ public class PhotoBoothSketch extends PApplet {
             rect(frameX + 3 * frameWidth / 4 - s / 2, 0, s, frameHeight);
         }
     }
+
+    private Bitmap copyBitmap(Bitmap sourceBitmap) {
+        // Calculate the width and height of the section to copy
+        int sectionWidth = sourceBitmap.getWidth() - abs(parallax);
+        int sectionHeight = sourceBitmap.getHeight() - abs(verticalAlignment);
+
+        return Bitmap.createBitmap(
+                sourceBitmap,
+                parallax, verticalAlignment,  // Start x, y
+                sectionWidth, sectionHeight,  // Width, height
+                null,  // Optional: Paint object (null for default)
+                false  // Don't filter (for pixel-perfect copying)
+        );
+
+    }
+
+    private void transformBitmap(
+            Bitmap sourceBitmap,
+            Bitmap destinationBitmap,
+            int p,
+            int v
+    ) {
+        // Calculate the width and height of the section to copy
+        int sectionWidth = sourceBitmap.getWidth() - abs(p);
+        int sectionHeight = sourceBitmap.getHeight() - abs(v);
+
+        // Ensure the destination bitmap has the correct dimensions
+        if (destinationBitmap.getWidth() != sectionWidth ||
+                destinationBitmap.getHeight() != sectionHeight) {
+            throw new IllegalArgumentException(
+                    "Destination bitmap dimensions must match the section dimensions."
+            );
+        }
+
+        // Create a canvas to draw onto the destination bitmap
+        Canvas canvas = new Canvas(destinationBitmap);
+
+        // Define the source rectangle (the section to copy)
+        Rect srcRect = new Rect(p, v, sourceBitmap.getWidth(), sourceBitmap.getHeight());
+
+        // Define the destination rectangle (where to place the section)
+        Rect dstRect = new Rect(0, 0, sectionWidth, sectionHeight);
+
+        // Draw the section from the source bitmap onto the destination bitmap
+        canvas.drawBitmap(sourceBitmap, srcRect, dstRect, null);
+    }
+
 
     // debug keys
     public void keyPressed() {

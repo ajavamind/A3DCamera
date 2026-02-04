@@ -53,7 +53,6 @@ public class MainActivity extends AppCompatActivity {
 
     private static final int MY_CAMERA_REQUEST_CODE = 100;
     private static final String PREFS_NAME = "Parameters";
-    private Parameters parameters;
 
     volatile boolean allPermissionsGranted = false;
 
@@ -73,6 +72,7 @@ public class MainActivity extends AppCompatActivity {
     private AIvision aiVision;  // local network small multimodal vision AI model server (Google Gemma 3 8B 4_K_M GGUF)
     private Media media;
     private Camera camera;
+    private Parameters parameters;
 
     private boolean aiVisionEnabled = false;
 
@@ -223,7 +223,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         checkPermissions();
-        camera = new Camera(this, media, photoBoothSketch);
+        camera = new Camera(this, media, parameters, photoBoothSketch);
 
         // countdownTextView will be null for photo booth
         // because photo booth uses sketch graphics
@@ -274,7 +274,7 @@ public class MainActivity extends AppCompatActivity {
                 camera.init(isPhotobooth);
                 camera.openCamera();
                 if (photoBoothSketch != null) {
-                    photoBoothSketch.setCamera(camera, parameters);
+                    photoBoothSketch.setCamera(camera);
                 }
             }
         });
