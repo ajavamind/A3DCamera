@@ -31,6 +31,7 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
+import com.andymodla.android3dcamera.sketch.PhotoBooth6x4Sketch;
 import com.andymodla.android3dcamera.sketch.PhotoBoothSketch;
 
 import java.util.Timer;

@@ -33,11 +33,12 @@ public class PhotoBoothSketch extends PApplet {
 
     int XBP_CAMERA_WIDTH = 1280;
     int XBP_CAMERA_HEIGHT = 960;
-    int XBP_DISPLAY_WIDTH = 2400;
-    int XBP_DISPLAY_HEIGHT = 1080;
 
     int cameraWidth = XBP_CAMERA_WIDTH;  // default
     int cameraHeight = XBP_CAMERA_HEIGHT;
+    int XBP_DISPLAY_WIDTH = 2400;
+    int XBP_DISPLAY_HEIGHT = 1080;
+
     int displayFPS = 60; // display frames per second
 
     // Parallax and vertical alignment adjustments in pixels for XBP
@@ -81,6 +82,7 @@ public class PhotoBoothSketch extends PApplet {
         textAlign(CENTER, CENTER);
         text("3D Photo Booth", (float) width / 2, (float) height / 2);
         if (DEBUG) PApplet.println("StereoCamera setup done");
+        update();
     }
 
     public void setCamera(Camera camera) {
@@ -151,12 +153,12 @@ public class PhotoBoothSketch extends PApplet {
                 text("parallax = " + (parallax) + " mirror = " + mirror + " zoom = " + zoom, 50, height - 96);
                 text("vertical = " + (verticalAlignment) +" magnify = " + magnifyScale[magnifyIndex], 50, height - 48);
             }
-
         }
-
     }
 
     public void drawSBS(PImage imgLeft, PImage imgRight) {
+        float offsetX = 0;
+        float offsetY = 0;
 
 //        PGL pgl;  // Processing Open GL library
 //        pgl = beginPGL();
@@ -191,7 +193,6 @@ public class PhotoBoothSketch extends PApplet {
         float offsetX = 0;
         float offsetY = 0;
         float anaglyphX = 0;
-        float anaglyphXM = 0;
         float anaglyphW = 0;
 
         PGL pgl;  // Processing Open GL library
@@ -207,9 +208,9 @@ public class PhotoBoothSketch extends PApplet {
                 offsetX = (width * (1 - 1 / magnifyScale[magnifyIndex])) / 2;
                 offsetY = (height * (1 - 1 / magnifyScale[magnifyIndex])) / 2;
             }
-            anaglyphXM = ((float) -width + 2 * offsetX - (float) height * AR) / 2;
+            anaglyphX = ((float) -width + 2 * offsetX - (float) height * AR) / 2;
             anaglyphW = (float) height * AR;
-            image(imgRight, anaglyphXM, -offsetY, anaglyphW, height);
+            image(imgRight, anaglyphX, -offsetY, anaglyphW, height);
         } else {
             translate(-(float)parallax / 2, -(float)verticalAlignment / 2);
             if (zoom) {
@@ -239,8 +240,8 @@ public class PhotoBoothSketch extends PApplet {
                 offsetY = (height * (1 - 1 / magnifyScale[magnifyIndex])) / 2;
             }
             anaglyphW = (float) height * AR;
-            anaglyphXM = ((float) -width + 2 * offsetX - anaglyphW) / 2;
-            image(imgLeft, anaglyphXM, -offsetY, anaglyphW, height);
+            anaglyphX = ((float) -width + 2 * offsetX - anaglyphW) / 2;
+            image(imgLeft, anaglyphX, -offsetY, anaglyphW, height);
         } else {
             translate((float)parallax / 2, (float)verticalAlignment / 2);
             if (zoom) {
@@ -262,29 +263,10 @@ public class PhotoBoothSketch extends PApplet {
         pgl.viewport(0, 0, width, height);
         endPGL();
 
-//        // cover anaglyph alignment edges
-//        fill(black);
-//        if (verticalAlignment != 0) {
-//            rect(0, 0, width, abs(verticalAlignment));  // top of image
-//            rect(0, height - abs(verticalAlignment), width, abs(verticalAlignment));  // bottom of image
-//        }
-//        if (testMode) {
-//            fill(yellow);
-//            if (parallax != 0) {
-//                if (mirror) {
-//                    rect(fillX - offsetX, 0, abs(parallax), height); // left side
-//                    rect(fillX - offsetX + anaglyphW - abs(parallax), 0, abs(parallax), height); // right side
-//
-//                } else {
-//                    rect(fillX - offsetX, 0, abs(parallax), height); // left side
-//                    rect(fillX + -offsetX + anaglyphW - abs(parallax), 0, abs(parallax), height); // right side
-//                }
-//            }
-//        }
         drawGrid(true);
     }
 
-    //    void drawGridLine(boolean full) {
+//    void drawGridLine(boolean full) {
 //        strokeWeight(2);
 //        if (full) {
 //            line(0, height / 2, width, height / 2);
@@ -371,18 +353,9 @@ public class PhotoBoothSketch extends PApplet {
                 setParallax(parallax + 4);
                 if (DEBUG) println("parallax = " + parallax);
                 break;
-
-//            case KeyEvent.:
-//                setVerticalAlignment(verticalAlignment + 1);
-//                break;
             default:
                 break;
         }
-
-
-
-
-
     }
 }
 
