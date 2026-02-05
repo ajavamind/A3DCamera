@@ -30,6 +30,8 @@ public class PhotoBoothSketch extends PApplet {
 
     Camera camStereo;  // The stereo camera used with the device
     Parameters parameters; // Application parameters
+    PImage imgLeft;
+    PImage imgRight;
 
     int XBP_CAMERA_WIDTH = 1280;
     int XBP_CAMERA_HEIGHT = 960;
@@ -50,6 +52,7 @@ public class PhotoBoothSketch extends PApplet {
     volatile boolean update = true;
     volatile boolean zoom = true;
     volatile boolean blankScreen = false;
+    String countdown = "";  // default ignore null string
     volatile int lastKeyCode;
     volatile int lastKey;
 
@@ -125,6 +128,27 @@ public class PhotoBoothSketch extends PApplet {
         update = true;
     }
 
+    public void setCountdown(String countdown) {
+        this.countdown = countdown;
+        update = true;
+    }
+
+    void showCountdown(boolean sbs) {
+        if (countdown.isEmpty()) {
+            return;
+        }
+        textSize(288);
+        fill(yellow);
+        textAlign(CENTER, CENTER);
+
+        if (sbs) {
+            text(countdown, frameX +frameWidth / 4 , height / 2 );
+            text(countdown, frameX +3*frameWidth / 4 -40, height / 2 );
+        } else {
+            text(countdown, width / 2, height / 2);
+        }
+    }
+
     public void draw() {
         if (update) {
             background(black);  // clear screen for draw update
@@ -133,27 +157,32 @@ public class PhotoBoothSketch extends PApplet {
         if (blankScreen) {
             return;
         }
-
-        if (camStereo != null && camStereo.available) {
+        if (camStereo == null) {
+            return;
+        }
+        if (camStereo.available) {
             camStereo.available = false;
-            PImage imgLeft = camStereo.leftImage;
-            PImage imgRight = camStereo.rightImage;
-            if (imgLeft != null && imgRight != null) {
-                if (anaglyph) {
+            imgLeft = camStereo.leftImage;
+            imgRight = camStereo.rightImage;
+        }
+        if (imgLeft != null && imgRight != null) {
+            if (anaglyph) {
                     drawAnaglyph(imgLeft, imgRight);
-                } else {
+                    showCountdown(false);
+            } else {
                     drawSBS(imgLeft, imgRight);
-                }
-            }
-
-            if (DEBUG && testMode) {
-                textSize(48);
-                fill(yellow);
-                textAlign(LEFT);
-                text("parallax = " + (parallax) + " mirror = " + mirror + " zoom = " + zoom, 50, height - 96);
-                text("vertical = " + (verticalAlignment) +" magnify = " + magnifyScale[magnifyIndex], 50, height - 48);
+                    showCountdown(true);
             }
         }
+
+        if (DEBUG && testMode) {
+            textSize(48);
+            fill(yellow);
+            textAlign(LEFT);
+            text("parallax = " + (parallax) + " mirror = " + mirror + " zoom = " + zoom, 50, height - 96);
+            text("vertical = " + (verticalAlignment) +" magnify = " + magnifyScale[magnifyIndex], 50, height - 48);
+        }
+
     }
 
     public void drawSBS(PImage imgLeft, PImage imgRight) {

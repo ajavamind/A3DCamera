@@ -728,7 +728,6 @@ public class MainActivity extends AppCompatActivity {
                 if ((countdownDigit < 0)) {
                     startCountdownSequence(countdownStart);  // calls createCameraCaptureSession() after count down finished
                     continuousCounter = CONTINUOUS_COUNT_PHOTO_BOOTH;
-                    //createCameraCaptureSession();
                 } else {
                     continuousCounter = CONTINUOUS_COUNT;
                     camera.createCameraCaptureSession();
@@ -762,15 +761,18 @@ public class MainActivity extends AppCompatActivity {
         if (isPhotobooth) {
             if (startCount == 0) {
                 camera.createCameraCaptureSession(); // take a picture
+                return;
             }
-            return;
         }
         if (countdownTimer == null) {
             countdownTimer = new Timer();
             countdownDigit = startCount + 1;
-            countdownTextView.setText(Integer.toString(countdownDigit));
-            countdownTextView.setVisibility(View.VISIBLE);
-
+            if (isPhotobooth) {
+                photoBoothSketch.setCountdown(Integer.toString(countdownDigit));
+            } else {
+                countdownTextView.setText(Integer.toString(countdownDigit));
+                countdownTextView.setVisibility(View.VISIBLE);
+            }
             // define a task to decrement the countdown digit every second
             TimerTask task = new TimerTask() {
                 public void run() {
@@ -781,9 +783,13 @@ public class MainActivity extends AppCompatActivity {
                         countdownTimer = null;
                         MainActivity.this.runOnUiThread(new Runnable() {
                             public void run() {
-                                countdownTextView.setText("");
-                                countdownTextView.setVisibility(View.GONE);
                                 // hide digit display
+                                if (isPhotobooth) {
+                                    photoBoothSketch.setCountdown("");
+                                } else {
+                                    countdownTextView.setText("");
+                                    countdownTextView.setVisibility(View.GONE);
+                                }
                                 camera.createCameraCaptureSession(); // take a picture
                             }
                         });
@@ -791,11 +797,19 @@ public class MainActivity extends AppCompatActivity {
                         MainActivity.this.runOnUiThread(new Runnable() {
                             public void run() {
                                 if (countdownDigit == 0) {
-                                    countdownTextView.setText("");
-                                    countdownTextView.setVisibility(View.GONE);
+                                    if (isPhotobooth) {
+                                        photoBoothSketch.setCountdown("");
+                                    } else {
+                                        countdownTextView.setText("");
+                                        countdownTextView.setVisibility(View.GONE);
+                                    }
                                 } else {
-                                    countdownTextView.setText(Integer.toString(countdownDigit));
-                                    countdownTextView.setVisibility(View.VISIBLE);
+                                    if (isPhotobooth) {
+                                        photoBoothSketch.setCountdown(Integer.toString(countdownDigit));
+                                    } else {
+                                        countdownTextView.setText(Integer.toString(countdownDigit));
+                                        countdownTextView.setVisibility(View.VISIBLE);
+                                    }
                                 }
                             }
                         });
