@@ -49,7 +49,7 @@ public class PhotoBoothSketch extends PApplet {
     public volatile boolean mirror = false;
     public volatile int brightness = -6;
     volatile boolean anaglyph = false;
-    volatile boolean update = true;
+    volatile boolean update = false;
     volatile boolean zoom = true;
     volatile boolean blankScreen = false;
     String countdown = "";  // default ignore null string
@@ -81,11 +81,13 @@ public class PhotoBoothSketch extends PApplet {
         smooth();
         frameRate(displayFPS);
 
-        textSize(96);
+        textSize(72);
         textAlign(CENTER, CENTER);
-        text("3D Photo Booth", (float) width / 2, (float) height / 2);
+        fill(gray);
+        text("3D Photo Booth", (float) width / 4, (float) height / 2);
+        text("3D Photo Booth", (float) 3*width / 4 , (float) height / 2);
         if (DEBUG) PApplet.println("StereoCamera setup done");
-        update();
+
     }
 
     public void setCamera(Camera camera) {

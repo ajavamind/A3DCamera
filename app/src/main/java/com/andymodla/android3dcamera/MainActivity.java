@@ -604,12 +604,9 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             case ANAGLYPH_KEY:
             case ANAGLYPH_KB_KEY:
-//                closeCamera();
-//                if (!isAnaglyphMode) isAnaglyphMode = true;
-//                else isAnaglyphMode = false;
-//                if (isAnaglyphMode) Toast.makeText(this, "Anaglyph", Toast.LENGTH_SHORT).show();
-//                else Toast.makeText(this, "SBS", Toast.LENGTH_SHORT).show();
-//                openCamera();
+                if (isPhotobooth) {
+                    photoBoothSketch.toggleAnaglyph();
+                }
                 return true;
             case MODE_KEY:
             case MODE_KB_KEY:
