@@ -15,6 +15,8 @@ import processing.core.PImage;
 import processing.event.MouseEvent;
 import processing.opengl.PGL;
 import android.view.KeyEvent;
+
+import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
@@ -32,6 +34,8 @@ public class PhotoBooth extends PApplet {
     Parameters parameters; // Application parameters
     PImage imgLeft;
     PImage imgRight;
+    PImage splashLeft;
+    PImage splashRight;
 
     int XBP_CAMERA_WIDTH = 1280;
     int XBP_CAMERA_HEIGHT = 960;
@@ -81,11 +85,20 @@ public class PhotoBooth extends PApplet {
         smooth();
         frameRate(displayFPS);
 
+        splashLeft = loadImage("FlowerPot_l.JPG");
+        splashRight = loadImage("FlowerPot_r.JPG");
+        if(DEBUG) println("splashLeft width=" + splashLeft.width + " height=" + splashLeft.height);
+        if(DEBUG) println("splashRight width=" + splashRight.width + " height=" + splashRight.height);
+        float ar = (float) splashLeft.width / (float) splashLeft.height;
+
+        image(splashLeft, frameX, 180, frameWidth/2-parallax, (frameWidth/2-parallax)/ar);
+        image(splashRight, frameX + frameWidth/2+parallax, 180, frameWidth/2-parallax, (frameWidth/2-parallax)/ar);
+
         textSize(72);
         textAlign(CENTER, CENTER);
-        fill(gray);
-        text("3D Photo Booth", (float) width / 4, (float) height / 2);
-        text("3D Photo Booth", (float) 3*width / 4 , (float) height / 2);
+        fill(yellow);
+        text("3D Photo Booth", (float) width / 4, (float) height -200);
+        text("3D Photo Booth", (float) 3*width / 4 , (float) height -200);
         if (DEBUG) PApplet.println("StereoCamera setup done");
 
     }
