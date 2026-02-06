@@ -31,8 +31,9 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
-import com.andymodla.android3dcamera.sketch.PhotoBooth6x4Sketch;
-import com.andymodla.android3dcamera.sketch.PhotoBoothSketch;
+import com.andymodla.android3dcamera.camera.Camera3D;
+import com.andymodla.android3dcamera.sketch.PhotoBooth6x4;
+import com.andymodla.android3dcamera.sketch.PhotoBooth;
 
 import java.util.Timer;
 import java.util.TimerTask;
@@ -62,9 +63,11 @@ public class MainActivity extends AppCompatActivity {
     final String[] ASPECT_RATIO_NAMES = {"DEFAULT", "4:3", "16:9", "1:1"};
 
     // Maximum camera sensor image dimensions
-    //private int cameraWidth = 1024;//1440;
-    //private int cameraHeight = 768;//1080;
+    //private int cameraWidth = 1024;
+    //private int cameraHeight = 768;
     //private int cameraWidth = 1920;
+    //private int cameraHeight = 1080;
+    //private int cameraWidth = 1440;
     //private int cameraHeight = 1080;
     //private int cameraWidth = 4080;  // results in 1920x1440 images
     //private int cameraHeight = 3060; // results in 1920x1440 images
@@ -72,7 +75,7 @@ public class MainActivity extends AppCompatActivity {
 
     private AIvision aiVision;  // local network small multimodal vision AI model server (Google Gemma 3 8B 4_K_M GGUF)
     private Media media;
-    private Camera camera;
+    private Camera3D camera;
     private Parameters parameters;
 
     private boolean aiVisionEnabled = false;
@@ -94,7 +97,7 @@ public class MainActivity extends AppCompatActivity {
     private boolean isPhotobooth = true;  // work in progress
     private boolean isPhotoboothReview = false;
 
-    private PhotoBoothSketch photoBoothSketch;  // photo booth sketch
+    private PhotoBooth photoBooth;  // photo booth sketch
     PFragment photoBoothFragment;  // processing library photo booth fragment
     View decorView; // screen window view for camera app
 
@@ -215,8 +218,8 @@ public class MainActivity extends AppCompatActivity {
             setContentView(frame, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.MATCH_PARENT));
 
-            photoBoothSketch = new PhotoBoothSketch();
-            photoBoothFragment = new PFragment(photoBoothSketch);
+            photoBooth = new PhotoBooth();
+            photoBoothFragment = new PFragment(photoBooth);
             photoBoothFragment.setView(frame, this);
 
         } else {
@@ -224,7 +227,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         checkPermissions();
-        camera = new Camera(this, media, parameters, photoBoothSketch);
+        camera = new Camera3D(this, media, parameters, photoBooth);
 
         // countdownTextView will be null for photo booth
         // because photo booth uses sketch graphics
@@ -274,8 +277,8 @@ public class MainActivity extends AppCompatActivity {
             public void run() {
                 camera.init(isPhotobooth);
                 camera.openCamera();
-                if (photoBoothSketch != null) {
-                    photoBoothSketch.setCamera(camera);
+                if (photoBooth != null) {
+                    photoBooth.setCamera(camera);
                 }
             }
         });
@@ -415,7 +418,7 @@ public class MainActivity extends AppCompatActivity {
             // Right mouse button pressed
             Log.d(TAG, "Right button pressed");
             if (isPhotobooth) {
-                photoBoothSketch.toggleAnaglyph();
+                photoBooth.toggleAnaglyph();
             } else {
                 media.printImageType();
             }
@@ -431,10 +434,10 @@ public class MainActivity extends AppCompatActivity {
         // Handle mouse wheel events
         if (delta > 0) {
             // Scrolled Up (away from user)
-            photoBoothSketch.processKeyCode(KeyEvent.KEYCODE_RIGHT_BRACKET, 0);
+            photoBooth.processKeyCode(KeyEvent.KEYCODE_RIGHT_BRACKET, 0);
         } else if (delta < 0) {
             // Scrolled Down (toward user)
-            photoBoothSketch.processKeyCode(KeyEvent.KEYCODE_LEFT_BRACKET, 0);
+            photoBooth.processKeyCode(KeyEvent.KEYCODE_LEFT_BRACKET, 0);
         }
     }
 
@@ -605,7 +608,7 @@ public class MainActivity extends AppCompatActivity {
             case ANAGLYPH_KEY:
             case ANAGLYPH_KB_KEY:
                 if (isPhotobooth) {
-                    photoBoothSketch.toggleAnaglyph();
+                    photoBooth.toggleAnaglyph();
                 }
                 return true;
             case MODE_KEY:
@@ -765,7 +768,7 @@ public class MainActivity extends AppCompatActivity {
             countdownTimer = new Timer();
             countdownDigit = startCount + 1;
             if (isPhotobooth) {
-                photoBoothSketch.setCountdown(Integer.toString(countdownDigit));
+                photoBooth.setCountdown(Integer.toString(countdownDigit));
             } else {
                 countdownTextView.setText(Integer.toString(countdownDigit));
                 countdownTextView.setVisibility(View.VISIBLE);
@@ -782,7 +785,7 @@ public class MainActivity extends AppCompatActivity {
                             public void run() {
                                 // hide digit display
                                 if (isPhotobooth) {
-                                    photoBoothSketch.setCountdown("");
+                                    photoBooth.setCountdown("");
                                 } else {
                                     countdownTextView.setText("");
                                     countdownTextView.setVisibility(View.GONE);
@@ -795,14 +798,14 @@ public class MainActivity extends AppCompatActivity {
                             public void run() {
                                 if (countdownDigit == 0) {
                                     if (isPhotobooth) {
-                                        photoBoothSketch.setCountdown("");
+                                        photoBooth.setCountdown("");
                                     } else {
                                         countdownTextView.setText("");
                                         countdownTextView.setVisibility(View.GONE);
                                     }
                                 } else {
                                     if (isPhotobooth) {
-                                        photoBoothSketch.setCountdown(Integer.toString(countdownDigit));
+                                        photoBooth.setCountdown(Integer.toString(countdownDigit));
                                     } else {
                                         countdownTextView.setText(Integer.toString(countdownDigit));
                                         countdownTextView.setVisibility(View.VISIBLE);

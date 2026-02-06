@@ -1,4 +1,4 @@
-package com.andymodla.android3dcamera;
+package com.andymodla.android3dcamera.camera;
 
 import static android.Manifest.permission.CAMERA;
 
@@ -41,6 +41,11 @@ import androidx.annotation.NonNull;
 import androidx.camera.core.CameraInfo;
 import androidx.core.app.ActivityCompat;
 
+import com.andymodla.android3dcamera.MainActivity;
+import com.andymodla.android3dcamera.R;  // kludge fix this
+import com.andymodla.android3dcamera.Media;
+import com.andymodla.android3dcamera.Parameters;
+
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -52,7 +57,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import processing.core.PApplet;
 import processing.core.PImage;
 
-public class Camera {
+public class Camera3D {
     public static final String TAG = "A3DCamera";
     Context context;
     Media media;
@@ -173,7 +178,7 @@ public class Camera {
     }
 
     // Constructor
-    public Camera(Context context, Media media, Parameters parameters, PApplet pApplet) {
+    public Camera3D(Context context, Media media, Parameters parameters, PApplet pApplet) {
         this.context = context;
         this.media = media;
         this.pApplet = pApplet;
@@ -230,8 +235,8 @@ public class Camera {
         } else {
             Log.d(TAG, "setupSurfaces()");
             // set up display surfaces
-            mSurfaceView0 = ((MainActivity) context).findViewById(R.id.surfaceView);
-            mSurfaceView2 = ((MainActivity) context).findViewById(R.id.surfaceView2);
+            mSurfaceView0 = ((MainActivity)context).findViewById(R.id.surfaceView);
+            mSurfaceView2 = ((MainActivity)context).findViewById(R.id.surfaceView2);
 
             mSurfaceHolder0 = mSurfaceView0.getHolder();
             mSurfaceHolder2 = mSurfaceView2.getHolder();

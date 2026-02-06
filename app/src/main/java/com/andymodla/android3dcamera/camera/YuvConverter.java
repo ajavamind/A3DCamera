@@ -1,4 +1,4 @@
-package com.andymodla.android3dcamera;
+package com.andymodla.android3dcamera.camera;
 
 import android.graphics.Bitmap;
 import android.media.Image;

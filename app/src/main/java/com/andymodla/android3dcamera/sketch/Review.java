@@ -1,7 +1,7 @@
 package com.andymodla.android3dcamera.sketch;
 
 import android.view.KeyEvent;
-import com.andymodla.android3dcamera.Camera;
+import com.andymodla.android3dcamera.camera.Camera;
 import com.andymodla.android3dcamera.Parameters;
 
 import processing.core.PApplet;
@@ -17,7 +17,7 @@ import java.util.Locale;
  * Review Photos by type and date.
  * Print selected photo.
  */
-public class ReviewSketch extends PApplet{
+public class Review extends PApplet{
 
     public void settings() {
 

@@ -7,7 +7,7 @@ package com.andymodla.android3dcamera.sketch;
 
 import android.view.KeyEvent;
 
-import com.andymodla.android3dcamera.Camera;
+import com.andymodla.android3dcamera.camera.Camera3D;
 import com.andymodla.android3dcamera.Parameters;
 
 import processing.core.PApplet;
@@ -19,7 +19,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
-public class PhotoBoothSketch extends PApplet {
+public class PhotoBooth extends PApplet {
     private static boolean DEBUG = true;
     private static boolean testMode = false;
 
@@ -28,7 +28,7 @@ public class PhotoBoothSketch extends PApplet {
     int white = color(255);
     int gray = color(128);
 
-    Camera camStereo;  // The stereo camera used with the device
+    Camera3D camStereo;  // The stereo camera used with the device
     Parameters parameters; // Application parameters
     PImage imgLeft;
     PImage imgRight;
@@ -90,7 +90,7 @@ public class PhotoBoothSketch extends PApplet {
 
     }
 
-    public void setCamera(Camera camera) {
+    public void setCamera(Camera3D camera) {
         camStereo = camera;
         this.parameters = camera.getParameters();
     }
@@ -188,39 +188,6 @@ public class PhotoBoothSketch extends PApplet {
 
     }
 
-    public void drawSBSOriginal(PImage imgLeft, PImage imgRight) {
-        float offsetX = 0;
-        float offsetY = 0;
-
-//        PGL pgl;  // Processing Open GL library
-//        pgl = beginPGL();
-//        pgl.viewport(0, 0, width, height);
-//        pgl.colorMask(true, true, true, true);
-//        endPGL();
-
-        if (mirror) {
-            pushMatrix();
-            translate(frameX + (float) frameWidth / 4, frameY);
-            scale(-1, 1); // Mirror horizontally
-            image(imgLeft, (float) -frameWidth / 4, 180,
-                    (float) frameWidth / 2, ((float) frameWidth / 2) / AR); // Draw at adjusted position
-            popMatrix();
-
-            pushMatrix();
-            translate(frameX + (float) frameWidth / 4, 0);
-            scale(-1, 1); // Mirror horizontally
-            image(imgRight, -(float) frameWidth / 2 - (float) frameWidth / 4, frameY + 180,
-                    (float) frameWidth / 2, ((float) frameWidth / 2) / AR); // Draw at adjusted position
-            popMatrix();
-        } else {
-            pushMatrix();
-            image(imgLeft, frameX, frameY + 180, (float) frameWidth / 2, ((float) frameWidth / 2) / AR);
-            image(imgRight, (float) frameX + (float)frameWidth / 2, frameY + 180, (float) frameWidth / 2, ((float) frameWidth / 2) / AR);
-            popMatrix();
-        }
-        drawGrid(false);
-    }
-
     public void drawSBS(PImage imgLeft, PImage imgRight) {
         float offsetX = 0;
         float offsetY = 0;
@@ -283,82 +250,6 @@ public class PhotoBoothSketch extends PApplet {
         drawGrid(false);
     }
 
-    public void drawAnaglyphoriginal(PImage imgLeft, PImage imgRight) {
-        float offsetX = 0;
-        float offsetY = 0;
-        float anaglyphX = 0;
-        float anaglyphW = 0;
-
-        PGL pgl;  // Processing Open GL library
-        pgl = beginPGL();
-        pgl.viewport(0, 0, width, height);
-        pgl.colorMask(true, false, false, true);  // Red channel only
-        pushMatrix();
-        if (mirror) {
-            translate(-(float)parallax / 2, -(float)verticalAlignment / 2);
-            scale(-1, 1); // Mirror - flip horizontally
-            if (zoom) {
-                scale(magnifyScale[magnifyIndex], magnifyScale[magnifyIndex]);
-                offsetX = (width * (1 - 1 / magnifyScale[magnifyIndex])) / 2;
-                offsetY = (height * (1 - 1 / magnifyScale[magnifyIndex])) / 2;
-            }
-            anaglyphX = ((float) -width + 2 * offsetX - (float) height * AR) / 2;
-            anaglyphW = (float) height * AR;
-            image(imgRight, anaglyphX, -offsetY, anaglyphW, height);
-        } else {
-            translate(-(float)parallax / 2, -(float)verticalAlignment / 2);
-            if (zoom) {
-                scale(magnifyScale[magnifyIndex], magnifyScale[magnifyIndex]);
-                offsetX = (width * (1 - 1 / magnifyScale[magnifyIndex])) / 2;
-                offsetY = (height * (1 - 1 / magnifyScale[magnifyIndex])) / 2;
-            }
-            anaglyphW = (float) height * AR;
-            anaglyphX = ((float) width - 2 * offsetX - anaglyphW) / 2;
-            image(imgLeft, anaglyphX, -offsetY, anaglyphW, height);
-        }
-        popMatrix();
-        endPGL();
-        offsetX = 0;
-        offsetY = 0;
-
-        pgl = beginPGL();
-        pgl.colorMask(false, true, true, true);  // Blue and Green channels only
-        pgl.viewport(0, 0, width, height);
-        pushMatrix();
-        if (mirror) {
-            translate((float)parallax / 2, (float)verticalAlignment / 2);
-            scale(-1, 1); // Mirror - flip horizontally
-            if (zoom) {
-                scale(magnifyScale[magnifyIndex], magnifyScale[magnifyIndex]);
-                offsetX = (width * (1 - 1 / magnifyScale[magnifyIndex])) / 2;
-                offsetY = (height * (1 - 1 / magnifyScale[magnifyIndex])) / 2;
-            }
-            anaglyphW = (float) height * AR;
-            anaglyphX = ((float) -width + 2 * offsetX - anaglyphW) / 2;
-            image(imgLeft, anaglyphX, -offsetY, anaglyphW, height);
-        } else {
-            translate((float)parallax / 2, (float)verticalAlignment / 2);
-            if (zoom) {
-                scale(magnifyScale[magnifyIndex], magnifyScale[magnifyIndex]);
-                offsetX = (width * (1 - 1 / magnifyScale[magnifyIndex])) / 2;
-                offsetY = (height * (1 - 1 / magnifyScale[magnifyIndex])) / 2;
-            }
-            anaglyphW = (float) height * AR;
-            anaglyphX = ((float) width - 2 * offsetX - anaglyphW) / 2;
-            image(imgRight, anaglyphX, -offsetY, anaglyphW, height);
-        }
-        popMatrix();
-        endPGL();
-
-        // for drawing over anaglyph image
-        // change colorMask back before filling with rectangles on edges
-        pgl = beginPGL();
-        pgl.colorMask(true, true, true, true);  // Restore color channels
-        pgl.viewport(0, 0, width, height);
-        endPGL();
-
-        drawGrid(true);
-    }
     public void drawAnaglyph(PImage imgLeft, PImage imgRight) {
         float offsetX = 0;
         float offsetY = 0;
@@ -443,18 +334,6 @@ public class PhotoBoothSketch extends PApplet {
         drawGrid(true);
     }
 
-//    void drawGridLine(boolean full) {
-//        strokeWeight(2);
-//        if (full) {
-//            line(0, height / 2, width, height / 2);
-//            line(width / 2, 0, width / 2, height);
-//        } else {
-//            line(0, frameHeight / 2, width, frameHeight / 2);
-//            line(frameX + frameWidth / 4, 0, frameX + frameWidth / 4, frameHeight);
-//            line(frameX + 3 * frameWidth / 4, 0, frameX + 3 * frameWidth / 4, frameHeight);
-//        }
-//    }
-
     void drawGrid(boolean full) {
         if (!testMode) return;
         fill(yellow);
@@ -532,5 +411,20 @@ public class PhotoBoothSketch extends PApplet {
                 break;
         }
     }
+
+// // For reference not used
+//    void drawGridLine(boolean full) {
+//        strokeWeight(2);
+//        if (full) {
+//            line(0, height / 2, width, height / 2);
+//            line(width / 2, 0, width / 2, height);
+//        } else {
+//            line(0, frameHeight / 2, width, frameHeight / 2);
+//            line(frameX + frameWidth / 4, 0, frameX + frameWidth / 4, frameHeight);
+//            line(frameX + 3 * frameWidth / 4, 0, frameX + 3 * frameWidth / 4, frameHeight);
+//        }
+//    }
+
+
 }
 
