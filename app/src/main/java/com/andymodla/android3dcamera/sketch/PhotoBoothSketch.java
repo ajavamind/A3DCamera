@@ -166,6 +166,7 @@ public class PhotoBoothSketch extends PApplet {
             camStereo.available = false;
             imgLeft = camStereo.leftImage;
             imgRight = camStereo.rightImage;
+            AR = (float) imgLeft.width / (float) imgLeft.height;
         }
         if (imgLeft != null && imgRight != null) {
             if (anaglyph) {
@@ -181,13 +182,13 @@ public class PhotoBoothSketch extends PApplet {
             textSize(48);
             fill(yellow);
             textAlign(LEFT);
-            text("parallax = " + (parallax) + " mirror = " + mirror + " zoom = " + zoom, 50, height - 96);
+            text("parallax = " + (parallax) + " mirror = " + mirror + " zoom = " + zoom + " w = "+imgLeft.width + " h ="+ imgLeft.height, 50, height - 96);
             text("vertical = " + (verticalAlignment) +" magnify = " + magnifyScale[magnifyIndex], 50, height - 48);
         }
 
     }
 
-    public void drawSBS(PImage imgLeft, PImage imgRight) {
+    public void drawSBSOriginal(PImage imgLeft, PImage imgRight) {
         float offsetX = 0;
         float offsetY = 0;
 
@@ -220,7 +221,69 @@ public class PhotoBoothSketch extends PApplet {
         drawGrid(false);
     }
 
-    public void drawAnaglyph(PImage imgLeft, PImage imgRight) {
+    public void drawSBS(PImage imgLeft, PImage imgRight) {
+        float offsetX = 0;
+        float offsetY = 0;
+
+        // Calculate base image dimensions - each image gets half the frame width
+        float imgWidth = (float) frameWidth / 2;
+        float imgHeight = imgWidth / AR;
+
+        // Center vertically within frame
+        float baseVerticalOffset = frameY + (frameHeight - imgHeight) / 2;
+
+        // Calculate zoom offsets - these keep the zoomed image centered in its half-frame
+        if (zoom) {
+            offsetX = (imgWidth * (1 - 1 / magnifyScale[magnifyIndex])) / 2;
+            offsetY = (imgHeight * (1 - 1 / magnifyScale[magnifyIndex])) / 2;
+        }
+
+        // LEFT IMAGE (left half of frame)
+        pushMatrix();
+        // Clip to left half - use imgHeight for vertical bounds
+        clip(frameX, baseVerticalOffset, imgWidth, imgHeight);
+
+        translate(frameX, baseVerticalOffset);
+        translate(-(float)parallax / 2, -(float)verticalAlignment / 2);
+
+        if (mirror) {
+            translate(imgWidth, 0);
+            scale(-1, 1);
+        }
+
+        if (zoom) {
+            scale(magnifyScale[magnifyIndex], magnifyScale[magnifyIndex]);
+        }
+
+        image(imgLeft, -offsetX, -offsetY, imgWidth, imgHeight);
+        noClip();
+        popMatrix();
+
+        // RIGHT IMAGE (right half of frame)
+        pushMatrix();
+        // Clip to right half - use imgHeight for vertical bounds
+        clip(frameX + imgWidth, baseVerticalOffset, imgWidth, imgHeight);
+
+        translate(frameX + imgWidth, baseVerticalOffset);
+        translate((float)parallax / 2, (float)verticalAlignment / 2);
+
+        if (mirror) {
+            translate(imgWidth, 0);
+            scale(-1, 1);
+        }
+
+        if (zoom) {
+            scale(magnifyScale[magnifyIndex], magnifyScale[magnifyIndex]);
+        }
+
+        image(imgRight, -offsetX, -offsetY, imgWidth, imgHeight);
+        noClip();
+        popMatrix();
+
+        drawGrid(false);
+    }
+
+    public void drawAnaglyphoriginal(PImage imgLeft, PImage imgRight) {
         float offsetX = 0;
         float offsetY = 0;
         float anaglyphX = 0;
@@ -296,6 +359,89 @@ public class PhotoBoothSketch extends PApplet {
 
         drawGrid(true);
     }
+    public void drawAnaglyph(PImage imgLeft, PImage imgRight) {
+        float offsetX = 0;
+        float offsetY = 0;
+        float anaglyphW = 0;
+
+        // Calculate the display area dimensions
+        anaglyphW = (float) height * AR;
+        float displayX = ((float) width - anaglyphW) / 2;
+
+        // Calculate zoom offsets
+        if (zoom) {
+            offsetX = (anaglyphW * (1 - 1 / magnifyScale[magnifyIndex])) / 2;
+            offsetY = (height * (1 - 1 / magnifyScale[magnifyIndex])) / 2;
+        }
+
+        PGL pgl;  // Processing Open GL library
+        pgl = beginPGL();
+        pgl.viewport(0, 0, width, height);
+        pgl.colorMask(true, false, false, true);  // Red channel only
+
+        // Add clipping to constrain the image to the display area
+        clip(displayX, 0, anaglyphW, height);
+
+        pushMatrix();
+        translate(displayX, 0);
+        translate(-(float)parallax / 2, -(float)verticalAlignment / 2);
+
+        if (mirror) {
+            translate(anaglyphW, 0);
+            scale(-1, 1); // Mirror - flip horizontally
+        }
+
+        if (zoom) {
+            scale(magnifyScale[magnifyIndex], magnifyScale[magnifyIndex]);
+        }
+
+        if (mirror) {
+            image(imgRight, -offsetX, -offsetY, anaglyphW, height);
+        } else {
+            image(imgLeft, -offsetX, -offsetY, anaglyphW, height);
+        }
+        popMatrix();
+        noClip();
+        endPGL();
+
+        pgl = beginPGL();
+        pgl.colorMask(false, true, true, true);  // Blue and Green channels only
+        pgl.viewport(0, 0, width, height);
+
+        // Add clipping for second layer too
+        clip(displayX, 0, anaglyphW, height);
+
+        pushMatrix();
+        translate(displayX, 0);
+        translate((float)parallax / 2, (float)verticalAlignment / 2);
+
+        if (mirror) {
+            translate(anaglyphW, 0);
+            scale(-1, 1); // Mirror - flip horizontally
+        }
+
+        if (zoom) {
+            scale(magnifyScale[magnifyIndex], magnifyScale[magnifyIndex]);
+        }
+
+        if (mirror) {
+            image(imgLeft, -offsetX, -offsetY, anaglyphW, height);
+        } else {
+            image(imgRight, -offsetX, -offsetY, anaglyphW, height);
+        }
+        popMatrix();
+        noClip();
+        endPGL();
+
+        // for drawing over anaglyph image
+        // change colorMask back before filling with rectangles on edges
+        pgl = beginPGL();
+        pgl.colorMask(true, true, true, true);  // Restore color channels
+        pgl.viewport(0, 0, width, height);
+        endPGL();
+
+        drawGrid(true);
+    }
 
 //    void drawGridLine(boolean full) {
 //        strokeWeight(2);
@@ -349,8 +495,7 @@ public class PhotoBoothSketch extends PApplet {
                     update = true;
                     zoom = true;
                 }
-                if (DEBUG)
-                    println("magnifyScale = " + magnifyScale[magnifyIndex] + " magnifyIndex");
+                //if (DEBUG) println("magnifyScale = " + magnifyScale[magnifyIndex] + " magnifyIndex");
                 break;
             case KeyEvent.KEYCODE_RIGHT_BRACKET:
                 if (magnifyIndex < magnifyScale.length - 1) {
@@ -358,8 +503,7 @@ public class PhotoBoothSketch extends PApplet {
                     update = true;
                     zoom = true;
                 }
-                if (DEBUG)
-                    println("magnifyScale = " + magnifyScale[magnifyIndex] + " magnifyIndex");
+                //if (DEBUG) println("magnifyScale = " + magnifyScale[magnifyIndex] + " magnifyIndex");
                 break;
             case KeyEvent.KEYCODE_Q:
             case KeyEvent.KEYCODE_FORWARD:  // 125 forward media button on mouse: mirror toggle

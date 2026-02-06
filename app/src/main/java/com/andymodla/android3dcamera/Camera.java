@@ -93,6 +93,8 @@ public class Camera {
     int CAMERA_HEIGHT_AR_SMALL = 1080;
     public static int XBP_CAMERA_WIDTH = 1280; // small for performance - camera aspect ratio
     public static int XBP_CAMERA_HEIGHT = 960; // small for performance
+    //public static int XBP_CAMERA_WIDTH = 1920; // small for performance - camera aspect ratio
+    //public static int XBP_CAMERA_HEIGHT = 1080; // small for performance
     public static int XBP_CAMERA_WIDTH_6x4 = 1080; // small for performance - print aspect ratio
     public static int XBP_CAMERA_HEIGHT_6x4 = 720; // small for performance
 
