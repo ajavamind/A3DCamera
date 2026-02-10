@@ -22,6 +22,8 @@ import android.widget.Toast;
 
 import androidx.core.content.FileProvider;
 
+import com.andymodla.android3dcamera.sketch.PhotoBooth;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -283,10 +285,10 @@ public class Media {
             Toast.makeText(context, "Nothing to Print", Toast.LENGTH_SHORT).show();
             return;
         }
-        int displayMode = ((MainActivity) context).getDisplayMode();
-        if (displayMode == DisplayMode.SBS.ordinal()) {
+        DisplayMode displayMode = ((MainActivity) context).getDisplayMode();
+        if (displayMode == DisplayMode.SBS) {
             sharePrintImage(reviewSBS);
-        } else if (displayMode == DisplayMode.ANAGLYPH.ordinal()) {
+        } else if (displayMode == DisplayMode.ANAGLYPH) {
             sharePrintImage(reviewAnaglyph);
         } else {
             sharePrintImage(reviewLeft);
@@ -294,9 +296,9 @@ public class Media {
 
     }
 
-    void reviewPhotos(int displayMode) {
+    void reviewPhotos(DisplayMode displayMode) {
         if (reviewSBS != null) {
-            if (displayMode == DisplayMode.SBS.ordinal()) {
+            if (displayMode == DisplayMode.SBS) {
                 shareImage2(reviewSBS, APP_REVIEW_PACKAGE);
             } else {
                 shareImage2(reviewAnaglyph, null);

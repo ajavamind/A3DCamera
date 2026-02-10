@@ -84,12 +84,12 @@ public class MainActivity extends AppCompatActivity {
     private UdpRemoteControl udpRemoteControl;
 
 
-    // states - work in progress
-    private static final int STATE_LIVEVIEW = 0;
-    private static final int STATE_REVIEW = 1;
-    private int state = STATE_LIVEVIEW;
+    // states definitions
+    private static final int LIVEVIEW_STATE = 0;
+    private static final int REVIEW_STATE = 1;
+    private int state = LIVEVIEW_STATE;
 
-    public int displayMode = DisplayMode.SBS.ordinal();
+    public volatile DisplayMode displayMode = DisplayMode.SBS;
 
     private boolean exitApp = false; // exit app flag with back or esc button
 
@@ -152,7 +152,7 @@ public class MainActivity extends AppCompatActivity {
     private CommandLine commandLine;
     private String splashMessage = "Welcome to A3DCamera by Andy Modla";
 
-    public int getDisplayMode() {
+    public DisplayMode getDisplayMode() {
         return displayMode;
     }
 
@@ -411,14 +411,17 @@ public class MainActivity extends AppCompatActivity {
         else if ((buttonState & MotionEvent.BUTTON_TERTIARY) != 0) {
             // Middle mouse button pressed
             Log.d(TAG, "Middle button pressed");
-            displayMode = DisplayMode.SBS.ordinal();
-            media.reviewPhotos(displayMode);
+            displayMode = DisplayMode.SBS;
+            //media.reviewPhotos(displayMode);
+            state = REVIEW_STATE;
+            photoBooth.review(displayMode);
         }
         else if ((buttonState & MotionEvent.BUTTON_SECONDARY) != 0) {
             // Right mouse button pressed
             Log.d(TAG, "Right button pressed");
             if (isPhotobooth) {
-                photoBooth.toggleAnaglyph();
+                displayMode = displayMode.next();
+                photoBooth.setDisplayMode(displayMode);
             } else {
                 media.printImageType();
             }
@@ -434,10 +437,18 @@ public class MainActivity extends AppCompatActivity {
         // Handle mouse wheel events
         if (delta > 0) {
             // Scrolled Up (away from user)
-            photoBooth.processKeyCode(KeyEvent.KEYCODE_RIGHT_BRACKET, 0);
+            //if (state == REVIEW_STATE) {
+            //    photoBooth.processKeyCode(KeyEvent.KEYCODE_DPAD_RIGHT, 0);
+            //} else {
+                photoBooth.processKeyCode(KeyEvent.KEYCODE_RIGHT_BRACKET, 0);
+            //}
         } else if (delta < 0) {
             // Scrolled Down (toward user)
-            photoBooth.processKeyCode(KeyEvent.KEYCODE_LEFT_BRACKET, 0);
+            //if (state == REVIEW_STATE) {
+            //    photoBooth.processKeyCode(KeyEvent.KEYCODE_DPAD_LEFT, 0);
+            //} else {
+                photoBooth.processKeyCode(KeyEvent.KEYCODE_LEFT_BRACKET, 0);
+            //}
         }
     }
 
@@ -534,6 +545,9 @@ public class MainActivity extends AppCompatActivity {
             case KeyEvent.KEYCODE_3D_MODE: // camera key - first turn off auto launch of native camera app
             case SHUTTER_KEY:
             case SHUTTER_KB_KEY:
+                if (state == REVIEW_STATE) {
+                    return true;
+                }
                 if (continuousMode) {
                     return true; // ignore key
                 } else {
@@ -560,7 +574,10 @@ public class MainActivity extends AppCompatActivity {
                     Toast.makeText(this, "Continuous Mode Canceled ", Toast.LENGTH_SHORT).show();
                     return true;
                 }
-
+                if (state == REVIEW_STATE) {
+                    state = LIVEVIEW_STATE;
+                    return true;
+                }
                 if (exitApp) {
                     finish();
                     System.exit(0);
@@ -571,9 +588,13 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             case SHARE_KEY:
             case SHARE_KB_KEY:
-                boolean ok = media.shareReviewImage();
-                if (!ok) {
-                    Toast.makeText(this, "Nothing to Share", Toast.LENGTH_SHORT).show();
+                if (isPhotobooth) {
+
+                } else {
+                    boolean ok = media.shareReviewImage();
+                    if (!ok) {
+                        Toast.makeText(this, "Nothing to Share", Toast.LENGTH_SHORT).show();
+                    }
                 }
                 return true;
             case FN_KEY:
@@ -608,7 +629,8 @@ public class MainActivity extends AppCompatActivity {
             case ANAGLYPH_KEY:
             case ANAGLYPH_KB_KEY:
                 if (isPhotobooth) {
-                    photoBooth.toggleAnaglyph();
+                    displayMode = DisplayMode.ANAGLYPH;
+                    photoBooth.setDisplayMode(displayMode);
                 }
                 return true;
             case MODE_KEY:
@@ -625,18 +647,25 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             case TIMER_KEY:
             case TIMER_KB_KEY:
-                if (CONTINUOUS_COUNT > 0) {
-                    CONTINUOUS_COUNT = 0;
-                } else {
+                if (state == REVIEW_STATE) {
                     if (isPhotobooth) {
-                        CONTINUOUS_COUNT = CONTINUOUS_COUNT_PHOTO_BOOTH;
-                    } else {
-                        CONTINUOUS_COUNT = CONTINUOUS_COUNT_DEFAULT;
+                        photoBooth.keyPressedReview(keyCode, ch);
                     }
+                    return true;
+                } else {
+                    if (CONTINUOUS_COUNT > 0) {
+                        CONTINUOUS_COUNT = 0;
+                    } else {
+                        if (isPhotobooth) {
+                            CONTINUOUS_COUNT = CONTINUOUS_COUNT_PHOTO_BOOTH;
+                        } else {
+                            CONTINUOUS_COUNT = CONTINUOUS_COUNT_DEFAULT;
+                        }
+                    }
+                    Toast.makeText(this, "Set Timer Countdown=" + Integer.toString(CONTINUOUS_COUNT), Toast.LENGTH_SHORT).show();
+                    countdownDigit = -1;
+                    countdownStart = CONTINUOUS_COUNT;
                 }
-                Toast.makeText(this, "Set Timer Countdown=" + Integer.toString(CONTINUOUS_COUNT), Toast.LENGTH_SHORT).show();
-                countdownDigit = -1;
-                countdownStart = CONTINUOUS_COUNT;
                 return true;
 
             case ISO_KEY:
@@ -647,15 +676,19 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             case DISP_KEY:
             case DISP_KB_KEY:
-                displayMode++;
-                if (displayMode >= DisplayMode.values().length)
-                    displayMode = DisplayMode.SBS.ordinal();
-                if (displayMode == DisplayMode.SBS.ordinal()) {
-                    Toast.makeText(this, "Display Mode SBS", Toast.LENGTH_SHORT).show();
-                } else if (displayMode == DisplayMode.ANAGLYPH.ordinal()) {
-                    Toast.makeText(this, "Display Mode Anaglyph", Toast.LENGTH_SHORT).show();
-                } else if (displayMode == DisplayMode.LR.ordinal()) {
-                    Toast.makeText(this, "Display Mode LR", Toast.LENGTH_SHORT).show();
+            case KeyEvent.KEYCODE_A:
+                displayMode = displayMode.next();
+                if (isPhotobooth) {
+                    photoBooth.setDisplayMode(displayMode);
+                }
+                if (displayMode == DisplayMode.SBS) {
+                    Toast.makeText(this, "Display SBS", Toast.LENGTH_SHORT).show();
+                } else if (displayMode == DisplayMode.ANAGLYPH) {
+                    Toast.makeText(this, "Display ANAGLYPH", Toast.LENGTH_SHORT).show();
+                }   else if (displayMode == DisplayMode.LEFT) {
+                    Toast.makeText(this, "Display LEFT", Toast.LENGTH_SHORT).show();
+                } else if (displayMode == DisplayMode.RIGHT) {
+                    Toast.makeText(this, "Display RIGHT", Toast.LENGTH_SHORT).show();
                 }
 //                closeCamera();
 //                openCamera();
