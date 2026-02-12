@@ -412,9 +412,14 @@ public class MainActivity extends AppCompatActivity {
             // Middle mouse button pressed
             Log.d(TAG, "Middle button pressed");
             displayMode = DisplayMode.SBS;
-            //media.reviewPhotos(displayMode);
-            state = REVIEW_STATE;
-            photoBooth.review(displayMode);
+
+            if (isPhotobooth && !isPhotoboothReview) {
+                state = REVIEW_STATE;
+                camera.closeCamera();
+                photoBooth.review(displayMode);
+            } else if (!isPhotoboothReview) {
+                media.reviewPhotos(displayMode);
+            }
         }
         else if ((buttonState & MotionEvent.BUTTON_SECONDARY) != 0) {
             // Right mouse button pressed
@@ -440,6 +445,7 @@ public class MainActivity extends AppCompatActivity {
             //if (state == REVIEW_STATE) {
             //    photoBooth.processKeyCode(KeyEvent.KEYCODE_DPAD_RIGHT, 0);
             //} else {
+            if (isPhotobooth)
                 photoBooth.processKeyCode(KeyEvent.KEYCODE_RIGHT_BRACKET, 0);
             //}
         } else if (delta < 0) {
@@ -447,6 +453,7 @@ public class MainActivity extends AppCompatActivity {
             //if (state == REVIEW_STATE) {
             //    photoBooth.processKeyCode(KeyEvent.KEYCODE_DPAD_LEFT, 0);
             //} else {
+            if (isPhotobooth)
                 photoBooth.processKeyCode(KeyEvent.KEYCODE_LEFT_BRACKET, 0);
             //}
         }
@@ -545,15 +552,27 @@ public class MainActivity extends AppCompatActivity {
             case KeyEvent.KEYCODE_3D_MODE: // camera key - first turn off auto launch of native camera app
             case SHUTTER_KEY:
             case SHUTTER_KB_KEY:
-                if (state == REVIEW_STATE) {
+                if (state == REVIEW_STATE) { // ignore shutter in review state
                     return true;
                 }
                 if (continuousMode) {
-                    return true; // ignore key
+                    return true; // ignore shutter key in continuous shutter
                 } else {
                     capturePhoto();
                 }
                 return true;
+
+            case KeyEvent.KEYCODE_VOLUME_DOWN:
+            case REVIEW_KEY:
+            case REVIEW_KB_KEY:
+                if (isPhotobooth) {
+                    // ignore review key in photo booth
+                    return true;
+                } else {
+                    media.reviewPhotos(displayMode);
+                }
+                return true;
+
             case CONTINUOUS_KEY:
             case CONTINUOUS_KB_KEY: // start continuous capture mode
                 if (continuousModeFeature) {
@@ -565,6 +584,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
                 return true;
+
             case KeyEvent.KEYCODE_BACK:
             case KeyEvent.KEYCODE_ESCAPE:
             case BACK_KB_KEY:
@@ -575,7 +595,9 @@ public class MainActivity extends AppCompatActivity {
                     return true;
                 }
                 if (state == REVIEW_STATE) {
+                    // turn on camera for entering liveview state
                     state = LIVEVIEW_STATE;
+                    camera.openCamera();
                     return true;
                 }
                 if (exitApp) {
@@ -586,10 +608,12 @@ public class MainActivity extends AppCompatActivity {
                     exitApp = true;
                 }
                 return true;
+
             case SHARE_KEY:
             case SHARE_KB_KEY:
                 if (isPhotobooth) {
-
+                    // ignore share key in photo booth
+                    return true;
                 } else {
                     boolean ok = media.shareReviewImage();
                     if (!ok) {
@@ -621,11 +645,6 @@ public class MainActivity extends AppCompatActivity {
 //                closeCamera();
 //                openCamera();
                 return true;
-            case KeyEvent.KEYCODE_VOLUME_DOWN:
-            case REVIEW_KEY:
-            case REVIEW_KB_KEY:
-                media.reviewPhotos(displayMode);
-                return true;
             case ANAGLYPH_KEY:
             case ANAGLYPH_KB_KEY:
                 if (isPhotobooth) {
@@ -641,6 +660,10 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             case SHUTTER_SPEED_KEY:
             case SHUTTER_SPEED_KB_KEY:
+                if (isPhotobooth) {
+                    photoBooth.keyPressedReview(event.getKeyCode(), ch);
+                    return true;
+                }
                 Toast.makeText(this, "Shutter Speed - not implemented", Toast.LENGTH_SHORT).show();
 //                closeCamera();
 //                openCamera();

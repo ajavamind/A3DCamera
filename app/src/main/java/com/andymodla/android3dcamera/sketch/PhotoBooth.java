@@ -83,7 +83,8 @@ public class PhotoBooth extends PApplet {
     public void settings() {
         // set size for XReal Beam Pro full display
         // draw canvas size and render using OpenGL
-        fullScreen(P2D);
+        //fullScreen(P2D);
+        size(2400, 1080, P2D);
     }
 
     public void setup() {
@@ -526,11 +527,12 @@ public class PhotoBooth extends PApplet {
      * Review Code
      */
     // Constants
-    final String FOLDER_PATH = "/DCIM/A3DCamera";
+    final String FOLDER_PATH = "/DCIM/A3DCamera/LR";
     final int SLIDESHOW_DELAY = 2500; // 2 seconds
 
     // Review Global variables
-    ArrayList<String> imageFiles;
+    ArrayList<String> leftImageFiles;
+    ArrayList<String> rightImageFiles;
     int currentIndex = 0;
     boolean slideshowActive = false;
     int lastSlideshowTime = 0;
@@ -550,13 +552,14 @@ public class PhotoBooth extends PApplet {
         loadImageFileList();
 
         // Load the first image if available
-        if (!imageFiles.isEmpty()) {
+        if (!leftImageFiles.isEmpty()) {
             loadCurrentImage();
         }
     }
 
     void drawReview() {
         if (imagesLoaded && currentLeft != null && currentRight != null) {
+            imagesLoaded = false;
             if (displayMode == DisplayMode.SBS) {
                 drawSBS(currentLeft, currentRight);
             } else if (displayMode == DisplayMode.ANAGLYPH) {
@@ -582,93 +585,234 @@ public class PhotoBooth extends PApplet {
         }
     }
 
-    void loadImageFileList() {
-        imageFiles = new ArrayList<String>();
+    /**
+     * Load image file list from external storage
+     *
+     * @return true if images loaded, false if failed to load any image
+     */
+
+    public boolean loadImageFileList() {
+        leftImageFiles = new ArrayList<String>();
+        rightImageFiles = new ArrayList<String>();
 
         // Get the external storage directory
         File externalStorage = Environment.getExternalStorageDirectory();
-        File dcimFolder = new File(externalStorage, FOLDER_PATH);
+        File lrFolder = new File(externalStorage, FOLDER_PATH);
 
-        if (!dcimFolder.exists() || !dcimFolder.isDirectory()) {
-            println("Folder not found: " + dcimFolder.getAbsolutePath());
-            return;
+        if (!lrFolder.exists() || !lrFolder.isDirectory()) {
+            println("Folder not found: " + lrFolder.getAbsolutePath());
+            return false;
         }
 
+        // Temporary lists to collect all left and right files
+        ArrayList<String> tempLeftFiles = new ArrayList<String>();
+        ArrayList<String> tempRightFiles = new ArrayList<String>();
+
         // Get all JPG/JPEG files
-        File[] files = dcimFolder.listFiles();
+        File[] files = lrFolder.listFiles();
         if (files != null) {
             for (File file : files) {
                 if (file.isFile()) {
                     String name = file.getName().toLowerCase();
+                    String fullPath = file.getAbsolutePath();
+
                     if (name.endsWith(".jpg") || name.endsWith(".jpeg")) {
-                        imageFiles.add(file.getAbsolutePath());
+                        // Check if it's a left or right image
+                        String nameWithoutExt = name.substring(0, name.lastIndexOf('.'));
+
+                        if (nameWithoutExt.endsWith("_l")) {
+                            tempLeftFiles.add(fullPath);
+                        } else if (nameWithoutExt.endsWith("_r")) {
+                            tempRightFiles.add(fullPath);
+                        }
                     }
                 }
             }
         }
 
-        // Sort by filename in descending order, so most recent is first
-        //Collections.sort(imageFiles, Collections.reverseOrder());
-        currentIndex = imageFiles.size() - 1;
+        // Sort both lists in ascending order
+        Collections.sort(tempLeftFiles);
+        Collections.sort(tempRightFiles);
 
-        if (DEBUG) println("Found " + imageFiles.size() + " images. currentIndex="+currentIndex);
+        // Match pairs: for each left file, find corresponding right file
+        for (String leftPath : tempLeftFiles) {
+            String leftFilename = new File(leftPath).getName();
+            String leftBase = getBaseName(leftFilename);
+
+            // Look for matching right file
+            for (String rightPath : tempRightFiles) {
+                String rightFilename = new File(rightPath).getName();
+                String rightBase = getBaseName(rightFilename);
+
+                if (leftBase.equals(rightBase)) {
+                    // Found a matching pair
+                    leftImageFiles.add(leftPath);
+                    rightImageFiles.add(rightPath);
+                    break;
+                }
+            }
+        }
+
+        println("Found " + leftImageFiles.size() + " matching image pairs");
+        return true;
     }
 
-    public void loadCurrentImage() {
-        if (imageFiles.size() == 0 || currentIndex < 0 || currentIndex >= imageFiles.size()) {
-            imagesLoaded = false;
-            return;
-        }
-
-        String filepath = imageFiles.get(currentIndex);
-        println("Loading: " + filepath);
-
-        PImage img = loadImage(filepath);
-        if (img == null) {
-            println("Failed to load image");
-            imagesLoaded = false;
-            return;
-        }
-
-        // Check if image should be split
-        boolean shouldSplit = false;
-        String filename = new File(filepath).getName();
-
-        // Check aspect ratio > 2
-        float aspectRatio = (float)img.width / (float)img.height;
-        if (aspectRatio > 2.0) {
-            shouldSplit = true;
-        }
-
-        // Check filename ends with _2x1
+    // Helper function to get base filename without _l/_r suffix and extension
+    String getBaseName(String filename) {
+        // Remove extension
         String nameWithoutExt = filename.substring(0, filename.lastIndexOf('.'));
-        if (nameWithoutExt.endsWith("_2x1")) {
-            shouldSplit = true;
+
+        // Remove _l or _r suffix
+        if (nameWithoutExt.endsWith("_l")) {
+            return nameWithoutExt.substring(0, nameWithoutExt.length() - 2);
+        } else if (nameWithoutExt.endsWith("_r")) {
+            return nameWithoutExt.substring(0, nameWithoutExt.length() - 2);
         }
 
-        //if (currentLeft != null) ((Bitmap)currentLeft.getNative()).recycle();
-        //if (currentRight != null) ((Bitmap)currentRight.getNative()).recycle();
+        return nameWithoutExt;
+    }
 
-        if (shouldSplit) {
-            // Split into left and right
-            int halfWidth = img.width / 2;
-            currentLeft = img.get(0, 0, halfWidth, img.height);
-            currentRight = img.get(halfWidth, 0, halfWidth, img.height);
-        } else {
-            // Use same image for both
-            currentLeft = img;
-            currentRight = img;
+//    public void loadCurrentImage() {
+//        if (imageFiles.size() == 0 || currentIndex < 0 || currentIndex >= imageFiles.size()) {
+//            imagesLoaded = false;
+//            return;
+//        }
+//
+//        String filepath = imageFiles.get(currentIndex);
+//        println("Loading: " + filepath);
+//
+//        PImage img = loadImage(filepath);
+//        if (img == null) {
+//            println("Failed to load image");
+//            imagesLoaded = false;
+//            return;
+//        }
+//
+//        // Check if image should be split
+//        boolean shouldSplit = false;
+//        String filename = new File(filepath).getName();
+//
+//        // Check aspect ratio > 2
+//        float aspectRatio = (float)img.width / (float)img.height;
+//        if (aspectRatio > 2.0) {
+//            shouldSplit = true;
+//        }
+//
+//        // Check filename ends with _2x1
+//        String nameWithoutExt = filename.substring(0, filename.lastIndexOf('.'));
+//        if (nameWithoutExt.endsWith("_2x1")) {
+//            shouldSplit = true;
+//        }
+//
+//        //if (currentLeft != null) ((Bitmap)currentLeft.getNative()).recycle();
+//        //if (currentRight != null) ((Bitmap)currentRight.getNative()).recycle();
+//
+//        if (shouldSplit) {
+//            // Split into left and right
+//            int halfWidth = img.width / 2;
+//            currentLeft = img.get(0, 0, halfWidth, img.height);
+//            currentRight = img.get(halfWidth, 0, halfWidth, img.height);
+//        } else {
+//            // Use same image for both
+//            currentLeft = img;
+//            currentRight = img;
+//        }
+//        ((Bitmap)img.getNative()).recycle();
+//        imagesLoaded = true;
+//        println("Loaded: " + filepath + " width=" + currentLeft.width + " height=" + currentLeft.height);
+//    }
+
+    /**
+     *
+     * @return true if images loaded, false if failed to load any image
+     */
+//    public boolean loadCurrentImage() {
+//        if (imageFiles.isEmpty() || currentIndex < 0 || currentIndex >= imageFiles.size()) {
+//            imagesLoaded = false;
+//            return false;
+//        }
+//
+//        String filepath = imageFiles.get(currentIndex);
+//        println("Loading: " + filepath);
+//
+//        PImage img = loadImage(filepath);
+//        if (img == null) {
+//            println("Failed to load image");
+//            imagesLoaded = false;
+//            return false;
+//        }
+//
+//
+//        // Check if image should be split
+////        boolean shouldSplit = false;
+////        String filename = new File(filepath).getName();
+////
+////        // Check aspect ratio > 2
+////        float aspectRatio = (float)img.width / (float)img.height;
+////        if (aspectRatio > 2.0) {
+////            shouldSplit = true;
+////        }
+//
+////        // Check filename ends with _2x1
+////        String nameWithoutExt = filename.substring(0, filename.lastIndexOf('.'));
+////        if (nameWithoutExt.endsWith("_2x1")) {
+////            shouldSplit = true;
+////        }
+//
+//        //if (currentLeft != null) ((Bitmap)currentLeft.getNative()).recycle();
+//        //if (currentRight != null) ((Bitmap)currentRight.getNative()).recycle();
+//
+//        if (shouldSplit) {
+//            // Split into left and right
+//            int halfWidth = img.width / 2;
+//            currentLeft = img.get(0, 0, halfWidth, img.height);
+//            currentRight = img.get(halfWidth, 0, halfWidth, img.height);
+//        } else {
+//            // Use same image for both
+//            currentLeft = img;
+//            currentRight = img;
+//        }
+//        ((Bitmap)img.getNative()).recycle();
+//        imagesLoaded = true;
+//        println("Loaded: " + filepath + " width=" + currentLeft.width + " height=" + currentLeft.height);
+//    }
+
+    void loadCurrentImage() {
+        if (leftImageFiles.size() == 0 || currentIndex < 0 || currentIndex >= leftImageFiles.size()) {
+            imagesLoaded = false;
+            return;
         }
-        ((Bitmap)img.getNative()).recycle();
+
+        String leftPath = leftImageFiles.get(currentIndex);
+        String rightPath = rightImageFiles.get(currentIndex);
+
+        println("Loading pair " + (currentIndex + 1) + "/" + leftImageFiles.size());
+        println("  Left: " + leftPath);
+        println("  Right: " + rightPath);
+
+        // Load left image
+        currentLeft = loadImage(leftPath);
+        if (currentLeft == null) {
+            println("Failed to load left image");
+            imagesLoaded = false;
+            return;
+        }
+
+        // Load right image
+        currentRight = loadImage(rightPath);
+        if (currentRight == null) {
+            println("Failed to load right image");
+            imagesLoaded = false;
+            return;
+        }
+        update = true;
         imagesLoaded = true;
-        println("Loaded: " + filepath + " width=" + currentLeft.width + " height=" + currentLeft.height);
     }
 
     void nextImage() {
-        if (currentIndex < imageFiles.size() - 1) {
+        if (currentIndex < leftImageFiles.size() - 1) {
             currentIndex++;
             loadCurrentImage();
-            //this.thread("loadCurrentImage");
         } else {
             // Stop slideshow at end
             slideshowActive = false;
@@ -679,23 +823,20 @@ public class PhotoBooth extends PApplet {
         if (currentIndex > 0) {
             currentIndex--;
             loadCurrentImage();
-            //this.thread("loadCurrentImage");
         }
     }
 
     void firstImage() {
-        if (imageFiles.size() > 0) {
+        if (leftImageFiles.size() > 0) {
             currentIndex = 0;
             loadCurrentImage();
-            //this.thread("loadCurrentImage");
         }
     }
 
     void lastImage() {
-        if (imageFiles.size() > 0) {
-            currentIndex = imageFiles.size() - 1;
+        if (leftImageFiles.size() > 0) {
+            currentIndex = leftImageFiles.size() - 1;
             loadCurrentImage();
-            //this.thread("loadCurrentImage");
         }
     }
 
