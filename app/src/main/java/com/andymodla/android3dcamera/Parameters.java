@@ -46,6 +46,8 @@ public class Parameters {
     public boolean anaglyphMode = false; // for photo booth only
     public boolean mirrorImage = false; // for photo booth only
 
+    String receiverIp = "";  // device IP address to receive URL link to saved photo
+
     // default constructor
     public Parameters(SharedPreferences prefs) {
         this.prefs = prefs;
@@ -85,6 +87,9 @@ public class Parameters {
         // TODO use use ParamStore array to initialize
         readParallaxOffset();
         readVerticalOffset();
+        readReceiverIp();
+        readIsPhotoBooth();
+        readIsSoundOn();
     }
 
     //------------------------------------------------------------------------------
@@ -121,6 +126,53 @@ public class Parameters {
         editor.apply(); // asynchronous save
     }
 
+    //------------------------------------------------------------------------------
+    public void readReceiverIp() {
+        receiverIp = prefs.getString(receiverIpStore.name, receiverIpStore.defaultValue);
+    }
+
+    public String getReceiverIp() {
+        return receiverIp;
+    }
+
+    public void writeReceiverIp(String receiverIp) {
+        this.receiverIp = receiverIp;
+        // Save to SharedPreferences
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.putString(receiverIpStore.name, receiverIp);
+        editor.apply(); // asynchronous save
+    }
+
+    //------------------------------------------------------------------------------
+    public void readIsPhotoBooth() {
+        isPhotoBooth = prefs.getBoolean(isPhotoBoothStore.name, Boolean.parseBoolean(isPhotoBoothStore.defaultValue));
+    }
+
+    public boolean getIsPhotoBooth() {
+        return isPhotoBooth;
+    }
+
+    public void writeIsPhotoBooth(boolean isPhotoBooth) {
+        this.isPhotoBooth = isPhotoBooth;
+    }
+
+    //------------------------------------------------------------------------------
+    public void readIsSoundOn() {
+        isSoundOn = prefs.getBoolean(isSoundOnStore.name, Boolean.parseBoolean(isSoundOnStore.defaultValue));
+    }
+    public boolean getIsSoundOn() {
+        return isSoundOn;
+    }
+    public void writeIsSoundOn(boolean isSoundOn) {
+        this.isSoundOn = isSoundOn;
+        // Save to SharedPreferences
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.putBoolean(isSoundOnStore.name, isSoundOn);
+        editor.apply(); // asynchronous save
+
+    }
+
+
     ParamStore parallaxOffsetStore = new ParamStore(
             "p", "parallaxOffset", "Parallax Offset",
             "getParallaxOffset", "setParallaxOffset", int.class, "0");
@@ -129,7 +181,20 @@ public class Parameters {
             "v", "verticalOffset", "Vertical Offset",
             "getVerticalOffset", "setVerticalOffset", int.class, "0");
 
-    ParamStore[] paramStores = {parallaxOffsetStore, verticalOffsetStore};
+    ParamStore receiverIpStore = new ParamStore(
+            "r", "receiverIp", "Receiver IP",
+            "getReceiverIp", "setReceiverIp", String.class, "");
+
+    ParamStore isPhotoBoothStore = new ParamStore(
+            "b", "isPhotoBooth", "Photo Booth",
+            "getIsPhotoBooth", "setIsPhotoBooth", boolean.class, "false");
+
+    ParamStore isSoundOnStore = new ParamStore(
+            "s", "isSoundOn", "Sound On",
+            "getIsSoundOn", "setIsSoundOn", boolean.class, "true");
+
+    ParamStore[] paramStores = {parallaxOffsetStore, verticalOffsetStore, receiverIpStore,
+            isPhotoBoothStore, isSoundOnStore};
 
     public String findParam(String abbr, String value, boolean set) {
         ParamStore store = null;

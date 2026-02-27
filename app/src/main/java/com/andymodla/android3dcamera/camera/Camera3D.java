@@ -177,6 +177,10 @@ public class Camera3D {
         return parameters;
     }
 
+    public Media getMedia() {
+        return media;
+    }
+
     // Constructor
     public Camera3D(Context context, Media media, Parameters parameters, PApplet pApplet) {
         this.context = context;
@@ -446,6 +450,12 @@ public class Camera3D {
 
     public void openCamera() {
         Log.d(TAG, "openCamera() cameraWidth=" + cameraWidth + " cameraHeight=" + cameraHeight);
+        startCameraThread();
+
+//        if (mImageReader0 != null) {
+//            Log.d(TAG, "Camera reader already open");
+//            return;
+//        }
 
         // Setup ImageReaders for capture
         cameraWidth = CAMERA_WIDTH_DEFAULT; // camera width lens pixels
@@ -538,6 +548,7 @@ public class Camera3D {
             }
             mCameraDevice = null;
         }
+        stopCameraThread();
     }
 
     /**

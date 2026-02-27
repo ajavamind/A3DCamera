@@ -32,11 +32,15 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
+import processing.core.PApplet;
+import processing.core.PImage;
+
 public class Media {
     private static String TAG = "Media";
     Context context;
     private volatile boolean isAnaglyphMode = false; //true;
     private String BASE_FOLDER = Environment.DIRECTORY_DCIM; //Environment.DIRECTORY_PICTURES;
+    //private String BASE_FOLDER_NAME = Environment.DIRECTORY_DOWNLOADS;
     private String SAVE_FOLDER = "A3DCamera";
     private String SAVE_ANA_FOLDER = "Anaglyph";
     private String SAVE_LR_FOLDER = "LR";
@@ -57,6 +61,8 @@ public class Media {
     volatile Bitmap rightBitmap;
     volatile Bitmap sbsBitmap;
     volatile Bitmap anaglyphBitmap;
+    public volatile PImage leftReview;
+    public volatile PImage rightReview;
 
     String timestamp;
     volatile private File reviewSBS;
@@ -72,12 +78,17 @@ public class Media {
 
     private Parameters parameters;
     private AIvision aiVision;
+    private PApplet pApplet;
 
     // Constructor
     public Media(Context context, Parameters parameters, AIvision aiVision) {
         this.context = context;
         this.parameters = parameters;
         this.aiVision = aiVision;
+    }
+
+    public void setpApplet(PApplet pApplet) {
+        this.pApplet = pApplet;
     }
 
     /**
@@ -237,6 +248,16 @@ public class Media {
                     new String[]{"image/*"}, null);
 
             Log.d(TAG, "SBS image saved: " + file.getAbsolutePath());
+            if (((MainActivity) context).imageSender != null) {
+                String imageUrl = "http://"+((MainActivity) context).hostIpAddr+":"+((MainActivity) context).hostPort+File.separator+filename;
+                Log.d(TAG, "imageSender.sendImageUrl " + imageUrl);
+                ((MainActivity) context).imageSender.sendImageUrl(imageUrl);
+            }
+//            if (((MainActivity) context).imageUrlSender != null) {
+//                String imageUrl = "http://"+((MainActivity) context).senderHost+":"+((MainActivity) context).senderPort+File.separator+filename;
+//                Log.d(TAG, "imageUrlSender.discoverAndSend " + imageUrl);
+//                ((MainActivity) context).imageUrlSender.discoverAndSend(imageUrl);
+//            }
         } catch (IOException e) {
             Log.e(TAG, "Error saving SBS image", e);
             return null;
@@ -248,11 +269,29 @@ public class Media {
         Log.d(TAG, "saveImageFiles");
         timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
 
-        ToastHelper.showToast(context, "Saved IMG" + timestamp);
         leftBitmap = saveImageFile(leftBytes, PHOTO_PREFIX + timestamp, true); // left
         rightBitmap = saveImageFile(rightBytes, PHOTO_PREFIX + timestamp, false); // right
-        //leftBytes = null;
-        //rightBytes = null;
+        ToastHelper.showToast(context, "Saved IMG" + timestamp);
+
+        if (pApplet != null) {  // Processing sketch is present
+            if (leftReview != null) {
+                ((Bitmap)leftReview.getNative()).recycle();
+            }
+            if (rightReview != null) {
+                ((Bitmap)rightReview.getNative()).recycle();
+            }
+            leftReview = pApplet.createImage(leftBitmap.getWidth(), leftBitmap.getHeight(), PImage.ARGB);
+            rightReview = pApplet.createImage(rightBitmap.getWidth(), rightBitmap.getHeight(), PImage.ARGB);
+            leftReview.setNative(leftBitmap);
+            rightReview.setNative(rightBitmap);
+            leftReview.loadPixels();
+            leftReview.updatePixels();
+            rightReview.loadPixels();
+            rightReview.updatePixels();
+            ((PhotoBooth) pApplet).setReviewImages(leftReview, rightReview);
+
+        }
+
         if (aiVision != null) {
             String response = aiVision.getInformationFromImage(leftBitmap, aiVision.getPrompt());
             Log.d(TAG, "AI Vision response: " + response);
@@ -290,13 +329,16 @@ public class Media {
             sharePrintImage(reviewSBS);
         } else if (displayMode == DisplayMode.ANAGLYPH) {
             sharePrintImage(reviewAnaglyph);
-        } else {
+        } else if (displayMode == DisplayMode.LEFT){
             sharePrintImage(reviewLeft);
+        } else {
+            sharePrintImage(reviewRight);
         }
 
     }
 
     void reviewPhotos(DisplayMode displayMode) {
+        Log.d(TAG, "reviewPhotos()");
         if (reviewSBS != null) {
             if (displayMode == DisplayMode.SBS) {
                 shareImage2(reviewSBS, APP_REVIEW_PACKAGE);

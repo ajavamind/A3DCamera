@@ -87,19 +87,24 @@ public class MainActivity extends AppCompatActivity {
     // states definitions
     private static final int LIVEVIEW_STATE = 0;
     private static final int REVIEW_STATE = 1;
-    private int state = LIVEVIEW_STATE;
+    private volatile int state = LIVEVIEW_STATE;
 
     public volatile DisplayMode displayMode = DisplayMode.SBS;
 
     private boolean exitApp = false; // exit app flag with back or esc button
 
     // Photo booth variables
-    private boolean isPhotobooth = true;  // work in progress
-    private boolean isPhotoboothReview = false;
+    private boolean isPhotobooth = true;
 
     private PhotoBooth photoBooth;  // photo booth sketch
     PFragment photoBoothFragment;  // processing library photo booth fragment
     View decorView; // screen window view for camera app
+
+    public String hostIpAddr = "10.0.0.54";
+    public int hostPort = 8333;
+    public String receiverIP = "10.0.0.50";  // receiver IP
+    public int receiverPort = 9000;
+    public ImageSender imageSender;  // camera sends last picture URL link to an android 3D display device
 
     Timer countdownTimer;
     int countdownStart = 0;
@@ -109,7 +114,7 @@ public class MainActivity extends AppCompatActivity {
     volatile boolean continuousMode = false;  // continuous capture is active
     public volatile int continuousCounter = 0;
     public static final int CONTINUOUS_COUNT_DEFAULT = 59; //(one less 60)
-    public static final int CONTINUOUS_COUNT_PHOTO_BOOTH = 3; //(one less 4)
+    public static final int CONTINUOUS_COUNT_PHOTO_BOOTH = 2; //(one less 4)
     public int CONTINUOUS_COUNT = 0;
 
     // Key codes for 8BitDo Micro Bluetooth Keyboard controller (Android mode)
@@ -193,17 +198,18 @@ public class MainActivity extends AppCompatActivity {
         // Stereo Image Alignment parameters (same values as StereoPhotoMaker)
         // 212  left/right parallax horizontal offset for stereo window placement
         // -12  left/right camera alignment vertical offset for camera correction
-
-        parameters.writeParallaxOffset(212);
-        parameters.writeVerticalOffset(-12);
+        // parameters.writeParallaxOffset(212);
+        // parameters.writeVerticalOffset(-12);
 
         // Establish media storage folders for saving photos
         media = new Media(this, parameters, aiVision);
         media.createMediaFolder();
 
         // set up UDP remote control for broadcast message reception
+        udpRemoteControl = new UdpRemoteControl(this);
+        hostIpAddr = udpRemoteControl.getHostnameAddress();
+        Log.d(TAG, "Host IP Address = "+hostIpAddr);
         if (isWiFiRemoteEnabled) {
-            udpRemoteControl = new UdpRemoteControl(this);
             udpRemoteControl.setup();
         }
 
@@ -221,6 +227,8 @@ public class MainActivity extends AppCompatActivity {
             photoBooth = new PhotoBooth();
             photoBoothFragment = new PFragment(photoBooth);
             photoBoothFragment.setView(frame, this);
+            media.setpApplet(photoBooth);
+            imageSender = new ImageSender(this);
 
         } else {
             setContentView(R.layout.layout);
@@ -301,7 +309,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onPause() {
         Log.d(TAG, "onPause()");
         camera.closeCamera();
-        camera.stopCameraThread();
+        //camera.stopCameraThread();
         super.onPause();
     }
 
@@ -322,7 +330,7 @@ public class MainActivity extends AppCompatActivity {
             //CameraInfoUtil.checkCameraSyncType(this, list);
             //CameraInfoUtil.logFocusDistanceCalibration(this);  // for debug
 
-            camera.startCameraThread();
+            //camera.startCameraThread();
             camera.openCamera();
         }
     }
@@ -399,10 +407,10 @@ public class MainActivity extends AppCompatActivity {
             // Left mouse button pressed
             Log.d(TAG, "Left button pressed");
             if (isPhotobooth) {
-                if (isPhotoboothReview) {
-                    media.printImageType();
-                } else {
+                if (photoBooth.isLiveView()) {
                     capturePhoto();
+                } else {
+                    media.printImageType();
                 }
             } else {
                 capturePhoto();
@@ -411,13 +419,12 @@ public class MainActivity extends AppCompatActivity {
         else if ((buttonState & MotionEvent.BUTTON_TERTIARY) != 0) {
             // Middle mouse button pressed
             Log.d(TAG, "Middle button pressed");
-            displayMode = DisplayMode.SBS;
 
-            if (isPhotobooth && !isPhotoboothReview) {
-                state = REVIEW_STATE;
+            if (isPhotobooth) {
                 camera.closeCamera();
-                photoBooth.review(displayMode);
-            } else if (!isPhotoboothReview) {
+                state = REVIEW_STATE;
+                photoBooth.setReview();
+            } else  {
                 media.reviewPhotos(displayMode);
             }
         }
@@ -532,11 +539,14 @@ public class MainActivity extends AppCompatActivity {
             case BACK_KEY:
             case KeyEvent.KEYCODE_ESCAPE:
             case KeyEvent.KEYCODE_BUTTON_B:
+            case KeyEvent.KEYCODE_DPAD_RIGHT:
+            case KeyEvent.KEYCODE_DPAD_LEFT:
                 return true;
             default:
                 exitApp = false;
                 return super.onKeyDown(keyCode, event);
         }
+
     }
 
     @Override
@@ -598,6 +608,7 @@ public class MainActivity extends AppCompatActivity {
                     // turn on camera for entering liveview state
                     state = LIVEVIEW_STATE;
                     camera.openCamera();
+                    photoBooth.setLiveView(true);
                     return true;
                 }
                 if (exitApp) {
@@ -661,7 +672,7 @@ public class MainActivity extends AppCompatActivity {
             case SHUTTER_SPEED_KEY:
             case SHUTTER_SPEED_KB_KEY:
                 if (isPhotobooth) {
-                    photoBooth.keyPressedReview(event.getKeyCode(), ch);
+                    //photoBooth.keyPressedReview(keyCode, ch);
                     return true;
                 }
                 Toast.makeText(this, "Shutter Speed - not implemented", Toast.LENGTH_SHORT).show();
@@ -672,7 +683,7 @@ public class MainActivity extends AppCompatActivity {
             case TIMER_KB_KEY:
                 if (state == REVIEW_STATE) {
                     if (isPhotobooth) {
-                        photoBooth.keyPressedReview(keyCode, ch);
+                        //photoBooth.keyPressedReview(keyCode, ch);
                     }
                     return true;
                 } else {

@@ -5,9 +5,11 @@ package com.andymodla.android3dcamera.sketch;
  *
  */
 
+import android.graphics.BitmapFactory;
 import android.view.KeyEvent;
 import android.graphics.Bitmap;
 import com.andymodla.android3dcamera.DisplayMode;
+import com.andymodla.android3dcamera.Media;
 import com.andymodla.android3dcamera.camera.Camera3D;
 import com.andymodla.android3dcamera.Parameters;
 
@@ -18,14 +20,11 @@ import processing.opengl.PGL;
 import android.os.Environment;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 
-
-import java.io.File;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Locale;
 
 public class PhotoBooth extends PApplet {
     private static boolean DEBUG = true;
@@ -38,6 +37,8 @@ public class PhotoBooth extends PApplet {
 
     Camera3D camStereo;  // The stereo camera used with the device
     Parameters parameters; // Application parameters
+    Media media;
+
     PImage imgLeft;
     PImage imgRight;
     PImage splashLeft;
@@ -63,6 +64,7 @@ public class PhotoBooth extends PApplet {
     volatile boolean zoom = true;
     volatile boolean blankScreen = false;
     volatile boolean liveView = true;
+    boolean first = true;
 
     String countdown = "";  // default ignore null string
     volatile int lastKeyCode;
@@ -88,7 +90,7 @@ public class PhotoBooth extends PApplet {
     }
 
     public void setup() {
-        if (DEBUG) PApplet.println("PhotoBoothSketch setup");
+        if (DEBUG) PApplet.println("Photo Booth Sketch setup");
         orientation(LANDSCAPE);
         background(black);
         smooth();
@@ -97,8 +99,8 @@ public class PhotoBooth extends PApplet {
 
         splashLeft = loadImage("FlowerPot_l.JPG");
         splashRight = loadImage("FlowerPot_r.JPG");
-        if(DEBUG) println("splashLeft width=" + splashLeft.width + " height=" + splashLeft.height);
-        if(DEBUG) println("splashRight width=" + splashRight.width + " height=" + splashRight.height);
+        if(DEBUG) PApplet.println("splashLeft width=" + splashLeft.width + " height=" + splashLeft.height);
+        if(DEBUG) PApplet.println("splashRight width=" + splashRight.width + " height=" + splashRight.height);
         float ar = (float) splashLeft.width / (float) splashLeft.height;
 
         image(splashLeft, frameX, 180, frameWidth/2-parallax, (frameWidth/2-parallax)/ar);
@@ -110,17 +112,23 @@ public class PhotoBooth extends PApplet {
         text("3D Photo Booth", (float) width / 4, (float) height -200);
         text("3D Photo Booth", (float) 3*width / 4 , (float) height -200);
         if (DEBUG) PApplet.println("StereoCamera setup done");
-        reviewSetup();
+        update = true;
+        thread("reviewSetup");
     }
 
     public void setCamera(Camera3D camera) {
         camStereo = camera;
         this.parameters = camera.getParameters();
+        this.media = camera.getMedia();
     }
 
-    public void setLiveView(boolean liveView) {
-        this.liveView = liveView;
+    public void setLiveView(boolean live) {
+        liveView = live;
         update = true;
+    }
+
+    public boolean isLiveView() {
+        return liveView;
     }
 
     public void update() {
@@ -130,13 +138,13 @@ public class PhotoBooth extends PApplet {
     public void setDisplayMode(DisplayMode mode) {
         displayMode = mode;
         if (mode == DisplayMode.SBS) {
-            println( "Display SBS");
+            if (DEBUG) PApplet.println( "Display SBS");
         } else if (mode == DisplayMode.ANAGLYPH) {
-            println( "Display ANAGLYPH");
+            if (DEBUG) PApplet.println( "Display ANAGLYPH");
         }   else if (mode == DisplayMode.LEFT) {
-            println( "Display LEFT");
+            if (DEBUG) PApplet.println( "Display LEFT");
         } else if (mode == DisplayMode.RIGHT) {
-            println("Display RIGHT");
+            if (DEBUG) PApplet.println("Display RIGHT");
         }
         update = true;
     }
@@ -189,10 +197,10 @@ public class PhotoBooth extends PApplet {
     }
 
     public void draw() {
-        if (update) {
+        if (first || update) {
             background(black);  // clear screen for draw update
-            //if (!liveView) loadImageFileList();
             update = false;
+            //first = false;
         }
         if (blankScreen) {
             return;
@@ -220,15 +228,38 @@ public class PhotoBooth extends PApplet {
             text("parallax = " + (parallax) + " mirror = " + mirror + " zoom = " + zoom + " w = "+imgLeft.width + " h ="+ imgLeft.height, 50, height - 96);
             text("vertical = " + (verticalAlignment) +" magnify = " + magnifyScale[magnifyIndex], 50, height - 48);
         }
+        if (DEBUG) {
+            textSize(48);
+            fill(yellow);
+            textAlign(LEFT);
+            String sMode ="";
+            if (displayMode == DisplayMode.SBS) {
+                sMode = "SBS";
+            } else if (displayMode == DisplayMode.ANAGLYPH) {
+                sMode = "Anaglyph";
+            } else if (displayMode == DisplayMode.LEFT){
+                sMode = "Left";
+            } else if (displayMode == DisplayMode.RIGHT){
+                sMode = "Right";
+            }
 
+            if (liveView) {
+                text("Live", 50, height - 48);
+            } else {
+                text("Review" , 50, height - 48);
+            }
+            text(sMode, 50, height - 96);
+        }
     }
 
     private void drawLiveView() {
+        //print("LV ");
         if (camStereo.available) {
             camStereo.available = false;
             imgLeft = camStereo.leftImage;
             imgRight = camStereo.rightImage;
             AR = (float) imgLeft.width / (float) imgLeft.height;
+            //print("LV " + imgLeft.width + " " + imgLeft.height);
         }
         if (imgLeft != null && imgRight != null) {
             if (displayMode == DisplayMode.ANAGLYPH) {
@@ -503,11 +534,9 @@ public class PhotoBooth extends PApplet {
                 if (DEBUG) println("parallax = " + parallax);
                 break;
             default:
-                if (!liveView) {
-                    keyPressedReview(lastKeyCode, lastKey);
-                }
                 break;
         }
+        update = true;
     }
 
 // // For reference not used
@@ -534,32 +563,44 @@ public class PhotoBooth extends PApplet {
     ArrayList<String> leftImageFiles;
     ArrayList<String> rightImageFiles;
     int currentIndex = 0;
-    boolean slideshowActive = false;
-    int lastSlideshowTime = 0;
+    //boolean slideshowActive = false;
+    //int lastSlideshowTime = 0;
 
-    PImage currentLeft;
-    PImage currentRight;
-    boolean imagesLoaded = false;
+    // Review photos for display;
+    volatile PImage currentLeft;
+    volatile PImage currentRight;
+    volatile boolean imagesLoaded = false;
 
-    public void review(DisplayMode mode) {
-        displayMode = mode;
+    public void setReview() {
+        if (DEBUG) PApplet.println("setReview liveView="+liveView+ " imagesLoaded="+imagesLoaded);
         liveView = false;
         update = true;
+        loop();
     }
 
-    void reviewSetup() {
+    // reviewSetup is run as a thread
+    public void reviewSetup() {
+        if (DEBUG) PApplet.println("reviewSetup()");
         // Load image file list
-        loadImageFileList();
+        boolean listAvailable = loadImageFileList();
 
         // Load the first image if available
-        if (!leftImageFiles.isEmpty()) {
+        if (listAvailable) {
             loadCurrentImage();
         }
+
+    }
+
+    public void setReviewImages(PImage left, PImage right) {
+        if (currentLeft != null) ((Bitmap)currentLeft.getNative()).recycle();
+        if (currentRight != null) ((Bitmap)currentRight.getNative()).recycle();
+        currentLeft = left;
+        currentRight = right;
+        imagesLoaded = true;
     }
 
     void drawReview() {
         if (imagesLoaded && currentLeft != null && currentRight != null) {
-            imagesLoaded = false;
             if (displayMode == DisplayMode.SBS) {
                 drawSBS(currentLeft, currentRight);
             } else if (displayMode == DisplayMode.ANAGLYPH) {
@@ -574,15 +615,15 @@ public class PhotoBooth extends PApplet {
             // Display message if no images
             fill(255);
             textAlign(CENTER, CENTER);
-            textSize(96);
-            text("No images found", width/2, height/2);
+            textSize(48);
+            text("Waiting for Photo", width/2, height/2);
         }
 
         // Handle slideshow
-        if (slideshowActive && millis() - lastSlideshowTime > SLIDESHOW_DELAY) {
-            nextImage();
-            lastSlideshowTime = millis();
-        }
+//        if (slideshowActive && millis() - lastSlideshowTime > SLIDESHOW_DELAY) {
+//            nextImage();
+//            lastSlideshowTime = millis();
+//        }
     }
 
     /**
@@ -600,7 +641,7 @@ public class PhotoBooth extends PApplet {
         File lrFolder = new File(externalStorage, FOLDER_PATH);
 
         if (!lrFolder.exists() || !lrFolder.isDirectory()) {
-            println("Folder not found: " + lrFolder.getAbsolutePath());
+            if (DEBUG) PApplet.println("Folder not found: " + lrFolder.getAbsolutePath());
             return false;
         }
 
@@ -616,13 +657,13 @@ public class PhotoBooth extends PApplet {
                     String name = file.getName().toLowerCase();
                     String fullPath = file.getAbsolutePath();
 
-                    if (name.endsWith(".jpg") || name.endsWith(".jpeg")) {
+                    if (name.toLowerCase().endsWith(".jpg") || name.toLowerCase().endsWith(".jpeg")) {
                         // Check if it's a left or right image
                         String nameWithoutExt = name.substring(0, name.lastIndexOf('.'));
 
-                        if (nameWithoutExt.endsWith("_l")) {
+                        if (nameWithoutExt.toLowerCase().endsWith("_l")) {
                             tempLeftFiles.add(fullPath);
-                        } else if (nameWithoutExt.endsWith("_r")) {
+                        } else if (nameWithoutExt.toLowerCase().endsWith("_r")) {
                             tempRightFiles.add(fullPath);
                         }
                     }
@@ -648,12 +689,16 @@ public class PhotoBooth extends PApplet {
                     // Found a matching pair
                     leftImageFiles.add(leftPath);
                     rightImageFiles.add(rightPath);
+                    //if (DEBUG) PApplet.println("Pairs: " + leftPath + " " + rightPath);
                     break;
                 }
             }
         }
-
-        println("Found " + leftImageFiles.size() + " matching image pairs");
+        currentIndex = leftImageFiles.size() -1;
+        //if (DEBUG) PApplet.println("Found " + leftImageFiles.size() + " matching image pairs");
+        //if (DEBUG) PApplet.println("First pair: " + leftImageFiles.get(0) + " " + rightImageFiles.get(0));
+        //if (DEBUG) PApplet.println("Last pair: " + leftImageFiles.get(leftImageFiles.size() - 1) + " " + rightImageFiles.get(rightImageFiles.size() - 1));
+        System.gc();
         return true;
     }
 
@@ -672,226 +717,153 @@ public class PhotoBooth extends PApplet {
         return nameWithoutExt;
     }
 
-//    public void loadCurrentImage() {
-//        if (imageFiles.size() == 0 || currentIndex < 0 || currentIndex >= imageFiles.size()) {
-//            imagesLoaded = false;
-//            return;
-//        }
-//
-//        String filepath = imageFiles.get(currentIndex);
-//        println("Loading: " + filepath);
-//
-//        PImage img = loadImage(filepath);
-//        if (img == null) {
-//            println("Failed to load image");
-//            imagesLoaded = false;
-//            return;
-//        }
-//
-//        // Check if image should be split
-//        boolean shouldSplit = false;
-//        String filename = new File(filepath).getName();
-//
-//        // Check aspect ratio > 2
-//        float aspectRatio = (float)img.width / (float)img.height;
-//        if (aspectRatio > 2.0) {
-//            shouldSplit = true;
-//        }
-//
-//        // Check filename ends with _2x1
-//        String nameWithoutExt = filename.substring(0, filename.lastIndexOf('.'));
-//        if (nameWithoutExt.endsWith("_2x1")) {
-//            shouldSplit = true;
-//        }
-//
-//        //if (currentLeft != null) ((Bitmap)currentLeft.getNative()).recycle();
-//        //if (currentRight != null) ((Bitmap)currentRight.getNative()).recycle();
-//
-//        if (shouldSplit) {
-//            // Split into left and right
-//            int halfWidth = img.width / 2;
-//            currentLeft = img.get(0, 0, halfWidth, img.height);
-//            currentRight = img.get(halfWidth, 0, halfWidth, img.height);
-//        } else {
-//            // Use same image for both
-//            currentLeft = img;
-//            currentRight = img;
-//        }
-//        ((Bitmap)img.getNative()).recycle();
-//        imagesLoaded = true;
-//        println("Loaded: " + filepath + " width=" + currentLeft.width + " height=" + currentLeft.height);
-//    }
-
-    /**
-     *
-     * @return true if images loaded, false if failed to load any image
-     */
-//    public boolean loadCurrentImage() {
-//        if (imageFiles.isEmpty() || currentIndex < 0 || currentIndex >= imageFiles.size()) {
-//            imagesLoaded = false;
-//            return false;
-//        }
-//
-//        String filepath = imageFiles.get(currentIndex);
-//        println("Loading: " + filepath);
-//
-//        PImage img = loadImage(filepath);
-//        if (img == null) {
-//            println("Failed to load image");
-//            imagesLoaded = false;
-//            return false;
-//        }
-//
-//
-//        // Check if image should be split
-////        boolean shouldSplit = false;
-////        String filename = new File(filepath).getName();
-////
-////        // Check aspect ratio > 2
-////        float aspectRatio = (float)img.width / (float)img.height;
-////        if (aspectRatio > 2.0) {
-////            shouldSplit = true;
-////        }
-//
-////        // Check filename ends with _2x1
-////        String nameWithoutExt = filename.substring(0, filename.lastIndexOf('.'));
-////        if (nameWithoutExt.endsWith("_2x1")) {
-////            shouldSplit = true;
-////        }
-//
-//        //if (currentLeft != null) ((Bitmap)currentLeft.getNative()).recycle();
-//        //if (currentRight != null) ((Bitmap)currentRight.getNative()).recycle();
-//
-//        if (shouldSplit) {
-//            // Split into left and right
-//            int halfWidth = img.width / 2;
-//            currentLeft = img.get(0, 0, halfWidth, img.height);
-//            currentRight = img.get(halfWidth, 0, halfWidth, img.height);
-//        } else {
-//            // Use same image for both
-//            currentLeft = img;
-//            currentRight = img;
-//        }
-//        ((Bitmap)img.getNative()).recycle();
-//        imagesLoaded = true;
-//        println("Loaded: " + filepath + " width=" + currentLeft.width + " height=" + currentLeft.height);
-//    }
-
     void loadCurrentImage() {
-        if (leftImageFiles.size() == 0 || currentIndex < 0 || currentIndex >= leftImageFiles.size()) {
+        if (DEBUG) PApplet.println("loadCurrentImage() liveView="+liveView);
+        if (leftImageFiles.isEmpty() || currentIndex < 0 || currentIndex >= leftImageFiles.size()) {
             imagesLoaded = false;
+            if (DEBUG) PApplet.println("loadCurrentImage failed");
             return;
         }
 
         String leftPath = leftImageFiles.get(currentIndex);
         String rightPath = rightImageFiles.get(currentIndex);
 
-        println("Loading pair " + (currentIndex + 1) + "/" + leftImageFiles.size());
-        println("  Left: " + leftPath);
-        println("  Right: " + rightPath);
+        //if (DEBUG) PApplet.println("Loading pair " + (currentIndex + 1) + "/" + leftImageFiles.size());
+        //if (DEBUG) PApplet.println("  Left: " + leftPath);
+        //if (DEBUG) PApplet.println("  Right: " + rightPath);
 
         // Load left image
-        currentLeft = loadImage(leftPath);
+        currentLeft = requestImage(leftPath);
         if (currentLeft == null) {
-            println("Failed to load left image");
+            if (DEBUG) PApplet.println("Failed to load left image");
             imagesLoaded = false;
             return;
         }
 
         // Load right image
-        currentRight = loadImage(rightPath);
+        currentRight = requestImage(rightPath);
         if (currentRight == null) {
-            println("Failed to load right image");
+            if (DEBUG) PApplet.println("Failed to load right image");
             imagesLoaded = false;
             return;
         }
         update = true;
         imagesLoaded = true;
+        if (DEBUG) PApplet.println("loadCurrentImage success.");
     }
 
-    void nextImage() {
-        if (currentIndex < leftImageFiles.size() - 1) {
-            currentIndex++;
-            loadCurrentImage();
+    public PImage loadImage(String filename) {
+        System.out.println("loadImage "+filename);
+        InputStream stream = createInput(filename);
+        if (stream == null) {
+            System.err.println("Could not find the image " + filename + ".");
+            return null;
         } else {
-            // Stop slideshow at end
-            slideshowActive = false;
-        }
-    }
+            Bitmap bitmap = null;
 
-    void previousImage() {
-        if (currentIndex > 0) {
-            currentIndex--;
-            loadCurrentImage();
-        }
-    }
+            try {
+                bitmap = BitmapFactory.decodeStream(stream);
+            } finally {
+                try {
+                    stream.close();
+                    //InputStream var12 = null;
+                } catch (IOException var10) {
+                }
 
-    void firstImage() {
-        if (leftImageFiles.size() > 0) {
-            currentIndex = 0;
-            loadCurrentImage();
-        }
-    }
-
-    void lastImage() {
-        if (leftImageFiles.size() > 0) {
-            currentIndex = leftImageFiles.size() - 1;
-            loadCurrentImage();
-        }
-    }
-
-    void startSlideshow() {
-        slideshowActive = true;
-        lastSlideshowTime = millis();
-    }
-
-    void stopSlideshow() {
-        slideshowActive = false;
-    }
-
-    public void keyPressedReview(int lastKeyCode, int lastKey) {
-        if (DEBUG) println("keyCode="+lastKeyCode);
-
-        // Handle keyboard key
-        if (lastKeyCode == KeyEvent.KEYCODE_DPAD_RIGHT || lastKeyCode == KeyEvent.KEYCODE_DPAD_LEFT) {
-            stopSlideshow();
-            if (lastKeyCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
-                nextImage();
-            } else {
-                previousImage();
             }
-        } else if (lastKeyCode == 24 || lastKeyCode== KeyEvent.KEYCODE_DPAD_UP) { // VOLUME_UP
-            stopSlideshow();
-            nextImage();
-        } else if (lastKeyCode == 25) { // VOLUME_DOWN
-            stopSlideshow();
-            previousImage();
-        } else if (lastKeyCode == 122) { // HOME key
-            stopSlideshow();
-            firstImage();
-        } else if (lastKeyCode == 123) { // END key
-            stopSlideshow();
-            lastImage();
-        } else if (lastKeyCode == 126 || lastKeyCode == KeyEvent.KEYCODE_BUTTON_R1) { // MEDIA_PLAY key
-            startSlideshow();
-        } else if (lastKeyCode == 23 || lastKeyCode == CENTER || lastKeyCode == KeyEvent.KEYCODE_BUTTON_A) { // DPAD_CENTER or OK
-            stopSlideshow();
-        } else if (lastKeyCode == ESC || lastKeyCode == 4) { // ESC or BACK
-            setLiveView(true);
-        } else if (key == 'm' || key == 'M') {
-            // Toggle mode (for testing)
-            stopSlideshow();
-            if (displayMode == DisplayMode.SBS) {
-                displayMode = DisplayMode.ANAGLYPH;
+
+            if (bitmap == null) {
+                System.err.println("Could not load the image because the bitmap was empty.");
+                return null;
             } else {
-                displayMode = DisplayMode.SBS;
+                PImage image = new PImage(bitmap);
+                image.parent = this;
+                image.loadPixels();
+                image.updatePixels();
+                return image;
             }
         }
     }
 
-//    // Override the default ESC behavior
-//    void exit() {
-//        super.exit();
+//    void nextImage() {
+//        if (currentIndex < leftImageFiles.size() - 1) {
+//            currentIndex++;
+//            loadCurrentImage();
+//        } else {
+//            // Stop slideshow at end
+//            slideshowActive = false;
+//        }
 //    }
+//
+//    void previousImage() {
+//        if (currentIndex > 0) {
+//            currentIndex--;
+//            loadCurrentImage();
+//        }
+//    }
+//
+//    void firstImage() {
+//        if (!leftImageFiles.isEmpty()) {
+//            currentIndex = 0;
+//            loadCurrentImage();
+//        }
+//    }
+//
+//    void lastImage() {
+//        if (!leftImageFiles.isEmpty()) {
+//            currentIndex = leftImageFiles.size() - 1;
+//            loadCurrentImage();
+//        }
+//    }
+//
+//    void startSlideshow() {
+//        slideshowActive = true;
+//        lastSlideshowTime = millis();
+//    }
+//
+//    void stopSlideshow() {
+//        slideshowActive = false;
+//    }
+//
+//    public void keyPressedReview(int lastKeyCode, int lastKey) {
+//        if (DEBUG) println("keyPressedReview keyCode="+lastKeyCode);
+//
+//        // Handle keyboard key
+//        if (lastKeyCode == KeyEvent.KEYCODE_DPAD_RIGHT || lastKeyCode == KeyEvent.KEYCODE_DPAD_LEFT) {
+//            stopSlideshow();
+//            if (lastKeyCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
+//                nextImage();
+//            } else {
+//                previousImage();
+//            }
+//        } else if (lastKeyCode == KeyEvent.KEYCODE_VOLUME_UP || lastKeyCode== KeyEvent.KEYCODE_DPAD_UP) {
+//            stopSlideshow();
+//            nextImage();
+//        } else if (lastKeyCode == KeyEvent.KEYCODE_VOLUME_DOWN) {
+//            stopSlideshow();
+//            previousImage();
+//        } else if (lastKeyCode == KeyEvent.KEYCODE_MOVE_HOME) {
+//            stopSlideshow();
+//            firstImage();
+//        } else if (lastKeyCode == KeyEvent.KEYCODE_MOVE_END) {
+//            stopSlideshow();
+//            lastImage();
+//        } else if (lastKeyCode == KeyEvent.KEYCODE_MEDIA_PLAY || lastKeyCode == KeyEvent.KEYCODE_BUTTON_R1) { // MEDIA_PLAY key
+//            startSlideshow();
+//        } else if (lastKeyCode == KeyEvent.KEYCODE_DPAD_CENTER || lastKeyCode == KeyEvent.KEYCODE_BUTTON_A) { // DPAD_CENTER or OK
+//            stopSlideshow();
+//        } else if (lastKeyCode == ESC || lastKeyCode == KeyEvent.KEYCODE_BACK) { // ESC or BACK
+//            setLiveView(true);
+//        } else if (key == 'm' || key == 'M') {
+//            // Toggle mode (for testing)
+//            stopSlideshow();
+//            if (displayMode == DisplayMode.SBS) {
+//                displayMode = DisplayMode.ANAGLYPH;
+//            } else {
+//                displayMode = DisplayMode.SBS;
+//            }
+//        }
+//    }
+
 }
 
