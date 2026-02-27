@@ -253,13 +253,13 @@ public class PhotoBooth extends PApplet {
     }
 
     private void drawLiveView() {
-        //print("LV ");
+
         if (camStereo.available) {
             camStereo.available = false;
             imgLeft = camStereo.leftImage;
             imgRight = camStereo.rightImage;
             AR = (float) imgLeft.width / (float) imgLeft.height;
-            //print("LV " + imgLeft.width + " " + imgLeft.height);
+
         }
         if (imgLeft != null && imgRight != null) {
             if (displayMode == DisplayMode.ANAGLYPH) {
@@ -574,6 +574,13 @@ public class PhotoBooth extends PApplet {
     public void setReview() {
         if (DEBUG) PApplet.println("setReview liveView="+liveView+ " imagesLoaded="+imagesLoaded);
         liveView = false;
+        update = true;
+        loop();
+    }
+
+    public void setLiveView() {
+        if (DEBUG) PApplet.println("setReview liveView="+liveView);
+        liveView = true;
         update = true;
         loop();
     }

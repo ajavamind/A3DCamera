@@ -32,7 +32,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
 import com.andymodla.android3dcamera.camera.Camera3D;
-import com.andymodla.android3dcamera.sketch.PhotoBooth6x4;
 import com.andymodla.android3dcamera.sketch.PhotoBooth;
 
 import java.util.Timer;
@@ -421,9 +420,15 @@ public class MainActivity extends AppCompatActivity {
             Log.d(TAG, "Middle button pressed");
 
             if (isPhotobooth) {
-                camera.closeCamera();
-                state = REVIEW_STATE;
-                photoBooth.setReview();
+                if (state == LIVEVIEW_STATE) {
+                    camera.closeCamera();
+                    state = REVIEW_STATE;
+                    photoBooth.setReview();
+                } else {
+                    camera.openCamera();
+                    state = LIVEVIEW_STATE;
+                    photoBooth.setLiveView();
+                }
             } else  {
                 media.reviewPhotos(displayMode);
             }
