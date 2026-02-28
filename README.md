@@ -132,6 +132,9 @@ Connect a Bluetooth Mouse to control the camera app with the mouse buttons. A mo
 * RIGHT Button - Share the photo with a selected app.
 
 ###### Photo Booth Camera Mode (Buzzer Box)
+
+![Buzzer Box Photo Booth Controller](images/BuzzerBox.png)
+
 The Buzzer box is a repurposed Bluetooth wireless mouse. The box has 3 contact switches. 
 The switches connect to buttons in the wireless mouse.
 
@@ -151,6 +154,7 @@ There are no camera leveling, tilt, or subject distance suggestions from the app
 2. Distance to the subject should be about 1.5 meter to match the 50mm camera lens interaxial separation distance.
 3. Synchronization of the camera lens shutters is not known. However the shutter speed is automatically set by the camera so motion blur is possible.
 4. I use a Bluetooth remote to take photos instead of the button keys on the camera. This requires pairing with a remote controller or keyboard.
+5. The 8BitDo Bluetooth game controller is not useful for a photo booth because it times out the connection if it is not used often enough. Much better is the Bluetooth wireless mouse, it has no timeout issues.
 
 ## App Download Link
 Latest version:
