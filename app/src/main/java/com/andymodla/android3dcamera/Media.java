@@ -320,7 +320,7 @@ public class Media {
     }
 
     public void printImageType() {
-        if (reviewSBS == null || reviewAnaglyph == null || reviewLeft == null) {
+        if (reviewSBS == null || reviewAnaglyph == null || reviewLeft == null || reviewRight == null) {
             Toast.makeText(context, "Nothing to Print", Toast.LENGTH_SHORT).show();
             return;
         }

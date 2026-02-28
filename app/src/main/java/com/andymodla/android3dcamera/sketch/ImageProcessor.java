@@ -235,8 +235,22 @@ class ImageProcessor {
         return img;
     }
 
+    PImage getSBSImage(File file) {
+        String filename = file.getAbsolutePath();
+        PImage img =getSBSImage(filename);
+        return img;
+    }
+
+    PImage getSBSImage(String filename) {
+        PImage temp = pApplet.loadImage(filename);
+        PImage img = centerCrop3DImage(temp, PRINT_AR);
+        ((Bitmap)temp.getNative()).recycle();
+        return img;
+    }
+
     // center crop image from stereo image Side by side
     // mask out the left and right sides of stereo image
+    // zooms in on the center of the image for printing, increasing the lens focal length
     PImage centerCrop3DImage(PImage src, float printAspectRatio) {
         PImage temp;
         if (DEBUG) println("centerCrop3DImage print ar=" + printAspectRatio);

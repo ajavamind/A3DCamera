@@ -1,0 +1,71 @@
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.Service;
+import android.content.Intent;
+import android.os.IBinder;
+import androidx.core.app.NotificationCompat;
+import java.io.IOException;
+
+public interface DownloadListener {
+  void onUrlReceived(String url);
+}
+
+public class DownloadServerService extends Service implements DownloadListener {
+  private static final String CHANNEL_ID = "DownloadServerChannel";
+
+  private SocketServerThread socketThread;
+  private Thread serverThread;
+
+  @Override
+    public void onCreate() {
+    super.onCreate();
+    createNotificationChannel();
+    Notification notification = new Notification.Builder(this, CHANNEL_ID)
+      .setContentTitle("Image Receiver Active")
+      .setContentText("Listening for incoming image URLs...")
+      //.setSmallIcon(android.R.drawable.stat_sys_download)
+      .build();
+
+    // Start as foreground service
+    startForeground(1, notification);
+
+    // Start the server
+    socketThread = new SocketServerThread(8080, this);
+    serverThread = new Thread(socketThread);
+    serverThread.start();
+  }
+
+  @Override
+    public void onUrlReceived(String url) {
+    // Since we are in a Service, we call the download logic directly
+    // You can move the startDownload(url) method logic here
+    // or use a helper class.
+    downloadHelper.startDownload(url);
+  }
+
+  private void createNotificationChannel() {
+    NotificationChannel serviceChannel = new NotificationChannel(
+      CHANNEL_ID, "Download Server Channel",
+      NotificationManager.IMPORTANCE_LOW);
+    NotificationManager manager = getSystemService(NotificationManager.class);
+    if (manager != null) manager.createNotificationChannel(serviceChannel);
+  }
+
+  @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+    return START_STICKY; // Restart if killed
+  }
+
+  @Override
+    public void onDestroy() {
+    if (socketThread != null) socketThread.stop();
+    if (serverThread != null) serverThread.interrupt();
+    super.onDestroy();
+  }
+
+  @Override
+    public IBinder onBind(Intent intent) {
+    return null;
+  }
+}

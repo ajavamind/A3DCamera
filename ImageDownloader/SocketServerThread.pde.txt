@@ -1,0 +1,43 @@
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.ServerSocket;
+import java.net.Socket;
+
+public class SocketServerThread implements Runnable {
+  private final int port;
+  private final DownloadListener listener;
+  private boolean isRunning = true;
+
+  public SocketServerThread(int port, DownloadListener listener) {
+    this.port = port;
+    this.listener = listener;
+  }
+
+  @Override
+    public void run() {
+    try (ServerSocket serverSocket = new ServerSocket(port)) {
+      while (isRunning) {
+        // Wait for connection
+        try (Socket client = serverSocket.accept();
+        BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()))) {
+
+          // Read the URL line from the source
+          String imageUrl = in.readLine();
+          if (imageUrl != null && !imageUrl.isEmpty()) {
+            listener.onUrlReceived(imageUrl);
+          }
+        }
+        catch (Exception e) {
+          e.printStackTrace();
+        }
+      }
+    }
+    catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
+
+  public void stop() {
+    isRunning = false;
+  }
+}

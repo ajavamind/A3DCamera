@@ -571,6 +571,9 @@ public class PhotoBooth extends PApplet {
     volatile PImage currentRight;
     volatile boolean imagesLoaded = false;
 
+    // Review photo for print
+    volatile PImage currentSBS;
+
     public void setReview() {
         if (DEBUG) PApplet.println("setReview liveView="+liveView+ " imagesLoaded="+imagesLoaded);
         liveView = false;
@@ -585,7 +588,7 @@ public class PhotoBooth extends PApplet {
         loop();
     }
 
-    // reviewSetup is run as a thread
+    // reviewSetup is run as a thread using Processing's thread() function
     public void reviewSetup() {
         if (DEBUG) PApplet.println("reviewSetup()");
         // Load image file list
@@ -759,6 +762,7 @@ public class PhotoBooth extends PApplet {
         if (DEBUG) PApplet.println("loadCurrentImage success.");
     }
 
+    // copied from PApplet.java Processing-Android
     public PImage loadImage(String filename) {
         System.out.println("loadImage "+filename);
         InputStream stream = createInput(filename);
