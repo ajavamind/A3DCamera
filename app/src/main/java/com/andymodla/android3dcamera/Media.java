@@ -72,6 +72,7 @@ public class Media {
 
     private String PHOTO_PREFIX = "IMG_";
     private String APP_REVIEW_PACKAGE = "jp.suto.stereoroidpro"; // Review with StereoRoidPro app default
+    public static String APP_AIEDIT_PACKAGE = "com.andymodla.fluxkontext"; // AI edit with itcamera app default
     public static String APP_PHOTO_REVIEW_PACKAGE = "com.google.android.apps.photosgo"; // Review with Gallery
     private String APP_CANON_PRINT_SERVICE_PACKAGE = "jp.co.canon.android.printservice.plugin";
     //APP_REVIEW_PACKAGE = "com.leialoft.leiaplayer"; // Review with Leia Player app default
@@ -337,13 +338,28 @@ public class Media {
 
     }
 
+    public File getMediaFile() {
+        Log.d(TAG, "getMediaFile()");
+        DisplayMode displayMode = ((MainActivity) context).getDisplayMode();
+        if (displayMode == DisplayMode.SBS) {
+            return reviewSBS;
+        } else if (displayMode == DisplayMode.ANAGLYPH) {
+            return reviewAnaglyph;
+        } else if (displayMode == DisplayMode.LEFT){
+            return reviewLeft;
+        } else {
+            return reviewRight;
+        }
+
+    }
+
     void reviewPhotos(DisplayMode displayMode) {
         Log.d(TAG, "reviewPhotos()");
         if (reviewSBS != null) {
             if (displayMode == DisplayMode.SBS) {
                 shareImage2(reviewSBS, APP_REVIEW_PACKAGE);
             } else {
-                shareImage2(reviewAnaglyph, null);
+                shareImage2(reviewAnaglyph, APP_AIEDIT_PACKAGE);
             }
         } else {
             Toast.makeText(context, "Nothing to Review", Toast.LENGTH_SHORT).show();
@@ -424,7 +440,10 @@ public class Media {
 
     public boolean shareImage2(File imageFile, String appPackage) {
         boolean success = false;
-        if (imageFile == null) return success;
+        if (imageFile == null) {
+            Log.d(TAG, "shareImage2 null imageFile");
+            return success;
+        }
         success = true;
         Log.d(TAG, "shareImage2 " + imageFile.getAbsolutePath());
         Uri contentUri = getContentUriForFile(imageFile.getPath());

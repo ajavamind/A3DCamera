@@ -511,8 +511,10 @@ public class PhotoBooth extends PApplet {
                 //if (DEBUG) println("magnifyScale = " + magnifyScale[magnifyIndex] + " magnifyIndex");
                 break;
             case KeyEvent.KEYCODE_Q:
-            case KeyEvent.KEYCODE_FORWARD:  // 125 forward media button on mouse: mirror toggle
                 toggleMirror();
+                break;
+            case KeyEvent.KEYCODE_FORWARD:  // 125 forward media button on mouse: mirror toggle
+                media.shareImage2(media.getMediaFile(), Media.APP_AIEDIT_PACKAGE);
                 break;
             case KeyEvent.KEYCODE_Z:
                 toggleZoom();

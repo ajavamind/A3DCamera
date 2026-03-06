@@ -3,6 +3,7 @@ package com.andymodla.android3dcamera;
 import android.content.Context;
 import android.net.nsd.NsdManager;
 import android.net.nsd.NsdServiceInfo;
+import android.util.Log;
 
 import java.util.concurrent.TimeUnit;
 
@@ -74,7 +75,8 @@ public class ImageSender {
                     // Success! The receiver now has the intent to download.
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                //e.printStackTrace();
+                Log.d(TAG, "Exception in sendUrlToReceiver: " + e.getMessage());
             } finally {
                 // Stop discovery to save battery once sent
                 //nsdManager.stopServiceDiscovery(discoveryListener);
