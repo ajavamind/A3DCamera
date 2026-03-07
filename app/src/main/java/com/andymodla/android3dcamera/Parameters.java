@@ -47,6 +47,7 @@ public class Parameters {
     public boolean mirrorImage = false; // for photo booth only
 
     String receiverIp = "";  // device IP address to receive URL link to saved photo
+    public boolean isBlankScreen = false;  // for camera
 
     // default constructor
     public Parameters(SharedPreferences prefs) {
@@ -89,6 +90,7 @@ public class Parameters {
         readVerticalOffset();
         readReceiverIp();
         readIsPhotoBooth();
+        readIsBlankScreen();
         readIsSoundOn();
     }
 
@@ -135,7 +137,7 @@ public class Parameters {
         return receiverIp;
     }
 
-    public void writeReceiverIp(String receiverIp) {
+    public void setReceiverIp(String receiverIp) {
         this.receiverIp = receiverIp;
         // Save to SharedPreferences
         SharedPreferences.Editor editor = prefs.edit();
@@ -154,6 +156,19 @@ public class Parameters {
 
     public void writeIsPhotoBooth(boolean isPhotoBooth) {
         this.isPhotoBooth = isPhotoBooth;
+    }
+
+    //------------------------------------------------------------------------------
+    public void readIsBlankScreen() {
+        isPhotoBooth = prefs.getBoolean(isBlankScreenStore.name, Boolean.parseBoolean(isBlankScreenStore.defaultValue));
+    }
+
+    public boolean getIsBlankScreen() {
+        return isBlankScreen;
+    }
+
+    public void writeIsBlankScreen(boolean isBlankScreen) {
+        this.isBlankScreen = isBlankScreen;
     }
 
     //------------------------------------------------------------------------------
@@ -189,12 +204,16 @@ public class Parameters {
             "b", "isPhotoBooth", "Photo Booth",
             "getIsPhotoBooth", "setIsPhotoBooth", boolean.class, "false");
 
+    ParamStore isBlankScreenStore = new ParamStore(
+            "bl", "isBlankScreen", "Blank Screen",
+            "getIsBlankScreen", "setIsBlankScreen", boolean.class, "false");
+
     ParamStore isSoundOnStore = new ParamStore(
             "s", "isSoundOn", "Sound On",
             "getIsSoundOn", "setIsSoundOn", boolean.class, "true");
 
     ParamStore[] paramStores = {parallaxOffsetStore, verticalOffsetStore, receiverIpStore,
-            isPhotoBoothStore, isSoundOnStore};
+            isPhotoBoothStore, isBlankScreenStore, isSoundOnStore};
 
     public String findParam(String abbr, String value, boolean set) {
         ParamStore store = null;

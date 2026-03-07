@@ -22,7 +22,8 @@ public class CommandLine {
      */
     public CommandLine(MainActivity mainActivity, Parameters parameters, String initialMessage) {
         cmdBuffer = new StringBuilder();
-        rootView = mainActivity.findViewById(R.id.overlay_text); // Or any appropriate view
+        //rootView = mainActivity.findViewById(R.id.overlay_text); // Or any appropriate view
+        rootView = mainActivity.decorView; // Or any appropriate view
         mParameters = parameters;
         mSnackbar = Snackbar.make(rootView, initialMessage, Snackbar.LENGTH_SHORT);
         mSnackbar.show();

@@ -45,6 +45,7 @@ import com.andymodla.android3dcamera.MainActivity;
 import com.andymodla.android3dcamera.R;  // kludge fix this
 import com.andymodla.android3dcamera.Media;
 import com.andymodla.android3dcamera.Parameters;
+import com.andymodla.android3dcamera.sketch.PhotoBooth;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -487,6 +488,7 @@ public class Camera3D {
             try {
                 mCameraManager.openCamera(stereoCameraId, mStateCallback, mCameraHandler); // logical camera 3 combines 1 and 2
                 Log.d(TAG, "mCameraManager.openCamera( " + stereoCameraId + " )");
+                ((PhotoBooth)pApplet).setLiveView();
             } catch (CameraAccessException e) {
                 Log.e(TAG, "Camera access exception", e);
             }

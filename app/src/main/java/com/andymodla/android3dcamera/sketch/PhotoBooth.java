@@ -18,6 +18,7 @@ import processing.core.PImage;
 import processing.event.MouseEvent;
 import processing.opengl.PGL;
 import android.os.Environment;
+import android.widget.Toast;
 
 import java.io.File;
 import java.io.IOException;
@@ -63,18 +64,20 @@ public class PhotoBooth extends PApplet {
     volatile boolean update = false;
     volatile boolean zoom = true;
     volatile boolean blankScreen = false;
-    volatile boolean liveView = true;
-    boolean first = true;
+    private boolean loadPrevious  = false;
+
+    private static final int LIVE_VIEW_STATE = 0;
+    private static final int REVIEW_PHOTO_STATE = 1;
+    private static final int REVIEW_AIEDIT_STATE = 2;
+    volatile int state = LIVE_VIEW_STATE;
 
     String countdown = "";  // default ignore null string
-    volatile int lastKeyCode;
-    volatile int lastKey;
 
     float[] magnifyScale = {1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.1f,
             2.2f, 2.3f, 2.4f, 2.5f, 2.6f, 2.7f, 2.8f, 2.9f, 3.0f};
     int magnifyIndex = 0;
 
-    float AR = 1.33333333f;  // aspect ratio for Xreal Beam Pro camera image sensor
+    float AR = 1.33333333f;  // aspect ratio for XReal Beam Pro camera image sensor
 
     // Display frame inside full screen AR 4:3
     int frameWidth = 2048;
@@ -95,7 +98,7 @@ public class PhotoBooth extends PApplet {
         background(black);
         smooth();
         frameRate(displayFPS);
-        liveView = true;
+        state = LIVE_VIEW_STATE;
 
         splashLeft = loadImage("FlowerPot_l.JPG");
         splashRight = loadImage("FlowerPot_r.JPG");
@@ -111,9 +114,8 @@ public class PhotoBooth extends PApplet {
         fill(yellow);
         text("3D Photo Booth", (float) width / 4, (float) height -200);
         text("3D Photo Booth", (float) 3*width / 4 , (float) height -200);
-        if (DEBUG) PApplet.println("StereoCamera setup done");
+        if (DEBUG) PApplet.println("PhotoBooth setup done");
         update = true;
-        thread("reviewSetup");
     }
 
     public void setCamera(Camera3D camera) {
@@ -122,13 +124,19 @@ public class PhotoBooth extends PApplet {
         this.media = camera.getMedia();
     }
 
-    public void setLiveView(boolean live) {
-        liveView = live;
-        update = true;
+    public boolean isLiveView() {
+        if (state == LIVE_VIEW_STATE) return true;
+        return false;
     }
 
-    public boolean isLiveView() {
-        return liveView;
+    public boolean isReview() {
+        if (state == REVIEW_PHOTO_STATE) return true;
+        return false;
+    }
+
+    public boolean isReviewEdit() {
+        if (state == REVIEW_AIEDIT_STATE) return true;
+        return false;
     }
 
     public void update() {
@@ -197,10 +205,14 @@ public class PhotoBooth extends PApplet {
     }
 
     public void draw() {
-        if (first || update) {
+        if (loadPrevious) {
+            loadPrevious = false;
+            thread("reviewSetup");
+        }
+
+        if (update) {
             background(black);  // clear screen for draw update
             update = false;
-            //first = false;
         }
         if (blankScreen) {
             return;
@@ -209,9 +221,11 @@ public class PhotoBooth extends PApplet {
             return;
         }
 
-        if (liveView) {
+        if (isLiveView()) {
             drawLiveView();
-        } else {
+        } else if (isReview()){
+            drawReview();
+        } else if (isReviewEdit()){
             drawReview();
         }
         if (magnifyScale[magnifyIndex] > 1.0f) {
@@ -243,10 +257,12 @@ public class PhotoBooth extends PApplet {
                 sMode = "Right";
             }
 
-            if (liveView) {
+            if (isLiveView()) {
                 text("Live", 50, height - 48);
-            } else {
+            } else if (isReview()){
                 text("Review" , 50, height - 48);
+            } else if (isReviewEdit()) {
+                text("AI Edit", 50, height - 48);
             }
             text(sMode, 50, height - 96);
         }
@@ -480,17 +496,17 @@ public class PhotoBooth extends PApplet {
     }
 
     // debug keys
-    public void keyPressed() {
-        lastKey = key;
-        lastKeyCode = keyCode;
-        processKeyCode(lastKeyCode, lastKey);
-    }
+//    public void keyPressed() {
+//        lastKey = key;
+//        lastKeyCode = keyCode;
+//        processKeyCode(lastKeyCode, lastKey);
+//    }
 
-    public void processKeyCode(int lastKeyCode, int lastKey) {
+    public boolean processKeyCode(int lastKeyCode, int lastKey) {
         switch (lastKeyCode) {
-            //case KeyEvent.KEYCODE_A:
-            //    toggleDisplayMode();
-            //    break;
+//            case KeyEvent.KEYCODE_A:
+//                displayMode = displayMode.next();
+//                break;
             case KeyEvent.KEYCODE_B:
                 toggleBlankScreen();
                 break;
@@ -514,6 +530,8 @@ public class PhotoBooth extends PApplet {
                 toggleMirror();
                 break;
             case KeyEvent.KEYCODE_FORWARD:  // 125 forward media button on mouse: mirror toggle
+                File mediaFile = media.getMediaFile();
+                if (mediaFile == null) println( "Nothing to AI Edit");
                 media.shareImage2(media.getMediaFile(), Media.APP_AIEDIT_PACKAGE);
                 break;
             case KeyEvent.KEYCODE_Z:
@@ -536,9 +554,10 @@ public class PhotoBooth extends PApplet {
                 if (DEBUG) println("parallax = " + parallax);
                 break;
             default:
-                break;
+                return false;
         }
         update = true;
+        return true;
     }
 
 // // For reference not used
@@ -565,8 +584,6 @@ public class PhotoBooth extends PApplet {
     ArrayList<String> leftImageFiles;
     ArrayList<String> rightImageFiles;
     int currentIndex = 0;
-    //boolean slideshowActive = false;
-    //int lastSlideshowTime = 0;
 
     // Review photos for display;
     volatile PImage currentLeft;
@@ -576,16 +593,33 @@ public class PhotoBooth extends PApplet {
     // Review photo for print
     volatile PImage currentSBS;
 
-    public void setReview() {
-        if (DEBUG) PApplet.println("setReview liveView="+liveView+ " imagesLoaded="+imagesLoaded);
-        liveView = false;
+    public void setLiveView() {
+        if (DEBUG) PApplet.println("setLiveView()");
+        state = LIVE_VIEW_STATE;
         update = true;
         loop();
     }
 
-    public void setLiveView() {
-        if (DEBUG) PApplet.println("setReview liveView="+liveView);
-        liveView = true;
+    public void setReview() {
+        if (DEBUG) PApplet.println("setReview state imagesLoaded="+imagesLoaded);
+        state = REVIEW_PHOTO_STATE;
+        update = true;
+        //if (DEBUG) PApplet.println("setReview state imagesLoaded="+imagesLoaded);
+        loop();
+//        runOnUiThread(new Runnable() {
+//            public void run() {
+//               println("setReview runOnUiThread redraw()");
+//               loop();
+//               println("setReview runOnUiThread redraw()");
+//            }
+//        });
+//        //loop();
+//        println("setReview end");
+    }
+
+    public void setAiEditReview() {
+        if (DEBUG) PApplet.println("setReview state imagesLoaded="+imagesLoaded);
+        state = REVIEW_AIEDIT_STATE;
         update = true;
         loop();
     }
@@ -631,11 +665,6 @@ public class PhotoBooth extends PApplet {
             text("Waiting for Photo", width/2, height/2);
         }
 
-        // Handle slideshow
-//        if (slideshowActive && millis() - lastSlideshowTime > SLIDESHOW_DELAY) {
-//            nextImage();
-//            lastSlideshowTime = millis();
-//        }
     }
 
     /**
@@ -730,7 +759,7 @@ public class PhotoBooth extends PApplet {
     }
 
     void loadCurrentImage() {
-        if (DEBUG) PApplet.println("loadCurrentImage() liveView="+liveView);
+        if (DEBUG) PApplet.println("loadCurrentImage() state="+state);
         if (leftImageFiles.isEmpty() || currentIndex < 0 || currentIndex >= leftImageFiles.size()) {
             imagesLoaded = false;
             if (DEBUG) PApplet.println("loadCurrentImage failed");
@@ -745,7 +774,7 @@ public class PhotoBooth extends PApplet {
         //if (DEBUG) PApplet.println("  Right: " + rightPath);
 
         // Load left image
-        currentLeft = requestImage(leftPath);
+        currentLeft = loadImage(leftPath);
         if (currentLeft == null) {
             if (DEBUG) PApplet.println("Failed to load left image");
             imagesLoaded = false;
@@ -753,7 +782,7 @@ public class PhotoBooth extends PApplet {
         }
 
         // Load right image
-        currentRight = requestImage(rightPath);
+        currentRight = loadImage(rightPath);
         if (currentRight == null) {
             if (DEBUG) PApplet.println("Failed to load right image");
             imagesLoaded = false;

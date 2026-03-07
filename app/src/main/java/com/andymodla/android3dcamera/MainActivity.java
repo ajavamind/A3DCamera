@@ -34,6 +34,7 @@ import androidx.core.app.ActivityCompat;
 import com.andymodla.android3dcamera.camera.Camera3D;
 import com.andymodla.android3dcamera.sketch.PhotoBooth;
 
+import java.io.File;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -83,10 +84,14 @@ public class MainActivity extends AppCompatActivity {
     private UdpRemoteControl udpRemoteControl;
 
 
-    // states definitions
-    private static final int LIVEVIEW_STATE = 0;
-    private static final int REVIEW_STATE = 1;
-    private volatile int state = LIVEVIEW_STATE;
+    // photo booth states definitions
+    public static final int LIVE_VIEW_STATE = 0;
+    public static final int REVIEW_PHOTO_STATE = 1;
+    public static final int REVIEW_AIEDIT_STATE = 2;
+
+    //private static final int LIVEVIEW_STATE = 0;
+    //private static final int REVIEW_STATE = 1;
+    private volatile int state = LIVE_VIEW_STATE;
 
     public volatile DisplayMode displayMode = DisplayMode.SBS;
 
@@ -99,9 +104,9 @@ public class MainActivity extends AppCompatActivity {
     PFragment photoBoothFragment;  // processing library photo booth fragment
     View decorView; // screen window view for camera app
 
-    public String hostIpAddr = "10.0.0.54";
+    public String hostIpAddr = "";
     public int hostPort = 8333;
-    public String receiverIP = "10.0.0.50";  // receiver IP
+    public String receiverIP = "";  // receiver IP
     public int receiverPort = 9000;
     public ImageSender imageSender;  // camera sends last picture URL link to an android 3D display device
 
@@ -115,6 +120,13 @@ public class MainActivity extends AppCompatActivity {
     public static final int CONTINUOUS_COUNT_DEFAULT = 59; //(one less 60)
     public static final int CONTINUOUS_COUNT_PHOTO_BOOTH = 2; //(one less 4)
     public int CONTINUOUS_COUNT = 0;
+
+    // Key codes for Photo Booth Buzzer Box, Beam Pro device: Camera, Volume up and down functionality
+    static final int PB_SHUTTER_KEY = KeyEvent.KEYCODE_CAMERA;  // Camera function
+    static final int PB_PRINT_KEY = KeyEvent.KEYCODE_CAMERA;    // Review Photo Function and launch print
+    static final int PB_AI_EDITOR_KEY = KeyEvent.KEYCODE_CAMERA; // Review Photo Function and launch AI Editor
+    static final int PB_FUNCTION_TOGGLE_KEY = KeyEvent.KEYCODE_VOLUME_UP; // Toggle through functions round robin
+    static final int PB_IMAGE_TOGGLE_KEY = KeyEvent.KEYCODE_VOLUME_DOWN;  // Toggle through photo type: SBS, Anaglyph, Left Eye, Right Eye
 
     // Key codes for 8BitDo Micro Bluetooth Keyboard controller (Android mode)
     static final int SHUTTER_KEY = KeyEvent.KEYCODE_BUTTON_R1;
@@ -297,11 +309,11 @@ public class MainActivity extends AppCompatActivity {
         super.onStart();
         Log.d(TAG, "onStart()");
         setVisibility();
-        if (!isPhotobooth) {
+        //if (!isPhotobooth) {
             if (commandLine == null) {
                 commandLine = new CommandLine(this, parameters, splashMessage + " Version: " + BuildConfig.VERSION_NAME);
             }
-        }
+        //}
     }
 
     @Override
@@ -354,18 +366,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-//    @Override
-//    public void onBackPressed() {
-//        // Check if a specific condition is met, for example, if a drawer is open
-//        // if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
-//        //     drawerLayout.closeDrawer(GravityCompat.START);
-//        // } else {
-//        // Call the super method to allow the default back button behavior
-//        Log.d(TAG, "onBackPressed()");
-//        super.onBackPressed();
-//        // }
-//    }
-
      /*==================================================================
      * OnGenericMotionListener implementation methods
      * Mouse Events
@@ -406,29 +406,18 @@ public class MainActivity extends AppCompatActivity {
             // Left mouse button pressed
             Log.d(TAG, "Left button pressed");
             if (isPhotobooth) {
-                if (photoBooth.isLiveView()) {
-                    capturePhoto();
-                } else {
-                    media.printImageType();
-                }
+                processShutter();
             } else {
                 capturePhoto();
             }
         }
         else if ((buttonState & MotionEvent.BUTTON_TERTIARY) != 0) {
             // Middle mouse button pressed
+            // handles toggle state changes in photo booth sketch
             Log.d(TAG, "Middle button pressed");
 
             if (isPhotobooth) {
-                if (state == LIVEVIEW_STATE) {
-                    camera.closeCamera();
-                    state = REVIEW_STATE;
-                    photoBooth.setReview();
-                } else {
-                    camera.openCamera();
-                    state = LIVEVIEW_STATE;
-                    photoBooth.setLiveView();
-                }
+                processStateToggle();
             } else  {
                 media.reviewPhotos(displayMode);
             }
@@ -437,8 +426,7 @@ public class MainActivity extends AppCompatActivity {
             // Right mouse button pressed
             Log.d(TAG, "Right button pressed");
             if (isPhotobooth) {
-                displayMode = displayMode.next();
-                photoBooth.setDisplayMode(displayMode);
+                processDisplayToggle();
             } else {
                 media.printImageType();
             }
@@ -446,7 +434,43 @@ public class MainActivity extends AppCompatActivity {
         // Other buttons like BUTTON_BACK, BUTTON_FORWARD can also be checked here
     }
 
-    private void handleButtonRelease(int buttonState) {
+    private void processShutter() {
+        if (photoBooth.isLiveView()) {
+            capturePhoto();
+        } else if (photoBooth.isReview()){
+            media.printImageType();
+        } else if (photoBooth.isReviewEdit()) {
+            File mediaFile = media.getMediaFile();
+            if (mediaFile == null) Toast.makeText(this, "Nothing to AI Edit", Toast.LENGTH_SHORT).show();
+            media.shareImage2(mediaFile, Media.APP_AIEDIT_PACKAGE);
+        }
+
+    }
+
+    private void processDisplayToggle() {
+        // toggle through photo types for display
+        displayMode = displayMode.next();
+        photoBooth.setDisplayMode(displayMode);
+
+    }
+
+    private void processStateToggle() {
+        // toggle through photo types for display
+        if (state == LIVE_VIEW_STATE) {
+            camera.closeCamera();
+            state = REVIEW_PHOTO_STATE;
+            photoBooth.setReview();
+        } else if (state == REVIEW_PHOTO_STATE) {
+            state = REVIEW_AIEDIT_STATE;
+            photoBooth.setAiEditReview();
+        } else if (state == REVIEW_AIEDIT_STATE) {
+            camera.openCamera();
+            state = LIVE_VIEW_STATE;
+            photoBooth.setLiveView();
+        }
+    }
+
+        private void handleButtonRelease(int buttonState) {
         // Handle button release events similarly
     }
 
@@ -471,61 +495,9 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-
-    private void capturePhoto() {
-        if ((countdownDigit < 0)) {
-            startCountdownSequence(countdownStart);
-        } else {
-            countdownTextView.setVisibility(View.GONE);
-            MainActivity.this.runOnUiThread(new Runnable() {
-                public void run() {
-                    camera.createCameraCaptureSession();
-                }
-            });
-        }
-    }
-
     /*==================================================================
-     * Permissions
+     * Key Events
      ===================================================================*/
-
-    private void checkPermissions() {
-        Log.d(TAG, "checkPermissions");
-        String[] permissions = {CAMERA};
-        boolean needsPermission = false;
-
-        for (String permission : permissions) {
-            if (ActivityCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED) {
-                needsPermission = true;
-                break;
-            }
-        }
-
-        if (needsPermission) {
-            Log.d(TAG, "Needs permission");
-            ActivityCompat.requestPermissions(this, permissions, MY_CAMERA_REQUEST_CODE);
-        } else {
-            allPermissionsGranted = true;
-        }
-
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        Log.d(TAG, "onRequestPermissionsResult requestCode=" + requestCode);
-        if (requestCode == MY_CAMERA_REQUEST_CODE) {
-            allPermissionsGranted = true;
-            for (int result : grantResults) {
-                Log.d(TAG, "result=" + result);
-                if (result != PackageManager.PERMISSION_GRANTED) {
-                    allPermissionsGranted = false;
-                    break;
-                }
-            }
-        }
-    }
-
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
@@ -561,15 +533,29 @@ public class MainActivity extends AppCompatActivity {
         if (commandLine != null && commandLine.processCommandLineKey(keyCode,ch)) {
             return true;
         }
+        if (isPhotobooth) {
+            boolean consumed = photoBooth.processKeyCode(keyCode, ch);
+            if (consumed) return true;
+            switch (keyCode) {
+                case KeyEvent.KEYCODE_VOLUME_UP:
+                    processStateToggle();
+                    return true;
+                case KeyEvent.KEYCODE_VOLUME_DOWN:
+                    processDisplayToggle();
+                    return true;
+                case KeyEvent.KEYCODE_3D_MODE:
+                    processShutter();
+                    return true;
+            }
+        }
         switch (keyCode) {
             case KeyEvent.KEYCODE_VOLUME_UP:
-                //case KeyEvent.KEYCODE_VOLUME_DOWN:
             case KeyEvent.KEYCODE_3D_MODE: // camera key - first turn off auto launch of native camera app
             case SHUTTER_KEY:
             case SHUTTER_KB_KEY:
-                if (state == REVIEW_STATE) { // ignore shutter in review state
-                    return true;
-                }
+//                if (state != LIVE_VIEW_STATE) { // ignore shutter in review state
+//                    return true;
+//                }
                 if (continuousMode) {
                     return true; // ignore shutter key in continuous shutter
                 } else {
@@ -580,12 +566,7 @@ public class MainActivity extends AppCompatActivity {
             case KeyEvent.KEYCODE_VOLUME_DOWN:
             case REVIEW_KEY:
             case REVIEW_KB_KEY:
-                if (isPhotobooth) {
-                    // ignore review key in photo booth
-                    return true;
-                } else {
-                    media.reviewPhotos(displayMode);
-                }
+                media.reviewPhotos(displayMode);
                 return true;
 
             case CONTINUOUS_KEY:
@@ -609,11 +590,11 @@ public class MainActivity extends AppCompatActivity {
                     Toast.makeText(this, "Continuous Mode Canceled ", Toast.LENGTH_SHORT).show();
                     return true;
                 }
-                if (state == REVIEW_STATE) {
-                    // turn on camera for entering liveview state
-                    state = LIVEVIEW_STATE;
+                if (state == REVIEW_PHOTO_STATE) {
+                    // turn on camera for entering live view state
+                    state = LIVE_VIEW_STATE;
                     camera.openCamera();
-                    photoBooth.setLiveView(true);
+                    photoBooth.setLiveView();
                     return true;
                 }
                 if (exitApp) {
@@ -686,7 +667,7 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             case TIMER_KEY:
             case TIMER_KB_KEY:
-                if (state == REVIEW_STATE) {
+                if (state != LIVE_VIEW_STATE) {
                     if (isPhotobooth) {
                         //photoBooth.keyPressedReview(keyCode, ch);
                     }
@@ -791,6 +772,19 @@ public class MainActivity extends AppCompatActivity {
 
     public void setContinuousCounter(int continuousCounter) {
         this.continuousCounter = continuousCounter;
+    }
+
+    private void capturePhoto() {
+        if ((countdownDigit < 0)) {
+            startCountdownSequence(countdownStart);
+        } else {
+            countdownTextView.setVisibility(View.GONE);
+            MainActivity.this.runOnUiThread(new Runnable() {
+                public void run() {
+                    camera.createCameraCaptureSession();
+                }
+            });
+        }
     }
 
     private void startContinuousCapturePhoto() {
@@ -965,6 +959,60 @@ public class MainActivity extends AppCompatActivity {
                       }
         );
     }
+
+    /*==================================================================
+     * Permissions
+     ===================================================================*/
+
+    private void checkPermissions() {
+        Log.d(TAG, "checkPermissions");
+        String[] permissions = {CAMERA};
+        boolean needsPermission = false;
+
+        for (String permission : permissions) {
+            if (ActivityCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED) {
+                needsPermission = true;
+                break;
+            }
+        }
+
+        if (needsPermission) {
+            Log.d(TAG, "Needs permission");
+            ActivityCompat.requestPermissions(this, permissions, MY_CAMERA_REQUEST_CODE);
+        } else {
+            allPermissionsGranted = true;
+        }
+
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        Log.d(TAG, "onRequestPermissionsResult requestCode=" + requestCode);
+        if (requestCode == MY_CAMERA_REQUEST_CODE) {
+            allPermissionsGranted = true;
+            for (int result : grantResults) {
+                Log.d(TAG, "result=" + result);
+                if (result != PackageManager.PERMISSION_GRANTED) {
+                    allPermissionsGranted = false;
+                    break;
+                }
+            }
+        }
+    }
+
+
+//    @Override
+//    public void onBackPressed() {
+//        // Check if a specific condition is met, for example, if a drawer is open
+//        // if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
+//        //     drawerLayout.closeDrawer(GravityCompat.START);
+//        // } else {
+//        // Call the super method to allow the default back button behavior
+//        Log.d(TAG, "onBackPressed()");
+//        super.onBackPressed();
+//        // }
+//    }
 
 }
 
