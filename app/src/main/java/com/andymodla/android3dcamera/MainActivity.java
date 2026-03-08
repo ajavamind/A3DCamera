@@ -3,6 +3,7 @@ package com.andymodla.android3dcamera;
 import static android.Manifest.permission.CAMERA;
 
 import android.app.Activity;
+import android.app.ActivityManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -1013,6 +1014,17 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    void checkHeap() {
+        ActivityManager am = (ActivityManager) getSystemService(ACTIVITY_SERVICE);
+
+// Standard heap limit (without largeHeap="true")
+        int standardHeapSize = am.getMemoryClass();
+
+// Large heap limit (available when largeHeap="true" is set)
+        int largeHeapSize = am.getLargeMemoryClass();
+
+        System.out.println( "Standard: " + standardHeapSize + "MB, Large: " + largeHeapSize + "MB");
+    }
 
 //    @Override
 //    public void onBackPressed() {

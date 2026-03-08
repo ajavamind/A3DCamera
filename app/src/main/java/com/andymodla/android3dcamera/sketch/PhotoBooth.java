@@ -52,7 +52,7 @@ public class PhotoBooth extends PApplet {
     int XBP_DISPLAY_WIDTH = 2400;
     int XBP_DISPLAY_HEIGHT = 1080;
 
-    int displayFPS = 60; // display frames per second
+    int displayFPS = 30; // display frames per second
 
     // Parallax and vertical alignment adjustments in pixels for XBP
     public volatile int parallax = 32;

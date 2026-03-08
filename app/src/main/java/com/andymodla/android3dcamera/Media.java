@@ -15,6 +15,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.media.MediaScannerConnection;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.util.Log;
@@ -27,6 +28,7 @@ import com.andymodla.android3dcamera.sketch.PhotoBooth;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -418,8 +420,13 @@ public class Media {
         ContentValues contentValues = new ContentValues();
         contentValues.put(MediaStore.Images.Media.DISPLAY_NAME, file.getName());
         contentValues.put(MediaStore.Images.Media.MIME_TYPE, getMimeType(file.getName()));
-        contentValues.put(MediaStore.Images.Media.DATA, file.getAbsolutePath());
+        //contentValues.put(MediaStore.Images.Media.DATA, file.getAbsolutePath());
         contentValues.put(MediaStore.Images.Media.DATE_ADDED, System.currentTimeMillis() / 1000);
+
+        // Use RELATIVE_PATH to tell the system where to put the file in the MediaStore
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            contentValues.put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/itCamera");
+        }
 
         return resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues);
     }
@@ -438,7 +445,181 @@ public class Media {
         return shareImage2(reviewSBS, null);
     }
 
+    public boolean shareImage2_old2(File imageFile, String appPackage) {
+        boolean success = false;
+        if (imageFile == null || !imageFile.exists()) {
+            Log.d(TAG, "shareImage2 null or invalid imageFile");
+            return success;
+        }
+
+        // Resize the image
+        File resizedImageFile = resizeImage(imageFile, 1080);
+        if (resizedImageFile == null) {
+            Log.e(TAG, "Failed to resize image");
+            return false;
+        }
+
+        success = true;
+        Log.d(TAG, "shareImage2 " + resizedImageFile.getAbsolutePath());
+        Uri contentUri = getContentUriForFile(resizedImageFile.getPath());
+
+        if (contentUri != null) {
+            try {
+                Intent intent = new Intent(Intent.ACTION_SEND);
+                intent.putExtra(Intent.EXTRA_STREAM, contentUri);
+                intent.setType("image/*");
+                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                if (appPackage != null) {
+                    intent.setPackage(appPackage);
+                }
+                context.startActivity(intent);
+            } catch (ActivityNotFoundException e) {
+                Log.d(TAG, "Failed to launch target app.");
+                Toast.makeText(context, appPackage + " not installed", Toast.LENGTH_SHORT).show();
+                Intent intent = new Intent(Intent.ACTION_SEND);
+                intent.putExtra(Intent.EXTRA_STREAM, contentUri);
+                intent.setType("image/*");
+                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                context.startActivity(Intent.createChooser(intent, "Share image with:"));
+            }
+        } else {
+            Log.e(TAG, "Failed to create MediaStore entry.");
+            success = false;
+        }
+
+        // Clean up temporary resized file
+        if (resizedImageFile != null && resizedImageFile.exists()) {
+            resizedImageFile.delete();
+        }
+
+        return success;
+    }
+
+    private File resizeImage(File originalFile, int maxHeight) {
+        try {
+            // Decode image bounds
+            BitmapFactory.Options options = new BitmapFactory.Options();
+            options.inJustDecodeBounds = true;
+            BitmapFactory.decodeFile(originalFile.getAbsolutePath(), options);
+
+            int originalWidth = options.outWidth;
+            int originalHeight = options.outHeight;
+
+            // Calculate new dimensions maintaining aspect ratio
+            int newHeight = maxHeight;
+            int newWidth = (int) ((float) originalWidth * (float) maxHeight / (float) originalHeight);
+
+            // Decode with sample size for performance
+            options.inJustDecodeBounds = false;
+            options.inSampleSize = calculateInSampleSize(options, newWidth, newHeight);
+
+            Bitmap bitmap = BitmapFactory.decodeFile(originalFile.getAbsolutePath(), options);
+            Bitmap resizedBitmap = Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true);
+
+            // Save to temporary file
+            File tempFile = File.createTempFile("resized_", ".jpg");
+            FileOutputStream fos = new FileOutputStream(tempFile);
+            resizedBitmap.compress(Bitmap.CompressFormat.JPEG, 85, fos);
+            fos.close();
+
+            bitmap.recycle();
+            resizedBitmap.recycle();
+
+            return tempFile;
+        } catch (IOException e) {
+            Log.e(TAG, "Error resizing image", e);
+            return null;
+        }
+    }
+
     public boolean shareImage2(File imageFile, String appPackage) {
+        if (imageFile == null || !imageFile.exists()) return false;
+
+        // 1. Get the Uri from MediaStore first
+        Uri contentUri = createMediaStoreUri("resized_" + imageFile.getName());
+
+        if (contentUri != null) {
+            try {
+                // 2. Resize and Write directly to the Uri
+                boolean saved = resizeAndSaveToUri(imageFile, contentUri, 1080);
+                if (!saved) return false;
+
+                // 3. Proceed with Intent
+                Intent intent = new Intent(Intent.ACTION_SEND);
+                intent.putExtra(Intent.EXTRA_STREAM, contentUri);
+                intent.setType("image/jpeg");
+                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                if (appPackage != null) {
+                    intent.setPackage(appPackage);
+                }
+                context.startActivity(intent);
+                return true;
+            } catch (Exception e) {
+                Log.e(TAG, "Sharing failed", e);
+            }
+        }
+        return false;
+    }
+
+    private Uri createMediaStoreUri(String fileName) {
+        ContentValues values = new ContentValues();
+        values.put(MediaStore.Images.Media.DISPLAY_NAME, fileName);
+        values.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg");
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            values.put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/itCamera");
+            values.put(MediaStore.Images.Media.IS_PENDING, 1);
+        }
+
+        return context.getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+    }
+
+    private boolean resizeAndSaveToUri(File sourceFile, Uri destUri, int maxHeight) {
+        try {
+            // ... (Keep your existing resizing logic to get a Bitmap) ...
+            BitmapFactory.Options options = new BitmapFactory.Options();
+            options.inJustDecodeBounds = true;
+            BitmapFactory.decodeFile(sourceFile.getAbsolutePath(), options);
+            options.inSampleSize = calculateInSampleSize(options, -1, maxHeight);
+            options.inJustDecodeBounds = false;
+            Bitmap bitmap = BitmapFactory.decodeFile(sourceFile.getAbsolutePath(), options);
+
+            // Write to the MediaStore Uri
+            try (OutputStream os = context.getContentResolver().openOutputStream(destUri)) {
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 85, os);
+            }
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                ContentValues values = new ContentValues();
+                values.put(MediaStore.Images.Media.IS_PENDING, 0);
+                context.getContentResolver().update(destUri, values, null, null);
+            }
+
+            bitmap.recycle();
+            return true;
+        } catch (IOException e) {
+            Log.e(TAG, "Error writing to MediaStore", e);
+            return false;
+        }
+    }
+    private int calculateInSampleSize(BitmapFactory.Options options, int reqWidth, int reqHeight) {
+        final int height = options.outHeight;
+        final int width = options.outWidth;
+        int inSampleSize = 1;
+
+        if (height > reqHeight || width > reqWidth) {
+            final int halfHeight = height / 2;
+            final int halfWidth = width / 2;
+
+            while ((halfHeight / inSampleSize) >= reqHeight && (halfWidth / inSampleSize) >= reqWidth) {
+                inSampleSize *= 2;
+            }
+        }
+
+        return inSampleSize;
+    }
+
+    public boolean shareImage2_old(File imageFile, String appPackage) {
         boolean success = false;
         if (imageFile == null) {
             Log.d(TAG, "shareImage2 null imageFile");
