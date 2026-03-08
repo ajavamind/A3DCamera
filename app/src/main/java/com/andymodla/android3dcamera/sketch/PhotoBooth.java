@@ -12,13 +12,11 @@ import com.andymodla.android3dcamera.DisplayMode;
 import com.andymodla.android3dcamera.Media;
 import com.andymodla.android3dcamera.camera.Camera3D;
 import com.andymodla.android3dcamera.Parameters;
-
+import com.andymodla.android3dcamera.MainActivity;
 import processing.core.PApplet;
 import processing.core.PImage;
-import processing.event.MouseEvent;
 import processing.opengl.PGL;
 import android.os.Environment;
-import android.widget.Toast;
 
 import java.io.File;
 import java.io.IOException;
@@ -36,6 +34,7 @@ public class PhotoBooth extends PApplet {
     int white = color(255);
     int gray = color(128);
 
+    MainActivity mainActivity;
     Camera3D camStereo;  // The stereo camera used with the device
     Parameters parameters; // Application parameters
     Media media;
@@ -64,12 +63,7 @@ public class PhotoBooth extends PApplet {
     volatile boolean update = false;
     volatile boolean zoom = true;
     volatile boolean blankScreen = false;
-    private boolean loadPrevious  = false;
-
-    private static final int LIVE_VIEW_STATE = 0;
-    private static final int REVIEW_PHOTO_STATE = 1;
-    private static final int REVIEW_AIEDIT_STATE = 2;
-    volatile int state = LIVE_VIEW_STATE;
+    private boolean loadPrevious  = true;
 
     String countdown = "";  // default ignore null string
 
@@ -85,6 +79,10 @@ public class PhotoBooth extends PApplet {
     int frameX = (XBP_DISPLAY_WIDTH-frameWidth) / 2;  // 2400 pixel screen minus frameWidth/2
     int frameY = (XBP_DISPLAY_HEIGHT-frameHeight) / 2;
 
+    public void setMainActivity(MainActivity mainActivity) {
+        this.mainActivity = mainActivity;
+    }
+
     public void settings() {
         // set size for XReal Beam Pro full display
         // draw canvas size and render using OpenGL
@@ -98,7 +96,7 @@ public class PhotoBooth extends PApplet {
         background(black);
         smooth();
         frameRate(displayFPS);
-        state = LIVE_VIEW_STATE;
+        mainActivity.state = MainActivity.LIVE_VIEW_STATE;
 
         splashLeft = loadImage("FlowerPot_l.JPG");
         splashRight = loadImage("FlowerPot_r.JPG");
@@ -125,17 +123,17 @@ public class PhotoBooth extends PApplet {
     }
 
     public boolean isLiveView() {
-        if (state == LIVE_VIEW_STATE) return true;
+        if (mainActivity.state == MainActivity.LIVE_VIEW_STATE) return true;
         return false;
     }
 
     public boolean isReview() {
-        if (state == REVIEW_PHOTO_STATE) return true;
+        if (mainActivity.state == MainActivity.REVIEW_PHOTO_STATE) return true;
         return false;
     }
 
     public boolean isReviewEdit() {
-        if (state == REVIEW_AIEDIT_STATE) return true;
+        if (mainActivity.state == MainActivity.REVIEW_AIEDIT_STATE) return true;
         return false;
     }
 
@@ -209,11 +207,12 @@ public class PhotoBooth extends PApplet {
             loadPrevious = false;
             thread("reviewSetup");
         }
+        background(black);
+//        if (update) {
+//            background(black);  // clear screen for draw update
+//            update = false;
+//        }
 
-        if (update) {
-            background(black);  // clear screen for draw update
-            update = false;
-        }
         if (blankScreen) {
             return;
         }
@@ -242,7 +241,7 @@ public class PhotoBooth extends PApplet {
             text("parallax = " + (parallax) + " mirror = " + mirror + " zoom = " + zoom + " w = "+imgLeft.width + " h ="+ imgLeft.height, 50, height - 96);
             text("vertical = " + (verticalAlignment) +" magnify = " + magnifyScale[magnifyIndex], 50, height - 48);
         }
-        if (DEBUG) {
+        //if (DEBUG) {
             textSize(48);
             fill(yellow);
             textAlign(LEFT);
@@ -265,7 +264,7 @@ public class PhotoBooth extends PApplet {
                 text("AI Edit", 50, height - 48);
             }
             text(sMode, 50, height - 96);
-        }
+       // }
     }
 
     private void drawLiveView() {
@@ -593,37 +592,6 @@ public class PhotoBooth extends PApplet {
     // Review photo for print
     volatile PImage currentSBS;
 
-    public void setLiveView() {
-        if (DEBUG) PApplet.println("setLiveView()");
-        state = LIVE_VIEW_STATE;
-        update = true;
-        loop();
-    }
-
-    public void setReview() {
-        if (DEBUG) PApplet.println("setReview state imagesLoaded="+imagesLoaded);
-        state = REVIEW_PHOTO_STATE;
-        update = true;
-        //if (DEBUG) PApplet.println("setReview state imagesLoaded="+imagesLoaded);
-        loop();
-//        runOnUiThread(new Runnable() {
-//            public void run() {
-//               println("setReview runOnUiThread redraw()");
-//               loop();
-//               println("setReview runOnUiThread redraw()");
-//            }
-//        });
-//        //loop();
-//        println("setReview end");
-    }
-
-    public void setAiEditReview() {
-        if (DEBUG) PApplet.println("setReview state imagesLoaded="+imagesLoaded);
-        state = REVIEW_AIEDIT_STATE;
-        update = true;
-        loop();
-    }
-
     // reviewSetup is run as a thread using Processing's thread() function
     public void reviewSetup() {
         if (DEBUG) PApplet.println("reviewSetup()");
@@ -633,6 +601,8 @@ public class PhotoBooth extends PApplet {
         // Load the first image if available
         if (listAvailable) {
             loadCurrentImage();
+            update = true;
+            loop();
         }
 
     }
@@ -759,7 +729,7 @@ public class PhotoBooth extends PApplet {
     }
 
     void loadCurrentImage() {
-        if (DEBUG) PApplet.println("loadCurrentImage() state="+state);
+        if (DEBUG) PApplet.println("loadCurrentImage() state="+mainActivity.state);
         if (leftImageFiles.isEmpty() || currentIndex < 0 || currentIndex >= leftImageFiles.size()) {
             imagesLoaded = false;
             if (DEBUG) PApplet.println("loadCurrentImage failed");

@@ -88,10 +88,7 @@ public class MainActivity extends AppCompatActivity {
     public static final int LIVE_VIEW_STATE = 0;
     public static final int REVIEW_PHOTO_STATE = 1;
     public static final int REVIEW_AIEDIT_STATE = 2;
-
-    //private static final int LIVEVIEW_STATE = 0;
-    //private static final int REVIEW_STATE = 1;
-    private volatile int state = LIVE_VIEW_STATE;
+    public volatile int state = LIVE_VIEW_STATE;
 
     public volatile DisplayMode displayMode = DisplayMode.SBS;
 
@@ -240,7 +237,7 @@ public class MainActivity extends AppCompatActivity {
             photoBoothFragment.setView(frame, this);
             media.setpApplet(photoBooth);
             imageSender = new ImageSender(this);
-
+            photoBooth.setMainActivity(this);
         } else {
             setContentView(R.layout.layout);
         }
@@ -459,18 +456,39 @@ public class MainActivity extends AppCompatActivity {
         if (state == LIVE_VIEW_STATE) {
             camera.closeCamera();
             state = REVIEW_PHOTO_STATE;
-            photoBooth.setReview();
+            setReview();
         } else if (state == REVIEW_PHOTO_STATE) {
             state = REVIEW_AIEDIT_STATE;
-            photoBooth.setAiEditReview();
+            setAiEditReview();
         } else if (state == REVIEW_AIEDIT_STATE) {
             camera.openCamera();
             state = LIVE_VIEW_STATE;
-            photoBooth.setLiveView();
+            setLiveView();
         }
     }
 
-        private void handleButtonRelease(int buttonState) {
+    public void setLiveView() {
+        //if (DEBUG) PApplet.println("setLiveView()");
+        state = LIVE_VIEW_STATE;
+    }
+
+    public void setReview() {
+        //if (DEBUG) PApplet.println("setReview state imagesLoaded="+imagesLoaded);
+        state = REVIEW_PHOTO_STATE;
+//        update = true;
+//        //if (DEBUG) PApplet.println("setReview state imagesLoaded="+imagesLoaded);
+//        loop();
+    }
+
+    public void setAiEditReview() {
+        //if (DEBUG) PApplet.println("setReview state imagesLoaded="+imagesLoaded);
+        state = REVIEW_AIEDIT_STATE;
+       // update = true;
+       // loop();
+    }
+
+
+    private void handleButtonRelease(int buttonState) {
         // Handle button release events similarly
     }
 
@@ -478,20 +496,14 @@ public class MainActivity extends AppCompatActivity {
         // Handle mouse wheel events
         if (delta > 0) {
             // Scrolled Up (away from user)
-            //if (state == REVIEW_STATE) {
-            //    photoBooth.processKeyCode(KeyEvent.KEYCODE_DPAD_RIGHT, 0);
-            //} else {
-            if (isPhotobooth)
+            if (isPhotobooth) {
                 photoBooth.processKeyCode(KeyEvent.KEYCODE_RIGHT_BRACKET, 0);
-            //}
+            }
         } else if (delta < 0) {
             // Scrolled Down (toward user)
-            //if (state == REVIEW_STATE) {
-            //    photoBooth.processKeyCode(KeyEvent.KEYCODE_DPAD_LEFT, 0);
-            //} else {
-            if (isPhotobooth)
+            if (isPhotobooth) {
                 photoBooth.processKeyCode(KeyEvent.KEYCODE_LEFT_BRACKET, 0);
-            //}
+            }
         }
     }
 
@@ -594,7 +606,7 @@ public class MainActivity extends AppCompatActivity {
                     // turn on camera for entering live view state
                     state = LIVE_VIEW_STATE;
                     camera.openCamera();
-                    photoBooth.setLiveView();
+                    setLiveView();
                     return true;
                 }
                 if (exitApp) {

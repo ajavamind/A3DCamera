@@ -488,7 +488,6 @@ public class Camera3D {
             try {
                 mCameraManager.openCamera(stereoCameraId, mStateCallback, mCameraHandler); // logical camera 3 combines 1 and 2
                 Log.d(TAG, "mCameraManager.openCamera( " + stereoCameraId + " )");
-                ((PhotoBooth)pApplet).setLiveView();
             } catch (CameraAccessException e) {
                 Log.e(TAG, "Camera access exception", e);
             }
