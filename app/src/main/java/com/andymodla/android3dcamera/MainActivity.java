@@ -205,10 +205,10 @@ public class MainActivity extends AppCompatActivity {
 
         // set parameters for my XReal Beam Pro stereo window adjustment
         // Stereo Image Alignment parameters (same values as StereoPhotoMaker)
-        // 212  left/right parallax horizontal offset for stereo window placement
-        // -12  left/right camera alignment vertical offset for camera correction
-        // parameters.writeParallaxOffset(212);
-        // parameters.writeVerticalOffset(-12);
+        // 165  left/right parallax horizontal offset for stereo window placement
+        // -1  left/right camera alignment vertical offset for camera correction
+         parameters.writeParallaxOffset(165);
+         parameters.writeVerticalOffset(-1);
 
         // Establish media storage folders for saving photos
         media = new Media(this, parameters, aiVision);
@@ -318,7 +318,6 @@ public class MainActivity extends AppCompatActivity {
     protected void onPause() {
         Log.d(TAG, "onPause()");
         camera.closeCamera();
-        //camera.stopCameraThread();
         super.onPause();
     }
 
@@ -404,7 +403,9 @@ public class MainActivity extends AppCompatActivity {
             // Left mouse button pressed
             Log.d(TAG, "Left button pressed");
             if (isPhotobooth) {
-                processShutter();
+                if (!camera.captureInProgress) {
+                    processShutter();
+                }
             } else {
                 capturePhoto();
             }
@@ -455,15 +456,18 @@ public class MainActivity extends AppCompatActivity {
     private void processStateToggle() {
         // toggle through photo types for display
         if (state == LIVE_VIEW_STATE) {
-            camera.closeCamera();
-            state = REVIEW_PHOTO_STATE;
+
+            //state = REVIEW_PHOTO_STATE;
             setReview();
+
+            //camera.closeCamera();
+            //photoBooth.redraw();
         } else if (state == REVIEW_PHOTO_STATE) {
-            state = REVIEW_AIEDIT_STATE;
+            //state = REVIEW_AIEDIT_STATE;
             setAiEditReview();
         } else if (state == REVIEW_AIEDIT_STATE) {
-            camera.openCamera();
-            state = LIVE_VIEW_STATE;
+            //camera.openCamera();
+            //state = LIVE_VIEW_STATE;
             setLiveView();
         }
     }
@@ -557,7 +561,9 @@ public class MainActivity extends AppCompatActivity {
                     processDisplayToggle();
                     return true;
                 case KeyEvent.KEYCODE_3D_MODE:
-                    processShutter();
+                    if (!camera.captureInProgress) {
+                        processShutter();
+                    }
                     return true;
             }
         }

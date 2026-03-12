@@ -274,7 +274,6 @@ public class Media {
 
         leftBitmap = saveImageFile(leftBytes, PHOTO_PREFIX + timestamp, true); // left
         rightBitmap = saveImageFile(rightBytes, PHOTO_PREFIX + timestamp, false); // right
-        ToastHelper.showToast(context, "Saved IMG" + timestamp);
 
         if (pApplet != null) {  // Processing sketch is present
             if (leftReview != null) {
@@ -291,8 +290,6 @@ public class Media {
             leftReview.updatePixels();
             rightReview.loadPixels();
             rightReview.updatePixels();
-            ((PhotoBooth) pApplet).setReviewImages(leftReview, rightReview);
-
         }
 
         if (aiVision != null) {
@@ -318,8 +315,11 @@ public class Media {
                 ((MainActivity) context).nextContinuousCapturePhoto();
             }
         }
-        //Toast.makeText(this, "Saved IMG" + timestamp, Toast.LENGTH_SHORT).show();
-
+        ToastHelper.showToast(context, "Saved " + timestamp);
+        if (pApplet != null) {
+            ((PhotoBooth) pApplet).setReviewImages(leftReview, rightReview);
+            ((MainActivity) context).setReview();
+        }
     }
 
     public void printImageType() {
@@ -445,98 +445,98 @@ public class Media {
         return shareImage2(reviewSBS, null);
     }
 
-    public boolean shareImage2_old2(File imageFile, String appPackage) {
-        boolean success = false;
-        if (imageFile == null || !imageFile.exists()) {
-            Log.d(TAG, "shareImage2 null or invalid imageFile");
-            return success;
-        }
+//    public boolean shareImage2_old2(File imageFile, String appPackage) {
+//        boolean success = false;
+//        if (imageFile == null || !imageFile.exists()) {
+//            Log.d(TAG, "shareImage2 null or invalid imageFile");
+//            return success;
+//        }
+//
+//        // Resize the image
+//        File resizedImageFile = resizeImage(imageFile, 1080);
+//        if (resizedImageFile == null) {
+//            Log.e(TAG, "Failed to resize image");
+//            return false;
+//        }
+//
+//        success = true;
+//        Log.d(TAG, "shareImage2 " + resizedImageFile.getAbsolutePath());
+//        Uri contentUri = getContentUriForFile(resizedImageFile.getPath());
+//
+//        if (contentUri != null) {
+//            try {
+//                Intent intent = new Intent(Intent.ACTION_SEND);
+//                intent.putExtra(Intent.EXTRA_STREAM, contentUri);
+//                intent.setType("image/*");
+//                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+//                if (appPackage != null) {
+//                    intent.setPackage(appPackage);
+//                }
+//                context.startActivity(intent);
+//            } catch (ActivityNotFoundException e) {
+//                Log.d(TAG, "Failed to launch target app.");
+//                Toast.makeText(context, appPackage + " not installed", Toast.LENGTH_SHORT).show();
+//                Intent intent = new Intent(Intent.ACTION_SEND);
+//                intent.putExtra(Intent.EXTRA_STREAM, contentUri);
+//                intent.setType("image/*");
+//                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+//                context.startActivity(Intent.createChooser(intent, "Share image with:"));
+//            }
+//        } else {
+//            Log.e(TAG, "Failed to create MediaStore entry.");
+//            success = false;
+//        }
+//
+//        // Clean up temporary resized file
+//        if (resizedImageFile != null && resizedImageFile.exists()) {
+//            resizedImageFile.delete();
+//        }
+//
+//        return success;
+//    }
 
-        // Resize the image
-        File resizedImageFile = resizeImage(imageFile, 1080);
-        if (resizedImageFile == null) {
-            Log.e(TAG, "Failed to resize image");
-            return false;
-        }
-
-        success = true;
-        Log.d(TAG, "shareImage2 " + resizedImageFile.getAbsolutePath());
-        Uri contentUri = getContentUriForFile(resizedImageFile.getPath());
-
-        if (contentUri != null) {
-            try {
-                Intent intent = new Intent(Intent.ACTION_SEND);
-                intent.putExtra(Intent.EXTRA_STREAM, contentUri);
-                intent.setType("image/*");
-                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                if (appPackage != null) {
-                    intent.setPackage(appPackage);
-                }
-                context.startActivity(intent);
-            } catch (ActivityNotFoundException e) {
-                Log.d(TAG, "Failed to launch target app.");
-                Toast.makeText(context, appPackage + " not installed", Toast.LENGTH_SHORT).show();
-                Intent intent = new Intent(Intent.ACTION_SEND);
-                intent.putExtra(Intent.EXTRA_STREAM, contentUri);
-                intent.setType("image/*");
-                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                context.startActivity(Intent.createChooser(intent, "Share image with:"));
-            }
-        } else {
-            Log.e(TAG, "Failed to create MediaStore entry.");
-            success = false;
-        }
-
-        // Clean up temporary resized file
-        if (resizedImageFile != null && resizedImageFile.exists()) {
-            resizedImageFile.delete();
-        }
-
-        return success;
-    }
-
-    private File resizeImage(File originalFile, int maxHeight) {
-        try {
-            // Decode image bounds
-            BitmapFactory.Options options = new BitmapFactory.Options();
-            options.inJustDecodeBounds = true;
-            BitmapFactory.decodeFile(originalFile.getAbsolutePath(), options);
-
-            int originalWidth = options.outWidth;
-            int originalHeight = options.outHeight;
-
-            // Calculate new dimensions maintaining aspect ratio
-            int newHeight = maxHeight;
-            int newWidth = (int) ((float) originalWidth * (float) maxHeight / (float) originalHeight);
-
-            // Decode with sample size for performance
-            options.inJustDecodeBounds = false;
-            options.inSampleSize = calculateInSampleSize(options, newWidth, newHeight);
-
-            Bitmap bitmap = BitmapFactory.decodeFile(originalFile.getAbsolutePath(), options);
-            Bitmap resizedBitmap = Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true);
-
-            // Save to temporary file
-            File tempFile = File.createTempFile("resized_", ".jpg");
-            FileOutputStream fos = new FileOutputStream(tempFile);
-            resizedBitmap.compress(Bitmap.CompressFormat.JPEG, 85, fos);
-            fos.close();
-
-            bitmap.recycle();
-            resizedBitmap.recycle();
-
-            return tempFile;
-        } catch (IOException e) {
-            Log.e(TAG, "Error resizing image", e);
-            return null;
-        }
-    }
+//    private File resizeImage(File originalFile, int maxHeight) {
+//        try {
+//            // Decode image bounds
+//            BitmapFactory.Options options = new BitmapFactory.Options();
+//            options.inJustDecodeBounds = true;
+//            BitmapFactory.decodeFile(originalFile.getAbsolutePath(), options);
+//
+//            int originalWidth = options.outWidth;
+//            int originalHeight = options.outHeight;
+//
+//            // Calculate new dimensions maintaining aspect ratio
+//            int newHeight = maxHeight;
+//            int newWidth = (int) ((float) originalWidth * (float) maxHeight / (float) originalHeight);
+//
+//            // Decode with sample size for performance
+//            options.inJustDecodeBounds = false;
+//            options.inSampleSize = calculateInSampleSize(options, newWidth, newHeight);
+//
+//            Bitmap bitmap = BitmapFactory.decodeFile(originalFile.getAbsolutePath(), options);
+//            Bitmap resizedBitmap = Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true);
+//
+//            // Save to temporary file
+//            File tempFile = File.createTempFile("", ".jpg");
+//            FileOutputStream fos = new FileOutputStream(tempFile);
+//            resizedBitmap.compress(Bitmap.CompressFormat.JPEG, 85, fos);
+//            fos.close();
+//
+//            bitmap.recycle();
+//            resizedBitmap.recycle();
+//
+//            return tempFile;
+//        } catch (IOException e) {
+//            Log.e(TAG, "Error resizing image", e);
+//            return null;
+//        }
+//    }
 
     public boolean shareImage2(File imageFile, String appPackage) {
         if (imageFile == null || !imageFile.exists()) return false;
 
         // 1. Get the Uri from MediaStore first
-        Uri contentUri = createMediaStoreUri("resized_" + imageFile.getName());
+        Uri contentUri = createMediaStoreUri("" + imageFile.getName());
 
         if (contentUri != null) {
             try {
@@ -619,43 +619,43 @@ public class Media {
         return inSampleSize;
     }
 
-    public boolean shareImage2_old(File imageFile, String appPackage) {
-        boolean success = false;
-        if (imageFile == null) {
-            Log.d(TAG, "shareImage2 null imageFile");
-            return success;
-        }
-        success = true;
-        Log.d(TAG, "shareImage2 " + imageFile.getAbsolutePath());
-        Uri contentUri = getContentUriForFile(imageFile.getPath());
-
-        if (contentUri != null) {
-            try {
-                Intent intent = new Intent(Intent.ACTION_SEND);
-                intent.putExtra(Intent.EXTRA_STREAM, contentUri);
-                intent.setType("image/*");
-                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                if (appPackage != null) {
-                    intent.setPackage(appPackage); //  actual package name
-                }
-                context.startActivity(intent);
-            } catch (ActivityNotFoundException e) {
-                // Handle the case where the target app is not installed
-                Log.d(TAG, "Failed to launch 3DSteroid Pro.");
-                Toast.makeText(context, appPackage + " not installed", Toast.LENGTH_SHORT).show();
-                // Toast message or direct the user to the Play Store
-                Intent intent = new Intent(Intent.ACTION_SEND);
-                intent.putExtra(Intent.EXTRA_STREAM, contentUri);
-                intent.setType("image/*");
-                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                context.startActivity(Intent.createChooser(intent, "Share image with:"));
-            }
-        } else {
-            Log.e(TAG, "Failed to create MediaStore entry.");
-            success = false;
-        }
-        return success;
-    }
+//    public boolean shareImage2_old(File imageFile, String appPackage) {
+//        boolean success = false;
+//        if (imageFile == null) {
+//            Log.d(TAG, "shareImage2 null imageFile");
+//            return success;
+//        }
+//        success = true;
+//        Log.d(TAG, "shareImage2 " + imageFile.getAbsolutePath());
+//        Uri contentUri = getContentUriForFile(imageFile.getPath());
+//
+//        if (contentUri != null) {
+//            try {
+//                Intent intent = new Intent(Intent.ACTION_SEND);
+//                intent.putExtra(Intent.EXTRA_STREAM, contentUri);
+//                intent.setType("image/*");
+//                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+//                if (appPackage != null) {
+//                    intent.setPackage(appPackage); //  actual package name
+//                }
+//                context.startActivity(intent);
+//            } catch (ActivityNotFoundException e) {
+//                // Handle the case where the target app is not installed
+//                Log.d(TAG, "Failed to launch 3DSteroid Pro.");
+//                Toast.makeText(context, appPackage + " not installed", Toast.LENGTH_SHORT).show();
+//                // Toast message or direct the user to the Play Store
+//                Intent intent = new Intent(Intent.ACTION_SEND);
+//                intent.putExtra(Intent.EXTRA_STREAM, contentUri);
+//                intent.setType("image/*");
+//                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+//                context.startActivity(Intent.createChooser(intent, "Share image with:"));
+//            }
+//        } else {
+//            Log.e(TAG, "Failed to create MediaStore entry.");
+//            success = false;
+//        }
+//        return success;
+//    }
 
     // For reference not used
     public void shareImage1(File imageFile) {

@@ -8,21 +8,26 @@ package com.andymodla.android3dcamera.sketch;
 import android.graphics.BitmapFactory;
 import android.view.KeyEvent;
 import android.graphics.Bitmap;
+
 import com.andymodla.android3dcamera.DisplayMode;
 import com.andymodla.android3dcamera.Media;
 import com.andymodla.android3dcamera.camera.Camera3D;
 import com.andymodla.android3dcamera.Parameters;
 import com.andymodla.android3dcamera.MainActivity;
+
 import processing.core.PApplet;
 import processing.core.PImage;
 import processing.opengl.PGL;
+
 import android.os.Environment;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 
 
 public class PhotoBooth extends PApplet {
@@ -58,12 +63,14 @@ public class PhotoBooth extends PApplet {
     public volatile int parallax = 32;
     public volatile int verticalAlignment = 0;
     public volatile boolean mirror = false;
+    public volatile boolean crossEye = false;
     public volatile int brightness = -6;
     DisplayMode displayMode = DisplayMode.SBS;
     volatile boolean update = false;
     volatile boolean zoom = true;
     volatile boolean blankScreen = false;
-    private boolean loadPrevious  = true;
+    boolean screenshot = false;
+    private boolean loadPrevious = true;
 
     String countdown = "";  // default ignore null string
 
@@ -76,8 +83,8 @@ public class PhotoBooth extends PApplet {
     // Display frame inside full screen AR 4:3
     int frameWidth = 2048;
     int frameHeight = 1080;
-    int frameX = (XBP_DISPLAY_WIDTH-frameWidth) / 2;  // 2400 pixel screen minus frameWidth/2
-    int frameY = (XBP_DISPLAY_HEIGHT-frameHeight) / 2;
+    int frameX = (XBP_DISPLAY_WIDTH - frameWidth) / 2;  // 2400 pixel screen minus frameWidth/2
+    int frameY = (XBP_DISPLAY_HEIGHT - frameHeight) / 2;
 
     public void setMainActivity(MainActivity mainActivity) {
         this.mainActivity = mainActivity;
@@ -100,18 +107,20 @@ public class PhotoBooth extends PApplet {
 
         splashLeft = loadImage("FlowerPot_l.JPG");
         splashRight = loadImage("FlowerPot_r.JPG");
-        if(DEBUG) PApplet.println("splashLeft width=" + splashLeft.width + " height=" + splashLeft.height);
-        if(DEBUG) PApplet.println("splashRight width=" + splashRight.width + " height=" + splashRight.height);
+        if (DEBUG)
+            PApplet.println("splashLeft width=" + splashLeft.width + " height=" + splashLeft.height);
+        if (DEBUG)
+            PApplet.println("splashRight width=" + splashRight.width + " height=" + splashRight.height);
         float ar = (float) splashLeft.width / (float) splashLeft.height;
 
-        image(splashLeft, frameX, 180, frameWidth/2-parallax, (frameWidth/2-parallax)/ar);
-        image(splashRight, frameX + frameWidth/2+parallax, 180, frameWidth/2-parallax, (frameWidth/2-parallax)/ar);
+        image(splashLeft, frameX, 180, frameWidth / 2 - parallax, (frameWidth / 2 - parallax) / ar);
+        image(splashRight, frameX + frameWidth / 2 + parallax, 180, frameWidth / 2 - parallax, (frameWidth / 2 - parallax) / ar);
 
         textSize(72);
         textAlign(CENTER, CENTER);
         fill(yellow);
-        text("3D Photo Booth", (float) width / 4, (float) height -200);
-        text("3D Photo Booth", (float) 3*width / 4 , (float) height -200);
+        text("3D Photo Booth", (float) width / 4, (float) height - 200);
+        text("3D Photo Booth", (float) 3 * width / 4, (float) height - 200);
         if (DEBUG) PApplet.println("PhotoBooth setup done");
         update = true;
     }
@@ -144,11 +153,11 @@ public class PhotoBooth extends PApplet {
     public void setDisplayMode(DisplayMode mode) {
         displayMode = mode;
         if (mode == DisplayMode.SBS) {
-            if (DEBUG) PApplet.println( "Display SBS");
+            if (DEBUG) PApplet.println("Display SBS");
         } else if (mode == DisplayMode.ANAGLYPH) {
-            if (DEBUG) PApplet.println( "Display ANAGLYPH");
-        }   else if (mode == DisplayMode.LEFT) {
-            if (DEBUG) PApplet.println( "Display LEFT");
+            if (DEBUG) PApplet.println("Display ANAGLYPH");
+        } else if (mode == DisplayMode.LEFT) {
+            if (DEBUG) PApplet.println("Display LEFT");
         } else if (mode == DisplayMode.RIGHT) {
             if (DEBUG) PApplet.println("Display RIGHT");
         }
@@ -168,7 +177,11 @@ public class PhotoBooth extends PApplet {
     void toggleZoom() {
         zoom = !zoom;
         update = true;
+    }
 
+    void toggleCrossEye() {
+        crossEye = !crossEye;
+        update = true;
     }
 
     public void setParallax(int parallax) {
@@ -195,14 +208,15 @@ public class PhotoBooth extends PApplet {
         textAlign(CENTER, CENTER);
 
         if (sbs) {
-            text(countdown, frameX +frameWidth / 4 , height / 2 );
-            text(countdown, frameX +3*frameWidth / 4 -40, height / 2 );
+            text(countdown, frameX + frameWidth / 4, height / 2);
+            text(countdown, frameX + 3 * frameWidth / 4 - 40, height / 2);
         } else {
             text(countdown, width / 2, height / 2);
         }
     }
 
     public void draw() {
+
         if (loadPrevious) {
             loadPrevious = false;
             thread("reviewSetup");
@@ -219,52 +233,74 @@ public class PhotoBooth extends PApplet {
         if (camStereo == null) {
             return;
         }
+        //println("state = " + mainActivity.state);
 
         if (isLiveView()) {
             drawLiveView();
-        } else if (isReview()){
+        } else if (isReview()) {
             drawReview();
-        } else if (isReviewEdit()){
+        } else if (isReviewEdit()) {
             drawReview();
         }
         if (magnifyScale[magnifyIndex] > 1.0f) {
             textSize(48);
             fill(yellow);
             textAlign(CENTER);
-            text("Zoom "+magnifyScale[magnifyIndex], width/2, height-48);
+            text("Zoom " + magnifyScale[magnifyIndex], width / 2, height - 48);
         }
         // camera and review mode display test mode for debug
         if (DEBUG && testMode) {
             textSize(48);
             fill(yellow);
             textAlign(LEFT);
-            text("parallax = " + (parallax) + " mirror = " + mirror + " zoom = " + zoom + " w = "+imgLeft.width + " h ="+ imgLeft.height, 50, height - 96);
-            text("vertical = " + (verticalAlignment) +" magnify = " + magnifyScale[magnifyIndex], 50, height - 48);
+            text("parallax = " + (parallax) + " mirror = " + mirror + " zoom = " + zoom + " w = " + imgLeft.width + " h =" + imgLeft.height, 50, height - 96);
+            text("vertical = " + (verticalAlignment) + " magnify = " + magnifyScale[magnifyIndex], 50, height - 48);
         }
-        //if (DEBUG) {
-            textSize(48);
-            fill(yellow);
-            textAlign(LEFT);
-            String sMode ="";
-            if (displayMode == DisplayMode.SBS) {
-                sMode = "SBS";
-            } else if (displayMode == DisplayMode.ANAGLYPH) {
-                sMode = "Anaglyph";
-            } else if (displayMode == DisplayMode.LEFT){
-                sMode = "Left";
-            } else if (displayMode == DisplayMode.RIGHT){
-                sMode = "Right";
-            }
 
-            if (isLiveView()) {
-                text("Live", 50, height - 48);
-            } else if (isReview()){
-                text("Review" , 50, height - 48);
-            } else if (isReviewEdit()) {
-                text("AI Edit", 50, height - 48);
-            }
-            text(sMode, 50, height - 96);
-       // }
+        // draw text on screen
+        textSize(48);
+        fill(yellow);
+        textAlign(LEFT);
+        String sMode = "";
+        if (displayMode == DisplayMode.SBS) {
+            sMode = "SBS";
+        } else if (displayMode == DisplayMode.ANAGLYPH) {
+            sMode = "Anaglyph";
+        } else if (displayMode == DisplayMode.LEFT) {
+            sMode = "Left";
+        } else if (displayMode == DisplayMode.RIGHT) {
+            sMode = "Right";
+        }
+
+        if (isLiveView()) {
+            text("Live", 50, height - 48);
+        } else if (isReview()) {
+            text("Review", 50, height - 48);
+        } else if (isReviewEdit()) {
+            text("Review Edit", 50, height - 48);
+        }
+        text(sMode, 50, height - 96);
+
+        if (mainActivity.state == MainActivity.LIVE_VIEW_STATE) {
+            textAlign(CENTER);
+            text("Look at Camera", width / 2, 50);
+            text("3D/AI Photo Booth by Andy Modla", width / 2, height - 96);
+            text("Philly Maker Faire - April 19, 2026", width / 2, height - 48);
+        } else if (mainActivity.state == MainActivity.REVIEW_PHOTO_STATE) {
+            textAlign(RIGHT);
+            text("Print" , width - 50, height - 48);
+
+        } else if (mainActivity.state == MainActivity.REVIEW_AIEDIT_STATE) {
+            textAlign(RIGHT);
+            text("Edit With AI Prompt" , width - 50, height - 48);
+
+        }
+
+        // last
+        if (screenshot) {
+            saveScreenshot();
+            screenshot = false;
+        }
     }
 
     private void drawLiveView() {
@@ -285,7 +321,7 @@ public class PhotoBooth extends PApplet {
                 drawPhoto(imgLeft);
             } else if (displayMode == DisplayMode.RIGHT) {
                 drawPhoto(imgRight);
-             }
+            }
             showCountdown(false);
         }
     }
@@ -308,12 +344,12 @@ public class PhotoBooth extends PApplet {
         }
 
         // LEFT IMAGE (left half of frame)
-        pushMatrix();
         // Clip to left half - use imgHeight for vertical bounds
         clip(frameX, baseVerticalOffset, imgWidth, imgHeight);
-
+        // LEFT IMAGE (left half of frame)
+        push();
         translate(frameX, baseVerticalOffset);
-        translate(-(float)parallax / 2, -(float)verticalAlignment / 2);
+        translate(-(float) parallax / 2, -(float) verticalAlignment / 2);
 
         if (mirror) {
             translate(imgWidth, 0);
@@ -325,16 +361,15 @@ public class PhotoBooth extends PApplet {
         }
 
         image(imgLeft, -offsetX, -offsetY, imgWidth, imgHeight);
+        pop();
         noClip();
-        popMatrix();
 
         // RIGHT IMAGE (right half of frame)
-        pushMatrix();
         // Clip to right half - use imgHeight for vertical bounds
         clip(frameX + imgWidth, baseVerticalOffset, imgWidth, imgHeight);
-
+        push();
         translate(frameX + imgWidth, baseVerticalOffset);
-        translate((float)parallax / 2, (float)verticalAlignment / 2);
+        translate((float) parallax / 2, (float) verticalAlignment / 2);
 
         if (mirror) {
             translate(imgWidth, 0);
@@ -346,8 +381,8 @@ public class PhotoBooth extends PApplet {
         }
 
         image(imgRight, -offsetX, -offsetY, imgWidth, imgHeight);
+        pop();
         noClip();
-        popMatrix();
 
         drawGrid(false);
     }
@@ -375,9 +410,9 @@ public class PhotoBooth extends PApplet {
         // Add clipping to constrain the image to the display area
         clip(displayX, 0, anaglyphW, height);
 
-        pushMatrix();
+        push();
         translate(displayX, 0);
-        translate(-(float)parallax / 2, -(float)verticalAlignment / 2);
+        translate(-(float) parallax / 2, -(float) verticalAlignment / 2);
 
         if (mirror) {
             translate(anaglyphW, 0);
@@ -393,7 +428,8 @@ public class PhotoBooth extends PApplet {
         } else {
             image(imgLeft, -offsetX, -offsetY, anaglyphW, height);
         }
-        popMatrix();
+        pop();
+
         noClip();
         endPGL();
 
@@ -404,9 +440,9 @@ public class PhotoBooth extends PApplet {
         // Add clipping for second layer too
         clip(displayX, 0, anaglyphW, height);
 
-        pushMatrix();
+        push();
         translate(displayX, 0);
-        translate((float)parallax / 2, (float)verticalAlignment / 2);
+        translate((float) parallax / 2, (float) verticalAlignment / 2);
 
         if (mirror) {
             translate(anaglyphW, 0);
@@ -422,7 +458,7 @@ public class PhotoBooth extends PApplet {
         } else {
             image(imgRight, -offsetX, -offsetY, anaglyphW, height);
         }
-        popMatrix();
+        pop();
         noClip();
         endPGL();
 
@@ -454,9 +490,9 @@ public class PhotoBooth extends PApplet {
         // Add clipping to constrain the image to the display area
         clip(displayX, 0, anaglyphW, height);
 
-        pushMatrix();
+        push();
         translate(displayX, 0);
-        translate(-(float)parallax / 2, -(float)verticalAlignment / 2);
+        translate(-(float) parallax / 2, -(float) verticalAlignment / 2);
 
         if (mirror) {
             translate(anaglyphW, 0);
@@ -466,10 +502,10 @@ public class PhotoBooth extends PApplet {
         if (zoom) {
             scale(magnifyScale[magnifyIndex], magnifyScale[magnifyIndex]);
         }
-
+        //if (DEBUG) PApplet.println("drawPhoto()");
         image(img, -offsetX, -offsetY, anaglyphW, height);
 
-        popMatrix();
+        pop();
         noClip();
 
         drawGrid(true);
@@ -494,20 +530,17 @@ public class PhotoBooth extends PApplet {
         }
     }
 
-    // debug keys
-//    public void keyPressed() {
-//        lastKey = key;
-//        lastKeyCode = keyCode;
-//        processKeyCode(lastKeyCode, lastKey);
-//    }
-
+    // called by MainActivty onKeyUp to process key events for photo booth
     public boolean processKeyCode(int lastKeyCode, int lastKey) {
         switch (lastKeyCode) {
-//            case KeyEvent.KEYCODE_A:
-//                displayMode = displayMode.next();
-//                break;
+            case KeyEvent.KEYCODE_A:
+                displayMode = displayMode.next();
+                break;
             case KeyEvent.KEYCODE_B:
                 toggleBlankScreen();
+                break;
+            case KeyEvent.KEYCODE_C:
+                screenshot = true;
                 break;
             case KeyEvent.KEYCODE_LEFT_BRACKET:
                 if (magnifyIndex > 0) {
@@ -528,9 +561,12 @@ public class PhotoBooth extends PApplet {
             case KeyEvent.KEYCODE_Q:
                 toggleMirror();
                 break;
+            case KeyEvent.KEYCODE_X:
+                toggleCrossEye();
+                break;
             case KeyEvent.KEYCODE_FORWARD:  // 125 forward media button on mouse: mirror toggle
                 File mediaFile = media.getMediaFile();
-                if (mediaFile == null) println( "Nothing to AI Edit");
+                if (mediaFile == null) println("Nothing for AI Edit");
                 media.shareImage2(media.getMediaFile(), Media.APP_AIEDIT_PACKAGE);
                 break;
             case KeyEvent.KEYCODE_Z:
@@ -559,6 +595,13 @@ public class PhotoBooth extends PApplet {
         return true;
     }
 
+    void saveScreenshot() {
+        String dateTime = new SimpleDateFormat("yyyyMMdd-HHmmss").format(new Date());
+        String filename = "Screenshot_" + dateTime + ".png";
+        String filePath = Environment.getExternalStorageDirectory().getAbsolutePath() + "/Pictures/Screenshots/" + filename;
+        saveFrame(filePath);
+    }
+
 // // For reference not used
 //    void drawGridLine(boolean full) {
 //        strokeWeight(2);
@@ -572,7 +615,8 @@ public class PhotoBooth extends PApplet {
 //        }
 //    }
 
-    /**=================================================================================================
+    /**
+     * =================================================================================================
      * Review Code
      */
     // Constants
@@ -602,21 +646,22 @@ public class PhotoBooth extends PApplet {
         if (listAvailable) {
             loadCurrentImage();
             update = true;
-            loop();
         }
 
     }
 
     public void setReviewImages(PImage left, PImage right) {
-        if (currentLeft != null) ((Bitmap)currentLeft.getNative()).recycle();
-        if (currentRight != null) ((Bitmap)currentRight.getNative()).recycle();
+        if (currentLeft != null) ((Bitmap) currentLeft.getNative()).recycle();
+        if (currentRight != null) ((Bitmap) currentRight.getNative()).recycle();
         currentLeft = left;
         currentRight = right;
         imagesLoaded = true;
     }
 
     void drawReview() {
+        // PApplet.println("drawReview()");
         if (imagesLoaded && currentLeft != null && currentRight != null) {
+            //PApplet.println("drawReview() 2");
             if (displayMode == DisplayMode.SBS) {
                 drawSBS(currentLeft, currentRight);
             } else if (displayMode == DisplayMode.ANAGLYPH) {
@@ -626,14 +671,18 @@ public class PhotoBooth extends PApplet {
             } else if (displayMode == DisplayMode.RIGHT) {
                 drawPhoto(currentRight);
             }
-
+            // PApplet.println("drawReview() 3");
         } else {
             // Display message if no images
             fill(255);
             textAlign(CENTER, CENTER);
             textSize(48);
-            text("Waiting for Photo", width/2, height/2);
+            text("Waiting for Photo", width / 2, height / 2);
         }
+//        fill(255);
+//        textAlign(CENTER, CENTER);
+//        textSize(48);
+//        text("Review Photo", width/2, height/2);
 
     }
 
@@ -705,11 +754,10 @@ public class PhotoBooth extends PApplet {
                 }
             }
         }
-        currentIndex = leftImageFiles.size() -1;
+        currentIndex = leftImageFiles.size() - 1;
         //if (DEBUG) PApplet.println("Found " + leftImageFiles.size() + " matching image pairs");
         //if (DEBUG) PApplet.println("First pair: " + leftImageFiles.get(0) + " " + rightImageFiles.get(0));
         //if (DEBUG) PApplet.println("Last pair: " + leftImageFiles.get(leftImageFiles.size() - 1) + " " + rightImageFiles.get(rightImageFiles.size() - 1));
-        System.gc();
         return true;
     }
 
@@ -729,7 +777,7 @@ public class PhotoBooth extends PApplet {
     }
 
     void loadCurrentImage() {
-        if (DEBUG) PApplet.println("loadCurrentImage() state="+mainActivity.state);
+        if (DEBUG) PApplet.println("loadCurrentImage() state=" + mainActivity.state);
         if (leftImageFiles.isEmpty() || currentIndex < 0 || currentIndex >= leftImageFiles.size()) {
             imagesLoaded = false;
             if (DEBUG) PApplet.println("loadCurrentImage failed");
@@ -765,7 +813,7 @@ public class PhotoBooth extends PApplet {
 
     // copied from PApplet.java Processing-Android
     public PImage loadImage(String filename) {
-        System.out.println("loadImage "+filename);
+        System.out.println("loadImage " + filename);
         InputStream stream = createInput(filename);
         if (stream == null) {
             System.err.println("Could not find the image " + filename + ".");

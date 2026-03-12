@@ -26,7 +26,12 @@ public class ImageSender {
         this.targetImageUrl = imageUrl;
         String ip = "10.0.0.50";   // 3D tablet destination
         int port = 9000;
-        sendUrlToReceiver(ip, port, targetImageUrl);
+        try {
+            sendUrlToReceiver(ip, port, targetImageUrl);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
         //initializeDiscoveryListener();
         //nsdManager.discoverServices("_img-receiver._tcp", NsdManager.PROTOCOL_DNS_SD, discoveryListener);
     }

@@ -2,6 +2,7 @@ package com.andymodla.android3dcamera.camera;
 
 import static android.Manifest.permission.CAMERA;
 
+import static com.andymodla.android3dcamera.MainActivity.LIVE_VIEW_STATE;
 import static java.lang.Math.abs;
 
 import android.content.Context;
@@ -53,6 +54,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import processing.core.PApplet;
@@ -73,7 +76,9 @@ public class Camera3D {
 
     private HandlerThread mCameraThread;
     private Handler mCameraHandler;
-    private Executor cameraExecutor;
+    //private Executor cameraExecutor;
+    // Change from private Executor cameraExecutor;
+    private ExecutorService cameraExecutor;
 
     // Image Reader threads
     private HandlerThread mImageReaderThread0;
@@ -163,6 +168,7 @@ public class Camera3D {
 
     volatile boolean shutterSound = true;
     public volatile boolean available = false; // PImage available to access
+    public volatile boolean captureInProgress = false;
 
     // Image processing got preview
     private final AtomicBoolean isProcessingLeft = new AtomicBoolean(false);
@@ -277,7 +283,9 @@ public class Camera3D {
             mCameraThread = new HandlerThread("CameraBackgroundThread"); // Name the thread
             mCameraThread.start();
             mCameraHandler = new Handler(mCameraThread.getLooper());
-            cameraExecutor = new HandlerExecutor(mCameraHandler);
+            //cameraExecutor = new HandlerExecutor(mCameraHandler);
+            cameraExecutor = Executors.newSingleThreadExecutor();
+
         }
         if (mImageReaderThread0 == null) {
             mImageReaderThread0 = new HandlerThread("ImageReaderThread0");
@@ -286,24 +294,54 @@ public class Camera3D {
         }
     }
 
-    public void stopCameraThread() {
+    public void stopCameraThreadold() {
         Log.d(TAG, "stopCameraThread");
         if (mCameraThread != null) {
             mImageReaderHandler0.removeCallbacksAndMessages(null);
             mCameraThread.quitSafely(); // Safely shut down the looper
             mImageReaderThread0.quitSafely();
             try {
-                mCameraThread.join(); // Wait for the thread to finish
-                mCameraThread = null;
-                mCameraHandler = null;
+            mCameraThread.join(); // Wait for the thread to finish
+            mCameraThread = null;
+            mCameraHandler = null;
+            if (cameraExecutor != null) {
+                cameraExecutor.shutdown(); // Non-blocking request to stop
                 cameraExecutor = null;
+            }
 
-                mImageReaderThread0.join();
-                mImageReaderThread0 = null;
-                mImageReaderHandler0 = null;
+            mImageReaderThread0.join();
+            mImageReaderThread0 = null;
+            mImageReaderHandler0 = null;
             } catch (InterruptedException e) {
                 Log.e(TAG, "Interrupted while stopping camera thread", e);
             }
+        }
+    }
+
+    public void stopCameraThread() {
+        if (mCameraThread != null) {
+            // Stop the handlers immediately (fast)
+            mImageReaderHandler0.removeCallbacksAndMessages(null);
+            mCameraThread.quitSafely();
+            mImageReaderThread0.quitSafely();
+
+            // Perform the slow "joining" in a separate worker thread
+            new Thread(() -> {
+                try {
+                    if (mCameraThread != null) mCameraThread.join();
+                    if (mImageReaderThread0 != null) mImageReaderThread0.join();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }).start();
+            if (cameraExecutor != null) {
+                cameraExecutor.shutdown(); // Non-blocking request to stop
+                cameraExecutor = null;
+            }
+
+            // Null out references on main thread so they are ready for a fresh start
+            mCameraThread = null;
+            mImageReaderThread0 = null;
         }
     }
 
@@ -340,8 +378,8 @@ public class Camera3D {
                         // Acquire and immediately discard all but the latest image
                         Image image = reader.acquireLatestImage();
                         if (image == null) return;
-                        // if we are already busy processing a frame
-                        if (isProcessingLeft.get()) {
+                        // if we are already busy processing a frame or not in live view state
+                        if (isProcessingLeft.get() ||((MainActivity)context).state != LIVE_VIEW_STATE) {
                             // Drop the frame by closing it immediately to free the buffer
                             image.close();
                             return;
@@ -376,7 +414,7 @@ public class Camera3D {
                         Image image = reader.acquireLatestImage();
                         if (image == null) return;
                         // if we are already busy processing a frame
-                        if (isProcessingRight.get()) {
+                        if (isProcessingRight.get() || ((MainActivity)context).state != LIVE_VIEW_STATE) {
                             // Drop the frame by closing it immediately to free the buffer
                             image.close();
                             return;
@@ -550,6 +588,11 @@ public class Camera3D {
             mCameraDevice = null;
         }
         stopCameraThread();
+        // Call this from a background executor
+//        new Thread(() -> {
+//            stopCameraThread(); // This now contains the join() calls
+//        }).start();
+
     }
 
     /**
@@ -602,7 +645,7 @@ public class Camera3D {
                                 } else {
                                     previewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_OFF);
                                 }
-                                //
+
                                 previewRequestBuilder.set(EXPOSURE_METERING, METERING[meteringIndex]);
                                 previewRequestBuilder.set(CaptureRequest.LENS_FOCUS_DISTANCE, FOCUS_DISTANCE[focusDistanceIndex]);
 
@@ -775,6 +818,7 @@ public class Camera3D {
      * Create a camera capture session to take a picture
      */
     public void createCameraCaptureSession() {
+        captureInProgress = true;
         Log.d(TAG, "createCameraCaptureSession()");
         if (mCameraDevice == null || mCameraCaptureSession == null) {
             Toast.makeText(context, "Camera not ready", Toast.LENGTH_SHORT).show();
@@ -789,8 +833,8 @@ public class Camera3D {
             captureBuilder.addTarget(mImageReader2.getSurface());
 
             // default TONEMAP_MODE_CONTRAST_CURVE assumed for best contrast, color and detail capture
+            captureBuilder.set(CaptureRequest.TONEMAP_MODE, CaptureRequest.TONEMAP_MODE_CONTRAST_CURVE);
             captureBuilder.set(CaptureRequest.TONEMAP_CURVE, new TonemapCurve(curve_srgb, curve_srgb, curve_srgb));
-
             if (FOCUS_DISTANCE[focusDistanceIndex] == AUTO_FOCUS_DISTANCE) {
                 captureBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
             } else {
@@ -813,7 +857,11 @@ public class Camera3D {
                 @Override
                 public void onImageAvailable(ImageReader reader) {
                     imageL = reader.acquireLatestImage();
-                    saveImageFiles(imageL, imageR);
+                    if (((MainActivity)context).state == LIVE_VIEW_STATE) {
+                        saveImageFiles(imageL, imageR);
+                    } else {
+                        imageL.close();
+                    }
                 }
             }, mCameraHandler);
 
@@ -821,7 +869,11 @@ public class Camera3D {
                 @Override
                 public void onImageAvailable(ImageReader reader) {
                     imageR = reader.acquireLatestImage();
-                    saveImageFiles(imageL, imageR);
+                    if (((MainActivity)context).state == LIVE_VIEW_STATE) {
+                        saveImageFiles(imageL, imageR);
+                    } else {
+                        imageL.close();
+                    }
                 }
             }, mCameraHandler);
 
@@ -890,6 +942,7 @@ public class Camera3D {
                 leftBytes = null;
                 rightBytes = null;
             }
+            captureInProgress = false;
         }
 
     }
