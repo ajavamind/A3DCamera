@@ -24,7 +24,8 @@ public class ImageSender {
 
     public void sendImageUrl(String imageUrl) {
         this.targetImageUrl = imageUrl;
-        String ip = "10.0.0.50";   // 3D tablet destination
+        //String ip = "10.0.0.50";   // 3D tablet destination
+        String ip = "192.168.8.208";   // 3D tablet destination
         int port = 9000;
         try {
             sendUrlToReceiver(ip, port, targetImageUrl);
