@@ -5,7 +5,7 @@ flowchart TD
     %% Apps in XReal Beam Pro
     subgraph Apps
         A[Photo Booth Camera]
-        B[AI Camera Edit]
+        B[AI Edit Photo]
         C[HTTP Photo Server]
     end
 
@@ -18,13 +18,13 @@ flowchart TD
 
     %% Power and Network
     J[Power Adapter] -->|+5V| E
-    J -->|AC| K[Network\nWiFi\nRouter\nLOSP]
+    J -->|AC| K[Local Network\nWiFi\nRouter]
     J -->|AC| L[Printer\nCanon\nCP1300\n4x6]
     J -->|AC| M[Photo Lamp]
 
     %% Additional Devices
-    N[Notebook\nComputer\nTest\nMonitor\nPreview] -->|Camera\nWireless\nADB\nBrowser| E
-    O[Tablet\nBluesky Free\n3D Viewing\nDownload Photos\nAPP] -->|WiFi| K
+    N[Notebook\nComputer\nTest\nMonitor\nPreview] -->|Camera\nWireless\nADB\nPhoto Browser| E
+    O[Tablet\nGlasses Free Display 3D Viewing\nDownload Photos\nAPP] -->|WiFi| K
     P[AI Server\nInternet] -->|WiFi| K
 
     %% Connections
