@@ -239,12 +239,16 @@ public class MainActivity extends AppCompatActivity {
             media.setpApplet(photoBooth);
             imageSender = new ImageSender(this);
             photoBooth.setMainActivity(this);
+            photoBooth.setMirror(true);
         } else {
             setContentView(R.layout.layout);
         }
 
         checkPermissions();
         camera = new Camera3D(this, media, parameters, photoBooth);
+        if (photoBooth != null) {
+            camera.focusDistanceIndex = 1;  // photo booth focus distance
+        }
 
         // countdownTextView will be null for photo booth
         // because photo booth uses sketch graphics
@@ -617,8 +621,10 @@ public class MainActivity extends AppCompatActivity {
                     return true;
                 }
                 if (exitApp) {
-                    finish();
-                    System.exit(0);
+                    //finish();
+                    //System.exit(0);
+                    exitApp = false;
+                    return true;
                 } else {
                     Toast.makeText(this, "Exit?", Toast.LENGTH_SHORT).show();
                     exitApp = true;

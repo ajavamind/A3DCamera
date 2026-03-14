@@ -59,9 +59,9 @@ public class PhotoBooth extends PApplet {
 
     int displayFPS = 30; // display frames per second
 
-    // Parallax and vertical alignment adjustments in pixels for XBP
-    public volatile int parallax = 32;
-    public volatile int verticalAlignment = 0;
+    // Parallax and vertical alignment adjustments in pixels for XBP photo booth
+    public volatile int parallax = 64;
+    public volatile int verticalAlignment = -1;
     public volatile boolean mirror = false;
     public volatile boolean crossEye = false;
     public volatile int brightness = -6;
@@ -74,8 +74,7 @@ public class PhotoBooth extends PApplet {
 
     String countdown = "";  // default ignore null string
 
-    float[] magnifyScale = {1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.1f,
-            2.2f, 2.3f, 2.4f, 2.5f, 2.6f, 2.7f, 2.8f, 2.9f, 3.0f};
+    float[] magnifyScale = {1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.5f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f};
     int magnifyIndex = 0;
 
     float AR = 1.33333333f;  // aspect ratio for XReal Beam Pro camera image sensor
@@ -86,6 +85,7 @@ public class PhotoBooth extends PApplet {
     int frameX = (XBP_DISPLAY_WIDTH - frameWidth) / 2;  // 2400 pixel screen minus frameWidth/2
     int frameY = (XBP_DISPLAY_HEIGHT - frameHeight) / 2;
 
+    //Gui gui;
     public void setMainActivity(MainActivity mainActivity) {
         this.mainActivity = mainActivity;
     }
@@ -104,6 +104,9 @@ public class PhotoBooth extends PApplet {
         smooth();
         frameRate(displayFPS);
         mainActivity.state = MainActivity.LIVE_VIEW_STATE;
+
+        //gui = new Gui();
+        //gui.setup(this);
 
         splashLeft = loadImage("FlowerPot_l.JPG");
         splashRight = loadImage("FlowerPot_r.JPG");
@@ -169,8 +172,13 @@ public class PhotoBooth extends PApplet {
         update = true;
     }
 
-    void toggleMirror() {
+    public void toggleMirror() {
         mirror = !mirror;
+        update = true;
+    }
+
+    public void setMirror(boolean mirror) {
+        this.mirror = mirror;
         update = true;
     }
 
@@ -246,7 +254,7 @@ public class PhotoBooth extends PApplet {
             textSize(48);
             fill(yellow);
             textAlign(CENTER);
-            text("Zoom " + magnifyScale[magnifyIndex], width / 2, height - 48);
+            text("+"+magnifyScale[magnifyIndex]+"    ", width - 50, height - 4);
         }
         // camera and review mode display test mode for debug
         if (DEBUG && testMode) {
@@ -284,15 +292,21 @@ public class PhotoBooth extends PApplet {
         if (mainActivity.state == MainActivity.LIVE_VIEW_STATE) {
             textAlign(CENTER);
             text("Look at Camera", width / 2, 50);
-            text("3D/AI Photo Booth by Andy Modla", width / 2, height - 96);
-            text("Philly Maker Faire - April 19, 2026", width / 2, height - 48);
+            if (displayMode == DisplayMode.SBS) {
+              text("3D/AI Photo Booth by Andy Modla", width / 2, height - 96);
+              text("Philly Maker Faire - April 19, 2026", width / 2, height - 48);
+            }
+            if (displayMode == DisplayMode.ANAGLYPH) {
+                text("P=" + (parallax)+"   " , width - 50, height - 96);
+                text("V=" + (verticalAlignment) +"   ", width -50, height - 48);
+            }
         } else if (mainActivity.state == MainActivity.REVIEW_PHOTO_STATE) {
             textAlign(RIGHT);
-            text("Print" , width - 50, height - 48);
-
+            //text("Print" , width - 50, height - 48);
+            //gui.displayMenuBar();
         } else if (mainActivity.state == MainActivity.REVIEW_AIEDIT_STATE) {
             textAlign(RIGHT);
-            text("Edit With AI Prompt" , width - 50, height - 48);
+            text("AI Edit" , width - 50, height - 48);
 
         }
 
@@ -469,6 +483,13 @@ public class PhotoBooth extends PApplet {
         pgl.viewport(0, 0, width, height);
         endPGL();
 
+        // cover anaglyph alignment edges
+//        fill(black);
+//        if (verticalAlignment != 0) {
+//            rect(0, 0, width, abs(verticalAlignment));  // top of image
+//            rect(0, height - abs(verticalAlignment), width, abs(verticalAlignment));  // bottom of image
+//        }
+
         drawGrid(true);
     }
 
@@ -580,12 +601,12 @@ public class PhotoBooth extends PApplet {
                 DEBUG = !DEBUG;
                 break;
             case KeyEvent.KEYCODE_MINUS:
-                setParallax(parallax - 4);
+                setParallax(parallax - 2);
                 if (DEBUG) println("parallax = " + parallax);
                 break;
             case KeyEvent.KEYCODE_PLUS:
             case KeyEvent.KEYCODE_EQUALS:
-                setParallax(parallax + 4);
+                setParallax(parallax + 2);
                 if (DEBUG) println("parallax = " + parallax);
                 break;
             default:

@@ -109,12 +109,13 @@ public class Camera3D {
     public static int XBP_CAMERA_WIDTH_6x4 = 1080; // small for performance - print aspect ratio
     public static int XBP_CAMERA_HEIGHT_6x4 = 720; // small for performance
 
-    volatile int focusDistanceIndex = 0;  // default HYPERFOCAL
+    public volatile int focusDistanceIndex = 0;  // default HYPERFOCAL
     //
     static final float MACRO_FOCUS_DISTANCE = 10.0f;  // 100mm
     static final float HYPERFOCAL_FOCUS_DISTANCE = 0.60356647f;  // 1.66 meters
-    //static final float PHOTO_BOOTH_FOCUS_DISTANCE = 1.43f;  // 700mm  1 meter
-    static final float PHOTO_BOOTH_FOCUS_DISTANCE = 2.0f;  // 500mm
+    static final float PHOTO_BOOTH_FOCUS_DISTANCE = 1.43f;  // 700mm
+    //static final float PHOTO_BOOTH_FOCUS_DISTANCE = 1.0f;  // 1 meter
+    //static final float PHOTO_BOOTH_FOCUS_DISTANCE = 2.0f;  // 500mm
     static final float AUTO_FOCUS_DISTANCE = 0.0f;
     static final float[] FOCUS_DISTANCE = {HYPERFOCAL_FOCUS_DISTANCE, PHOTO_BOOTH_FOCUS_DISTANCE, MACRO_FOCUS_DISTANCE, AUTO_FOCUS_DISTANCE};
     static final String[] FOCUS_DISTANCE_NAMES = {"HYPERFOCAL FOCUS DISTANCE", "PHOTO BOOTH FOCUS DISTANCE", "MACRO FOCUS DISTANCE", "AUTO FOCUS"};
@@ -154,7 +155,7 @@ public class Camera3D {
     private static final int FRAME_AVERAGE = 0; // normal behavior
     private static final int CENTER_WEIGHTED = 1;
     private static final int SPOT_METERING = 2;
-    int meteringIndex = 0;  // default
+    int meteringIndex = 1;  // default
     static final int[] METERING = {FRAME_AVERAGE, CENTER_WEIGHTED, SPOT_METERING};
     String[] METERING_NAMES = {"FRAME AVERAGE", "CENTER WEIGHTED", "SPOT METERING"};
 
@@ -713,12 +714,12 @@ public class Camera3D {
                     previewRequestBuilder.set(CaptureRequest.LENS_FOCUS_DISTANCE, FOCUS_DISTANCE[focusDistanceIndex]);
 
                     // Set auto exposure
-                    previewRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON);
+                    //previewRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON);
                     previewRequestBuilder.set(CaptureRequest.TONEMAP_MODE, CaptureRequest.TONEMAP_MODE_CONTRAST_CURVE);
                     previewRequestBuilder.set(CaptureRequest.TONEMAP_CURVE, new TonemapCurve(curve_srgb, curve_srgb, curve_srgb));
                     previewRequestBuilder.set(CaptureRequest.NOISE_REDUCTION_MODE, CaptureRequest.NOISE_REDUCTION_MODE_FAST); // NOISE_REDUCTION_MODE 1
                     previewRequestBuilder.set(CaptureRequest.EDGE_MODE, CaptureRequest.EDGE_MODE_FAST); // EDGE_MODE 1
-                    previewRequestBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, new Range<>(30, 30));
+                    //previewRequestBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, new Range<>(30, 30));
                     //previewRequestBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, bestRange);
                     //previewRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE, CameraMetadata.CONTROL_AE_MODE_ON_LOW_LIGHT_BOOST_BRIGHTNESS_PRIORITY); // Android 15+
                     previewRequestBuilder.set(EXPOSURE_METERING, METERING[meteringIndex]);

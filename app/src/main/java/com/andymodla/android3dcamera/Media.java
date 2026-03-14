@@ -184,19 +184,23 @@ public class Media {
 
         try (FileOutputStream output = new FileOutputStream(file)) {
             output.write(bytes);
+            output.flush();
+            output.close();
+
             //xxx.compress(Bitmap.CompressFormat.JPEG, 100, output);
 
             // Trigger media scanner to make image visible in gallery
             MediaScannerConnection.scanFile(context, new String[]{file.getAbsolutePath()},
                     new String[]{"image/jpeg"}, null);
 
-            Log.d(TAG, "Image saved: " + file.getAbsolutePath());
+            Log.d(TAG, "MediaScannerConnection.scanFile Image saved: " + file.getAbsolutePath());
             if (left) reviewLeft = file;
             else reviewRight = file;
         } catch (IOException e) {
             Log.e(TAG, "Error saving image", e);
             return null;
         }
+        System.gc();
         return bitmap;
     }
 
@@ -213,9 +217,9 @@ public class Media {
         String filename = timestamp + "_ana.jpg";
         File file = new File(Environment.getExternalStoragePublicDirectory(BASE_FOLDER + File.separator + SAVE_FOLDER + File.separator + SAVE_ANA_FOLDER), filename);
 
-        try (FileOutputStream out = new FileOutputStream(file)) {
-            anaglyphBitmap.compress(Bitmap.CompressFormat.JPEG, 100, out);
-
+        try (FileOutputStream output = new FileOutputStream(file)) {
+            anaglyphBitmap.compress(Bitmap.CompressFormat.JPEG, 100, output);
+            output.close();
             MediaScannerConnection.scanFile(context, new String[]{file.getAbsolutePath()},
                     new String[]{"image/jpeg"}, null);
 
@@ -224,6 +228,7 @@ public class Media {
             Log.e(TAG, "Error saving anaglyph image", e);
             return null;
         }
+        System.gc();
         return file;
     }
 
@@ -244,8 +249,9 @@ public class Media {
         String filename = timestamp + "_2x1.jpg";
         File file = new File(Environment.getExternalStoragePublicDirectory(BASE_FOLDER + File.separator + SAVE_FOLDER), filename);
 
-        try (FileOutputStream out = new FileOutputStream(file)) {
-            sbsBitmap.compress(Bitmap.CompressFormat.JPEG, 100, out);
+        try (FileOutputStream output = new FileOutputStream(file)) {
+            sbsBitmap.compress(Bitmap.CompressFormat.JPEG, 100, output);
+            output.close();
             //sbsBitmap.compress(Bitmap.CompressFormat.PNG, 100, out);
             MediaScannerConnection.scanFile(context, new String[]{file.getAbsolutePath()},
                     new String[]{"image/*"}, null);
@@ -254,7 +260,7 @@ public class Media {
             if (((MainActivity) context).imageSender != null) {
                 String imageUrl = "http://"+((MainActivity) context).hostIpAddr+":"+((MainActivity) context).hostPort+File.separator+filename;
                 Log.d(TAG, "imageSender.sendImageUrl " + imageUrl);
-                ((MainActivity) context).imageSender.sendImageUrl(imageUrl);
+                ((MainActivity) context).imageSender.sendImageUrl(imageUrl); // TODO
             }
 //            if (((MainActivity) context).imageUrlSender != null) {
 //                String imageUrl = "http://"+((MainActivity) context).senderHost+":"+((MainActivity) context).senderPort+File.separator+filename;
@@ -265,6 +271,7 @@ public class Media {
             Log.e(TAG, "Error saving SBS image", e);
             return null;
         }
+        System.gc();
         return file;
     }
 
