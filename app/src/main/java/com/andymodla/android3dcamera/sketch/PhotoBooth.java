@@ -285,7 +285,7 @@ public class PhotoBooth extends PApplet {
         } else if (isReview()) {
             text("Review", 50, height - 48);
         } else if (isReviewEdit()) {
-            text("Review Edit", 50, height - 48);
+            text("Review", 50, height - 48);
         }
         text(sMode, 50, height - 96);
 
@@ -302,7 +302,6 @@ public class PhotoBooth extends PApplet {
             }
         } else if (mainActivity.state == MainActivity.REVIEW_PHOTO_STATE) {
             textAlign(RIGHT);
-            //text("Print" , width - 50, height - 48);
             //gui.displayMenuBar();
         } else if (mainActivity.state == MainActivity.REVIEW_AIEDIT_STATE) {
             textAlign(RIGHT);
@@ -682,7 +681,8 @@ public class PhotoBooth extends PApplet {
     void drawReview() {
         // PApplet.println("drawReview()");
         if (imagesLoaded && currentLeft != null && currentRight != null) {
-            //PApplet.println("drawReview() 2");
+            boolean saveMirror = mirror;  // review does not display mirror image
+            mirror = false;
             if (displayMode == DisplayMode.SBS) {
                 drawSBS(currentLeft, currentRight);
             } else if (displayMode == DisplayMode.ANAGLYPH) {
@@ -692,7 +692,7 @@ public class PhotoBooth extends PApplet {
             } else if (displayMode == DisplayMode.RIGHT) {
                 drawPhoto(currentRight);
             }
-            // PApplet.println("drawReview() 3");
+            mirror = saveMirror;
         } else {
             // Display message if no images
             fill(255);

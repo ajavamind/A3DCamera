@@ -325,7 +325,8 @@ public class Media {
         ToastHelper.showToast(context, "Saved " + timestamp);
         if (pApplet != null) {
             ((PhotoBooth) pApplet).setReviewImages(leftReview, rightReview);
-            ((MainActivity) context).setReview();
+            //((MainActivity) context).setReview();
+            ((MainActivity) context).setAiEditReview();
         }
     }
 

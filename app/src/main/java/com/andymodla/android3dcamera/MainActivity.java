@@ -457,7 +457,7 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    private void processStateToggle() {
+    private void processStateToggle3states() {
         // toggle through photo types for display
         if (state == LIVE_VIEW_STATE) {
 
@@ -472,6 +472,15 @@ public class MainActivity extends AppCompatActivity {
         } else if (state == REVIEW_AIEDIT_STATE) {
             //camera.openCamera();
             //state = LIVE_VIEW_STATE;
+            setLiveView();
+        }
+    }
+
+    private void processStateToggle() {
+        // toggle through photo types for display
+        if (state == LIVE_VIEW_STATE) {
+            setAiEditReview();
+        } else if (state == REVIEW_AIEDIT_STATE) {
             setLiveView();
         }
     }
