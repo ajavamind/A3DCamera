@@ -116,7 +116,7 @@ public class MainActivity extends AppCompatActivity {
     volatile boolean continuousMode = false;  // continuous capture is active
     public volatile int continuousCounter = 0;
     public static final int CONTINUOUS_COUNT_DEFAULT = 59; //(one less 60)
-    public static final int CONTINUOUS_COUNT_PHOTO_BOOTH = 2; //(one less 4)
+    public static final int CONTINUOUS_COUNT_PHOTO_BOOTH = 3; //(one less 4)
     public int CONTINUOUS_COUNT = 0;
 
     // Key codes for Photo Booth Buzzer Box, Beam Pro device: Camera, Volume up and down functionality
@@ -248,6 +248,10 @@ public class MainActivity extends AppCompatActivity {
         camera = new Camera3D(this, media, parameters, photoBooth);
         if (photoBooth != null) {
             camera.focusDistanceIndex = 1;  // photo booth focus distance
+            // set photo booth countdown
+            CONTINUOUS_COUNT = CONTINUOUS_COUNT_PHOTO_BOOTH;
+            countdownDigit = -1;
+            countdownStart = CONTINUOUS_COUNT;
         }
 
         // countdownTextView will be null for photo booth
