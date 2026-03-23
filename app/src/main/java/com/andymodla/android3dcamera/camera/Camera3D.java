@@ -205,12 +205,30 @@ public class Camera3D {
         Log.d(TAG, "Device Manufacturer and Model: " + deviceName);
         if (modelName.equals("LPD-20W")) {
             // back cameras
-            leftCameraId = "0";
-            rightCameraId = "2";
+            //leftCameraId = "0";
+            //rightCameraId = "2";
+            //crossEye = false;
+            //stereoCameraId = "4";  // logical (left "0" and right "2") back cameras
+
+            // back cameras
+            leftCameraId = "3";  // cross eye
+            rightCameraId = "1";
             //crossEye = true;
-            stereoCameraId = "4";  // logical (left "0" and right "2") back cameras
-            cameraWidth = 4656; // 16Mp Back camera width lens pixels
-            cameraHeight = 3496;// 16MP Back camera height lens pixels
+            stereoCameraId = "5";  // logical (left "1" and right "3") back cameras
+
+            //cameraWidth = 4656; // 16Mp Back camera width lens pixels
+            //cameraHeight = 3496;// 16MP Back camera height lens pixels
+            cameraWidth = 3264; // 16Mp Front camera width lens pixels
+            cameraHeight = 2448;// 16MP Frpmt camera height lens pixels
+/*
+            cameraId=0 Set: [] back left camera
+            cameraId=1 Set: [] back right camera
+            cameraId=2 Set: [] front left camera
+            cameraId=3 Set: [] front right camera
+            cameraId=4 Set: [0, 2] back stereo camera
+            cameraId=5 Set: [1, 3] front stereo camera
+
+ */
 // for DEBUG reference front cameras
 //            leftCameraId = "1";
 //            rightCameraId = "3";

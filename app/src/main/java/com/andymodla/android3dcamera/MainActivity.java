@@ -412,7 +412,7 @@ public class MainActivity extends AppCompatActivity {
             Log.d(TAG, "Left button pressed");
             if (isPhotobooth) {
                 if (!camera.captureInProgress) {
-                    processShutter();
+                    processShutterKey();
                 }
             } else {
                 capturePhoto();
@@ -441,7 +441,7 @@ public class MainActivity extends AppCompatActivity {
         // Other buttons like BUTTON_BACK, BUTTON_FORWARD can also be checked here
     }
 
-    private void processShutter() {
+    private void processShutterKey() {
         if (photoBooth.isLiveView()) {
             capturePhoto();
         } else if (photoBooth.isReview()){
@@ -578,13 +578,15 @@ public class MainActivity extends AppCompatActivity {
                     processDisplayToggle();
                     return true;
                 case KeyEvent.KEYCODE_3D_MODE:
+                case KeyEvent.KEYCODE_ENTER:
                     if (!camera.captureInProgress) {
-                        processShutter();
+                        processShutterKey();
                     }
                     return true;
             }
         }
         switch (keyCode) {
+            case KeyEvent.KEYCODE_ENTER:
             case KeyEvent.KEYCODE_VOLUME_UP:
             case KeyEvent.KEYCODE_3D_MODE: // camera key - first turn off auto launch of native camera app
             case SHUTTER_KEY:
@@ -816,7 +818,7 @@ public class MainActivity extends AppCompatActivity {
         if ((countdownDigit < 0)) {
             startCountdownSequence(countdownStart);
         } else {
-            countdownTextView.setVisibility(View.GONE);
+            if (countdownTextView != null) countdownTextView.setVisibility(View.GONE);
             MainActivity.this.runOnUiThread(new Runnable() {
                 public void run() {
                     camera.createCameraCaptureSession();
