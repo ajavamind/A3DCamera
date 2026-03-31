@@ -41,11 +41,13 @@ public class Media {
     private static String TAG = "Media";
     Context context;
     private volatile boolean isAnaglyphMode = false; //true;
-    private String BASE_FOLDER = Environment.DIRECTORY_DCIM; //Environment.DIRECTORY_PICTURES;
-    //private String BASE_FOLDER_NAME = Environment.DIRECTORY_DOWNLOADS;
+    private String BASE_FOLDER = Environment.DIRECTORY_DCIM;
+    //private String BASE_FOLDER = Environment.DIRECTORY_PICTURES;
+    //private String DOWNLOAD_FOLDER_NAME = Environment.DIRECTORY_DOWNLOADS;
     private String SAVE_FOLDER = "A3DCamera";
     private String SAVE_ANA_FOLDER = "Anaglyph";
     private String SAVE_LR_FOLDER = "LR";
+    private String SAVE_AI_EDIT_FOLDER = "AiEdit";
 
     public static String lastSavedFilePath = null;
 
@@ -433,7 +435,7 @@ public class Media {
 
         // Use RELATIVE_PATH to tell the system where to put the file in the MediaStore
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            contentValues.put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/itCamera");
+            contentValues.put(MediaStore.Images.Media.RELATIVE_PATH, SAVE_FOLDER + File.separator + SAVE_AI_EDIT_FOLDER);
         }
 
         return resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues);
@@ -541,11 +543,12 @@ public class Media {
 //    }
 
     public boolean shareImage2(File imageFile, String appPackage) {
+        Log.d(TAG, "shareImage2 " + imageFile.getAbsolutePath() + " appPackage=" + appPackage);
         if (imageFile == null || !imageFile.exists()) return false;
 
         // 1. Get the Uri from MediaStore first
         Uri contentUri = createMediaStoreUri("" + imageFile.getName());
-
+        Log.d(TAG, "shareImage2 imageFile=" + imageFile.getName());
         if (contentUri != null) {
             try {
                 // 2. Resize and Write directly to the Uri
@@ -555,6 +558,7 @@ public class Media {
                 // 3. Proceed with Intent
                 Intent intent = new Intent(Intent.ACTION_SEND);
                 intent.putExtra(Intent.EXTRA_STREAM, contentUri);
+                intent.putExtra(Intent.EXTRA_TEXT, imageFile.getName());
                 intent.setType("image/jpeg");
                 intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
                 if (appPackage != null) {
@@ -575,7 +579,7 @@ public class Media {
         values.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg");
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            values.put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/itCamera");
+            values.put(MediaStore.Images.Media.RELATIVE_PATH, BASE_FOLDER + File.separator + SAVE_FOLDER + File.separator + SAVE_AI_EDIT_FOLDER);
             values.put(MediaStore.Images.Media.IS_PENDING, 1);
         }
 
