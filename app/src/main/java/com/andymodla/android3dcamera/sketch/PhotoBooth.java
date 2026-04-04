@@ -76,7 +76,7 @@ public class PhotoBooth extends PApplet {
     volatile boolean blankScreen = false;
     boolean screenshot = false;
     private boolean loadPrevious = true;
-
+    private int captureFrameCount = 0;
     String countdown = "";  // default ignore null string
 
     float[] magnifyScale = {1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.5f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f};
@@ -141,6 +141,11 @@ public class PhotoBooth extends PApplet {
 
     public boolean isLiveView() {
         if (mainActivity.state == MainActivity.LIVE_VIEW_STATE) return true;
+        return false;
+    }
+
+    public boolean isCapture() {
+        if (mainActivity.state == MainActivity.CAPTURE_STATE) return true;
         return false;
     }
 
@@ -250,6 +255,8 @@ public class PhotoBooth extends PApplet {
 
         if (isLiveView()) {
             drawLiveView();
+        } else if (isCapture()) {
+            drawCapture();
         } else if (isReview()) {
             drawReview();
         } else if (isReviewEdit()) {
@@ -321,7 +328,33 @@ public class PhotoBooth extends PApplet {
         }
     }
 
-    private void drawLiveView() {
+    void drawCapture() {
+        // PApplet.println("drawReview()");
+//        if (imagesLoaded && currentLeft != null && currentRight != null) {
+//            boolean saveMirror = mirror;  // review does not display mirror image
+//            mirror = false;
+//            if (displayMode == DisplayMode.SBS) {
+//                drawSBS(currentLeft, currentRight);
+//            } else if (displayMode == DisplayMode.ANAGLYPH) {
+//                drawAnaglyph(currentLeft, currentRight);
+//            } else if (displayMode == DisplayMode.LEFT) {
+//                drawPhoto(currentLeft);
+//            } else if (displayMode == DisplayMode.RIGHT) {
+//                drawPhoto(currentRight);
+//            }
+//            mirror = saveMirror;
+//        } else {
+            // Display message if no images
+            fill(255);
+            textAlign(CENTER, CENTER);
+            textSize(96);
+            int animate = captureFrameCount/displayFPS;
+            text("Please Wait for Photos to Develop ", width / 2, height / 2);
+            loop();
+    //    }
+    }
+
+        private void drawLiveView() {
 
         if (camStereo.available) {
             camStereo.available = false;
@@ -675,9 +708,10 @@ public class PhotoBooth extends PApplet {
 
     }
 
+
     public void setReviewImages(PImage left, PImage right) {
-        if (currentLeft != null) ((Bitmap) currentLeft.getNative()).recycle();
-        if (currentRight != null) ((Bitmap) currentRight.getNative()).recycle();
+        //if (currentLeft != null) ((Bitmap) currentLeft.getNative()).recycle();
+        //if (currentRight != null) ((Bitmap) currentRight.getNative()).recycle();
         currentLeft = left;
         currentRight = right;
         imagesLoaded = true;

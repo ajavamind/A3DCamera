@@ -84,11 +84,11 @@ public class MainActivity extends AppCompatActivity {
     private boolean isWiFiRemoteEnabled = false; //true;
     private UdpRemoteControl udpRemoteControl;
 
-
     // photo booth states definitions
     public static final int LIVE_VIEW_STATE = 0;
-    public static final int REVIEW_PHOTO_STATE = 1;
-    public static final int REVIEW_AIEDIT_STATE = 2;
+    public static final int CAPTURE_STATE = 1;
+    public static final int REVIEW_PHOTO_STATE = 2;
+    public static final int REVIEW_AIEDIT_STATE = 3;
     public volatile int state = LIVE_VIEW_STATE;
 
     public volatile DisplayMode displayMode = DisplayMode.SBS;
@@ -466,7 +466,8 @@ public class MainActivity extends AppCompatActivity {
             media.printImageType();
         } else if (photoBooth.isReviewEdit()) {
             File mediaFile = media.getMediaFile();
-            if (mediaFile == null) Toast.makeText(this, "Nothing to AI Edit", Toast.LENGTH_SHORT).show();
+            if (mediaFile == null) Toast.makeText(this, "Nothing for AI Edit", Toast.LENGTH_SHORT).show();
+            else Toast.makeText(this, "Entering AI Edit", Toast.LENGTH_LONG).show();
             media.shareImage2(mediaFile, Media.APP_AIEDIT_PACKAGE);
         }
 

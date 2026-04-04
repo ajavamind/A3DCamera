@@ -3,6 +3,7 @@ package com.andymodla.android3dcamera.camera;
 import static android.Manifest.permission.CAMERA;
 
 import static com.andymodla.android3dcamera.MainActivity.LIVE_VIEW_STATE;
+import static com.andymodla.android3dcamera.MainActivity.REVIEW_PHOTO_STATE;
 import static java.lang.Math.abs;
 
 import android.content.Context;
@@ -956,6 +957,7 @@ public class Camera3D {
 
     private void saveImageFiles(Image left, Image right) {
         if (left != null && right != null) {
+            ((MainActivity)context).state = MainActivity.CAPTURE_STATE;
             leftBytes = convertToBytes(left);
             rightBytes = convertToBytes(right);
             left.close();
@@ -965,7 +967,7 @@ public class Camera3D {
                 leftBytes = null;
                 rightBytes = null;
             }
-            captureInProgress = false;
+            captureInProgress = false; // done capturing images
         }
     }
 

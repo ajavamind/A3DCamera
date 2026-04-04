@@ -40,7 +40,6 @@ import processing.core.PImage;
 public class Media {
     private static String TAG = "Media";
     Context context;
-    //private volatile boolean isAnaglyphMode = false; //true;
     private String BASE_FOLDER = Environment.DIRECTORY_DCIM;
     //private String BASE_FOLDER = Environment.DIRECTORY_PICTURES;
     //private String DOWNLOAD_FOLDER_NAME = Environment.DIRECTORY_DOWNLOADS;
@@ -60,6 +59,9 @@ public class Media {
     private volatile boolean saveAnaglyph = true;
     private volatile boolean saveSBS = true;
     private volatile boolean saveLR = true;
+
+    // save jpg image quality
+    private static final int JPEG_QUALITY = 100;
 
     volatile Bitmap leftBitmap;
     volatile Bitmap rightBitmap;
@@ -189,8 +191,6 @@ public class Media {
             output.flush();
             output.close();
 
-            //xxx.compress(Bitmap.CompressFormat.JPEG, 100, output);
-
             // Trigger media scanner to make image visible in gallery
             MediaScannerConnection.scanFile(context, new String[]{file.getAbsolutePath()},
                     new String[]{"image/jpeg"}, null);
@@ -220,7 +220,7 @@ public class Media {
         File file = new File(Environment.getExternalStoragePublicDirectory(BASE_FOLDER + File.separator + SAVE_FOLDER + File.separator + SAVE_ANA_FOLDER), filename);
 
         try (FileOutputStream output = new FileOutputStream(file)) {
-            anaglyphBitmap.compress(Bitmap.CompressFormat.JPEG, 100, output);
+            anaglyphBitmap.compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY, output);
             output.close();
             MediaScannerConnection.scanFile(context, new String[]{file.getAbsolutePath()},
                     new String[]{"image/jpeg"}, null);
@@ -254,7 +254,7 @@ public class Media {
         File file = new File(Environment.getExternalStoragePublicDirectory(BASE_FOLDER + File.separator + SAVE_FOLDER), filename);
 
         try (FileOutputStream output = new FileOutputStream(file)) {
-            sbsBitmap.compress(Bitmap.CompressFormat.JPEG, 90, output);
+            sbsBitmap.compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY, output);
             output.close();
             //sbsBitmap.compress(Bitmap.CompressFormat.PNG, 100, out);
             MediaScannerConnection.scanFile(context, new String[]{file.getAbsolutePath()},
@@ -330,7 +330,8 @@ public class Media {
                 ((MainActivity) context).nextContinuousCapturePhoto();
             }
         }
-        ToastHelper.showToast(context, "Saved " + timestamp);
+        //ToastHelper.showToast(context, "Saved " + timestamp);
+        Toast.makeText(context, "Saved " + timestamp, Toast.LENGTH_LONG).show();
         if (pApplet != null) {
             ((PhotoBooth) pApplet).setReviewImages(leftReview, rightReview);
             //((MainActivity) context).setReview();
@@ -535,7 +536,7 @@ public class Media {
 //            // Save to temporary file
 //            File tempFile = File.createTempFile("", ".jpg");
 //            FileOutputStream fos = new FileOutputStream(tempFile);
-//            resizedBitmap.compress(Bitmap.CompressFormat.JPEG, 85, fos);
+//            resizedBitmap.compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY, fos);
 //            fos.close();
 //
 //            bitmap.recycle();
@@ -603,7 +604,7 @@ public class Media {
 
             // Write to the MediaStore Uri
             try (OutputStream os = context.getContentResolver().openOutputStream(destUri)) {
-                bitmap.compress(Bitmap.CompressFormat.JPEG, 90, os);
+                bitmap.compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY, os);
             }
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -613,6 +614,7 @@ public class Media {
             }
 
             bitmap.recycle();
+            bitmap = null;
             return true;
         } catch (IOException e) {
             Log.e(TAG, "Error writing to MediaStore", e);
