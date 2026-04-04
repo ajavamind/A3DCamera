@@ -14,7 +14,9 @@ public class DownloadHelper {
   DownloadManager downloadManager;
   long downloadId;
   String fileName = "";
-  
+  String path = "";
+  int status;
+  int reason;
   public DownloadHelper(Context context) {
     this.context = context;
     downloadManager = (DownloadManager) context.getSystemService(Context.DOWNLOAD_SERVICE);
@@ -52,6 +54,8 @@ public class DownloadHelper {
     if (!destDir.exists()) {
       boolean created = destDir.mkdirs();
       System.out.println("Dir created: " + created + " path=" + destDir.getAbsolutePath());
+      path = destDir.getAbsolutePath() + File.separator + fileName;
+      System.out.println("path="+path);
     }
 
     DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
@@ -79,17 +83,25 @@ public class DownloadHelper {
     }
   }
 
-public String getFilename() {
-  return fileName;
-}
+  void checkDownload() {
+    
+  }
+  
+  public String getFilename() {
+    return fileName;
+  }
+
+  public String getPath() {
+    return path;
+  }
 
   public String getDownloadStatus() {
     DownloadManager.Query query = new DownloadManager.Query();
     query.setFilterById(downloadId);
     android.database.Cursor cursor = downloadManager.query(query);
     if (cursor.moveToFirst()) {
-      int status = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_STATUS));
-      int reason = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_REASON));
+      status = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_STATUS));
+      reason = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_REASON));
       System.out.println( "Status: " + status + " Reason: " + reason);
       cursor.close();
       return "Status=" + status + " Reason=" + reason;

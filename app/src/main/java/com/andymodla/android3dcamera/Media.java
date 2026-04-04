@@ -40,7 +40,7 @@ import processing.core.PImage;
 public class Media {
     private static String TAG = "Media";
     Context context;
-    private volatile boolean isAnaglyphMode = false; //true;
+    //private volatile boolean isAnaglyphMode = false; //true;
     private String BASE_FOLDER = Environment.DIRECTORY_DCIM;
     //private String BASE_FOLDER = Environment.DIRECTORY_PICTURES;
     //private String DOWNLOAD_FOLDER_NAME = Environment.DIRECTORY_DOWNLOADS;
@@ -59,12 +59,12 @@ public class Media {
     // at least one of these booleans must be true;
     private volatile boolean saveAnaglyph = true;
     private volatile boolean saveSBS = true;
-    private volatile boolean saveLR = true; //true;
+    private volatile boolean saveLR = true;
 
     volatile Bitmap leftBitmap;
     volatile Bitmap rightBitmap;
-    volatile Bitmap sbsBitmap;
-    volatile Bitmap anaglyphBitmap;
+    //volatile Bitmap sbsBitmap;
+    //volatile Bitmap anaglyphBitmap;
     public volatile PImage leftReview;
     public volatile PImage rightReview;
 
@@ -92,7 +92,7 @@ public class Media {
         this.aiVision = aiVision;
     }
 
-    public void setpApplet(PApplet pApplet) {
+    public void setupApplet(PApplet pApplet) {
         this.pApplet = pApplet;
     }
 
@@ -110,14 +110,14 @@ public class Media {
             rightBitmap.recycle();
             rightBitmap = null;
         }
-        if (sbsBitmap != null) {
-            sbsBitmap.recycle();
-            sbsBitmap = null;
-        }
-        if (anaglyphBitmap != null) {
-            anaglyphBitmap.recycle();
-            anaglyphBitmap = null;
-        }
+//        if (sbsBitmap != null) {
+//            sbsBitmap.recycle();
+//            sbsBitmap = null;
+//        }
+//        if (anaglyphBitmap != null) {
+//            anaglyphBitmap.recycle();
+//            anaglyphBitmap = null;
+//        }
     }
 
     public void createMediaFolder() {
@@ -127,7 +127,7 @@ public class Media {
         // Create the storage directory if it does not exist
         if (!mediaStorageDir.exists()) {
             if (!mediaStorageDir.mkdirs()) {
-                Log.e(TAG, "failed to create directory to save photo: " + mediaStorageDir.getAbsolutePath());
+                Log.e(TAG, "Failed to create directory to save photo: " + mediaStorageDir.getAbsolutePath());
                 Toast.makeText(context, "Error creating folder " + SAVE_FOLDER, Toast.LENGTH_SHORT).show();
                 exit(1); // System exit
             }
@@ -138,7 +138,7 @@ public class Media {
         // Create the Anaglyph storage directory if it does not exist
         if (!mediaStorageDir.exists()) {
             if (!mediaStorageDir.mkdirs()) {
-                Log.e(TAG, "failed to create directory to save photo: " + mediaStorageDir.getAbsolutePath());
+                Log.e(TAG, "Failed to create directory to save photo: " + mediaStorageDir.getAbsolutePath());
                 Toast.makeText(context, "Error creating folder " + SAVE_ANA_FOLDER, Toast.LENGTH_SHORT).show();
                 exit(1); // System exit
             }
@@ -150,7 +150,7 @@ public class Media {
         // Create the LR storage directory if it does not exist
         if (!mediaStorageDir.exists()) {
             if (!mediaStorageDir.mkdirs()) {
-                Log.e(TAG, "failed to create directory to save photo: " + mediaStorageDir.getAbsolutePath());
+                Log.e(TAG, "Failed to create directory to save photo: " + mediaStorageDir.getAbsolutePath());
                 Toast.makeText(context, "Error creating folder " + SAVE_LR_FOLDER, Toast.LENGTH_SHORT).show();
                 exit(1); // System exit
             }
@@ -202,7 +202,7 @@ public class Media {
             Log.e(TAG, "Error saving image", e);
             return null;
         }
-        System.gc();
+        //System.gc();
         return bitmap;
     }
 
@@ -213,7 +213,7 @@ public class Media {
             return null;
         }
 
-        anaglyphBitmap = StereoImage.colorAnaglyph(leftBitmap, rightBitmap, parameters.getParallaxOffset(), parameters.getVerticalOffset());
+        Bitmap anaglyphBitmap = StereoImage.colorAnaglyph(leftBitmap, rightBitmap, parameters.getParallaxOffset(), parameters.getVerticalOffset());
 
         // Save anaglyph image
         String filename = timestamp + "_ana.jpg";
@@ -230,7 +230,9 @@ public class Media {
             Log.e(TAG, "Error saving anaglyph image", e);
             return null;
         }
-        System.gc();
+        anaglyphBitmap.recycle();
+        anaglyphBitmap = null;
+        //System.gc();
         return file;
     }
 
@@ -241,7 +243,7 @@ public class Media {
             return null;
         }
 
-        sbsBitmap = StereoImage.alignLR(leftBitmap, rightBitmap, parameters.getParallaxOffset(), parameters.getVerticalOffset());
+        Bitmap sbsBitmap = StereoImage.alignLR(leftBitmap, rightBitmap, parameters.getParallaxOffset(), parameters.getVerticalOffset());
         if (sbsBitmap == null) {
             Log.d(TAG, "createAndSaveSBS failed");
             return null;
@@ -252,7 +254,7 @@ public class Media {
         File file = new File(Environment.getExternalStoragePublicDirectory(BASE_FOLDER + File.separator + SAVE_FOLDER), filename);
 
         try (FileOutputStream output = new FileOutputStream(file)) {
-            sbsBitmap.compress(Bitmap.CompressFormat.JPEG, 100, output);
+            sbsBitmap.compress(Bitmap.CompressFormat.JPEG, 90, output);
             output.close();
             //sbsBitmap.compress(Bitmap.CompressFormat.PNG, 100, out);
             MediaScannerConnection.scanFile(context, new String[]{file.getAbsolutePath()},
@@ -273,7 +275,9 @@ public class Media {
             Log.e(TAG, "Error saving SBS image", e);
             return null;
         }
-        System.gc();
+        sbsBitmap.recycle();
+        sbsBitmap = null;
+        //System.gc();
         return file;
     }
 
@@ -306,7 +310,8 @@ public class Media {
             Log.d(TAG, "AI Vision response: " + response);
             Toast.makeText(context, "AI Vision response: " + response, Toast.LENGTH_SHORT).show();
         }
-        if (isAnaglyphMode || saveAnaglyph) {
+        // Save Anaglyph image and recycle Anaglyph bitmap
+        if (saveAnaglyph) {
             reviewAnaglyph = createAndSaveAnaglyph(PHOTO_PREFIX + timestamp, leftBitmap, rightBitmap);
         }
         if (saveSBS) {
@@ -315,6 +320,7 @@ public class Media {
             if (((MainActivity) context).getContinuousMode()) {
                 timestamp += "_" + (((MainActivity) context).CONTINUOUS_COUNT - counter + 1);
             }
+            // Save SBS image and keep file, and recycle SBS bitmap
             if (crossEye) {
                 reviewSBS = createAndSaveSBS(PHOTO_PREFIX + timestamp, rightBitmap, leftBitmap);
             } else {
@@ -543,9 +549,8 @@ public class Media {
 //    }
 
     public boolean shareImage2(File imageFile, String appPackage) {
-        Log.d(TAG, "shareImage2 " + imageFile.getAbsolutePath() + " appPackage=" + appPackage);
         if (imageFile == null || !imageFile.exists()) return false;
-
+        Log.d(TAG, "shareImage2 " + imageFile.getAbsolutePath() + " appPackage=" + appPackage);
         // 1. Get the Uri from MediaStore first
         Uri contentUri = createMediaStoreUri("" + imageFile.getName());
         Log.d(TAG, "shareImage2 imageFile=" + imageFile.getName());
@@ -598,7 +603,7 @@ public class Media {
 
             // Write to the MediaStore Uri
             try (OutputStream os = context.getContentResolver().openOutputStream(destUri)) {
-                bitmap.compress(Bitmap.CompressFormat.JPEG, 85, os);
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 90, os);
             }
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {

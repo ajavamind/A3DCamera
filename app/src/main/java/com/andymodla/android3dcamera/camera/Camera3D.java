@@ -109,11 +109,13 @@ public class Camera3D {
     public static int XBP_CAMERA_WIDTH_6x4 = 1080; // small for performance - print aspect ratio
     public static int XBP_CAMERA_HEIGHT_6x4 = 720; // small for performance
 
-    public volatile int focusDistanceIndex = 0;  // default HYPERFOCAL
-    //
+    public volatile int focusDistanceIndex = 1;  // default Photo Booth
+    // public volatile int focusDistanceIndex = 0;  // default HYPERFOCAL
     static final float MACRO_FOCUS_DISTANCE = 10.0f;  // 100mm
     static final float HYPERFOCAL_FOCUS_DISTANCE = 0.60356647f;  // 1.66 meters
-    static final float PHOTO_BOOTH_FOCUS_DISTANCE = 1.43f;  // 700mm
+    static final float PHOTO_BOOTH_FOCUS_DISTANCE = 1.89f;  // 550mm
+    // 550 mm chosen for ideal subject distance based on camera lens interaxial distance (50mm) for best stereo capture
+    //static final float PHOTO_BOOTH_FOCUS_DISTANCE = 1.43f;  // 700mm
     //static final float PHOTO_BOOTH_FOCUS_DISTANCE = 1.0f;  // 1 meter
     //static final float PHOTO_BOOTH_FOCUS_DISTANCE = 2.0f;  // 500mm
     static final float AUTO_FOCUS_DISTANCE = 0.0f;
@@ -872,6 +874,7 @@ public class Camera3D {
             rightBytes = null;
             media.recycleBitmaps();
 
+            // left image reader
             mImageReader0.setOnImageAvailableListener(new OnImageAvailableListener() {
                 @Override
                 public void onImageAvailable(ImageReader reader) {
@@ -879,11 +882,12 @@ public class Camera3D {
                     if (((MainActivity)context).state == LIVE_VIEW_STATE) {
                         saveImageFiles(imageL, imageR);
                     } else {
-                        imageL.close();
+                        if (imageL != null) imageL.close();
                     }
                 }
             }, mCameraHandler);
 
+            // right image reader
             mImageReader2.setOnImageAvailableListener(new OnImageAvailableListener() {
                 @Override
                 public void onImageAvailable(ImageReader reader) {
@@ -891,7 +895,7 @@ public class Camera3D {
                     if (((MainActivity)context).state == LIVE_VIEW_STATE) {
                         saveImageFiles(imageL, imageR);
                     } else {
-                        imageL.close();
+                        if (imageR != null) imageR.close();
                     }
                 }
             }, mCameraHandler);
@@ -947,7 +951,7 @@ public class Camera3D {
         ((Bitmap) rightImage.getNative()).recycle();
         leftImage = null;
         rightImage = null;
-        System.gc();
+        //System.gc();
     }
 
     private void saveImageFiles(Image left, Image right) {
@@ -963,7 +967,6 @@ public class Camera3D {
             }
             captureInProgress = false;
         }
-
     }
 
     private byte[] convertToBytes(Image image) {

@@ -34,9 +34,14 @@ public class PhotoBooth extends PApplet {
     private static boolean DEBUG = true;
     private static boolean testMode = false;
 
-    int yellow = color(255, 255, 128);
-    int black = 0;
+    private static String title1 = "3D/AI Photo Booth by Andy Modla";
+    private static String title2 = "Philadelphia Maker Faire - April 19, 2026";
+    private static String instruction1 = "Look at Camera";
+    private static String instruction2 = "";
+
+    int black = color(0);
     int white = color(255);
+    int yellow = color(255, 255, 128);
     int gray = color(128);
 
     MainActivity mainActivity;
@@ -46,8 +51,8 @@ public class PhotoBooth extends PApplet {
 
     PImage imgLeft;
     PImage imgRight;
-    PImage splashLeft;
-    PImage splashRight;
+    //PImage splashLeft;
+    //PImage splashRight;
 
     int XBP_CAMERA_WIDTH = 1280;
     int XBP_CAMERA_HEIGHT = 960;
@@ -108,16 +113,16 @@ public class PhotoBooth extends PApplet {
         //gui = new Gui();
         //gui.setup(this);
 
-        splashLeft = loadImage("FlowerPot_l.JPG");
-        splashRight = loadImage("FlowerPot_r.JPG");
-        if (DEBUG)
-            PApplet.println("splashLeft width=" + splashLeft.width + " height=" + splashLeft.height);
-        if (DEBUG)
-            PApplet.println("splashRight width=" + splashRight.width + " height=" + splashRight.height);
-        float ar = (float) splashLeft.width / (float) splashLeft.height;
-
-        image(splashLeft, frameX, 180, frameWidth / 2 - parallax, (frameWidth / 2 - parallax) / ar);
-        image(splashRight, frameX + frameWidth / 2 + parallax, 180, frameWidth / 2 - parallax, (frameWidth / 2 - parallax) / ar);
+//        splashLeft = loadImage("FlowerPot_l.JPG");
+//        splashRight = loadImage("FlowerPot_r.JPG");
+//        if (DEBUG)
+//            PApplet.println("splashLeft width=" + splashLeft.width + " height=" + splashLeft.height);
+//        if (DEBUG)
+//            PApplet.println("splashRight width=" + splashRight.width + " height=" + splashRight.height);
+//        float ar = (float) splashLeft.width / (float) splashLeft.height;
+//
+//        image(splashLeft, frameX, 180, frameWidth / 2 - parallax, (frameWidth / 2 - parallax) / ar);
+//        image(splashRight, frameX + frameWidth / 2 + parallax, 180, frameWidth / 2 - parallax, (frameWidth / 2 - parallax) / ar);
 
         textSize(72);
         textAlign(CENTER, CENTER);
@@ -253,8 +258,8 @@ public class PhotoBooth extends PApplet {
         if (magnifyScale[magnifyIndex] > 1.0f) {
             textSize(48);
             fill(yellow);
-            textAlign(CENTER);
-            text("+"+magnifyScale[magnifyIndex]+"    ", width - 50, height - 4);
+            textAlign(LEFT);
+            text("+"+magnifyScale[magnifyIndex]+"    ", width - 200, height - 4);
         }
         // camera and review mode display test mode for debug
         if (DEBUG && testMode) {
@@ -291,10 +296,10 @@ public class PhotoBooth extends PApplet {
 
         if (mainActivity.state == MainActivity.LIVE_VIEW_STATE) {
             textAlign(CENTER);
-            text("Look at Camera", width / 2, 50);
+            text(instruction1, width / 2, 50);
             if (displayMode == DisplayMode.SBS) {
-              text("3D/AI Photo Booth by Andy Modla", width / 2, height - 96);
-              text("Philly Maker Faire - April 19, 2026", width / 2, height - 48);
+              text(title1, width / 2, height - 96);
+              text(title2, width / 2, height - 48);
             }
             if (displayMode == DisplayMode.ANAGLYPH) {
                 text("P=" + (parallax)+"   " , width - 50, height - 96);

@@ -15,6 +15,7 @@ import java.net.SocketException;
 import java.util.Enumeration;
 import com.andymodla.imagedownloader.TinyWebServer;
 import com.andymodla.imagedownloader.DownloadHelper;
+import android.media.MediaScannerConnection;
 
 private DownloadHelper downloadHelper;
 String ip ="";
@@ -49,6 +50,7 @@ void setup() {
    //Intent serviceIntent = new Intent(getContext(), DownloadServerService.class);
    //getContext().startForegroundService( serviceIntent);
    */
+   frameRate(1);
 }
 
 void draw() {
@@ -96,4 +98,11 @@ private String getHostnameAddress() {
     println("Socket Exception");
   }
   return null;
+}
+
+void scanImage(String absolutePath) {
+  // Trigger media scanner to make image visible in gallery
+  MediaScannerConnection.scanFile(getContext(), new String[]{absolutePath},
+    new String[]{"image/png"}, null);
+  System.out.println( "MediaScannerConnection.scanFile Image saved: " + absolutePath);
 }

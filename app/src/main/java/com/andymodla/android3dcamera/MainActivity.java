@@ -214,7 +214,7 @@ public class MainActivity extends AppCompatActivity {
         media = new Media(this, parameters, aiVision);
         media.createMediaFolder();
 
-        // set up UDP remote control for broadcast message reception
+        // set up UDP remote control for WIFI local network broadcast message reception
         udpRemoteControl = new UdpRemoteControl(this);
         hostIpAddr = udpRemoteControl.getHostnameAddress();
         Log.d(TAG, "Host IP Address = "+hostIpAddr);
@@ -236,7 +236,7 @@ public class MainActivity extends AppCompatActivity {
             photoBooth = new PhotoBooth();
             photoBoothFragment = new PFragment(photoBooth);
             photoBoothFragment.setView(frame, this);
-            media.setpApplet(photoBooth);
+            media.setupApplet(photoBooth);
             imageSender = new ImageSender(this);
             photoBooth.setMainActivity(this);
             photoBooth.setMirror(true);
@@ -356,7 +356,6 @@ public class MainActivity extends AppCompatActivity {
         if (MyDebug.LOG)
             Log.d(TAG, "onStop");
         super.onStop();
-        // we stop location listening in onPause, but done here again just to be certain!
     }
 
     @Override
@@ -441,6 +440,25 @@ public class MainActivity extends AppCompatActivity {
         // Other buttons like BUTTON_BACK, BUTTON_FORWARD can also be checked here
     }
 
+    private void handleButtonRelease(int buttonState) {
+        // Handle button release events similarly
+    }
+
+    private void handleMouseWheel(float delta) {
+        // Handle mouse wheel events
+        if (delta > 0) {
+            // Scrolled Up (away from user)
+            if (isPhotobooth) {
+                photoBooth.processKeyCode(KeyEvent.KEYCODE_RIGHT_BRACKET, 0);
+            }
+        } else if (delta < 0) {
+            // Scrolled Down (toward user)
+            if (isPhotobooth) {
+                photoBooth.processKeyCode(KeyEvent.KEYCODE_LEFT_BRACKET, 0);
+            }
+        }
+    }
+
     private void processShutterKey() {
         if (photoBooth.isLiveView()) {
             capturePhoto();
@@ -509,25 +527,6 @@ public class MainActivity extends AppCompatActivity {
        // loop();
     }
 
-
-    private void handleButtonRelease(int buttonState) {
-        // Handle button release events similarly
-    }
-
-    private void handleMouseWheel(float delta) {
-        // Handle mouse wheel events
-        if (delta > 0) {
-            // Scrolled Up (away from user)
-            if (isPhotobooth) {
-                photoBooth.processKeyCode(KeyEvent.KEYCODE_RIGHT_BRACKET, 0);
-            }
-        } else if (delta < 0) {
-            // Scrolled Down (toward user)
-            if (isPhotobooth) {
-                photoBooth.processKeyCode(KeyEvent.KEYCODE_LEFT_BRACKET, 0);
-            }
-        }
-    }
 
     /*==================================================================
      * Key Events
@@ -1053,6 +1052,7 @@ public class MainActivity extends AppCompatActivity {
         System.out.println( "Standard: " + standardHeapSize + "MB, Large: " + largeHeapSize + "MB");
     }
 
+// For reference not used
 //    @Override
 //    public void onBackPressed() {
 //        // Check if a specific condition is met, for example, if a drawer is open
