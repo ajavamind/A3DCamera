@@ -49,6 +49,8 @@ public class Parameters {
     public boolean mirrorImage = false; // for photo booth only
 
     String receiverIp = "";  // device IP address to receive URL link to saved photo
+    int receiverPort = 9000;  // device port to receive URL link to saved photo
+
     public boolean isBlankScreen = false;  // for camera
 
     // default constructor
@@ -188,7 +190,7 @@ public class Parameters {
         this.isBlankScreen = isBlankScreen;
         // Save to SharedPreferences
         SharedPreferences.Editor editor = prefs.edit();
-        editor.putBoolean(isSoundOnStore.name, isBlankScreen);
+        editor.putBoolean(isBlankScreenStore.name, isBlankScreen);
         editor.apply(); // asynchronous save
 
     }
@@ -228,6 +230,9 @@ public class Parameters {
 
     }
 
+    public int getReceiverPort() {
+        return receiverPort;
+    }
 
     ParamStore parallaxOffsetStore = new ParamStore(
             "px", "parallaxOffset", "Parallax Offset",
@@ -254,7 +259,7 @@ public class Parameters {
             "getIsSoundOn", "setIsSoundOn", boolean.class, "true");
 
     ParamStore isAiEditStore = new ParamStore(
-            "sd", "isAiEdit", "AI Edit",
+            "aiedit", "isAiEdit", "AI Edit",
             "getIsAiEdit", "setIsAiEdit", boolean.class, "false");
 
     ParamStore[] paramStores = {parallaxOffsetStore, verticalOffsetStore, receiverIpStore,

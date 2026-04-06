@@ -104,7 +104,7 @@ public class MainActivity extends AppCompatActivity {
 
     public String hostIpAddr = "";
     public int hostPort = 8333;
-    public String receiverIp = "";  // receiver IP
+    //public String receiverIp = "";  // receiver IP
     public int receiverPort = 9000; // receiver IP port
     public ImageSender imageSender;  // camera sends last picture URL link to an android 3D display device
 
@@ -203,7 +203,7 @@ public class MainActivity extends AppCompatActivity {
         parameters = new Parameters(prefs, this);
         parameters.init();
         isPhotoBooth = parameters.getIsPhotoBooth();
-        receiverIp = parameters.getReceiverIp();
+        //receiverIp = parameters.getReceiverIp();
         //receiverPort = parameters.getReceiverPort();  // TODO
 
 

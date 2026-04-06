@@ -266,8 +266,9 @@ public class Media {
             if (((MainActivity) context).imageSender != null) {
                 String imageUrl = "http://"+((MainActivity) context).hostIpAddr+":"+((MainActivity) context).hostPort+File.separator+filename;
                 Log.d(TAG, "imageSender.sendImageUrl " + imageUrl);
-                ((MainActivity) context).imageSender.sendImageUrl(imageUrl, ((MainActivity) context).receiverIp, ((MainActivity) context).receiverPort);
+                ((MainActivity) context).imageSender.sendImageUrl(imageUrl, parameters.getReceiverIp(), parameters.getReceiverPort());
             }
+
 //            if (((MainActivity) context).imageUrlSender != null) {
 //                String imageUrl = "http://"+((MainActivity) context).senderHost+":"+((MainActivity) context).senderPort+File.separator+filename;
 //                Log.d(TAG, "imageUrlSender.discoverAndSend " + imageUrl);
