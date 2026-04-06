@@ -34,12 +34,14 @@ class ParamStore {
 public class Parameters {
     private final String TAG = "Parameters";
     private final SharedPreferences prefs;
+    private final Context context;
 
     // Stereo Image Alignment parameters
     // same values as StereoPhotoMaker displays after automatic alignment of a reference calibration stereo photo.
     public int parallaxOffset = 0;  // left/right horizontal offset parallax for stereo window placement
     public int verticalOffset = 0;  // left/right camera vertical offset alignment for camera correction
     public boolean isSoundOn = true;
+    public boolean isAiEdit = true;
 
     // photo booth parameters
     public boolean isPhotoBooth = false;
@@ -50,8 +52,9 @@ public class Parameters {
     public boolean isBlankScreen = false;  // for camera
 
     // default constructor
-    public Parameters(SharedPreferences prefs) {
+    public Parameters(SharedPreferences prefs, Context context) {
         this.prefs = prefs;
+        this.context = context;
     }
 
 
@@ -74,6 +77,7 @@ public class Parameters {
             if (store.setterParamType == int.class)
                 method.invoke(this, Integer.parseInt(value.toString()));
             else if (store.setterParamType == String.class) method.invoke(this, value.toString());
+            else if (store.setterParamType == boolean.class) method.invoke(this, Boolean.parseBoolean(value.toString()));
             else method.invoke(this, value);
         } catch (Exception e) {
             // Handle potential exceptions
@@ -92,6 +96,7 @@ public class Parameters {
         readIsPhotoBooth();
         readIsBlankScreen();
         readIsSoundOn();
+        readIsAiEdit();
     }
 
     //------------------------------------------------------------------------------
@@ -155,12 +160,24 @@ public class Parameters {
     }
 
     public void setIsPhotoBooth(boolean isPhotoBooth) {
+        boolean needsRestart = false;
+        if (this.isPhotoBooth != isPhotoBooth) {
+            needsRestart = true;
+        }
         this.isPhotoBooth = isPhotoBooth;
+        // Save to SharedPreferences
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.putBoolean(isPhotoBoothStore.name, isPhotoBooth);
+        editor.commit(); // synchronous save: do it now and return
+        //editor.apply();   // asynchronous save
+        if (needsRestart) {
+            ((MainActivity)context).restartApp();
+        }
     }
 
     //------------------------------------------------------------------------------
     public void readIsBlankScreen() {
-        isPhotoBooth = prefs.getBoolean(isBlankScreenStore.name, Boolean.parseBoolean(isBlankScreenStore.defaultValue));
+        isBlankScreen = prefs.getBoolean(isBlankScreenStore.name, Boolean.parseBoolean(isBlankScreenStore.defaultValue));
     }
 
     public boolean getIsBlankScreen() {
@@ -169,6 +186,11 @@ public class Parameters {
 
     public void setIsBlankScreen(boolean isBlankScreen) {
         this.isBlankScreen = isBlankScreen;
+        // Save to SharedPreferences
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.putBoolean(isSoundOnStore.name, isBlankScreen);
+        editor.apply(); // asynchronous save
+
     }
 
     //------------------------------------------------------------------------------
@@ -189,20 +211,38 @@ public class Parameters {
     }
 
 
+    //------------------------------------------------------------------------------
+    public void readIsAiEdit() {
+        isAiEdit = prefs.getBoolean(isAiEditStore.name, Boolean.parseBoolean(isAiEditStore.defaultValue));
+    }
+    public boolean getIsSAiEdit() {
+        return isAiEdit;
+    }
+
+    public void setIsAiEdit(boolean isAiEdit) {
+        this.isAiEdit = isAiEdit;
+        // Save to SharedPreferences
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.putBoolean(isAiEditStore.name, isAiEdit);
+        editor.apply(); // asynchronous save
+
+    }
+
+
     ParamStore parallaxOffsetStore = new ParamStore(
-            "p", "parallaxOffset", "Parallax Offset",
+            "px", "parallaxOffset", "Parallax Offset",
             "getParallaxOffset", "setParallaxOffset", int.class, "0");
 
     ParamStore verticalOffsetStore = new ParamStore(
-            "v", "verticalOffset", "Vertical Offset",
+            "vt", "verticalOffset", "Vertical Offset",
             "getVerticalOffset", "setVerticalOffset", int.class, "0");
 
     ParamStore receiverIpStore = new ParamStore(
-            "r", "receiverIp", "Receiver IP",
-            "getReceiverIp", "setReceiverIp", String.class, "");
+            "rip", "receiverIp", "Receiver IP",
+            "getReceiverIp", "setReceiverIp", String.class, "192.168.8.131");
 
     ParamStore isPhotoBoothStore = new ParamStore(
-            "b", "isPhotoBooth", "Photo Booth",
+            "pb", "isPhotoBooth", "Photo Booth",
             "getIsPhotoBooth", "setIsPhotoBooth", boolean.class, "false");
 
     ParamStore isBlankScreenStore = new ParamStore(
@@ -210,11 +250,15 @@ public class Parameters {
             "getIsBlankScreen", "setIsBlankScreen", boolean.class, "false");
 
     ParamStore isSoundOnStore = new ParamStore(
-            "s", "isSoundOn", "Sound On",
+            "sd", "isSoundOn", "Sound On",
             "getIsSoundOn", "setIsSoundOn", boolean.class, "true");
 
+    ParamStore isAiEditStore = new ParamStore(
+            "sd", "isAiEdit", "AI Edit",
+            "getIsAiEdit", "setIsAiEdit", boolean.class, "false");
+
     ParamStore[] paramStores = {parallaxOffsetStore, verticalOffsetStore, receiverIpStore,
-            isPhotoBoothStore, isBlankScreenStore, isSoundOnStore};
+            isPhotoBoothStore, isBlankScreenStore, isSoundOnStore, isAiEditStore};
 
     public String findParam(String abbr, String value, boolean set) {
         ParamStore store = null;

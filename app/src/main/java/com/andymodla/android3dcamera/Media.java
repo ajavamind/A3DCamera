@@ -170,7 +170,9 @@ public class Media {
         }
 
         BitmapFactory.Options options = new BitmapFactory.Options();
-        options.inSampleSize = 2; // Try reducing image size to avoid out of memory error
+        if (((MainActivity)context).isPhotoBooth) {
+            options.inSampleSize = 2; // Try reducing image size to avoid out of memory error
+        }
         // options.inPreferredConfig = Bitmap.Config.ARGB_8888; // Try specifying a config
 
         Log.d(TAG, "SaveImageFile " + filename);
@@ -264,7 +266,7 @@ public class Media {
             if (((MainActivity) context).imageSender != null) {
                 String imageUrl = "http://"+((MainActivity) context).hostIpAddr+":"+((MainActivity) context).hostPort+File.separator+filename;
                 Log.d(TAG, "imageSender.sendImageUrl " + imageUrl);
-                ((MainActivity) context).imageSender.sendImageUrl(imageUrl); // TODO
+                ((MainActivity) context).imageSender.sendImageUrl(imageUrl, ((MainActivity) context).receiverIp, ((MainActivity) context).receiverPort);
             }
 //            if (((MainActivity) context).imageUrlSender != null) {
 //                String imageUrl = "http://"+((MainActivity) context).senderHost+":"+((MainActivity) context).senderPort+File.separator+filename;

@@ -126,8 +126,6 @@ public class Camera3D {
 
     private int cameraWidth = CAMERA_WIDTH_DEFAULT; // camera width lens pixels
     private int cameraHeight = CAMERA_HEIGHT_DEFAULT;// camera height lens pixels
-    private int parallax;
-    private int verticalAlignment;
 
     // Display surfaces for preview
     private volatile SurfaceView mSurfaceView0;
@@ -170,7 +168,7 @@ public class Camera3D {
     // Sharpness 0 - 6, default 2
     private static final CaptureRequest.Key<Integer> SHARPNESS = new CaptureRequest.Key<>("org.codeaurora.qcamera3.sharpness.strength", Integer.class);
 
-    volatile boolean shutterSound = true;
+    //volatile boolean shutterSound = true;
     public volatile boolean available = false; // PImage available to access
     public volatile boolean captureInProgress = false;
 
@@ -942,7 +940,7 @@ public class Camera3D {
             Log.e(TAG, "Error capturing images", e);
             Toast.makeText(context, "Error capturing images", Toast.LENGTH_SHORT).show();
         }
-        if (shutterSound) {
+        if (parameters.getIsSoundOn()) {
             playShutterSound();
         }
     }
@@ -982,10 +980,10 @@ public class Camera3D {
     }
 
     public void shutterSound() {
-        if (shutterSound) {
+        if (parameters.getIsSoundOn()) {
             CameraInfo.mustPlayShutterSound();
         }
-        Log.d(TAG, "shutter sound " + ((shutterSound) ? "on" : "off"));
+        Log.d(TAG, "shutter sound " + ((parameters.getIsSoundOn()) ? "on" : "off"));
 
     }
 

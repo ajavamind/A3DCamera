@@ -80,6 +80,7 @@ public class MainActivity extends AppCompatActivity {
     private Parameters parameters;
 
     private boolean aiVisionEnabled = false;
+    private boolean aiEditEnabled = false;
 
     private boolean isWiFiRemoteEnabled = false; //true;
     private UdpRemoteControl udpRemoteControl;
@@ -96,16 +97,15 @@ public class MainActivity extends AppCompatActivity {
     private boolean exitApp = false; // exit app flag with back or esc button
 
     // Photo booth variables
-    private boolean isPhotobooth = true;
-
+    public boolean isPhotoBooth = true;
     private PhotoBooth photoBooth;  // photo booth sketch
     PFragment photoBoothFragment;  // processing library photo booth fragment
     View decorView; // screen window view for camera app
 
     public String hostIpAddr = "";
     public int hostPort = 8333;
-    public String receiverIP = "";  // receiver IP
-    public int receiverPort = 9000;
+    public String receiverIp = "";  // receiver IP
+    public int receiverPort = 9000; // receiver IP port
     public ImageSender imageSender;  // camera sends last picture URL link to an android 3D display device
 
     Timer countdownTimer;
@@ -200,8 +200,12 @@ public class MainActivity extends AppCompatActivity {
         // initialize Parmeters from storage
         // shared preferences
         SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        parameters = new Parameters(prefs);
+        parameters = new Parameters(prefs, this);
         parameters.init();
+        isPhotoBooth = parameters.getIsPhotoBooth();
+        receiverIp = parameters.getReceiverIp();
+        //receiverPort = parameters.getReceiverPort();  // TODO
+
 
         // set parameters for my XReal Beam Pro stereo window adjustment
         // Stereo Image Alignment parameters (same values as StereoPhotoMaker for alignment)
@@ -228,7 +232,7 @@ public class MainActivity extends AppCompatActivity {
             aiVision = new AIvision(this);
         }
 
-        if (isPhotobooth) {
+        if (isPhotoBooth) {
             FrameLayout frame = new FrameLayout(this);
             frame.setId(CompatUtils.getUniqueViewId());
             setContentView(frame, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
@@ -303,7 +307,7 @@ public class MainActivity extends AppCompatActivity {
         decorView.post(new Runnable() {
             @Override
             public void run() {
-                camera.init(isPhotobooth);
+                camera.init(isPhotoBooth);
                 camera.openCamera();
                 if (photoBooth != null) {
                     photoBooth.setCamera(camera);
@@ -318,7 +322,7 @@ public class MainActivity extends AppCompatActivity {
         super.onStart();
         Log.d(TAG, "onStart()");
         setVisibility();
-        //if (!isPhotobooth) {
+        //if (!isPhotoBooth) {
             if (commandLine == null) {
                 commandLine = new CommandLine(this, parameters, splashMessage + " Version: " + BuildConfig.VERSION_NAME);
             }
@@ -366,7 +370,9 @@ public class MainActivity extends AppCompatActivity {
         Log.d(TAG, "onDestroy()");
         super.onDestroy();
         camera.destroy();
-        photoBoothFragment.onDestroy();
+        if (photoBoothFragment != null) {
+            photoBoothFragment.onDestroy();
+        }
         if (udpRemoteControl != null) {
             udpRemoteControl.destroy();
         }
@@ -412,7 +418,7 @@ public class MainActivity extends AppCompatActivity {
         if ((buttonState & MotionEvent.BUTTON_PRIMARY) != 0) {
             // Left mouse button pressed
             Log.d(TAG, "Left button pressed");
-            if (isPhotobooth) {
+            if (isPhotoBooth) {
                 if (!camera.captureInProgress) {
                     processShutterKey();
                 }
@@ -425,7 +431,7 @@ public class MainActivity extends AppCompatActivity {
             // handles toggle state changes in photo booth sketch
             Log.d(TAG, "Middle button pressed");
 
-            if (isPhotobooth) {
+            if (isPhotoBooth) {
                 processStateToggle();
             } else  {
                 media.reviewPhotos(displayMode);
@@ -434,7 +440,7 @@ public class MainActivity extends AppCompatActivity {
         else if ((buttonState & MotionEvent.BUTTON_SECONDARY) != 0) {
             // Right mouse button pressed
             Log.d(TAG, "Right button pressed");
-            if (isPhotobooth) {
+            if (isPhotoBooth) {
                 processDisplayToggle();
             } else {
                 media.printImageType();
@@ -451,12 +457,12 @@ public class MainActivity extends AppCompatActivity {
         // Handle mouse wheel events
         if (delta > 0) {
             // Scrolled Up (away from user)
-            if (isPhotobooth) {
+            if (isPhotoBooth) {
                 photoBooth.processKeyCode(KeyEvent.KEYCODE_RIGHT_BRACKET, 0);
             }
         } else if (delta < 0) {
             // Scrolled Down (toward user)
-            if (isPhotobooth) {
+            if (isPhotoBooth) {
                 photoBooth.processKeyCode(KeyEvent.KEYCODE_LEFT_BRACKET, 0);
             }
         }
@@ -570,7 +576,7 @@ public class MainActivity extends AppCompatActivity {
         if (commandLine != null && commandLine.processCommandLineKey(keyCode,ch)) {
             return true;
         }
-        if (isPhotobooth) {
+        if (isPhotoBooth) {
             boolean consumed = photoBooth.processKeyCode(keyCode, ch);
             if (consumed) return true;
             switch (keyCode) {
@@ -651,7 +657,7 @@ public class MainActivity extends AppCompatActivity {
 
             case SHARE_KEY:
             case SHARE_KB_KEY:
-                if (isPhotobooth) {
+                if (isPhotoBooth) {
                     // ignore share key in photo booth
                     return true;
                 } else {
@@ -687,7 +693,7 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             case ANAGLYPH_KEY:
             case ANAGLYPH_KB_KEY:
-                if (isPhotobooth) {
+                if (isPhotoBooth) {
                     displayMode = DisplayMode.ANAGLYPH;
                     photoBooth.setDisplayMode(displayMode);
                 }
@@ -700,7 +706,7 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             case SHUTTER_SPEED_KEY:
             case SHUTTER_SPEED_KB_KEY:
-                if (isPhotobooth) {
+                if (isPhotoBooth) {
                     //photoBooth.keyPressedReview(keyCode, ch);
                     return true;
                 }
@@ -711,7 +717,7 @@ public class MainActivity extends AppCompatActivity {
             case TIMER_KEY:
             case TIMER_KB_KEY:
                 if (state != LIVE_VIEW_STATE) {
-                    if (isPhotobooth) {
+                    if (isPhotoBooth) {
                         //photoBooth.keyPressedReview(keyCode, ch);
                     }
                     return true;
@@ -719,7 +725,7 @@ public class MainActivity extends AppCompatActivity {
                     if (CONTINUOUS_COUNT > 0) {
                         CONTINUOUS_COUNT = 0;
                     } else {
-                        if (isPhotobooth) {
+                        if (isPhotoBooth) {
                             CONTINUOUS_COUNT = CONTINUOUS_COUNT_PHOTO_BOOTH;
                         } else {
                             CONTINUOUS_COUNT = CONTINUOUS_COUNT_DEFAULT;
@@ -741,7 +747,7 @@ public class MainActivity extends AppCompatActivity {
             case DISP_KB_KEY:
             case KeyEvent.KEYCODE_A:
                 displayMode = displayMode.next();
-                if (isPhotobooth) {
+                if (isPhotoBooth) {
                     photoBooth.setDisplayMode(displayMode);
                 }
                 if (displayMode == DisplayMode.SBS) {
@@ -867,7 +873,7 @@ public class MainActivity extends AppCompatActivity {
      */
     void startCountdownSequence(int startCount) {
         Log.d(TAG, "startCountdownSequence startCount=" + startCount);
-        if (isPhotobooth) {
+        if (isPhotoBooth) {
             if (startCount == 0) {
                 camera.createCameraCaptureSession(); // take a picture
                 return;
@@ -876,7 +882,7 @@ public class MainActivity extends AppCompatActivity {
         if (countdownTimer == null) {
             countdownTimer = new Timer();
             countdownDigit = startCount + 1;
-            if (isPhotobooth) {
+            if (isPhotoBooth) {
                 photoBooth.setCountdown(Integer.toString(countdownDigit));
             } else {
                 countdownTextView.setText(Integer.toString(countdownDigit));
@@ -893,7 +899,7 @@ public class MainActivity extends AppCompatActivity {
                         MainActivity.this.runOnUiThread(new Runnable() {
                             public void run() {
                                 // hide digit display
-                                if (isPhotobooth) {
+                                if (isPhotoBooth) {
                                     photoBooth.setCountdown("");
                                 } else {
                                     countdownTextView.setText("");
@@ -906,14 +912,14 @@ public class MainActivity extends AppCompatActivity {
                         MainActivity.this.runOnUiThread(new Runnable() {
                             public void run() {
                                 if (countdownDigit == 0) {
-                                    if (isPhotobooth) {
+                                    if (isPhotoBooth) {
                                         photoBooth.setCountdown("");
                                     } else {
                                         countdownTextView.setText("");
                                         countdownTextView.setVisibility(View.GONE);
                                     }
                                 } else {
-                                    if (isPhotobooth) {
+                                    if (isPhotoBooth) {
                                         photoBooth.setCountdown(Integer.toString(countdownDigit));
                                     } else {
                                         countdownTextView.setText(Integer.toString(countdownDigit));
@@ -1002,6 +1008,19 @@ public class MainActivity extends AppCompatActivity {
                       }
         );
     }
+
+    public void restartApp() {
+        Intent intent = getPackageManager().getLaunchIntentForPackage(getPackageName());
+        if (intent != null) {
+            // Clear the back stack and start as a new task
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(intent);
+
+            // Kill the current process to ensure a fresh start
+            Runtime.getRuntime().exit(0);
+        }
+    }
+
 
     /*==================================================================
      * Permissions
