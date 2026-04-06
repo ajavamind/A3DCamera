@@ -1,5 +1,11 @@
 package com.andymodla.android3dcamera;
 
+/**
+ * Application parameters
+ * Copyright 2025-2026 Andy Modla  All Rights Reserved
+ * Command line based parameter read and set
+ */
+
 import android.content.SharedPreferences;
 import android.content.Context;
 import android.util.Log;
@@ -27,10 +33,6 @@ class ParamStore {
     }
 }
 
-/**
- * Application parameters
- * Copyright 2025 Andy Modla  All Rights Reserved
- */
 public class Parameters {
     private final String TAG = "Parameters";
     private final SharedPreferences prefs;
@@ -217,7 +219,7 @@ public class Parameters {
     public void readIsAiEdit() {
         isAiEdit = prefs.getBoolean(isAiEditStore.name, Boolean.parseBoolean(isAiEditStore.defaultValue));
     }
-    public boolean getIsSAiEdit() {
+    public boolean getIsAiEdit() {
         return isAiEdit;
     }
 

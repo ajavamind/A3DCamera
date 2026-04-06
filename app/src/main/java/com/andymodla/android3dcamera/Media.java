@@ -77,7 +77,7 @@ public class Media {
     volatile private File reviewRight;
 
     private String PHOTO_PREFIX = "IMG_";
-    private String APP_REVIEW_PACKAGE = "jp.suto.stereoroidpro"; // Review with StereoRoidPro app default
+    public static String APP_REVIEW_PACKAGE = "jp.suto.stereoroidpro"; // Review with StereoRoidPro app default
     public static String APP_AIEDIT_PACKAGE = "com.andymodla.fluxkontext"; // AI edit with itcamera app default
     public static String APP_PHOTO_REVIEW_PACKAGE = "com.google.android.apps.photosgo"; // Review with Gallery
     private String APP_CANON_PRINT_SERVICE_PACKAGE = "jp.co.canon.android.printservice.plugin";

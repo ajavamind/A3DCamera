@@ -80,7 +80,7 @@ public class MainActivity extends AppCompatActivity {
     private Parameters parameters;
 
     private boolean aiVisionEnabled = false;
-    private boolean aiEditEnabled = false;
+    private boolean isAiEdit = false;
 
     private boolean isWiFiRemoteEnabled = false; //true;
     private UdpRemoteControl udpRemoteControl;
@@ -203,6 +203,9 @@ public class MainActivity extends AppCompatActivity {
         parameters = new Parameters(prefs, this);
         parameters.init();
         isPhotoBooth = parameters.getIsPhotoBooth();
+        isAiEdit = parameters.getIsAiEdit();
+        //aiVisionEnabled = parameters.getAiVisionEnabled();
+
         //receiverIp = parameters.getReceiverIp();
         //receiverPort = parameters.getReceiverPort();  // TODO
 
@@ -475,9 +478,16 @@ public class MainActivity extends AppCompatActivity {
             media.printImageType();
         } else if (photoBooth.isReviewEdit()) {
             File mediaFile = media.getMediaFile();
-            if (mediaFile == null) Toast.makeText(this, "Nothing for AI Edit", Toast.LENGTH_SHORT).show();
-            else Toast.makeText(this, "Entering AI Edit", Toast.LENGTH_LONG).show();
-            media.shareImage2(mediaFile, Media.APP_AIEDIT_PACKAGE);
+            if (mediaFile == null) {
+                Toast.makeText(this, "Nothing To Edit", Toast.LENGTH_SHORT).show();
+            } else if (parameters.getIsAiEdit()) {
+                Toast.makeText(this, "Entering AI Edit", Toast.LENGTH_LONG).show();
+                media.shareImage2(mediaFile, Media.APP_AIEDIT_PACKAGE);
+            } else {
+                Toast.makeText(this, "Entering Stereo Edit", Toast.LENGTH_LONG).show();
+                media.shareImage2(mediaFile, Media.APP_REVIEW_PACKAGE);
+            }
+
         }
 
     }
