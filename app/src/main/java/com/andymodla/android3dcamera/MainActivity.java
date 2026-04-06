@@ -204,11 +204,12 @@ public class MainActivity extends AppCompatActivity {
         parameters.init();
 
         // set parameters for my XReal Beam Pro stereo window adjustment
-        // Stereo Image Alignment parameters (same values as StereoPhotoMaker)
-        // 165  left/right parallax horizontal offset for stereo window placement
+        // Stereo Image Alignment parameters (same values as StereoPhotoMaker for alignment)
+        // 100  left/right parallax horizontal offset for stereo window placement
         // -1  left/right camera alignment vertical offset for camera correction
-         parameters.writeParallaxOffset(165);
-         parameters.writeVerticalOffset(-1);
+        // testing only:
+        //parameters.writeParallaxOffset(100); // photo booth parallax offset
+        //parameters.writeVerticalOffset(-1);
 
         // Establish media storage folders for saving photos
         media = new Media(this, parameters, aiVision);
@@ -240,6 +241,8 @@ public class MainActivity extends AppCompatActivity {
             imageSender = new ImageSender(this);
             photoBooth.setMainActivity(this);
             photoBooth.setMirror(true);
+            photoBooth.setParallax(parameters.getParallaxOffset());
+            photoBooth.setVerticalAlignment(parameters.getVerticalOffset());
         } else {
             setContentView(R.layout.layout);
         }

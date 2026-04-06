@@ -170,7 +170,7 @@ public class Media {
         }
 
         BitmapFactory.Options options = new BitmapFactory.Options();
-        // options.inSampleSize = 2; // Try reducing image size
+        options.inSampleSize = 2; // Try reducing image size to avoid out of memory error
         // options.inPreferredConfig = Bitmap.Config.ARGB_8888; // Try specifying a config
 
         Log.d(TAG, "SaveImageFile " + filename);

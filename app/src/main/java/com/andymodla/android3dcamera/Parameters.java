@@ -103,7 +103,7 @@ public class Parameters {
         return parallaxOffset;
     }
 
-    public void writeParallaxOffset(int parallaxOffset) {
+    public void setParallaxOffset(int parallaxOffset) {
         this.parallaxOffset = parallaxOffset;
         // Save to SharedPreferences
         SharedPreferences.Editor editor = prefs.edit();
@@ -120,7 +120,7 @@ public class Parameters {
         return verticalOffset;
     }
 
-    public void writeVerticalOffset(int verticalOffset) {
+    public void setVerticalOffset(int verticalOffset) {
         this.verticalOffset = verticalOffset;
         // Save to SharedPreferences
         SharedPreferences.Editor editor = prefs.edit();
@@ -154,7 +154,7 @@ public class Parameters {
         return isPhotoBooth;
     }
 
-    public void writeIsPhotoBooth(boolean isPhotoBooth) {
+    public void setIsPhotoBooth(boolean isPhotoBooth) {
         this.isPhotoBooth = isPhotoBooth;
     }
 
@@ -167,7 +167,7 @@ public class Parameters {
         return isBlankScreen;
     }
 
-    public void writeIsBlankScreen(boolean isBlankScreen) {
+    public void setIsBlankScreen(boolean isBlankScreen) {
         this.isBlankScreen = isBlankScreen;
     }
 
@@ -178,7 +178,8 @@ public class Parameters {
     public boolean getIsSoundOn() {
         return isSoundOn;
     }
-    public void writeIsSoundOn(boolean isSoundOn) {
+
+    public void setIsSoundOn(boolean isSoundOn) {
         this.isSoundOn = isSoundOn;
         // Save to SharedPreferences
         SharedPreferences.Editor editor = prefs.edit();

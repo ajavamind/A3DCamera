@@ -65,7 +65,7 @@ public class PhotoBooth extends PApplet {
     int displayFPS = 30; // display frames per second
 
     // Parallax and vertical alignment adjustments in pixels for XBP photo booth
-    public volatile int parallax = 64;
+    public volatile int parallax = 100;
     public volatile int verticalAlignment = -1;
     public volatile boolean mirror = false;
     public volatile boolean crossEye = false;
