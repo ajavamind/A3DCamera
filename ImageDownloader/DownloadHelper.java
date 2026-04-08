@@ -17,6 +17,8 @@ public class DownloadHelper {
   String path = "";
   int status;
   int reason;
+  boolean start =  false;
+
   public DownloadHelper(Context context) {
     this.context = context;
     downloadManager = (DownloadManager) context.getSystemService(Context.DOWNLOAD_SERVICE);
@@ -39,6 +41,7 @@ public class DownloadHelper {
   //}
 
   public void startDownload(String url) {
+    System.out.println("startDownload()");
 
     // Extract a filename from the URL or use a default
     fileName = URLUtil.guessFileName(url, null, null);
@@ -53,10 +56,10 @@ public class DownloadHelper {
       );
     if (!destDir.exists()) {
       boolean created = destDir.mkdirs();
-      System.out.println("Dir created: " + created + " path=" + destDir.getAbsolutePath());
-      path = destDir.getAbsolutePath() + File.separator + fileName;
-      System.out.println("path="+path);
+      System.out.println("Dir created: " + created + " `=" + destDir.getAbsolutePath());
     }
+    path = destDir.getAbsolutePath() + File.separator + fileName;
+    System.out.println("path="+path);
 
     DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
     request.setTitle("Downloading Image");
@@ -80,19 +83,37 @@ public class DownloadHelper {
     if (manager != null) {
       downloadId = manager.enqueue(request);
       System.out.println("Download started...");
+      start = true;
     }
   }
 
   void checkDownload() {
-    
   }
-  
+
   public String getFilename() {
     return fileName;
   }
 
   public String getPath() {
     return path;
+  }
+
+  public boolean isStarted() {
+    return start;
+  }
+
+  public int getStatus() {
+    DownloadManager.Query query = new DownloadManager.Query();
+    query.setFilterById(downloadId);
+    android.database.Cursor cursor = downloadManager.query(query);
+    if (cursor.moveToFirst()) {
+      status = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_STATUS));
+      reason = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_REASON));
+      System.out.println( "Status: " + status + " Reason: " + reason);
+      cursor.close();
+      return  status;
+    }
+    return -1;
   }
 
   public String getDownloadStatus() {
@@ -104,6 +125,7 @@ public class DownloadHelper {
       reason = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_REASON));
       System.out.println( "Status: " + status + " Reason: " + reason);
       cursor.close();
+      if (status == 8 && reason == 0) start = false;
       return "Status=" + status + " Reason=" + reason;
     }
     return "No download found";

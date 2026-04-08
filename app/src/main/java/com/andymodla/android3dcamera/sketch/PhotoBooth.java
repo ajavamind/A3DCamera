@@ -6,6 +6,7 @@ package com.andymodla.android3dcamera.sketch;
  */
 
 import android.graphics.BitmapFactory;
+import android.media.MediaScannerConnection;
 import android.view.KeyEvent;
 import android.graphics.Bitmap;
 
@@ -192,7 +193,7 @@ public class PhotoBooth extends PApplet {
         update = true;
     }
 
-    void toggleZoom() {
+    void zoomToggle() {
         zoom = !zoom;
         update = true;
     }
@@ -628,7 +629,7 @@ public class PhotoBooth extends PApplet {
                 media.shareImage2(media.getMediaFile(), Media.APP_AIEDIT_PACKAGE);
                 break;
             case KeyEvent.KEYCODE_Z:
-                toggleZoom();
+                zoomToggle();
                 break;
             case KeyEvent.KEYCODE_SPACE:
                 testMode = !testMode;
@@ -646,6 +647,12 @@ public class PhotoBooth extends PApplet {
                 setParallax(parallax + 2);
                 if (DEBUG) println("parallax = " + parallax);
                 break;
+            case KeyEvent.KEYCODE_H:  // help
+                String[] help = parameters.getParameterDetails();
+                for (String s : help) {
+                    println(s);
+                }
+                break;
             default:
                 return false;
         }
@@ -654,10 +661,13 @@ public class PhotoBooth extends PApplet {
     }
 
     void saveScreenshot() {
-        String dateTime = new SimpleDateFormat("yyyyMMdd-HHmmss").format(new Date());
+        String dateTime = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
         String filename = "Screenshot_" + dateTime + ".png";
         String filePath = Environment.getExternalStorageDirectory().getAbsolutePath() + "/Pictures/Screenshots/" + filename;
         saveFrame(filePath);
+        MediaScannerConnection.scanFile(getContext(), new String[]{filePath},
+                new String[]{"image/*"}, null);
+        println("Screenshot saved to " + filePath);
     }
 
 // // For reference not used

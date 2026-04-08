@@ -487,6 +487,7 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(this, "Entering Stereo Edit", Toast.LENGTH_LONG).show();
                 media.shareImage2(mediaFile, Media.APP_REVIEW_PACKAGE);
             }
+            // TODO add print only option and label right side edit or print type
 
         }
 
@@ -499,6 +500,7 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    // save this unused code
     private void processStateToggle3states() {
         // toggle through photo types for display
         if (state == LIVE_VIEW_STATE) {
