@@ -156,7 +156,7 @@ public class PhotoBooth extends PApplet {
     }
 
     public boolean isReviewEdit() {
-        if (mainActivity.state == MainActivity.REVIEW_AIEDIT_STATE) return true;
+        if (mainActivity.state == MainActivity.REVIEW_AI_EDIT_STATE) return true;
         return false;
     }
 
@@ -296,9 +296,9 @@ public class PhotoBooth extends PApplet {
         if (isLiveView()) {
             text("Live", 50, height - 48);
         } else if (isReview()) {
-            text("Review", 50, height - 48);
+            text("Review Print", 50, height - 48);
         } else if (isReviewEdit()) {
-            text("Review", 50, height - 48);
+            text("Review Edit", 50, height - 48);
         }
         text(sMode, 50, height - 96);
 
@@ -315,8 +315,8 @@ public class PhotoBooth extends PApplet {
             }
         } else if (mainActivity.state == MainActivity.REVIEW_PHOTO_STATE) {
             textAlign(RIGHT);
-            //gui.displayMenuBar();
-        } else if (mainActivity.state == MainActivity.REVIEW_AIEDIT_STATE) {
+            text("Print" , width - 50, height - 48);
+        } else if (mainActivity.state == MainActivity.REVIEW_AI_EDIT_STATE) {
             textAlign(RIGHT);
             text("AI Edit" , width - 50, height - 48);
 

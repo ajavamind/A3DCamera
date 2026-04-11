@@ -81,7 +81,7 @@ public class MainActivity extends AppCompatActivity {
 
     private boolean aiVisionEnabled = false;
     private boolean isAiEdit = false;
-
+    public boolean reviewPrint = true;
     private boolean isWiFiRemoteEnabled = false; //true;
     private UdpRemoteControl udpRemoteControl;
 
@@ -89,7 +89,7 @@ public class MainActivity extends AppCompatActivity {
     public static final int LIVE_VIEW_STATE = 0;
     public static final int CAPTURE_STATE = 1;
     public static final int REVIEW_PHOTO_STATE = 2;
-    public static final int REVIEW_AIEDIT_STATE = 3;
+    public static final int REVIEW_AI_EDIT_STATE = 3;
     public volatile int state = LIVE_VIEW_STATE;
 
     public volatile DisplayMode displayMode = DisplayMode.SBS;
@@ -205,9 +205,6 @@ public class MainActivity extends AppCompatActivity {
         isPhotoBooth = parameters.getIsPhotoBooth();
         isAiEdit = parameters.getIsAiEdit();
         //aiVisionEnabled = parameters.getAiVisionEnabled();
-
-        //receiverIp = parameters.getReceiverIp();
-        //receiverPort = parameters.getReceiverPort();  // TODO
 
 
         // set parameters for my XReal Beam Pro stereo window adjustment
@@ -435,7 +432,12 @@ public class MainActivity extends AppCompatActivity {
             Log.d(TAG, "Middle button pressed");
 
             if (isPhotoBooth) {
-                processStateToggle();
+                if (reviewPrint) {
+                    processPrintStateToggle();
+                    //media.printImageType();
+                } else {
+                    processStateToggle();
+                }
             } else  {
                 media.reviewPhotos(displayMode);
             }
@@ -501,21 +503,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
     // save this unused code
-    private void processStateToggle3states() {
+    private void processPrintStateToggle() {
         // toggle through photo types for display
         if (state == LIVE_VIEW_STATE) {
-
-            //state = REVIEW_PHOTO_STATE;
             setReview();
-
-            //camera.closeCamera();
-            //photoBooth.redraw();
         } else if (state == REVIEW_PHOTO_STATE) {
-            //state = REVIEW_AIEDIT_STATE;
             setAiEditReview();
-        } else if (state == REVIEW_AIEDIT_STATE) {
-            //camera.openCamera();
-            //state = LIVE_VIEW_STATE;
+        } else if (state == REVIEW_AI_EDIT_STATE) {
             setLiveView();
         }
     }
@@ -524,29 +518,21 @@ public class MainActivity extends AppCompatActivity {
         // toggle through photo types for display
         if (state == LIVE_VIEW_STATE) {
             setAiEditReview();
-        } else if (state == REVIEW_AIEDIT_STATE) {
+        } else if (state == REVIEW_AI_EDIT_STATE) {
             setLiveView();
         }
     }
 
     public void setLiveView() {
-        //if (DEBUG) PApplet.println("setLiveView()");
         state = LIVE_VIEW_STATE;
     }
 
     public void setReview() {
-        //if (DEBUG) PApplet.println("setReview state imagesLoaded="+imagesLoaded);
         state = REVIEW_PHOTO_STATE;
-//        update = true;
-//        //if (DEBUG) PApplet.println("setReview state imagesLoaded="+imagesLoaded);
-//        loop();
     }
 
     public void setAiEditReview() {
-        //if (DEBUG) PApplet.println("setReview state imagesLoaded="+imagesLoaded);
-        state = REVIEW_AIEDIT_STATE;
-       // update = true;
-       // loop();
+        state = REVIEW_AI_EDIT_STATE;
     }
 
 
@@ -593,7 +579,11 @@ public class MainActivity extends AppCompatActivity {
             if (consumed) return true;
             switch (keyCode) {
                 case KeyEvent.KEYCODE_VOLUME_UP:
-                    processStateToggle();
+                    if (reviewPrint) {
+                        processPrintStateToggle();
+                    } else {
+                        processStateToggle();
+                    }
                     return true;
                 case KeyEvent.KEYCODE_VOLUME_DOWN:
                     processDisplayToggle();
@@ -662,7 +652,7 @@ public class MainActivity extends AppCompatActivity {
                     exitApp = false;
                     return true;
                 } else {
-                    Toast.makeText(this, "Exit?", Toast.LENGTH_SHORT).show();
+                    //Toast.makeText(this, "Exit?", Toast.LENGTH_SHORT).show();
                     exitApp = true;
                 }
                 return true;

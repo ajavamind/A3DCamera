@@ -337,8 +337,12 @@ public class Media {
         Toast.makeText(context, "Saved " + timestamp, Toast.LENGTH_LONG).show();
         if (pApplet != null) {
             ((PhotoBooth) pApplet).setReviewImages(leftReview, rightReview);
-            //((MainActivity) context).setReview();
-            ((MainActivity) context).setAiEditReview();
+            if (((MainActivity) context).reviewPrint) {
+                ((MainActivity) context).setReview();
+            }
+            else {
+                ((MainActivity) context).setAiEditReview();
+            }
         }
     }
 

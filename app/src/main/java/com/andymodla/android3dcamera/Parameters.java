@@ -4,7 +4,16 @@ package com.andymodla.android3dcamera;
  * Application parameters
  * Copyright 2025-2026 Andy Modla  All Rights Reserved
  * Command line based parameter read and set
+ *
+ * To add parameters use this prompt with gemma4 4B
+ * Using Parameters.java as a base pattern, I want to add more parameters as follows:
+ * String title1, String title2, String inst1, String inst2, int countdownTimer.
+ * For String default use "".
+ * For boolean default use false.
+ * For integer default use 0. Please update this file to  add these new parameters.
  */
+
+import static java.util.Arrays.*;
 
 import android.content.SharedPreferences;
 import android.content.Context;
@@ -60,6 +69,14 @@ class ParamStore {
 
             public boolean isBlankScreen = false;  // for camera
 
+            // NEW PARAMETERS
+            public String title1 = "";
+            public String title2 = "";
+            public String inst1 = "";
+            public String inst2 = "";
+            public int countdownTimer = 0;
+
+
             // default constructor
             public Parameters(SharedPreferences prefs, Context context) {
                 this.prefs = prefs;
@@ -108,6 +125,13 @@ class ParamStore {
                 readIsBlankScreen();
                 readIsSoundOn();
                 readIsAiEdit();
+
+                // Initialize new parameters
+                readTitle1();
+                readTitle2();
+                readInst1();
+                readInst2();
+                readCountdownTimer();
             }
 
             //------------------------------------------------------------------------------
@@ -240,10 +264,95 @@ class ParamStore {
                 editor.apply(); // asynchronous save
 
             }
+            
+            // NEW READ METHODS
+            public void readTitle1() {
+                title1 = prefs.getString(title1Store.name, title1Store.defaultValue);
+            }
 
+            public String getTitle1() {
+                return title1;
+            }
+
+            public void setTitle1(String title1) {
+                this.title1 = title1;
+                // Save to SharedPreferences
+                SharedPreferences.Editor editor = prefs.edit();
+                editor.putString(title1Store.name, title1);
+                editor.apply(); // asynchronous save
+            }
+            
+            public void readTitle2() {
+                title2 = prefs.getString(title2Store.name, title2Store.defaultValue);
+            }
+
+            public String getTitle2() {
+                return title2;
+            }
+
+            public void setTitle2(String title2) {
+                this.title2 = title2;
+                // Save to SharedPreferences
+                SharedPreferences.Editor editor = prefs.edit();
+                editor.putString(title2Store.name, title2);
+                editor.apply(); // asynchronous save
+            }
+
+            public void readInst1() {
+                inst1 = prefs.getString(inst1Store.name, inst1Store.defaultValue);
+            }
+
+            public String getInst1() {
+                return inst1;
+            }
+
+            public void setInst1(String inst1) {
+                this.inst1 = inst1;
+                // Save to SharedPreferences
+                SharedPreferences.Editor editor = prefs.edit();
+                editor.putString(inst1Store.name, inst1);
+                editor.apply(); // asynchronous save
+            }
+
+            public void readInst2() {
+                inst2 = prefs.getString(inst2Store.name, inst2Store.defaultValue);
+            }
+
+            public String getInst2() {
+                return inst2;
+            }
+
+            public void setInst2(String inst2) {
+                this.inst2 = inst2;
+                // Save to SharedPreferences
+                SharedPreferences.Editor editor = prefs.edit();
+                editor.putString(inst2Store.name, inst2);
+                editor.apply(); // asynchronous save
+            }
+
+            public void readCountdownTimer() {
+                countdownTimer = prefs.getInt(countdownTimerStore.name, Integer.parseInt(countdownTimerStore.defaultValue));
+            }
+
+            public int getCountdownTimer() {
+                return countdownTimer;
+            }
+
+            public void setCountdownTimer(int countdownTimer) {
+                this.countdownTimer = countdownTimer;
+                // Save to SharedPreferences
+                SharedPreferences.Editor editor = prefs.edit();
+                editor.putInt(countdownTimerStore.name, countdownTimer);
+                editor.apply(); // asynchronous save
+            }
+
+
+            //------------------------------------------------------------------------------
             public int getReceiverPort() {
                 return receiverPort;
             }
+
+            // --- PARAM STORE DEFINITIONS ---
 
             ParamStore parallaxOffsetStore = new ParamStore(
                     "px", "parallaxOffset", "Parallax Offset",
@@ -272,9 +381,32 @@ class ParamStore {
             ParamStore isAiEditStore = new ParamStore(
                     "aiedit", "isAiEdit", "AI Edit",
                     "getIsAiEdit", "setIsAiEdit", boolean.class, "false");
+            
+            // NEW PARAM STORE DEFINITIONS
+            ParamStore title1Store = new ParamStore(
+                    "t1", "title1", "Title 1",
+                    "getTitle1", "setTitle1", String.class, "");
+
+            ParamStore title2Store = new ParamStore(
+                    "t2", "title2", "Title 2",
+                    "getTitle2", "setTitle2", String.class, "");
+
+            ParamStore inst1Store = new ParamStore(
+                    "i1", "inst1", "Instruction 1",
+                    "getInst1", "setInst1", String.class, "");
+
+            ParamStore inst2Store = new ParamStore(
+                    "i2", "inst2", "Instruction 2",
+                    "getInst2", "setInst2", String.class, "");
+            
+            ParamStore countdownTimerStore = new ParamStore(
+                    "ct", "countdownTimer", "Countdown Timer",
+                    "getCountdownTimer", "setCountdownTimer", int.class, "0");
+
 
             ParamStore[] paramStores = {parallaxOffsetStore, verticalOffsetStore, receiverIpStore,
-                    isPhotoBoothStore, isBlankScreenStore, isSoundOnStore, isAiEditStore};
+                    isPhotoBoothStore, isBlankScreenStore, isSoundOnStore, isAiEditStore,
+                    title1Store, title2Store, inst1Store, inst2Store, countdownTimerStore};
 
             public String findParam(String abbr, String value, boolean set) {
                 ParamStore store = null;
@@ -308,7 +440,7 @@ class ParamStore {
             public String[] getParameterDetails() {
 
                 // Use Java 8 Streams to process the array of ParamStore objects
-                List<String> detailsList = Arrays.stream(paramStores)
+                List<String> detailsList = stream(paramStores)
 
                         // 1. SORTING STEP: Sort the ParamStore objects based on their abbreviation (command token)
                         .sorted((store1, store2) -> store1.abbr.compareTo(store2.abbr))
@@ -342,4 +474,3 @@ class ParamStore {
                 return detailsList.toArray(new String[0]);
             }
         }
-
