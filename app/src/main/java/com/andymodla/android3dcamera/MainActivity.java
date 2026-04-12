@@ -108,7 +108,7 @@ public class MainActivity extends AppCompatActivity {
     public int receiverPort = 9000; // receiver IP port
     public ImageSender imageSender;  // camera sends last picture URL link to an android 3D display device
 
-    Timer countdownTimer;
+    Timer countdownTimer = null;
     int countdownStart = 0;
     int countdownDigit = -1;
 
@@ -827,6 +827,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void capturePhoto() {
+        if (countdownTimer != null) return;
         if ((countdownDigit < 0)) {
             startCountdownSequence(countdownStart);
         } else {

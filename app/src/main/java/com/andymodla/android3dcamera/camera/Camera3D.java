@@ -838,8 +838,10 @@ public class Camera3D {
      * Create a camera capture session to take a picture
      */
     public void createCameraCaptureSession() {
+        Log.d(TAG, "createCameraCaptureSession() captureInProgress="+captureInProgress);
+        if (captureInProgress) return;
         captureInProgress = true;
-        Log.d(TAG, "createCameraCaptureSession()");
+
         if (mCameraDevice == null || mCameraCaptureSession == null) {
             Toast.makeText(context, "Camera not ready", Toast.LENGTH_SHORT).show();
             if (mCameraDevice == null) Log.e(TAG, "mCameraDevice is null");
