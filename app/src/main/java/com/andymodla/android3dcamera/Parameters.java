@@ -62,7 +62,7 @@ class ParamStore {
             // photo booth parameters
             public boolean isPhotoBooth = false;
             public boolean anaglyphMode = false; // for photo booth only
-            public boolean mirrorImage = false; // for photo booth only
+            public boolean isMirror = true; // for photo booth only
 
             String receiverIp = "";  // device IP address to receive URL link to saved photo
             int receiverPort = 9000;  // device port to receive URL link to saved photo
@@ -125,7 +125,7 @@ class ParamStore {
                 readIsBlankScreen();
                 readIsSoundOn();
                 readIsAiEdit();
-
+                readIsMirror();
                 // Initialize new parameters
                 readTitle1();
                 readTitle2();
@@ -248,6 +248,23 @@ class ParamStore {
 
 
             //------------------------------------------------------------------------------
+            public void readIsMirror() {
+                isMirror = prefs.getBoolean(isMirrorStore.name, Boolean.parseBoolean(isMirrorStore.defaultValue));
+            }
+
+            public boolean getIsMirror() {
+                return isMirror;
+            }
+
+            public void setIsMirror(boolean isMirror) {
+                this.isMirror = isMirror;
+                // Save to SharedPreferences
+                SharedPreferences.Editor editor = prefs.edit();
+                editor.putBoolean(isMirrorStore.name, isMirror);
+                editor.apply(); // asynchronous save
+
+            }
+
             public void readIsAiEdit() {
                 isAiEdit = prefs.getBoolean(isAiEditStore.name, Boolean.parseBoolean(isAiEditStore.defaultValue));
             }
@@ -264,8 +281,7 @@ class ParamStore {
                 editor.apply(); // asynchronous save
 
             }
-            
-            // NEW READ METHODS
+
             public void readTitle1() {
                 title1 = prefs.getString(title1Store.name, title1Store.defaultValue);
             }
@@ -381,8 +397,7 @@ class ParamStore {
             ParamStore isAiEditStore = new ParamStore(
                     "aiedit", "isAiEdit", "AI Edit",
                     "getIsAiEdit", "setIsAiEdit", boolean.class, "false");
-            
-            // NEW PARAM STORE DEFINITIONS
+
             ParamStore title1Store = new ParamStore(
                     "t1", "title1", "Title 1",
                     "getTitle1", "setTitle1", String.class, "");
@@ -403,11 +418,15 @@ class ParamStore {
                     "ct", "countdownTimer", "Countdown Timer",
                     "getCountdownTimer", "setCountdownTimer", int.class, "0");
 
+            ParamStore isMirrorStore = new ParamStore(
+                    "mr", "isMirror", "Mirror",
+                    "getIsMirror", "setIsMirror", boolean.class, "true");
 
             ParamStore[] paramStores = {parallaxOffsetStore, verticalOffsetStore, receiverIpStore,
                     isPhotoBoothStore, isBlankScreenStore, isSoundOnStore, isAiEditStore,
-                    title1Store, title2Store, inst1Store, inst2Store, countdownTimerStore};
+                    title1Store, title2Store, inst1Store, inst2Store, countdownTimerStore, isMirrorStore};
 
+            // look up parameter by abbreviation and return its current value
             public String findParam(String abbr, String value, boolean set) {
                 ParamStore store = null;
                 String result;
@@ -419,7 +438,11 @@ class ParamStore {
                     }
                 }
                 if (store != null) {
-                    if (set) {
+                    System.out.println("\""+value+"\"");
+                    if (set && value.equals("\\")) {
+                        result = store.name + " = " + store.defaultValue;
+                        callSetter(store, store.defaultValue);
+                    } else if (set) {
                         result = store.name + " = " + value;
                         callSetter(store, value);
                     } else {
@@ -427,7 +450,8 @@ class ParamStore {
                     }
                     return result;
                 }
-                return "ERROR: Parameter not found";
+                return "ERROR: Parameter \""+ abbr + "\" not found";
+
             }
 
             /**

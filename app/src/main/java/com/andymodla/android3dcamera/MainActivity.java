@@ -244,7 +244,7 @@ public class MainActivity extends AppCompatActivity {
             media.setupApplet(photoBooth);
             imageSender = new ImageSender(this);
             photoBooth.setMainActivity(this);
-            photoBooth.setMirror(true);
+            photoBooth.setMirror(parameters.getIsMirror());
             photoBooth.setParallax(parameters.getParallaxOffset());
             photoBooth.setVerticalAlignment(parameters.getVerticalOffset());
         } else {
@@ -559,6 +559,7 @@ public class MainActivity extends AppCompatActivity {
             case KeyEvent.KEYCODE_BUTTON_B:
             case KeyEvent.KEYCODE_DPAD_RIGHT:
             case KeyEvent.KEYCODE_DPAD_LEFT:
+            case KeyEvent.KEYCODE_SLASH:
                 return true;
             default:
                 exitApp = false;

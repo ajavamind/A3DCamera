@@ -76,6 +76,8 @@ public class PhotoBooth extends PApplet {
     volatile boolean zoom = true;
     volatile boolean blankScreen = false;
     boolean screenshot = false;
+    boolean debugHelp = false;
+    String[] help;
     private boolean loadPrevious = true;
     private int captureFrameCount = 0;
     String countdown = "";  // default ignore null string
@@ -241,10 +243,8 @@ public class PhotoBooth extends PApplet {
             thread("reviewSetup");
         }
         background(black);
-//        if (update) {
-//            background(black);  // clear screen for draw update
-//            update = false;
-//        }
+
+        mirror = parameters.getIsMirror();
 
         if (blankScreen) {
             return;
@@ -252,7 +252,6 @@ public class PhotoBooth extends PApplet {
         if (camStereo == null) {
             return;
         }
-        //println("state = " + mainActivity.state);
 
         if (isLiveView()) {
             drawLiveView();
@@ -322,7 +321,17 @@ public class PhotoBooth extends PApplet {
 
         }
 
-        // last
+        if (debugHelp) {
+            // overlays everything
+            fill(255);
+            textAlign(LEFT);
+            textSize(48);
+            for (int i=0; i<help.length; i++) {
+                text(help[i], 100, 50+i*50);
+            }
+        }
+
+        // last thing to check is screenshot
         if (screenshot) {
             saveScreenshot();
             screenshot = false;
@@ -607,7 +616,7 @@ public class PhotoBooth extends PApplet {
                     update = true;
                     zoom = true;
                 }
-                //if (DEBUG) println("magnifyScale = " + magnifyScale[magnifyIndex] + " magnifyIndex");
+                //if (DEBUG) PApplet.println("magnifyScale = " + magnifyScale[magnifyIndex] + " magnifyIndex");
                 break;
             case KeyEvent.KEYCODE_RIGHT_BRACKET:
                 if (magnifyIndex < magnifyScale.length - 1) {
@@ -615,7 +624,7 @@ public class PhotoBooth extends PApplet {
                     update = true;
                     zoom = true;
                 }
-                //if (DEBUG) println("magnifyScale = " + magnifyScale[magnifyIndex] + " magnifyIndex");
+                //if (DEBUG) PApplet.println("magnifyScale = " + magnifyScale[magnifyIndex] + " magnifyIndex");
                 break;
             case KeyEvent.KEYCODE_Q:
                 toggleMirror();
@@ -625,7 +634,9 @@ public class PhotoBooth extends PApplet {
                 break;
             case KeyEvent.KEYCODE_FORWARD:  // 125 forward media button on mouse: mirror toggle
                 File mediaFile = media.getMediaFile();
-                if (mediaFile == null) println("Nothing for AI Edit");
+                if (mediaFile == null) {
+                    if (DEBUG) PApplet.println("Nothing for AI Edit");
+                }
                 media.shareImage2(media.getMediaFile(), Media.APP_AIEDIT_PACKAGE);
                 break;
             case KeyEvent.KEYCODE_Z:
@@ -640,17 +651,22 @@ public class PhotoBooth extends PApplet {
                 break;
             case KeyEvent.KEYCODE_MINUS:
                 setParallax(parallax - 2);
-                if (DEBUG) println("parallax = " + parallax);
+                if (DEBUG) PApplet.println("parallax = " + parallax);
                 break;
             case KeyEvent.KEYCODE_PLUS:
             case KeyEvent.KEYCODE_EQUALS:
                 setParallax(parallax + 2);
-                if (DEBUG) println("parallax = " + parallax);
+                if (DEBUG) PApplet.println("parallax = " + parallax);
                 break;
             case KeyEvent.KEYCODE_H:  // help
-                String[] help = parameters.getParameterDetails();
-                for (String s : help) {
-                    println(s);
+                if (debugHelp) {
+                    debugHelp = false;
+                } else {
+                    debugHelp = true;
+                    help = parameters.getParameterDetails();
+                    for (String s : help) {
+                        if (DEBUG) PApplet.println(s);
+                    }
                 }
                 break;
             default:
@@ -667,7 +683,7 @@ public class PhotoBooth extends PApplet {
         saveFrame(filePath);
         MediaScannerConnection.scanFile(getContext(), new String[]{filePath},
                 new String[]{"image/*"}, null);
-        println("Screenshot saved to " + filePath);
+        if (DEBUG) PApplet.println("Screenshot saved to " + filePath);
     }
 
 // // For reference not used
@@ -956,7 +972,7 @@ public class PhotoBooth extends PApplet {
 //    }
 //
 //    public void keyPressedReview(int lastKeyCode, int lastKey) {
-//        if (DEBUG) println("keyPressedReview keyCode="+lastKeyCode);
+//        if (DEBUG) PApplet.println("keyPressedReview keyCode="+lastKeyCode);
 //
 //        // Handle keyboard key
 //        if (lastKeyCode == KeyEvent.KEYCODE_DPAD_RIGHT || lastKeyCode == KeyEvent.KEYCODE_DPAD_LEFT) {
