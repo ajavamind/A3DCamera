@@ -52,6 +52,7 @@ boolean show = false;
 boolean stereo = true;
 int xOffset; // offset
 float ar;
+float sar;
 
 void onCreate() {  // not called from processing
   System.out.println("onCreate()");
@@ -200,11 +201,11 @@ void draw() {
       rightImage = imagePair[1];
       colImage = columnInterlace(leftImage, rightImage);
       xOffset = (width- colImage.width)/2;
-      ar = (float)colImage.width / (float)colImage.height;
+      sar = (float)colImage.width / (float)colImage.height;
 
-      Bitmap lt = ((Bitmap)(leftImage.getNative()));
-      if (lt != null) lt.recycle();
-      leftImage.setNative(null);
+      //Bitmap lt = ((Bitmap)(leftImage.getNative()));
+      //if (lt != null) lt.recycle();
+      //leftImage.setNative(null);
       Bitmap rt = ((Bitmap)(rightImage.getNative()));
       if (rt != null) rt.recycle();
       rightImage.setNative(null);
@@ -216,7 +217,6 @@ void draw() {
       //image(colImage, 0, 0);
       ready = false;
     } else {
-      background(0);
       xOffset = 0; //(width- photo.width)/4;
       ar = (float)photo.width / (float)photo.height;
       //image(photo, x, 0, width, (float)width/ar);
@@ -229,9 +229,9 @@ void draw() {
     background(0);
     if (stereo) {
       //image(colImage, x, 0, width, (float)width/ar);
-      image(colImage, 0, 0, ar*height, height);
+      image(colImage, 0, 0, sar*height, height);
     } else {
-      image(photo, xOffset, 0, width, (float)width/ar);
+      image(photo, xOffset, 0, width, width/ar);
     }
   }
 }
