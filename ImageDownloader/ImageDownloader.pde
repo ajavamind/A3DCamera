@@ -42,12 +42,16 @@ int port = 9000;
 String version = "1.0";
 String path;
 PImage photo;
+PImage colImage;
 PImage originalImage;
 PImage leftImage;
 PImage rightImage;
 String testImage = "IMG_20260330_145622_2x1.jpg";
 boolean ready = false;
+boolean show = false;
 boolean stereo = true;
+int xOffset; // offset
+float ar;
 
 void onCreate() {  // not called from processing
   System.out.println("onCreate()");
@@ -110,7 +114,7 @@ void setup() {
    image(colImage, 0, 0);
    */
   background(0); // Black background
-  frameRate(1);
+  frameRate(5);
 }
 
 PImage[] splitImageLR(PImage original) {
@@ -129,9 +133,9 @@ PImage[] splitImageLR(PImage original) {
   result[1] = createImage(halfWidth, original.height, ARGB);
   result[1].copy(original, halfWidth, 0, halfWidth, original.height, 0, 0, halfWidth, original.height);
   //if (DEBUG) {
-    println("halfWidth="+halfWidth);
-    println("left w="+result[0].width + " h="+result[0].height);
-    println("right w="+result[1].width + " h="+result[1].height);  
+  println("halfWidth="+halfWidth);
+  println("left w="+result[0].width + " h="+result[0].height);
+  println("right w="+result[1].width + " h="+result[1].height);
   //}
   return result;
 }
@@ -155,14 +159,12 @@ PImage columnInterlace(PImage bufL, PImage bufR) {
 
 
 void draw() {
-
+  background(0);
   textSize(48);
   fill(255);
-  //textAlign(CENTER, CENTER);
+
   boolean start = downloadHelper.isStarted();
   if (!ready || start) {
-    background(0);
-
     text("Image Downloader version "+ version, 50, height/16);
     text(ip+":"+port, 50, height/8);
     String filename = downloadHelper.getFilename();
@@ -176,50 +178,64 @@ void draw() {
 
   int status = downloadHelper.getStatus();
   if (status != 8) {
+    show = false;
     return;
   }
 
-  if (path != null && path.startsWith("/storage")) {
+  if (!show &&path != null && path.startsWith("/storage")) {
     try {
       photo = loadImage(path);
       println("photo w="+photo.width + " h="+photo.height);
+      ready = true;
     }
     catch (Exception e) {
       photo = null;
+      ready = false;
     }
   }
-  if (photo !=null && photo.width >0 && photo.height>0) {
+  if (ready && photo !=null && photo.width >0 && photo.height>0) {
     if (stereo) {
       PImage[] imagePair = splitImageLR(photo);
       leftImage = imagePair[0];
       rightImage = imagePair[1];
-      PImage colImage = columnInterlace(leftImage, rightImage);
-      int x = (width- colImage.width)/2;
-      background(0);
-      float ar = (float)colImage.width / (float)colImage.height;
-      //image(colImage, x, 0, width, (float)width/ar);
-      image(colImage, 0, 0, ar*height, height);
+      colImage = columnInterlace(leftImage, rightImage);
+      xOffset = (width- colImage.width)/2;
+      ar = (float)colImage.width / (float)colImage.height;
+
       Bitmap lt = ((Bitmap)(leftImage.getNative()));
       if (lt != null) lt.recycle();
       leftImage.setNative(null);
       Bitmap rt = ((Bitmap)(rightImage.getNative()));
       if (rt != null) rt.recycle();
       rightImage.setNative(null);
+      Bitmap pt = ((Bitmap)(photo.getNative()));
+      if (pt != null) pt.recycle();
+      photo.setNative(null);
 
       //image(colImage, x, 0);
       //image(colImage, 0, 0);
-      ready = true;
+      ready = false;
     } else {
       background(0);
-      int x = 0; //(width- photo.width)/4;
-      float ar = (float)photo.width / (float)photo.height;
-      //image(photo, x, 0, width, (float)width/ar); 
-      image(photo, x, 0, width, (float)width/ar);
-      ready = true;
+      xOffset = 0; //(width- photo.width)/4;
+      ar = (float)photo.width / (float)photo.height;
+      //image(photo, x, 0, width, (float)width/ar);
 
+      ready = false;
+    }
+    show = true;
+  }
+  if (show) {
+    background(0);
+    if (stereo) {
+      //image(colImage, x, 0, width, (float)width/ar);
+      image(colImage, 0, 0, ar*height, height);
+    } else {
+      image(photo, xOffset, 0, width, (float)width/ar);
     }
   }
 }
+
 
 private String getHostnameAddress() {
   try {
