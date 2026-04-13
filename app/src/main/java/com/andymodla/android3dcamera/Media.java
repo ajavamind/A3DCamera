@@ -49,10 +49,7 @@ public class Media {
     private String SAVE_AI_EDIT_FOLDER = "AiEdit";
 
     public static String lastSavedFilePath = null;
-
     private volatile boolean crossEye = false;  // reverse SBS output to cross eye
-    private volatile boolean mirror = false;  // reverse mirror image
-    private volatile boolean isAnaglyphDisplayMode = false; //true;
 
     // Image Save File modes
     // at least one of these booleans must be true;
@@ -65,8 +62,6 @@ public class Media {
 
     volatile Bitmap leftBitmap;
     volatile Bitmap rightBitmap;
-    //volatile Bitmap sbsBitmap;
-    //volatile Bitmap anaglyphBitmap;
     public volatile PImage leftReview;
     public volatile PImage rightReview;
 
@@ -81,7 +76,7 @@ public class Media {
     public static String APP_AIEDIT_PACKAGE = "com.andymodla.fluxkontext"; // AI edit with itcamera app default
     public static String APP_PHOTO_REVIEW_PACKAGE = "com.google.android.apps.photosgo"; // Review with Gallery
     private String APP_CANON_PRINT_SERVICE_PACKAGE = "jp.co.canon.android.printservice.plugin";
-    //APP_REVIEW_PACKAGE = "com.leialoft.leiaplayer"; // Review with Leia Player app default
+    private String APP_LEIAPLAYER_REVIEW_PACKAGE = "com.leialoft.leiaplayer"; // Review with Leia Player app default
 
     private Parameters parameters;
     private AIvision aiVision;
@@ -112,14 +107,6 @@ public class Media {
             rightBitmap.recycle();
             rightBitmap = null;
         }
-//        if (sbsBitmap != null) {
-//            sbsBitmap.recycle();
-//            sbsBitmap = null;
-//        }
-//        if (anaglyphBitmap != null) {
-//            anaglyphBitmap.recycle();
-//            anaglyphBitmap = null;
-//        }
     }
 
     public void createMediaFolder() {
@@ -233,8 +220,6 @@ public class Media {
             return null;
         }
         anaglyphBitmap.recycle();
-        anaglyphBitmap = null;
-        //System.gc();
         return file;
     }
 
@@ -268,7 +253,7 @@ public class Media {
                 Log.d(TAG, "imageSender.sendImageUrl " + imageUrl);
                 ((MainActivity) context).imageSender.sendImageUrl(imageUrl, parameters.getReceiverIp(), parameters.getReceiverPort());
             }
-
+// unused code for later discover and send implementation instead of fixed receiver IP address
 //            if (((MainActivity) context).imageUrlSender != null) {
 //                String imageUrl = "http://"+((MainActivity) context).senderHost+":"+((MainActivity) context).senderPort+File.separator+filename;
 //                Log.d(TAG, "imageUrlSender.discoverAndSend " + imageUrl);
@@ -279,8 +264,6 @@ public class Media {
             return null;
         }
         sbsBitmap.recycle();
-        sbsBitmap = null;
-        //System.gc();
         return file;
     }
 

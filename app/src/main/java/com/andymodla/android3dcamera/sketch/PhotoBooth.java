@@ -43,6 +43,9 @@ public class PhotoBooth extends PApplet {
     int black = color(0);
     int white = color(255);
     int yellow = color(255, 255, 128);
+    int magenta = color(255, 0, 128);
+    int green = color(0, 255, 128);
+
     int gray = color(128);
 
     MainActivity mainActivity;
@@ -314,9 +317,11 @@ public class PhotoBooth extends PApplet {
             }
         } else if (mainActivity.state == MainActivity.REVIEW_PHOTO_STATE) {
             textAlign(RIGHT);
+            fill(green);
             text("Print" , width - 50, height - 48);
         } else if (mainActivity.state == MainActivity.REVIEW_AI_EDIT_STATE) {
             textAlign(RIGHT);
+            fill(magenta);
             text("AI Edit" , width - 50, height - 48);
 
         }

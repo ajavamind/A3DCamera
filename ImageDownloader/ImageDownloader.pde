@@ -46,6 +46,7 @@ PImage leftImage;
 PImage rightImage;
 String testImage = "IMG_20260330_145622_2x1.jpg";
 boolean ready = false;
+boolean stereo = true;
 
 void onCreate() {  // not called from processing
   System.out.println("onCreate()");
@@ -167,7 +168,7 @@ void draw() {
     path = downloadHelper.getPath();
     text(path, 50, height/2);
   }
-  
+
   int status = downloadHelper.getStatus();
   if (status != 8) {
     return;
@@ -183,14 +184,25 @@ void draw() {
     }
   }
   if (photo !=null && photo.width >0 && photo.height>0) {
-    PImage[] imagePair = splitImageLR(photo);
-    leftImage = imagePair[0];
-    rightImage = imagePair[1];
-    PImage colImage = columnInterlace(leftImage, rightImage);
-    int x = (width- colImage.width)/2;
-    background(0);
-    image(colImage, x, 0);
-    ready = true;
+    if (stereo) {
+      PImage[] imagePair = splitImageLR(photo);
+      leftImage = imagePair[0];
+      rightImage = imagePair[1];
+      PImage colImage = columnInterlace(leftImage, rightImage);
+      int x = (width- colImage.width)/2;
+      background(0);
+      float ar = (float)colImage.width / (float)colImage.height;
+      //image(colImage, x, 0, width, (float)width/ar);
+      image(colImage, x, 0);
+      ready = true;
+    } else {
+      background(0);
+      int x = 0; //(width- photo.width)/4;
+      float ar = (float)photo.width / (float)photo.height;
+      image(photo, x, 0, width, (float)width/ar);
+      ready = true;
+
+    }
   }
 }
 
@@ -232,6 +244,9 @@ void scanImage(String absolutePath) {
   System.out.println( "MediaScannerConnection.scanFile Image saved: " + absolutePath);
 }
 
+void mouseReleased() {
+  stereo = !stereo;
+}
 
 //DownloadManager.Query query = new DownloadManager.Query();
 //query.setFilterById(downloadId);

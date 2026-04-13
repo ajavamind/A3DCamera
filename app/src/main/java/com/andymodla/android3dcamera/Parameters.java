@@ -380,7 +380,7 @@ class ParamStore {
 
             ParamStore receiverIpStore = new ParamStore(
                     "rip", "receiverIp", "Receiver IP",
-                    "getReceiverIp", "setReceiverIp", String.class, "192.168.8.131");
+                    "getReceiverIp", "setReceiverIp", String.class, "192.168.8.99");
 
             ParamStore isPhotoBoothStore = new ParamStore(
                     "pb", "isPhotoBooth", "Photo Booth",
