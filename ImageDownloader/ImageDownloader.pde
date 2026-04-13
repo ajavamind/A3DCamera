@@ -34,6 +34,7 @@ import java.util.Enumeration;
 import com.andymodla.imagedownloader.TinyWebServer;
 import com.andymodla.imagedownloader.DownloadHelper;
 import android.media.MediaScannerConnection;
+import android.graphics.Bitmap;
 
 private DownloadHelper downloadHelper;
 String ip ="";
@@ -109,7 +110,7 @@ void setup() {
    image(colImage, 0, 0);
    */
   background(0); // Black background
-  frameRate(5);
+  frameRate(1);
 }
 
 PImage[] splitImageLR(PImage original) {
@@ -119,7 +120,7 @@ PImage[] splitImageLR(PImage original) {
 
   // Calculate the width of each half, using integer division
   int halfWidth = original.width / 2;
-
+  if (halfWidth % 2 == 1) halfWidth--;
   // Create the left half image
   result[0] = createImage(halfWidth, original.height, ARGB);
   result[0].copy(original, 0, 0, halfWidth, original.height, 0, 0, halfWidth, original.height);
@@ -127,7 +128,11 @@ PImage[] splitImageLR(PImage original) {
   // Create the right half image
   result[1] = createImage(halfWidth, original.height, ARGB);
   result[1].copy(original, halfWidth, 0, halfWidth, original.height, 0, 0, halfWidth, original.height);
-
+  //if (DEBUG) {
+    println("halfWidth="+halfWidth);
+    println("left w="+result[0].width + " h="+result[0].height);
+    println("right w="+result[1].width + " h="+result[1].height);  
+  //}
   return result;
 }
 
@@ -193,12 +198,22 @@ void draw() {
       background(0);
       float ar = (float)colImage.width / (float)colImage.height;
       //image(colImage, x, 0, width, (float)width/ar);
-      image(colImage, x, 0);
+      image(colImage, 0, 0, ar*height, height);
+      Bitmap lt = ((Bitmap)(leftImage.getNative()));
+      if (lt != null) lt.recycle();
+      leftImage.setNative(null);
+      Bitmap rt = ((Bitmap)(rightImage.getNative()));
+      if (rt != null) rt.recycle();
+      rightImage.setNative(null);
+
+      //image(colImage, x, 0);
+      //image(colImage, 0, 0);
       ready = true;
     } else {
       background(0);
       int x = 0; //(width- photo.width)/4;
       float ar = (float)photo.width / (float)photo.height;
+      //image(photo, x, 0, width, (float)width/ar); 
       image(photo, x, 0, width, (float)width/ar);
       ready = true;
 
