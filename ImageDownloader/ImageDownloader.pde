@@ -42,15 +42,16 @@ int port = 9000;
 String version = "1.0";
 String path;
 PImage photo;
-PImage colImage;
-PImage originalImage;
-PImage leftImage;
-PImage rightImage;
+volatile PImage colImage;
+volatile PImage originalImage;
+volatile PImage leftImage;
+volatile PImage rightImage;
 String testImage = "IMG_20260330_145622_2x1.jpg";
 boolean ready = false;
 boolean show = false;
 boolean stereo = true;
 int xOffset; // offset
+int sOffset;
 float ar;
 float sar;
 
@@ -81,39 +82,7 @@ void settings() {
 
 void setup() {
   orientation(LANDSCAPE);
-  /* debug code
-   //String url = "http://10.0.0.54:8333"+File.separator+"IMG_20260219_135041_2x1.jpg";
-   //downloadHelper.enqueueDownload(url);
-   //downloadHelper.startDownload( url);
-   //Intent serviceIntent = new Intent(getContext(), DownloadServerService.class);
-   //getContext().startForegroundService( serviceIntent);
-   */
-  /* test code
-   originalImage = loadImage(testImage);
-   if (originalImage == null) {
-   println("ERROR: Could not load image. Make sure '" + testImage + "' is in the data folder.");
-   // If the image fails to load, we stop the sketch
-   exit();
-   }
-   
-   PImage[] imagePair = splitImageLR(originalImage);
-   leftImage = imagePair[0];
-   rightImage = imagePair[1];
-   
-   // Clear the screen every frame
-   background(0); // Black background
-   
-   // Calculate the width of each resulting image
-   //float halfWidth = leftImage.width;
-   //float totalHeight = leftImage.height;
-   //float AR = halfWidth/totalHeight;
-   
-   //image(leftImage, 0, 0, width/2, totalHeight/AR);
-   //image(rightImage, width/2, 0, width/2,totalHeight/AR);
-   PImage colImage = columnInterlace(leftImage, rightImage);
-   
-   image(colImage, 0, 0);
-   */
+
   background(0); // Black background
   frameRate(5);
 }
@@ -125,7 +94,7 @@ PImage[] splitImageLR(PImage original) {
 
   // Calculate the width of each half, using integer division
   int halfWidth = original.width / 2;
-  if (halfWidth % 2 == 1) halfWidth--;
+  //if (halfWidth % 2 == 1) halfWidth--;
   // Create the left half image
   result[0] = createImage(halfWidth, original.height, ARGB);
   result[0].copy(original, 0, 0, halfWidth, original.height, 0, 0, halfWidth, original.height);
@@ -133,15 +102,15 @@ PImage[] splitImageLR(PImage original) {
   // Create the right half image
   result[1] = createImage(halfWidth, original.height, ARGB);
   result[1].copy(original, halfWidth, 0, halfWidth, original.height, 0, 0, halfWidth, original.height);
-  //if (DEBUG) {
+
   println("halfWidth="+halfWidth);
   println("left w="+result[0].width + " h="+result[0].height);
   println("right w="+result[1].width + " h="+result[1].height);
-  //}
+
   return result;
 }
 
-PImage columnInterlace(PImage bufL, PImage bufR) {
+PImage columnInterlaceold(PImage bufL, PImage bufR) {
   // column interlace merge left and right images
   // reuse left image for faster performance
   //System.gc();
@@ -158,6 +127,38 @@ PImage columnInterlace(PImage bufL, PImage bufR) {
   return bufL;
 }
 
+PImage columnInterlace(PImage bufL, PImage bufR) {
+  // 1. Create a new image with the same dimensions
+  // Note: I am assuming PImage has width and height properties
+  // and a constructor that takes them.
+  PImage result = createImage(bufL.width, bufL.height, ARGB);
+
+  bufL.loadPixels();
+  bufR.loadPixels();
+  result.loadPixels();
+
+  int len = bufL.pixels.length;
+
+  // 2. Interlace pixels
+  // We use a step of 2 to be much faster than using modulo (%)
+  for (int i = 0; i < len; i += 2) {
+    // Copy even pixel from Left
+    result.pixels[i] = bufL.pixels[i];
+
+    // Copy odd pixel from Right (check bounds to prevent crash on odd-length arrays)
+    if (i + 1 < len) {
+      result.pixels[i + 1] = bufR.pixels[i + 1];
+    }
+  }
+
+  result.updatePixels();
+
+  // Note: Do NOT call bufL.recycle() here if you want to use
+  // them in the function that called this one.
+  // See the "How to Recycle" section below.
+
+  return result;
+}
 
 void draw() {
   background(0);
@@ -195,41 +196,43 @@ void draw() {
     }
   }
   if (ready && photo !=null && photo.width >0 && photo.height>0) {
-    if (stereo) {
-      PImage[] imagePair = splitImageLR(photo);
-      leftImage = imagePair[0];
-      rightImage = imagePair[1];
-      colImage = columnInterlace(leftImage, rightImage);
-      xOffset = (width- colImage.width)/2;
-      sar = (float)colImage.width / (float)colImage.height;
+    // compute both stereo and original
+    PImage[] imagePair = splitImageLR(photo);
+    leftImage = imagePair[0];
+    rightImage = imagePair[1];
+    colImage = columnInterlace(leftImage, rightImage);
+    sOffset = (width- colImage.width)/2;
+    sar = (float)colImage.width / (float)colImage.height;
 
-      //Bitmap lt = ((Bitmap)(leftImage.getNative()));
-      //if (lt != null) lt.recycle();
-      //leftImage.setNative(null);
-      Bitmap rt = ((Bitmap)(rightImage.getNative()));
-      if (rt != null) rt.recycle();
-      rightImage.setNative(null);
-      Bitmap pt = ((Bitmap)(photo.getNative()));
-      if (pt != null) pt.recycle();
-      photo.setNative(null);
+    Bitmap lt = ((Bitmap)(leftImage.getNative()));
+    if (lt != null) lt.recycle();
+    leftImage.setNative(null);
 
-      //image(colImage, x, 0);
-      //image(colImage, 0, 0);
-      ready = false;
-    } else {
-      xOffset = 0; //(width- photo.width)/4;
-      ar = (float)photo.width / (float)photo.height;
-      //image(photo, x, 0, width, (float)width/ar);
+    Bitmap rt = ((Bitmap)(rightImage.getNative()));
+    if (rt != null) rt.recycle();
+    rightImage.setNative(null);
 
-      ready = false;
-    }
+    //Bitmap pt = ((Bitmap)(photo.getNative()));
+    //if (pt != null) pt.recycle();
+    //photo.setNative(null);
+
+    xOffset = 0; //(width- photo.width)/4;
+    ar = (float)photo.width / (float)photo.height;
+
+    ready = false;
     show = true;
   }
   if (show) {
     background(0);
     if (stereo) {
       //image(colImage, x, 0, width, (float)width/ar);
-      image(colImage, 0, 0, sar*height, height);
+      //image(colImage, sOffset, 0, sar*height, height);
+      //image(colImage, sOffset, 0);
+
+      if (colImage.width < colImage.height)
+        image(colImage, sOffset, 0, height*sar, height);
+      else
+        image(colImage, sOffset, 0, width, width/sar);
     } else {
       image(photo, xOffset, 0, width, width/ar);
     }

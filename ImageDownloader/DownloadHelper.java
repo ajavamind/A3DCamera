@@ -109,7 +109,7 @@ public class DownloadHelper {
     if (cursor.moveToFirst()) {
       status = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_STATUS));
       reason = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_REASON));
-      System.out.println( "Status: " + status + " Reason: " + reason);
+      //System.out.println( "Status: " + status + " Reason: " + reason);
       cursor.close();
       return  status;
     }
@@ -123,7 +123,7 @@ public class DownloadHelper {
     if (cursor.moveToFirst()) {
       status = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_STATUS));
       reason = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_REASON));
-      System.out.println( "Status: " + status + " Reason: " + reason);
+      //System.out.println( "Status: " + status + " Reason: " + reason);
       cursor.close();
       if (status == 8 && reason == 0) start = false;
       return "Status=" + status + " Reason=" + reason;
