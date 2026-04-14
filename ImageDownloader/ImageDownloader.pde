@@ -88,53 +88,36 @@ void setup() {
 }
 
 PImage[] splitImageLR(PImage original) {
-  println("splitImageLR w="+original.width +" h="+original.height+ " width="+width + " height="+height);
+  //println("splitImageLR w="+original.width +" h="+original.height+ " width="+width + " height="+height);
   // Create an array to hold the two resulting images
   PImage[] result = new PImage[2];
 
   // Calculate the width of each half, using integer division
   int halfWidth = original.width / 2;
-  float ar = (float)original.width / (float)original.height;
-  float w = (float)halfWidth * ar;
+  float ar = ((float)original.width/2) / (float)original.height;
+  //println("original ar="+ar);
+  float w = (float)height * ar;
   int iw = int(w);
   // Create the left half image
   result[0] = createImage(iw, height, ARGB);
-  result[0].copy(original, 0, 0, iw, height, 0, 0, iw, height);
+  result[0].copy(original, 0, 0, halfWidth, original.height, 0, 0, iw, height);
   
   // Create the right half image
   result[1] = createImage(iw, height, ARGB);
-  result[1].copy(original, iw, 0, iw, height, 0, 0, iw, height);
+  result[1].copy(original, halfWidth, 0, halfWidth, original.height, 0, 0, iw, height);
 
   
-  println("halfWidth="+halfWidth);  
-  println("iw="+iw);
-  println("left w="+result[0].width + " h="+result[0].height);
-  println("right w="+result[1].width + " h="+result[1].height);
+  //println("halfWidth="+halfWidth);  
+  //println("iw="+iw);
+  //println("left w="+result[0].width + " h="+result[0].height);
+  //println("right w="+result[1].width + " h="+result[1].height);
 
   return result;
 }
 
-PImage columnInterlaceold(PImage bufL, PImage bufR) {
-  // column interlace merge left and right images
-  // reuse left image for faster performance
-  //System.gc();
-  bufL.loadPixels();
-  bufR.loadPixels();
-  int len = bufL.pixels.length;
-  int i = 0;
-  while (i < len) {
-    i++;
-    bufL.pixels[i] = bufR.pixels[i];
-    i++;
-  }
-  bufL.updatePixels();
-  return bufL;
-}
-
 PImage columnInterlace(PImage bufL, PImage bufR) {
-  // 1. Create a new image with the same dimensions
-  // Note: I am assuming PImage has width and height properties
-  // and a constructor that takes them.
+  // 1. Create a new image with the same dimensions as left side
+
   PImage result = createImage(bufL.width, bufL.height, ARGB);
 
   bufL.loadPixels();
@@ -157,9 +140,8 @@ PImage columnInterlace(PImage bufL, PImage bufR) {
 
   result.updatePixels();
 
-  // Note: Do NOT call bufL.recycle() here if you want to use
+  // Note: Do NOT call bufL.recycle() here because we may want to use
   // them in the function that called this one.
-  // See the "How to Recycle" section below.
 
   return result;
 }
