@@ -88,22 +88,26 @@ void setup() {
 }
 
 PImage[] splitImageLR(PImage original) {
-  println("splitImageLR");
+  println("splitImageLR w="+original.width +" h="+original.height+ " width="+width + " height="+height);
   // Create an array to hold the two resulting images
   PImage[] result = new PImage[2];
 
   // Calculate the width of each half, using integer division
   int halfWidth = original.width / 2;
-  //if (halfWidth % 2 == 1) halfWidth--;
+  float ar = (float)original.width / (float)original.height;
+  float w = (float)halfWidth * ar;
+  int iw = int(w);
   // Create the left half image
-  result[0] = createImage(halfWidth, original.height, ARGB);
-  result[0].copy(original, 0, 0, halfWidth, original.height, 0, 0, halfWidth, original.height);
-
+  result[0] = createImage(iw, height, ARGB);
+  result[0].copy(original, 0, 0, iw, height, 0, 0, iw, height);
+  
   // Create the right half image
-  result[1] = createImage(halfWidth, original.height, ARGB);
-  result[1].copy(original, halfWidth, 0, halfWidth, original.height, 0, 0, halfWidth, original.height);
+  result[1] = createImage(iw, height, ARGB);
+  result[1].copy(original, iw, 0, iw, height, 0, 0, iw, height);
 
-  println("halfWidth="+halfWidth);
+  
+  println("halfWidth="+halfWidth);  
+  println("iw="+iw);
   println("left w="+result[0].width + " h="+result[0].height);
   println("right w="+result[1].width + " h="+result[1].height);
 
@@ -230,9 +234,9 @@ void draw() {
       //image(colImage, sOffset, 0);
 
       if (colImage.width < colImage.height)
-        image(colImage, sOffset, 0, height*sar, height);
+        image(colImage, sOffset, 0);
       else
-        image(colImage, sOffset, 0, width, width/sar);
+        image(colImage, sOffset, 0);
     } else {
       image(photo, xOffset, 0, width, width/ar);
     }
