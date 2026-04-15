@@ -82,8 +82,8 @@ public class MainActivity extends AppCompatActivity {
     private boolean aiVisionEnabled = false;
     private boolean isAiEdit = false;
     public boolean reviewPrint = true;
-    private boolean isUdpRemoteEnabled = true; //false; // default
-    private boolean isUdpTransmitter = true; //false;  // default
+    private boolean isUdpRemoteEnabled = true; // for photo booth demo otherwise false; // default
+    private boolean isUdpTransmitter = true; // for photo booth demo otherwise false;  // default
     private UdpRemoteControl udpRemoteControl;
 
     // photo booth states definitions
@@ -831,7 +831,7 @@ public class MainActivity extends AppCompatActivity {
         this.continuousCounter = continuousCounter;
     }
 
-    private void capturePhoto() {
+    public void capturePhoto() {
         if (countdownTimer != null) return;
         if ((countdownDigit < 0)) {
             startCountdownSequence(countdownStart);
@@ -845,7 +845,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void startContinuousCapturePhoto() {
+    public void startContinuousCapturePhoto() {
         if (continuousModeFeature) {
             if (continuousMode) {
                 Toast.makeText(this, "Start Continuous Mode ", Toast.LENGTH_SHORT).show();

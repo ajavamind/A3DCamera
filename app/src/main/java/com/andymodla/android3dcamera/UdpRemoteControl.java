@@ -143,7 +143,7 @@ public class UdpRemoteControl {
                         if (!isVideo) {
                             ((MainActivity) context).runOnUiThread(new Runnable() {
                                 public void run() {
-                                    //camera.takePicture(false);
+                                    ((MainActivity) context).capturePhoto();
                                 }
                             });
                         } else {
@@ -158,7 +158,7 @@ public class UdpRemoteControl {
                                     if (isVideoRecording()) {
                                         stopVideo(true);
                                     } else {
-                                        //takePicture(false);
+                                        ((MainActivity) context).capturePhoto();
                                     }
                                 }
                             });
