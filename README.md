@@ -1,8 +1,15 @@
+# 3D/AI Camera Photo Booth
+**This repository is the Open source documentation for a 3D/AI Camera Photo Booth demonstration project I will be presenting at the 2026 Philadelphia Maker Faire, April 19, 2026.**
+
+**The Photo Booth is a section of the A3DCamera code. See documentation at [PHOTO BOOTH](docs/PhotoBooth.md).**
+
+**Work in Progress**
+
 # A3DCamera
 A personal 3D Camera Android App Project
 
 This is a personal camera project intended for 3D photography hobbyists and experimenters.
-The app runs on the Xreal Beam Pro device and takes 3D photos exclusively. It is not intended to replace the native camera app.
+The app runs on the Xreal Beam Pro tablet device and takes 3D photos exclusively. It is not intended to replace the native camera app.
 
 It is a starting point for special purpose **_experimental_** 3D camera apps using the Xreal Beam Pro and Leia LumePad 2 cameras.
 It's a software playground for experimenting. See Experiments section below.
@@ -12,15 +19,15 @@ It's a software playground for experimenting. See Experiments section below.
 The intended uses for the app are situations where the camera is not in your hands and the screen cannot or should not be touched. 
 Specific uses I would like to have with a 3D camera app are:
 
-* 3D Photo Booth (work in progress)
+* 3D Photo Booth
 * 3D live view, photo capture, or photo viewing using any stereoscope
-* Live Anaglyph 3D demonstrations of the stereo window (work in progress)
-* Remote control of the camera using Bluetooth or a local WiFi network (work in progress)
+* Live Vidw Anaglyph 3D demonstrations of the stereo window.
+* Remote control of the camera using Bluetooth or a local WiFi network
 * Simultaneous multiple 3D cameras remote control
-* Sharing photos via email, for direct printing SBS or Anaglyph, or for review and alignment using 3D apps like [3DSteroidPro](https://play.google.com/store/apps/details?id=jp.suto.stereoroidpro&hl=en_US).
-
-The display of the 3D parallel L/R image should be centered on the display and no larger than 130 cm wide for a stereoscope or for free-viewing the image to minimize eye strain. 
-The default display mode show the stereo image without GUI controls or other information.
+* Sharing photos via email, for direct printing SBS or Anaglyph, or for review and alignment using 3D apps like [3DSteroidPro](https://play.google.com/store/apps/details?id=jp.suto.stereoroidpro&hl=en_US) and for sharing with custom 3D apps and networked 3D tablets and devices.
+* The default display mode shows the stereo image without GUI controls or other display information to allow free-viewing and stereoscopes or Anaglyph glasses. The display of the 3D parallel L/R image should be centered on the display and no larger than 130 cm wide for a stereoscope or for free-viewing the image to minimize eye strain. 
+* Turn off the display, while allowing the camera to continue functioning with remote control. Blanking the screen is for photographing wild life without disturing them. 
+Blanking the screen may help conserve battery power with long interval timer captures.
 
 ### Camera App Design
 For the above uses cases the app requires remote key control of its functions and not with the touch screen.
@@ -150,14 +157,16 @@ Color balance adjustments are not implemented. Exposure lock is not implemented.
 There are no camera leveling, tilt, or subject distance suggestions from the app.
 
 ## Usage
-1. I discovered my camera lens vertical alignment is only off by 12 pixels so that live free-viewing is possible without eye strain for me. But the camera can not be too close to the subject.
-2. Distance to the subject should be about 1.5 meter to match the 50mm camera lens interaxial separation distance.
+1. I discovered my camera lens vertical alignment is only off by 1 pixels so that live free-viewing is possible without eye strain for me. But the camera can not be too close to the subject.
+2. Distance to the subject should be about 1.5 meter to match the tablet's 50mm camera lens interaxial separation distance.
 3. Synchronization of the camera lens shutters is not known. However the shutter speed is automatically set by the camera so motion blur is possible.
 4. I use a Bluetooth remote to take photos instead of the button keys on the camera. This requires pairing with a remote controller or keyboard.
 5. The 8BitDo Bluetooth game controller is not useful for a photo booth because it times out the connection if it is not used often enough. Much better is the Bluetooth wireless mouse, it has no timeout issues.
 
 ## App Download Link
 Latest version:
+
+[Version_2.0_A3DCamera_withPhoto Booth Android_app]( Coming soon).
 
 [Version_1.9_A3DCamera_Android_app](https://drive.google.com/file/d/1fq16spW2mNs7cChwZ4SOZS8CpNSVJP64/view?usp=drive_link)
 
@@ -180,41 +189,38 @@ There is no GUI for setting camera parameters. The app implements a limited comm
 
 After connecting an Android keyboard to the app, the '/' (forward slash) key will show a prompt line to enter a command. Press the enter key to complete the command and see the results.
 
-The following commands are coded:
+The following commands examples are coded:
 1. /p=nnn  This sets the stereo window parallax adjustment (offset). The value comes from Stereo Photo Maker auto alignment of a sample left and right image from the XBP. nnn is the horizontal alignment after auto alignment. Example /p=212
 2. /p  Show the horizontal parallax offset value.
 3. /v=nnn  This value corrects the vertical alignment of a sample left and right image. nnn is the vertical alignment value after performing an auto alignment. This value can be positive or negative. Example /v=-12
 4. /v  Show the vertical alignment offset value.
+5. /xxx\  will set the xxx command default value.
 
-These two commands do not affect the live view image, but do change the alignment of stored photos for SBS and anaglyph.
+These two commands affect the live view image, and change the alignment of stored photos for SBS and Anaglyph.
 
 ## Software Issues
-1. To exit/clear the app without using the BACK key, swipe from the right edge to the left, to show the navigation bar.
-2. Press the box or circle to exit (however neither will close the app, unless you swipe it off or clear/close all apps).
+1. To pause the app without using the BACK key, swipe from the right edge to the left, to show the navigation bar.
+2. On the navigation bar press the box or circle to exit (however neither will close the app, unless you swipe it off or clear/close all apps).
 
 ## Hardware Isssues
 1. The 8BitDo Micro Bluetooth Controller times out after 10 minutes.
 2. The XReal BP camera will time out at a maximum of 30 minutes ( Settings->screen timeout). 
-   This can be extended by entering Developer mode, use developer options to set stay awake on. You will also have to keep the device charged with the power cable connected.
-   The USB data connector is connected to a small portable monitor and is powered by the camera when charging.
-   This is the camera setup for the Photo Booth (tested for at least 4 hours ofoperation).
+   This can be extended by entering Developer mode, use developer options to set stay awake on. You must keep the device charged with the power cable connected to prevent timeout and last for a long session required for a photo booth.
+   The USB data connector is connected to a small portable monitor and is powered by the XReal Beam Pro camera when charging.
+   This is the camera setup for the Photo Booth (tested for at least 4 hours of operation).
 
 ## Stretch Goals
-Turn off the display, while allowing the camera to continue functioning with remote control. Blanking the screen is for photographing wild life without disturing them. 
-Blanking the screen may also conserve battery power with long interval timer captures.
 
 Set image capture aspect ratio: 4:3, 16:9 and 1:1.
 
-Anaglyph Live view mode
-
 Time Interval captures.
 
-A GUI interface: Settings menu, etc.
+A GUI interface: Settings menu, etc. I am thinking of a browser interface for this instead of a GUI.
 
 ## Experiments
 ### 1. WiFi Remote Control
-The app can listen for UDP broadcast messages to control the camera. Only shutter control is working.
-This feature can be used to trigger multiple Beam Pro  cameras at the same time. This is working, but is turned off for now and is a work in progress.
+The app can listen for UDP broadcast messages to control the camera triggering the shutter.
+This feature can be used to trigger multiple Beam Pro cameras at the same time. This is working with other phone cameras with custom a custom camera app, but I don't have a 2nd XBO to fully test.
 
 An Android app at [RemoteCapture ](https://github.com/ajavamind/RemoteCapture) can trigger broadcast messages.
 
