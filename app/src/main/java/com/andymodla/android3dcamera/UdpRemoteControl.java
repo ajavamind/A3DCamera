@@ -1,17 +1,36 @@
 package com.andymodla.android3dcamera;
 
+/**
+ * A3DCamera app
+ * Copyright 2025-2026, Andy Modla All Rights Reserved
+ * <p>
+ * This code has video implementation left in for reference.
+ * Video remote control is not used.
+ */
+
+import java.net.DatagramSocket;
 import java.net.InterfaceAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Enumeration;
+import java.util.Locale;
 import java.util.Vector;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 import android.util.Log;
 import android.content.Context;
+
 import netP5.Bytes;
 import netP5.NetListener;
 import netP5.NetMessage;
 import netP5.NetStatus;
+import netP5.UdpClient;
 import netP5.UdpServer1;
+
+import com.andymodla.android3dcamera.camera.Camera3D;
 
 public class UdpRemoteControl {
     private static final String TAG = "UdpRemoteControl";
@@ -20,29 +39,80 @@ public class UdpRemoteControl {
     private boolean isVideo = false;
     // UDP Server variables
     private volatile UdpServer1 udpServer;    // Broadcast receiver
-    private int port = 8000;  // Broadcast port
+    private int udpPort = 8000;  // Broadcast port
     public static String httpUrl = "";
     public static String sCount = ""; // Photo counter received from Broadcast message
     private static final int MAXPARAM_SIZE = 16;
     private Context context;
+    private Camera3D camera;
+    private boolean isUdpTransmitter = false;
 
+    // Transmitter section variables
+    private static final int doubleTriggerDelay = 100;
+    UdpClient udpClient;
 
+    int photoIndex = 0;  // next photo index for filename
+    int videoIndex = 0;  // next video index for filename
+    boolean useTimeStamp = true;
+    String numberFilename = ""; // last used number filename
+    String datetimeFilename = ""; // last used date_time filename
+    String lastFilename = ""; // last used filename
+
+    static final int SAME = 0;
+    static final int UPDATE = 1;
+    static final int NEXT = 2;
+    static final int PHOTO_MODE = 0;
+    static final int VIDEO_MODE = 1;
+    int mode = PHOTO_MODE;
+    boolean connected;
+    String broadcastIpAddress;
+    boolean focus = false;
+    // Define an Executor at the class level (to reuse it)
+    private ExecutorService executorService;
+
+    //
+    // constructor
     public UdpRemoteControl(Context context) {
         this.context = context;
     }
 
     /**
-     * UDP server setup
-     * Create the UDP server to listen for incoming broadcast messages,
+     * UDP server transmitter or receiver setup
+     * Receiver create the UDP server to listen for incoming broadcast messages,
      * create a listener for the server.
      * A listener will receive NetMessages which contain camera commands.
      * NetListener is an interface and requires methods netEvent
      * and netStatus.
      */
-    public void setup() {
+    public void setUdpTransmitter(Camera3D camera, String hostIpAddress) {
+        this.camera = camera;
+        isUdpTransmitter = true;
+        if (MyDebug.LOG) Log.d(TAG, "setUdpTransmitter " + hostIpAddress);
+        executorService = Executors.newSingleThreadExecutor();
+        //if (isUdpTransmitter) {
+            // extract local network broadcast address from host IP address
+            broadcastIpAddress = hostIpAddress.substring(0, hostIpAddress.lastIndexOf(".")) + ".255";
+            udpClient = null;
+            try {
+                udpClient = new UdpClient(broadcastIpAddress, udpPort);  // from netP5.* library
+                Log.d(TAG, "UdpClient " + broadcastIpAddress);
+            } catch (Exception e) {
+                Log.d(TAG, "Wifi problem");
+                udpClient = null;
+            }
+            connected = false;
+            if (udpClient != null) {
+                connected = true;
+                Log.d(TAG, "Wifi connected " + broadcastIpAddress);
+            } else {
+                Log.d(TAG, "Wifi not connected " + broadcastIpAddress);
+            }
+        //}
+    }
 
+    public void setUdpReceiver(Camera3D camera, String hostIpAddress) {
         if (udpServer == null) {
-            // create listener for UDP messages
+            // first create listener for UDP messages
             NetListener udpListener = new NetListener() {
                 public void netEvent(NetMessage m) {
                     if (MyDebug.LOG)
@@ -58,7 +128,7 @@ public class UdpRemoteControl {
                                 if (MyDebug.LOG) {
                                     Log.d(TAG, "remote request focus");
                                 }
-                                ((MainActivity)context).runOnUiThread(new Runnable() {
+                                ((MainActivity) context).runOnUiThread(new Runnable() {
                                     public void run() {
                                         requestAutoFocus();
                                     }
@@ -71,9 +141,9 @@ public class UdpRemoteControl {
                         sCount = getParam(data);
                         if (MyDebug.LOG) Log.d(TAG, "remote takePicture() " + sCount);
                         if (!isVideo) {
-                            ((MainActivity)context).runOnUiThread(new Runnable() {
+                            ((MainActivity) context).runOnUiThread(new Runnable() {
                                 public void run() {
-                                    //takePicture(false);
+                                    //camera.takePicture(false);
                                 }
                             });
                         } else {
@@ -83,7 +153,7 @@ public class UdpRemoteControl {
                         sCount = getParam(data);
                         if (MyDebug.LOG) Log.d(TAG, "remote record video " + sCount);
                         if (isVideo) {
-                            ((MainActivity)context).runOnUiThread(new Runnable() {
+                            ((MainActivity) context).runOnUiThread(new Runnable() {
                                 public void run() {
                                     if (isVideoRecording()) {
                                         stopVideo(true);
@@ -98,7 +168,7 @@ public class UdpRemoteControl {
                     } else if (command.startsWith("P")) { // pause
                         if (MyDebug.LOG) Log.d(TAG, "remote pause Video ");
                         if (isVideo) {
-                            ((MainActivity)context).runOnUiThread(new Runnable() {
+                            ((MainActivity) context).runOnUiThread(new Runnable() {
                                 public void run() {
                                     if (isVideoRecording()) {
                                         pauseVideo();
@@ -119,9 +189,10 @@ public class UdpRemoteControl {
                     if (MyDebug.LOG) Log.d(TAG, "netStatus (UDP Server) : " + s);
                 }
             };
-            // UDP server for receiving Broadcast messages
+
+            // Now create UDP server for receiving Broadcast messages with listener created above
             if (udpServer == null) {
-                udpServer = new UdpServer1(udpListener, port);
+                udpServer = new UdpServer1(udpListener, udpPort);
                 if (udpServer == null) {
                     if (MyDebug.LOG) Log.d(TAG, "UdpServer error");
                     ToastHelper.showToast(context, "Remote Message Server not running");
@@ -134,6 +205,28 @@ public class UdpRemoteControl {
         }
     }
 
+    // stop UDP server and remove listeners for broadcast message reception
+    void destroy() {
+        if (MyDebug.LOG) Log.d(TAG, "Destroy UDP server");
+        if (udpServer != null) {
+            Vector list = udpServer.getListeners();
+            if (MyDebug.LOG) Log.d(TAG, "NetListener size=" + list.size());
+            for (int i = 0; i < list.size(); i++) {
+                udpServer.removeListener((NetListener) list.get(i));
+                if (MyDebug.LOG) Log.d(TAG, "remove NetListener " + list.get(i).toString());
+            }
+            udpServer.stop();
+            udpServer.dispose();
+            udpServer = null;
+        }
+        stopUDP();  // transmitter section
+    }
+
+
+    /*=====================================================
+     * Receiver section
+     *
+     */
 
     private String getParam(byte[] data) {
         String param = "";
@@ -226,22 +319,6 @@ public class UdpRemoteControl {
         return null;
     }
 
-    // stop UDP server for broadcast message reception
-    void destroy() {
-        if (MyDebug.LOG) Log.d(TAG, "Destroy UDP server");
-        if (udpServer != null) {
-            Vector list = udpServer.getListeners();
-            if (MyDebug.LOG) Log.d(TAG, "NetListener size=" + list.size());
-            for (int i = 0; i < list.size(); i++) {
-                udpServer.removeListener((NetListener) list.get(i));
-                if (MyDebug.LOG) Log.d(TAG, "remove NetListener " + list.get(i).toString());
-            }
-            udpServer.stop();
-            udpServer.dispose();
-            udpServer = null;
-        }
-    }
-
     private void requestAutoFocus() {
     }
 
@@ -258,5 +335,195 @@ public class UdpRemoteControl {
     private boolean isFocusWaiting() {
         return false;
     }
+
+    /*=====================================================
+     * Transmitter section
+     *
+     */
+
+
+
+    void updatePhotoIndex() {
+        photoIndex++;
+        if (photoIndex > 9999) {
+            photoIndex = 1;
+        }
+    }
+
+    void updateVideoIndex() {
+        videoIndex++;
+        if (videoIndex > 9999) {
+            videoIndex = 1;
+        }
+    }
+
+    /**
+     * get filename for Open Camera Remote
+     * param 0 update: SAME, UPDATE, NEXT
+     * param 1 mode
+     */
+    String getFilename(int update, int mode) {
+        String fn = "";
+        if (useTimeStamp) {
+            if (update == UPDATE || update == NEXT) {
+                fn = getDateTime();
+                datetimeFilename = fn;
+            } else {  // SAME
+                fn = datetimeFilename;
+            }
+        } else {
+            if (mode == PHOTO_MODE) {
+                if (update == SAME) {
+                    fn = number(photoIndex);
+                    numberFilename = fn;
+                } else if (update == UPDATE) {
+                    updatePhotoIndex();
+                    fn = number(photoIndex);
+                    numberFilename = fn;
+                } else { // NEXT
+                    fn = number(photoIndex + 1);
+                }
+            } else {
+                if (update == SAME) {
+                    fn = number(videoIndex);
+                    numberFilename = fn;
+                } else if (update == UPDATE) {
+                    updateVideoIndex();
+                    fn = number(videoIndex);
+                    numberFilename = fn;
+                } else {  // NEXT
+                    fn = number(videoIndex + 1);
+                }
+            }
+        }
+        lastFilename = fn;
+        return fn;
+    }
+
+    boolean isActive() {
+        if (udpClient != null) {
+            return true;
+        }
+        return false;
+    }
+
+    void stopUDP() {
+        if (udpClient != null) {
+            DatagramSocket ds = udpClient.socket();
+            if (ds != null) {
+                ds.close();
+                ds.disconnect();
+            }
+            udpClient = null;
+        }
+    }
+
+    void focusPush() {
+        if (udpClient != null) {
+            udpClient.send("F");
+        }
+    }
+
+    void focusRelease() {
+        focus = false;
+        if (udpClient != null) {
+            udpClient.send("R");
+        }
+    }
+
+    void sendFocusReleasePush() {
+        //  When you need to call the network method:
+        executorService.execute(new Runnable() {
+            @Override
+            public void run() {
+                // This runs on a background thread
+                focusRelease();
+                focusPush();
+            }
+        });
+    }
+
+        void shutterPush() {
+        if (udpClient != null) {
+            udpClient.send("S" + getFilename(UPDATE, PHOTO_MODE));
+        }
+    }
+
+    void shutterRelease() {
+        if (udpClient != null) {
+            udpClient.send("R");
+        }
+    }
+
+    void record() {
+        if (udpClient != null) {
+            udpClient.send("V" + getFilename(UPDATE, VIDEO_MODE));
+        }
+    }
+
+    void cameraOk() {
+        if (udpClient != null) {
+            udpClient.send("P"); // pause in video mode
+        }
+    }
+
+    void shutterPushRelease() {
+        if (udpClient != null) {
+            udpClient.send("S" + getFilename(UPDATE, PHOTO_MODE));
+            udpClient.send("R");
+        }
+    }
+    void sendShutterPushRelease() {
+        //  When you need to call the network method:
+        executorService.execute(new Runnable() {
+            @Override
+            public void run() {
+                // This runs on a background thread
+                shutterPushRelease();
+            }
+        });
+    }
+
+    void takePhoto(boolean doubleTrigger, boolean shutter) {
+//        if (doubleTrigger) {
+//            focusPush();
+//            shutterPush();
+//            delay(doubleTriggerDelay);
+//            if (shutter) {
+//                shutterPush();
+//            } else {
+//                shutterPushRelease();
+//            }
+//        } else {
+        if (udpClient != null) {
+            if (shutter) {
+                udpClient.send("S" + getFilename(UPDATE, PHOTO_MODE));
+            } else {
+                udpClient.send("C" + getFilename(UPDATE, PHOTO_MODE));
+            }
+        }
+        //}
+    }
+
+    private String getDateTime() {
+        String timestamp = camera.getTimestamp();
+        if (timestamp == null) timestamp = "";
+        return timestamp;
+    }
+
+    // Add leading zeroes to number
+    String number(int index) {
+        // fix size of index number at 4 characters long
+        if (index == 0)
+            return "";
+        else if (index < 10)
+            return ("000" + String.valueOf(index));
+        else if (index < 100)
+            return ("00" + String.valueOf(index));
+        else if (index < 1000)
+            return ("0" + String.valueOf(index));
+        return String.valueOf(index);
+    }
+
 
 }

@@ -82,7 +82,8 @@ public class MainActivity extends AppCompatActivity {
     private boolean aiVisionEnabled = false;
     private boolean isAiEdit = false;
     public boolean reviewPrint = true;
-    private boolean isWiFiRemoteEnabled = false; //true;
+    private boolean isUdpRemoteEnabled = true; //false; // default
+    private boolean isUdpTransmitter = true; //false;  // default
     private UdpRemoteControl udpRemoteControl;
 
     // photo booth states definitions
@@ -219,13 +220,10 @@ public class MainActivity extends AppCompatActivity {
         media = new Media(this, parameters, aiVision);
         media.createMediaFolder();
 
-        // set up UDP remote control for WIFI local network broadcast message reception
+        // set up UDP remote control for WIFI local network broadcast message transmit or receive
         udpRemoteControl = new UdpRemoteControl(this);
         hostIpAddr = udpRemoteControl.getHostnameAddress();
-        Log.d(TAG, "Host IP Address = "+hostIpAddr);
-        if (isWiFiRemoteEnabled) {
-            udpRemoteControl.setup();
-        }
+        Log.d(TAG, "Host IP Address = " + hostIpAddr);
 
         // setup AI vision connection to local network vision small multimodal LLM
         if (aiVisionEnabled) {
@@ -253,6 +251,15 @@ public class MainActivity extends AppCompatActivity {
 
         checkPermissions();
         camera = new Camera3D(this, media, parameters, photoBooth);
+        media.setCamera(camera);
+        if (isUdpRemoteEnabled) {
+            if (isUdpTransmitter) { // transmitter and receiver mutually exclusive
+                udpRemoteControl.setUdpTransmitter(camera, hostIpAddr);
+            } else {
+                udpRemoteControl.setUdpReceiver(camera, hostIpAddr);
+            }
+        }
+
         if (photoBooth != null) {
             camera.focusDistanceIndex = 1;  // photo booth focus distance
             // set photo booth countdown
@@ -323,9 +330,9 @@ public class MainActivity extends AppCompatActivity {
         Log.d(TAG, "onStart()");
         setVisibility();
         //if (!isPhotoBooth) {
-            if (commandLine == null) {
-                commandLine = new CommandLine(this, parameters, splashMessage + " Version: " + BuildConfig.VERSION_NAME);
-            }
+        if (commandLine == null) {
+            commandLine = new CommandLine(this, parameters, splashMessage + " Version: " + BuildConfig.VERSION_NAME);
+        }
         //}
     }
 
@@ -425,8 +432,7 @@ public class MainActivity extends AppCompatActivity {
             } else {
                 capturePhoto();
             }
-        }
-        else if ((buttonState & MotionEvent.BUTTON_TERTIARY) != 0) {
+        } else if ((buttonState & MotionEvent.BUTTON_TERTIARY) != 0) {
             // Middle mouse button pressed
             // handles toggle state changes in photo booth sketch
             Log.d(TAG, "Middle button pressed");
@@ -438,11 +444,10 @@ public class MainActivity extends AppCompatActivity {
                 } else {
                     processStateToggle();
                 }
-            } else  {
+            } else {
                 media.reviewPhotos(displayMode);
             }
-        }
-        else if ((buttonState & MotionEvent.BUTTON_SECONDARY) != 0) {
+        } else if ((buttonState & MotionEvent.BUTTON_SECONDARY) != 0) {
             // Right mouse button pressed
             Log.d(TAG, "Right button pressed");
             if (isPhotoBooth) {
@@ -476,7 +481,7 @@ public class MainActivity extends AppCompatActivity {
     private void processShutterKey() {
         if (photoBooth.isLiveView()) {
             capturePhoto();
-        } else if (photoBooth.isReview()){
+        } else if (photoBooth.isReview()) {
             media.printImageType();
         } else if (photoBooth.isReviewEdit()) {
             File mediaFile = media.getMediaFile();
@@ -571,8 +576,8 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public boolean onKeyUp(int keyCode, KeyEvent event) {
         char ch = (char) event.getUnicodeChar();
-        Log.d(TAG, "onKeyUp " + keyCode + " "+ ch);
-        if (commandLine != null && commandLine.processCommandLineKey(keyCode,ch)) {
+        Log.d(TAG, "onKeyUp " + keyCode + " " + ch);
+        if (commandLine != null && commandLine.processCommandLineKey(keyCode, ch)) {
             return true;
         }
         if (isPhotoBooth) {
@@ -757,7 +762,7 @@ public class MainActivity extends AppCompatActivity {
                     Toast.makeText(this, "Display SBS", Toast.LENGTH_SHORT).show();
                 } else if (displayMode == DisplayMode.ANAGLYPH) {
                     Toast.makeText(this, "Display ANAGLYPH", Toast.LENGTH_SHORT).show();
-                }   else if (displayMode == DisplayMode.LEFT) {
+                } else if (displayMode == DisplayMode.LEFT) {
                     Toast.makeText(this, "Display LEFT", Toast.LENGTH_SHORT).show();
                 } else if (displayMode == DisplayMode.RIGHT) {
                     Toast.makeText(this, "Display RIGHT", Toast.LENGTH_SHORT).show();
@@ -922,7 +927,8 @@ public class MainActivity extends AppCompatActivity {
                                         countdownTextView.setText("");
                                         countdownTextView.setVisibility(View.GONE);
                                     }
-                                } else {
+                                    remoteFocus();
+                               } else {
                                     if (isPhotoBooth) {
                                         photoBooth.setCountdown(Integer.toString(countdownDigit));
                                     } else {
@@ -939,6 +945,22 @@ public class MainActivity extends AppCompatActivity {
             };
 
             countdownTimer.schedule(task, 0, 1000);
+        }
+    }
+
+    public void remoteShutter() {
+        if (isUdpRemoteEnabled) {
+            if (isUdpTransmitter) {
+                udpRemoteControl.sendShutterPushRelease();
+            }
+        }
+    }
+
+    public void remoteFocus() {
+        if (isUdpRemoteEnabled) {
+            if (isUdpTransmitter) {
+                udpRemoteControl.sendFocusReleasePush();
+            }
         }
     }
 
@@ -1076,7 +1098,7 @@ public class MainActivity extends AppCompatActivity {
 // Large heap limit (available when largeHeap="true" is set)
         int largeHeapSize = am.getLargeMemoryClass();
 
-        System.out.println( "Standard: " + standardHeapSize + "MB, Large: " + largeHeapSize + "MB");
+        System.out.println("Standard: " + standardHeapSize + "MB, Large: " + largeHeapSize + "MB");
     }
 
 // For reference not used

@@ -269,7 +269,7 @@ public class PhotoBooth extends PApplet {
             textSize(48);
             fill(yellow);
             textAlign(LEFT);
-            text("+"+magnifyScale[magnifyIndex]+"    ", width - 200, height - 4);
+            text("+" + magnifyScale[magnifyIndex] + "    ", width - 200, height - 4);
         }
         // camera and review mode display test mode for debug
         if (DEBUG && testMode) {
@@ -308,21 +308,21 @@ public class PhotoBooth extends PApplet {
             textAlign(CENTER);
             text(instruction1, width / 2, 50);
             if (displayMode == DisplayMode.SBS) {
-              text(title1, width / 2, height - 96);
-              text(title2, width / 2, height - 48);
+                text(title1, width / 2, height - 96);
+                text(title2, width / 2, height - 48);
             }
             if (displayMode == DisplayMode.ANAGLYPH) {
-                text("P=" + (parallax)+"   " , width - 50, height - 96);
-                text("V=" + (verticalAlignment) +"   ", width -50, height - 48);
+                text("P=" + (parallax) + "   ", width - 50, height - 96);
+                text("V=" + (verticalAlignment) + "   ", width - 50, height - 48);
             }
         } else if (mainActivity.state == MainActivity.REVIEW_PHOTO_STATE) {
             textAlign(RIGHT);
             fill(green);
-            text("Print" , width - 50, height - 48);
+            text("Print", width - 50, height - 48);
         } else if (mainActivity.state == MainActivity.REVIEW_AI_EDIT_STATE) {
             textAlign(RIGHT);
             fill(magenta);
-            text("AI Edit" , width - 50, height - 48);
+            text("AI Edit", width - 50, height - 48);
 
         }
 
@@ -331,8 +331,8 @@ public class PhotoBooth extends PApplet {
             fill(255);
             textAlign(LEFT);
             textSize(48);
-            for (int i=0; i<help.length; i++) {
-                text(help[i], 100, 50+i*50);
+            for (int i = 0; i < help.length; i++) {
+                text(help[i], 100, 50 + i * 50);
             }
         }
 
@@ -359,17 +359,17 @@ public class PhotoBooth extends PApplet {
 //            }
 //            mirror = saveMirror;
 //        } else {
-            // Display message if no images
-            fill(255);
-            textAlign(CENTER, CENTER);
-            textSize(96);
-            int animate = captureFrameCount/displayFPS;
-            text("Please Wait for Photos to Develop ", width / 2, height / 2);
-            loop();
-    //    }
+        // Display message if no images
+        fill(255);
+        textAlign(CENTER, CENTER);
+        textSize(96);
+        int animate = captureFrameCount / displayFPS;
+        text("Please Wait for Photos to Develop ", width / 2, height / 2);
+        loop();
+        //    }
     }
 
-        private void drawLiveView() {
+    private void drawLiveView() {
 
         if (camStereo.available) {
             camStereo.available = false;
@@ -636,6 +636,10 @@ public class PhotoBooth extends PApplet {
                 break;
             case KeyEvent.KEYCODE_X:
                 toggleCrossEye();
+                break;
+            case KeyEvent.KEYCODE_P:
+                // save current parallax in shared preferences
+                parameters.setParallaxOffset(parallax);
                 break;
             case KeyEvent.KEYCODE_FORWARD:  // 125 forward media button on mouse: mirror toggle
                 File mediaFile = media.getMediaFile();
@@ -1016,5 +1020,33 @@ public class PhotoBooth extends PApplet {
 //        }
 //    }
 
+// unused code for reference from previous photo booth project
+//    PImage getPhoto(String name) {
+//        //String name;
+//        String filename = "";
+//        String filenameUrl = "";
+//        PImage lastPhoto = null;
+//        boolean showPhoto = false;
+//        String aFilename = "IMG_" + getFilename(SAME, PHOTO_MODE) + "_" + name + ".jpg";
+//        filename = aFilename;
+//        String afilenameUrl = "http://" + ipAddress + ":" + HTTPport + "/" + aFilename;
+//        afilenameUrl.trim();
+//        afilenameUrl = afilenameUrl.replaceAll("(\\r|\\n)", "");
+//        String afilename = filename.replaceAll("(\\r|\\n)", "");
+//        Log.d(TAG, "result filename = " + afilename + " filenameURL= " + afilenameUrl);
+//        //if (!afilenameUrl.equals(filenameUrl)) {
+//        if (!afilenameUrl.equals(filenameUrl) || lastPhoto == null || lastPhoto.width <= 0 || lastPhoto.height <= 0) {
+//            filename = afilename.substring(afilename.lastIndexOf('/') + 1);
+//            filenameUrl = afilenameUrl;
+//            lastPhoto = loadImage(filenameUrl, "jpg");
+//            Log.d(TAG, "OCR getFilename loadImage " + filenameUrl);
+//            if (lastPhoto == null || lastPhoto.width == -1 || lastPhoto.height == -1) {
+//                showPhoto = false;
+//            } else {
+//                showPhoto = true;
+//            }
+//        }
+//        return lastPhoto;
+//    }
 }
 

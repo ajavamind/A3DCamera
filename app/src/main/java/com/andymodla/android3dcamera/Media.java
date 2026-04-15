@@ -23,6 +23,7 @@ import android.widget.Toast;
 
 import androidx.core.content.FileProvider;
 
+import com.andymodla.android3dcamera.camera.Camera3D;
 import com.andymodla.android3dcamera.sketch.PhotoBooth;
 
 import java.io.File;
@@ -65,7 +66,7 @@ public class Media {
     public volatile PImage leftReview;
     public volatile PImage rightReview;
 
-    String timestamp;
+    private String timestamp;
     volatile private File reviewSBS;
     volatile private File reviewAnaglyph;
     volatile private File reviewLeft;
@@ -81,6 +82,7 @@ public class Media {
     private Parameters parameters;
     private AIvision aiVision;
     private PApplet pApplet;
+    private Camera3D camera;
 
     // Constructor
     public Media(Context context, Parameters parameters, AIvision aiVision) {
@@ -93,6 +95,9 @@ public class Media {
         this.pApplet = pApplet;
     }
 
+    public void setCamera(Camera3D camera) {
+        this.camera = camera;
+    }
     /**
      * Recycle bitmaps
      *
@@ -269,8 +274,8 @@ public class Media {
 
     public void saveImageFiles(byte[] leftBytes, byte[] rightBytes) {
         Log.d(TAG, "saveImageFiles");
-        timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
-
+        //timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
+        timestamp = camera.getTimestamp();
         leftBitmap = saveImageFile(leftBytes, PHOTO_PREFIX + timestamp, true); // left
         rightBitmap = saveImageFile(rightBytes, PHOTO_PREFIX + timestamp, false); // right
 

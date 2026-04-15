@@ -50,9 +50,12 @@ import com.andymodla.android3dcamera.Parameters;
 import com.andymodla.android3dcamera.sketch.PhotoBooth;
 
 import java.nio.ByteBuffer;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
@@ -134,6 +137,7 @@ public class Camera3D {
     private volatile SurfaceHolder mSurfaceHolder2;
 
     // Image capture
+    private volatile String timestamp;
     private volatile ImageReader mImageReader0;
     private volatile ImageReader mImageReader2;  // for SBS display
 
@@ -874,6 +878,8 @@ public class Camera3D {
             leftBytes = null;
             rightBytes = null;
             media.recycleBitmaps();
+            timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
+            ((MainActivity)context).remoteShutter();
 
             // left image reader
             mImageReader0.setOnImageAvailableListener(new OnImageAvailableListener() {
@@ -1025,4 +1031,7 @@ public class Camera3D {
 
     }
 
+    public String getTimestamp() {
+        return timestamp;
+    }
 }
