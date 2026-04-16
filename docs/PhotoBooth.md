@@ -70,5 +70,7 @@ It can also run on the Android Leia tablets both 1 and 2 versions, but has to us
 The app source code can be modified easily to run on Windows, Linux, or iOS using the Processing.org IDE.
 In this way other devices with 3D displays may be able to show 3D images glasses free.
 
+It could also be used on another XReal Beam Pro with its glasses to download and view the photo booth's photos. (But I have not tested this feature)
+
 ## Notes
 All the Android devices are placed in developer mode to prevent turning off when being charged
