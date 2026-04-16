@@ -11,6 +11,7 @@ This Android tablet is the 3D camera and photo booth controller.
 It is connected to the local WIFI network.
 It saves 3D SBS (side-by-side), anaglyph, and both left and right photos at maximum resolution taken.
 It adjusts SBS and anaglyph photos for parallax and vertical alignment before saving.
+The SBS images have reduced resolution because the camera has limited RAM memory for processing images.
 
 ## Buzzer Box
 This is a repurposed Bluetooth mouse connected to the XReal Beam Pro. 
@@ -53,8 +54,11 @@ This is the purchased app version 3.05. The app is configured to use the photo b
 
 ## itCamera Android App
 This is the app that sends prompt requests to an AI Image editing cloud service. 
-The multimodal LLM model used for photo editing is Google "gemini-3.1-flash-image-preview".
+Images sent to the service are reduced in size and set to 6x4 aspect ratio (for the printer).
+The multimodal LLM model used for photo editing is Google "gemini-3.1-flash-image-preview" a paid service.
 This app is a work in progress and is not available as open source.
+
+AI editing is also configured by a command in the A3dCamera app.
 
 The app uses the touch screen.
 
