@@ -114,7 +114,7 @@ Here is the current key mapping for a 8BitDo Bluetooth game controller in Androi
 * MODE    - Select Auto, Manual, and Shutter Priority (only Auto implemented)
 * BURST   - Start continous photo capture at about 1 photo every two seconds (or less depending on the number of files stored),
    until the Back key is pressed and released again, or until 60 images are captured. In Photo Booth mode take a maximum of 4 images.
-* DISP    - Toggle change Review display mode (SBS,  Anaglyph, L/R) (Not implemented for either Live view or Review mode)
+* DISP    - Toggle change Review display mode (SBS,  Anaglyph, L/R)
 * TIMER   - Set countdown delay time before taking a photo with the shutter or burst key. This value is also used in Photo Booth mode.
 * ISO     - Set the ISO (not implemented)
 * SPEED   - Set the Shutter speed (not implemented)
@@ -127,8 +127,14 @@ Here is the current key mapping for a 8BitDo Bluetooth game controller in Androi
 
 ##### Bluetooth Keyboard Remote Control
 The app can also be controlled with any Bluetooth ASCII keyboard. 
-Here are the Android keyboard keys matching the function keys of the 8BitDo Micro controller when switched to keyboard mode:
-![8BitDo Micro Bluetooth Controller](images/A3DCamera_KB_Layout_1080.png)
+Here are the Android keyboard keys matching the similar functions of the 8BitDo Micro game controller (but not using same key code as with keyboard mode on the game controller)
+
+Incomplete work in progress - 
+
+* Q - FOCUS DISTANCE - Cycle through fixed focus distances: Hyperfocal, Photo Booth, Macro
+* A - DISPLAY - Toggle change Review display mode (SBS,  Anaglyph, L/R)
+* T - EXPOSURE METERING FN  - Cycle through exposure metering: Frame Average, Center Weighted, Spot Metering
+
 
 ##### Bluetooth Mouse Remote Control
 Connect a Bluetooth Mouse to control the camera app with the mouse buttons. A mouse can be rewired in a buzzer style box as a Photo Booth controller.
