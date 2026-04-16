@@ -647,13 +647,13 @@ public class PhotoBooth extends PApplet {
                 // save current parallax in shared preferences
                 parameters.setParallaxOffset(parallax);
                 break;
-            case KeyEvent.KEYCODE_FORWARD:  // 125 forward media button on mouse: mirror toggle
-                File mediaFile = media.getMediaFile();
-                if (mediaFile == null) {
-                    if (DEBUG) PApplet.println("Nothing for AI Edit");
-                }
-                media.shareImage2(media.getMediaFile(), Media.APP_AIEDIT_PACKAGE);
-                break;
+//            case KeyEvent.KEYCODE_FORWARD:  // 125 forward media button on mouse: mirror toggle
+//                File mediaFile = media.getMediaFile();
+//                if (mediaFile == null) {
+//                    if (DEBUG) PApplet.println("Nothing for AI Edit");
+//                }
+//                media.shareImage2(media.getMediaFile(), Media.APP_AIEDIT_PACKAGE);
+//                break;
             case KeyEvent.KEYCODE_Z:
                 zoomToggle();
                 break;
