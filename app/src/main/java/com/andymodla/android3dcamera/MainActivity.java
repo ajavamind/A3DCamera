@@ -359,10 +359,10 @@ public class MainActivity extends AppCompatActivity {
 
         // for debugging and test
         if (allPermissionsGranted) {
-            String[] list = camera.getCameraIdList();  // debug what cameras are available
-            for (String id : list) {
-                Log.d(TAG, "Available CameraId: |" + id + "|");
-            }
+            // String[] list = camera.getCameraIdList();  // debug what cameras are available
+            // for (String id : list) {
+            // Log.d(TAG, "Available CameraId: |" + id + "|");
+            //  }
 
             // Debug information
             //CameraInfoUtil.checkCameraSyncType(this, list);
