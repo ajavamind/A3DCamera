@@ -16,6 +16,10 @@ This document describes the functions of Photo Booth key commands handled by the
 *   **Key:** `Plus` (`+`) or `Equals` (`=`)
 *   **Function:** Increases the parallax value by 2. This adjustment affects the spatial offset of the images, allowing fine-tuning of the stereo window.
 
+### Save Parallax
+*   **Key:** `P`
+*   **Function:** Write the current parallax value into preferences storage.
+
 ### Screenshot
 *   **Key:** `C`
 *   **Function:** Triggers a screenshot capture. When pressed, save the current display canvas to the Picture/Screenshots storage.
