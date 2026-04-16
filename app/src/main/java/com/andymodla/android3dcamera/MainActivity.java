@@ -129,7 +129,7 @@ public class MainActivity extends AppCompatActivity {
 
     // Key codes for 8BitDo Micro Bluetooth Keyboard controller (Android mode)
     static final int SHUTTER_KEY = KeyEvent.KEYCODE_BUTTON_R1;
-    static final int FOCUS_KEY = KeyEvent.KEYCODE_BUTTON_R2;
+    static final int FOCUS_DISTANCE_KEY = KeyEvent.KEYCODE_BUTTON_R2;
     static final int MODE_KEY = KeyEvent.KEYCODE_BUTTON_L2;
     static final int CONTINUOUS_KEY = KeyEvent.KEYCODE_BUTTON_L1;
     static final int DISP_KEY = KeyEvent.KEYCODE_DPAD_UP;
@@ -145,23 +145,31 @@ public class MainActivity extends AppCompatActivity {
     static final int BACK_KEY = KeyEvent.KEYCODE_BACK;  // KeyEvent.KEYCODE_BUTTON_B = 97 KEYCODE_BACK = 04
     static final int SHARE_KEY = KeyEvent.KEYCODE_BUTTON_MODE;  // 110
 
-    // Key codes for 8BitDo Micro Bluetooth Keyboard controller (Keyboard mode)
-    static final int SHUTTER_KB_KEY = KeyEvent.KEYCODE_M;
-    static final int FOCUS_KB_KEY = KeyEvent.KEYCODE_R;
-    static final int MODE_KB_KEY = KeyEvent.KEYCODE_L;
+    // Key codes for 8BitDo Micro Bluetooth Keyboard controller (in Keyboard mode)
+    // FOR DOCUMENTATION ONLY - NOT USED
+//    static final int SHUTTER_KB_KEY = KeyEvent.KEYCODE_M;
+//    static final int FOCUS_DISTANCE_KB_KEY = KeyEvent.KEYCODE_R;
+//    static final int MODE_KB_KEY = KeyEvent.KEYCODE_L;
+//    static final int CONTINUOUS_KB_KEY = KeyEvent.KEYCODE_K;
+//    static final int DISP_KB_KEY = KeyEvent.KEYCODE_C;
+//    static final int ISO_KB_KEY = KeyEvent.KEYCODE_D;
+//    static final int TIMER_KB_KEY = KeyEvent.KEYCODE_E;
+//    static final int SHUTTER_SPEED_KB_KEY = KeyEvent.KEYCODE_F;
+//    static final int PRINT_KB_KEY = KeyEvent.KEYCODE_N;
+//    static final int ANAGLYPH_KB_KEY = KeyEvent.KEYCODE_O; // "+" button
+//    static final int FN_KB_KEY = KeyEvent.KEYCODE_H;
+//    static final int MENU_KB_KEY = KeyEvent.KEYCODE_I;
+//    static final int REVIEW_KB_KEY = KeyEvent.KEYCODE_G;
+//    static final int OK_KB_KEY = KeyEvent.KEYCODE_G;
+//    static final int BACK_KB_KEY = KeyEvent.KEYCODE_J;
+//    static final int SHARE_KB_KEY = KeyEvent.KEYCODE_S;
+
+    // Key codes for ASCII Bluetooth Keyboard controller
+    static final int FOCUS_DISTANCE_KB_KEY = KeyEvent.KEYCODE_Q;
+    static final int FN_KB_KEY = KeyEvent.KEYCODE_T;
     static final int CONTINUOUS_KB_KEY = KeyEvent.KEYCODE_K;
-    static final int DISP_KB_KEY = KeyEvent.KEYCODE_C;
-    static final int ISO_KB_KEY = KeyEvent.KEYCODE_D;
-    static final int TIMER_KB_KEY = KeyEvent.KEYCODE_E;
-    static final int SHUTTER_SPEED_KB_KEY = KeyEvent.KEYCODE_F;
-    static final int PRINT_KB_KEY = KeyEvent.KEYCODE_N;
-    static final int ANAGLYPH_KB_KEY = KeyEvent.KEYCODE_O; // "+" button
-    static final int FN_KB_KEY = KeyEvent.KEYCODE_H;
-    static final int MENU_KB_KEY = KeyEvent.KEYCODE_I;
-    static final int REVIEW_KB_KEY = KeyEvent.KEYCODE_G;
-    static final int OK_KB_KEY = KeyEvent.KEYCODE_G;
-    static final int BACK_KB_KEY = KeyEvent.KEYCODE_J;
-    static final int SHARE_KB_KEY = KeyEvent.KEYCODE_S;
+    static final int MIRROR_KB_KEY = KeyEvent.KEYCODE_M;
+
 
     private TextView countdownTextView;
     private CommandLine commandLine;
@@ -558,7 +566,7 @@ public class MainActivity extends AppCompatActivity {
             case KeyEvent.KEYCODE_3D_MODE: // ignore so that this key does not launch XReal camera app
                 exitApp = false;
                 return true;
-            case BACK_KB_KEY:
+            //case BACK_KB_KEY:
             case BACK_KEY:
             case KeyEvent.KEYCODE_ESCAPE:
             case KeyEvent.KEYCODE_BUTTON_B:
@@ -607,7 +615,7 @@ public class MainActivity extends AppCompatActivity {
             case KeyEvent.KEYCODE_VOLUME_UP:
             case KeyEvent.KEYCODE_3D_MODE: // camera key - first turn off auto launch of native camera app
             case SHUTTER_KEY:
-            case SHUTTER_KB_KEY:
+            //case SHUTTER_KB_KEY:
 //                if (state != LIVE_VIEW_STATE) { // ignore shutter in review state
 //                    return true;
 //                }
@@ -620,7 +628,7 @@ public class MainActivity extends AppCompatActivity {
 
             case KeyEvent.KEYCODE_VOLUME_DOWN:
             case REVIEW_KEY:
-            case REVIEW_KB_KEY:
+            //case REVIEW_KB_KEY:
                 media.reviewPhotos(displayMode);
                 return true;
 
@@ -638,7 +646,7 @@ public class MainActivity extends AppCompatActivity {
 
             case KeyEvent.KEYCODE_BACK:
             case KeyEvent.KEYCODE_ESCAPE:
-            case BACK_KB_KEY:
+            //case BACK_KB_KEY:
             case KeyEvent.KEYCODE_BUTTON_B:
                 if (continuousMode) {
                     setContinuousMode(false);
@@ -664,7 +672,7 @@ public class MainActivity extends AppCompatActivity {
                 return true;
 
             case SHARE_KEY:
-            case SHARE_KB_KEY:
+            //case SHARE_KB_KEY:
                 if (isPhotoBooth) {
                     // ignore share key in photo booth
                     return true;
@@ -677,15 +685,15 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             case FN_KEY:
             case FN_KB_KEY:
-                camera.closeCamera();
+                //camera.closeCamera();
                 camera.setMeteringIndex();
-                camera.openCamera();
+                //camera.openCamera();
                 return true;
-            case FOCUS_KEY: // change focus distance, should be sub menu
-            case FOCUS_KB_KEY: // change focus distance, should be sub menu
-                camera.closeCamera();
+            case FOCUS_DISTANCE_KEY: // change focus distance, should be sub menu
+            case FOCUS_DISTANCE_KB_KEY: // change focus distance, should be sub menu
+                //camera.closeCamera();
                 camera.setFocusDistance();
-                camera.openCamera();
+                //camera.openCamera();
                 return true;
 //            case KeyEvent.KEYCODE_ENTER:
 //            case OK_KEY:
@@ -700,20 +708,20 @@ public class MainActivity extends AppCompatActivity {
 //                openCamera();
                 return true;
             case ANAGLYPH_KEY:
-            case ANAGLYPH_KB_KEY:
+            //case ANAGLYPH_KB_KEY:
                 if (isPhotoBooth) {
                     displayMode = DisplayMode.ANAGLYPH;
                     photoBooth.setDisplayMode(displayMode);
                 }
                 return true;
             case MODE_KEY:
-            case MODE_KB_KEY:
+            //case MODE_KB_KEY:
                 Toast.makeText(this, "Auto Exposure - Manual, Shutter Priority", Toast.LENGTH_SHORT).show();
 //                closeCamera();
 //                openCamera();
                 return true;
             case SHUTTER_SPEED_KEY:
-            case SHUTTER_SPEED_KB_KEY:
+            //case SHUTTER_SPEED_KB_KEY:
                 if (isPhotoBooth) {
                     //photoBooth.keyPressedReview(keyCode, ch);
                     return true;
@@ -723,7 +731,7 @@ public class MainActivity extends AppCompatActivity {
 //                openCamera();
                 return true;
             case TIMER_KEY:
-            case TIMER_KB_KEY:
+            //case TIMER_KB_KEY:
                 if (state != LIVE_VIEW_STATE) {
                     if (isPhotoBooth) {
                         //photoBooth.keyPressedReview(keyCode, ch);
@@ -746,13 +754,13 @@ public class MainActivity extends AppCompatActivity {
                 return true;
 
             case ISO_KEY:
-            case ISO_KB_KEY:
+            //case ISO_KB_KEY:
                 Toast.makeText(this, "ISO - not implemented", Toast.LENGTH_SHORT).show();
 //                closeCamera();
 //                openCamera();
                 return true;
             case DISP_KEY:
-            case DISP_KB_KEY:
+            //case DISP_KB_KEY:
             case KeyEvent.KEYCODE_A:
                 displayMode = displayMode.next();
                 if (isPhotoBooth) {
@@ -771,13 +779,19 @@ public class MainActivity extends AppCompatActivity {
 //                openCamera();
                 return true;
             case MENU_KEY:
-            case MENU_KB_KEY:
+            //case MENU_KB_KEY:
                 Toast.makeText(this, "MENU - not implemented", Toast.LENGTH_SHORT).show();
 //                closeCamera();
 //                openCamera();
                 return true;
+            case MIRROR_KB_KEY:
+                boolean amirror = parameters.getIsMirror();
+                amirror = !amirror;
+                parameters.setIsMirror(amirror);
+                Toast.makeText(this, "Mirror=" + Boolean.toString(amirror), Toast.LENGTH_SHORT).show();
+                return true;
             case PRINT_KEY:
-            case PRINT_KB_KEY:
+            //case PRINT_KB_KEY:
                 media.printImageType();
                 return true;
 //            case VIDEO_RECORD_KEY:

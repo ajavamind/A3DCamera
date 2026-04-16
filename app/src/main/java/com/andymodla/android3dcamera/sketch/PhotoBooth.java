@@ -81,6 +81,27 @@ public class PhotoBooth extends PApplet {
     boolean screenshot = false;
     int debugHelp = 0;
     String[] help;
+
+    String[] help2 = {
+            "Photo Booth Key Functions:",
+            "Cycle Display Mode: A",
+            "Decrease Parallax: Minus (-)",
+            "Increase Parallax: Plus (+) or Equals (=)",
+            "Save Parallax: P",
+            "Screenshot: C",
+            "Toggle Blank Screen: B",
+            "Toggle Cross-Eye: X",
+            "Toggle Mirror: M",
+            "Toggle Zoom State: Z",
+            "Zoom In: Right Bracket (])",
+            "Zoom Out: Left Bracket ([)",
+            "View Help/Parameters: H",
+            "Toggle Test Mode: Space",
+            "Toggle Debug Logging: Period (.)",
+            "Toggle Focus Distance: Q",
+            "Toggle Exposure Metering: T"
+    };
+
     private boolean loadPrevious = true;
     private int captureFrameCount = 0;
     String countdown = "";  // default ignore null string
@@ -194,6 +215,7 @@ public class PhotoBooth extends PApplet {
     }
 
     public void setMirror(boolean mirror) {
+        if (DEBUG) PApplet.println("setMirror(" + mirror + ")");
         this.mirror = mirror;
         update = true;
     }
@@ -330,14 +352,20 @@ public class PhotoBooth extends PApplet {
         switch (debugHelp) {
             // overlays everything on screen
             case 1:
-            fill(255);
-            textAlign(LEFT);
-            textSize(48);
-            for (int i = 0; i < help.length; i++) {
-                text(help[i], 100, 50 + i * 50);
-            }
-            break;
+                fill(255);
+                textAlign(LEFT);
+                textSize(48);
+                for (int i = 0; i < help.length; i++) {
+                    text(help[i], 100, 50 + i * 50);
+                }
+                break;
             case 2:
+                fill(255);
+                textAlign(LEFT);
+                textSize(48);
+                for (int i = 0; i < help2.length; i++) {
+                    text(help2[i], 100, 50 + i * 50);
+                }
 
                 break;
             default:
@@ -637,9 +665,9 @@ public class PhotoBooth extends PApplet {
                 }
                 //if (DEBUG) PApplet.println("magnifyScale = " + magnifyScale[magnifyIndex] + " magnifyIndex");
                 break;
-            case KeyEvent.KEYCODE_M:
-                toggleMirror();
-                break;
+//            case KeyEvent.KEYCODE_M:
+//                toggleMirror();
+//                break;
             case KeyEvent.KEYCODE_X:
                 toggleCrossEye();
                 break;
