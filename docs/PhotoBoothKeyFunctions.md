@@ -1,6 +1,6 @@
-# PhotoBooth Key Function Guide
+# Photo Booth Key Function Guide
 
-This document describes the functionality of various keys handled by the `processKeyCode()` method in `PhotoBooth.java`. The functions are ordered alphabetically by the action they perform.
+This document describes the functions of Photo Booth key commands handled by the `processKeyCode()` method in `PhotoBooth.java`. The functions are ordered alphabetically by the action they perform.
 
 ***
 
@@ -18,7 +18,7 @@ This document describes the functionality of various keys handled by the `proces
 
 ### Screenshot
 *   **Key:** `C`
-*   **Function:** Triggers a screenshot capture. When pressed, save the current frame to the Picture/Screenshots storage.
+*   **Function:** Triggers a screenshot capture. When pressed, save the current display canvas to the Picture/Screenshots storage.
 
 ### Share for AI Edit
 *   **Key:** `Forward` (Media Button)
@@ -37,7 +37,7 @@ This document describes the functionality of various keys handled by the `proces
 *   **Function:** Toggles the internal `DEBUG` flag. This controls the display of detailed logging information on the console during the application's operation.
 
 ### Toggle Mirror
-*   **Key:** `Q`
+*   **Key:** `M`
 *   **Function:** Toggles the mirror effect on and off. When active, the images are horizontally flipped, simulating a mirror view.
 
 ### Toggle Test Mode
@@ -46,7 +46,7 @@ This document describes the functionality of various keys handled by the `proces
 
 ### Toggle Zoom State
 *   **Key:** `Z`
-*   **Function:** Toggles the zoom level. This switches the image display between its normal size and a magnified view.
+*   **Function:** Toggles zoom on or off. This switches the image display between its normal size and a magnified view. It does not camera zoom.
 
 ### View Help/Parameters
 *   **Key:** `H`
