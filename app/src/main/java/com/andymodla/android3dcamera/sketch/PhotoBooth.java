@@ -76,10 +76,10 @@ public class PhotoBooth extends PApplet {
     public volatile int brightness = -6;
     DisplayMode displayMode = DisplayMode.SBS;
     volatile boolean update = false;
-    volatile boolean zoom = true;
+    volatile boolean zoom = false;
     volatile boolean blankScreen = false;
     boolean screenshot = false;
-    boolean debugHelp = false;
+    int debugHelp = 0;
     String[] help;
     private boolean loadPrevious = true;
     private int captureFrameCount = 0;
@@ -200,6 +200,7 @@ public class PhotoBooth extends PApplet {
 
     void zoomToggle() {
         zoom = !zoom;
+        if (!zoom) magnifyIndex = 0;
         update = true;
     }
 
@@ -326,14 +327,21 @@ public class PhotoBooth extends PApplet {
 
         }
 
-        if (debugHelp) {
-            // overlays everything
+        switch (debugHelp) {
+            // overlays everything on screen
+            case 1:
             fill(255);
             textAlign(LEFT);
             textSize(48);
             for (int i = 0; i < help.length; i++) {
                 text(help[i], 100, 50 + i * 50);
             }
+            break;
+            case 2:
+
+                break;
+            default:
+                break;
         }
 
         // last thing to check is screenshot
@@ -603,7 +611,7 @@ public class PhotoBooth extends PApplet {
         }
     }
 
-    // called by MainActivty onKeyUp to process key events for photo booth
+    // called by MainActivty onKeyUp to process key events for photo booth exclusively
     public boolean processKeyCode(int lastKeyCode, int lastKey) {
         switch (lastKeyCode) {
             case KeyEvent.KEYCODE_A:
@@ -619,7 +627,6 @@ public class PhotoBooth extends PApplet {
                 if (magnifyIndex > 0) {
                     magnifyIndex--;
                     update = true;
-                    zoom = true;
                 }
                 //if (DEBUG) PApplet.println("magnifyScale = " + magnifyScale[magnifyIndex] + " magnifyIndex");
                 break;
@@ -627,11 +634,10 @@ public class PhotoBooth extends PApplet {
                 if (magnifyIndex < magnifyScale.length - 1) {
                     magnifyIndex++;
                     update = true;
-                    zoom = true;
                 }
                 //if (DEBUG) PApplet.println("magnifyScale = " + magnifyScale[magnifyIndex] + " magnifyIndex");
                 break;
-            case KeyEvent.KEYCODE_Q:
+            case KeyEvent.KEYCODE_M:
                 toggleMirror();
                 break;
             case KeyEvent.KEYCODE_X:
@@ -667,12 +673,18 @@ public class PhotoBooth extends PApplet {
                 setParallax(parallax + 2);
                 if (DEBUG) PApplet.println("parallax = " + parallax);
                 break;
-            case KeyEvent.KEYCODE_H:  // help
-                if (debugHelp) {
-                    debugHelp = false;
-                } else {
-                    debugHelp = true;
+            case KeyEvent.KEYCODE_H:  // help screens for debug
+            case KeyEvent.KEYCODE_HELP:
+                debugHelp++;
+                if (debugHelp > 2) {
+                    debugHelp = 0;
+                } else if (debugHelp == 1) {
                     help = parameters.getParameterDetails();
+                    for (String s : help) {
+                        if (DEBUG) PApplet.println(s);
+                    }
+                } else if (debugHelp == 2) {
+                    //help = parameters.getKeyDetails();  TODO
                     for (String s : help) {
                         if (DEBUG) PApplet.println(s);
                     }

@@ -5,7 +5,7 @@ package com.andymodla.android3dcamera;
  * Copyright 2025-2026, Andy Modla All Rights Reserved
  * <p>
  * This code has video implementation left in for reference.
- * Video remote control is not used.
+ * Video remote control is not used or tested here.
  */
 
 import java.net.DatagramSocket;

@@ -948,6 +948,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    // send remote control shutter command on local network
     public void remoteShutter() {
         if (isUdpRemoteEnabled) {
             if (isUdpTransmitter) {
@@ -956,6 +957,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    // send remote control focus command on local network
     public void remoteFocus() {
         if (isUdpRemoteEnabled) {
             if (isUdpTransmitter) {
