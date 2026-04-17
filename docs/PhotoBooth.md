@@ -63,13 +63,13 @@ AI editing is also configured by a command in the A3dCamera app.
 The app uses the touch screen.
 
 ## ImageDownloader Android App
-This Andrid app runs on the IGH SKYY glasses free tablet. It is connected by WIFI to the photo booth local network.
+This Andrid app runs on the IQH3D SKYY glasses free tablet. It is connected by WIFI to the photo booth local network.
 The app has a very simple HTTP server that waits for a message to download a photo from the HTTP server running on the XReal Beam Pro tablet.
 Once a new photo is downloaded the app converts it to appear on the tablet screen in 3D.
 It then waits for the next photo.
 
 The app is written in Processing Android Java and is open source.
-It can also run on the Android Leia tablets both 1 and 2 versions, but has to use the LeiaPlayer app is view in 3D.
+It can also run on the Android Leia tablets both 1 and 2 versions, but has to use the LeiaPlayer app to view in 3D.
 
 The app source code can be modified easily to run on Windows, Linux, or iOS using the Processing.org IDE.
 In this way other devices with 3D displays may be able to show 3D images glasses free.
@@ -77,4 +77,4 @@ In this way other devices with 3D displays may be able to show 3D images glasses
 It could also be used on another XReal Beam Pro with its glasses to download and view the photo booth's photos. (But I have not tested this feature)
 
 ## Notes
-All the Android devices are placed in developer mode to prevent turning off when being charged
+All the Android devices are placed in developer mode to prevent a timeout turn off. The device has to be charging to not turn off.
