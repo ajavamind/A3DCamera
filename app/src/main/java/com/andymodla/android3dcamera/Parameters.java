@@ -5,12 +5,12 @@ package com.andymodla.android3dcamera;
  * Copyright 2025-2026 Andy Modla  All Rights Reserved
  * Command line based parameter read and set
  *
- * To add parameters use this prompt with gemma4 4B
- * Using Parameters.java as a base pattern, I want to add more parameters as follows:
- * String title1, String title2, String inst1, String inst2, int countdownTimer.
- * For String default use "".
- * For boolean default use false.
- * For integer default use 0. Please update this file to  add these new parameters.
+   To add parameters to this file use this prompt with gemma4 4B
+   Using Parameters.java as a base pattern, I want to add more parameters as follows:
+   boolean countDownEnabled, boolean udpControlEnabled, boolean udpTransmit
+   For String default use "".
+   For boolean default use false.
+   For integer default use 0. Please update this file to  add these new parameters.
  */
 
 import static java.util.Arrays.*;
@@ -53,7 +53,8 @@ class ParamStore {
             private final Context context;
 
             // Stereo Image Alignment parameters
-            // same values as StereoPhotoMaker displays after automatic alignment of a reference calibration stereo photo.
+            // same values as StereoPhotoMaker displays after automatic alignment of a
+            // reference calibration stereo photo.
             public int parallaxOffset = 0;  // left/right horizontal offset parallax for stereo window placement
             public int verticalOffset = 0;  // left/right camera vertical offset alignment for camera correction
             public boolean isSoundOn = true;
@@ -61,20 +62,23 @@ class ParamStore {
 
             // photo booth parameters
             public boolean isPhotoBooth = false;
-            public boolean anaglyphMode = false; // for photo booth only
             public boolean isMirror = true; // for photo booth only
 
             String receiverIp = "";  // device IP address to receive URL link to saved photo
             int receiverPort = 9000;  // device port to receive URL link to saved photo
 
-            public boolean isBlankScreen = false;  // for camera
+            private boolean isBlankScreen = false;  // for display covered
 
-            // NEW PARAMETERS
-            public String title1 = "";
-            public String title2 = "";
-            public String inst1 = "";
-            public String inst2 = "";
-            public int countdownTimer = 0;
+            private String title1 = "";
+            private String title2 = "";
+            private String instruction1 = "";
+            private String instruction2 = "";
+
+            private int countdownTimer = 0;
+            private boolean countDownEnabled = false;
+
+            private boolean udpControlEnabled = false;
+            private boolean udpTransmit = false;
 
 
             // default constructor
@@ -114,10 +118,9 @@ class ParamStore {
             }
 
             /**
-             * Initialize all parameters
+             * Initialize all parameters from preference storage
              */
             public void init() {
-                // TODO use use ParamStore array to initialize
                 readParallaxOffset();
                 readVerticalOffset();
                 readReceiverIp();
@@ -126,12 +129,14 @@ class ParamStore {
                 readIsSoundOn();
                 readIsAiEdit();
                 readIsMirror();
-                // Initialize new parameters
                 readTitle1();
                 readTitle2();
                 readInst1();
                 readInst2();
                 readCountdownTimer();
+                readCountDownEnabled();
+                readUdpControlEnabled();
+                readUdpTransmit();
             }
 
             //------------------------------------------------------------------------------
@@ -195,19 +200,14 @@ class ParamStore {
             }
 
             public void setIsPhotoBooth(boolean isPhotoBooth) {
-                boolean needsRestart = false;
-                if (this.isPhotoBooth != isPhotoBooth) {
-                    needsRestart = true;
-                }
                 this.isPhotoBooth = isPhotoBooth;
                 // Save to SharedPreferences
                 SharedPreferences.Editor editor = prefs.edit();
                 editor.putBoolean(isPhotoBoothStore.name, isPhotoBooth);
                 editor.commit(); // synchronous save: do it now and return
                 //editor.apply();   // asynchronous save
-                if (needsRestart) {
-                    ((MainActivity) context).restartApp();
-                }
+                // Needs restart to reinitialize the application
+                ((MainActivity) context).restartApp();
             }
 
             //------------------------------------------------------------------------------
@@ -279,7 +279,7 @@ class ParamStore {
                 SharedPreferences.Editor editor = prefs.edit();
                 editor.putBoolean(isAiEditStore.name, isAiEdit);
                 editor.apply(); // asynchronous save
-
+                ((MainActivity) context).updateParameters();
             }
 
             public void readTitle1() {
@@ -315,34 +315,34 @@ class ParamStore {
             }
 
             public void readInst1() {
-                inst1 = prefs.getString(inst1Store.name, inst1Store.defaultValue);
+                instruction1 = prefs.getString(inst1Store.name, inst1Store.defaultValue);
             }
 
             public String getInst1() {
-                return inst1;
+                return instruction1;
             }
 
             public void setInst1(String inst1) {
-                this.inst1 = inst1;
+                this.instruction1 = inst1;
                 // Save to SharedPreferences
                 SharedPreferences.Editor editor = prefs.edit();
-                editor.putString(inst1Store.name, inst1);
+                editor.putString(inst1Store.name, instruction1);
                 editor.apply(); // asynchronous save
             }
 
             public void readInst2() {
-                inst2 = prefs.getString(inst2Store.name, inst2Store.defaultValue);
+                instruction2 = prefs.getString(inst2Store.name, inst2Store.defaultValue);
             }
 
             public String getInst2() {
-                return inst2;
+                return instruction2;
             }
 
             public void setInst2(String inst2) {
-                this.inst2 = inst2;
+                this.instruction2 = inst2;
                 // Save to SharedPreferences
                 SharedPreferences.Editor editor = prefs.edit();
-                editor.putString(inst2Store.name, inst2);
+                editor.putString(inst2Store.name, instruction2);
                 editor.apply(); // asynchronous save
             }
 
@@ -360,8 +360,60 @@ class ParamStore {
                 SharedPreferences.Editor editor = prefs.edit();
                 editor.putInt(countdownTimerStore.name, countdownTimer);
                 editor.apply(); // asynchronous save
+                ((MainActivity) context).updateParameters();
             }
 
+            public void readCountDownEnabled() {
+                countDownEnabled = prefs.getBoolean(countDownEnabledStore.name, Boolean.parseBoolean(countDownEnabledStore.defaultValue));
+            }
+
+            public boolean getCountDownEnabled() {
+                return countDownEnabled;
+            }
+
+            public void setCountDownEnabled(boolean countDownEnabled) {
+                this.countDownEnabled = countDownEnabled;
+                SharedPreferences.Editor editor = prefs.edit();
+                editor.putBoolean(countDownEnabledStore.name, countDownEnabled);
+                editor.apply();
+                ((MainActivity) context).updateParameters();
+            }
+
+            public void readUdpControlEnabled() {
+                udpControlEnabled = prefs.getBoolean(udpControlEnabledStore.name, Boolean.parseBoolean(udpControlEnabledStore.defaultValue));
+            }
+
+            public boolean getUdpControlEnabled() {
+                return udpControlEnabled;
+            }
+
+            public void setUdpControlEnabled(boolean udpControlEnabled) {
+                this.udpControlEnabled = udpControlEnabled;
+                SharedPreferences.Editor editor = prefs.edit();
+                editor.putBoolean(udpControlEnabledStore.name, udpControlEnabled);
+                editor.commit();
+                // Needs restart to reinitialize the application
+                ((MainActivity) context).restartApp();
+
+            }
+
+            public void readUdpTransmit() {
+                udpTransmit = prefs.getBoolean(udpTransmitStore.name, Boolean.parseBoolean(udpTransmitStore.defaultValue));
+            }
+
+            public boolean getUdpTransmit() {
+                return udpTransmit;
+            }
+
+            public void setUdpTransmit(boolean udpTransmit) {
+                this.udpTransmit = udpTransmit;
+                SharedPreferences.Editor editor = prefs.edit();
+                editor.putBoolean(udpTransmitStore.name, udpTransmit);
+                editor.commit();
+                // Needs restart to reinitialize the application
+                ((MainActivity) context).restartApp();
+
+            }
 
             //------------------------------------------------------------------------------
             public int getReceiverPort() {
@@ -395,12 +447,12 @@ class ParamStore {
                     "getIsSoundOn", "setIsSoundOn", boolean.class, "true");
 
             ParamStore isAiEditStore = new ParamStore(
-                    "aiedit", "isAiEdit", "AI Edit",
+                    "ai", "isAiEdit", "AI Edit",
                     "getIsAiEdit", "setIsAiEdit", boolean.class, "false");
 
             ParamStore title1Store = new ParamStore(
                     "t1", "title1", "Title 1",
-                    "getTitle1", "setTitle1", String.class, "");
+                    "getTitle1", "setTitle1", String.class, "3D Photo Booth");
 
             ParamStore title2Store = new ParamStore(
                     "t2", "title2", "Title 2",
@@ -408,7 +460,7 @@ class ParamStore {
 
             ParamStore inst1Store = new ParamStore(
                     "i1", "inst1", "Instruction 1",
-                    "getInst1", "setInst1", String.class, "");
+                    "getInst1", "setInst1", String.class, "Look at Camera");
 
             ParamStore inst2Store = new ParamStore(
                     "i2", "inst2", "Instruction 2",
@@ -422,9 +474,22 @@ class ParamStore {
                     "mr", "isMirror", "Mirror",
                     "getIsMirror", "setIsMirror", boolean.class, "true");
 
+            ParamStore countDownEnabledStore = new ParamStore(
+                    "cd", "countDownEnabled", "Count Down Enabled",
+                    "getCountDownEnabled", "setCountDownEnabled", boolean.class, "false");
+
+            ParamStore udpControlEnabledStore = new ParamStore(
+                    "uc", "udpControlEnabled", "UDP Control Enabled",
+                    "getUdpControlEnabled", "setUdpControlEnabled", boolean.class, "false");
+
+            ParamStore udpTransmitStore = new ParamStore(
+                    "ut", "udpTransmit", "UDP Transmit",
+                    "getUdpTransmit", "setUdpTransmit", boolean.class, "false");
+
             ParamStore[] paramStores = {parallaxOffsetStore, verticalOffsetStore, receiverIpStore,
                     isPhotoBoothStore, isBlankScreenStore, isSoundOnStore, isAiEditStore,
-                    title1Store, title2Store, inst1Store, inst2Store, countdownTimerStore, isMirrorStore};
+                    title1Store, title2Store, inst1Store, inst2Store, countdownTimerStore, isMirrorStore,
+                    countDownEnabledStore, udpControlEnabledStore, udpTransmitStore};
 
             // look up parameter by abbreviation and return its current value
             public String findParam(String abbr, String value, boolean set) {

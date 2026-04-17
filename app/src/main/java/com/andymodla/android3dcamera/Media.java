@@ -72,6 +72,11 @@ public class Media {
     volatile private File reviewLeft;
     volatile private File reviewRight;
 
+    private String reviewSBSpath;
+    private String reviewAnaglyphPath;
+    private String reviewLeftPath;
+    private String reviewRightPath;
+
     private String PHOTO_PREFIX = "IMG_";
     public static String APP_REVIEW_PACKAGE = "jp.suto.stereoroidpro"; // Review with StereoRoidPro app default
     public static String APP_AIEDIT_PACKAGE = "com.andymodla.fluxkontext"; // AI edit with itcamera app default
@@ -83,6 +88,7 @@ public class Media {
     private AIvision aiVision;
     private PApplet pApplet;
     private Camera3D camera;
+    private StorageHelper storageHelper = new StorageHelper();
 
     // Constructor
     public Media(Context context, Parameters parameters, AIvision aiVision) {
@@ -111,6 +117,44 @@ public class Media {
         if (rightBitmap != null) {
             rightBitmap.recycle();
             rightBitmap = null;
+        }
+    }
+
+    public void savePaths() {
+        Log.d(TAG, "savePaths");
+        if (reviewSBS == null || reviewAnaglyph == null || reviewLeft == null || reviewRight == null) return;
+        reviewSBSpath = reviewSBS.getAbsolutePath();
+        reviewAnaglyphPath = reviewAnaglyph.getAbsolutePath();
+        reviewLeftPath = reviewLeft.getAbsolutePath();
+        reviewRightPath = reviewRight.getAbsolutePath();
+        storageHelper.writeStringToPrivateStorage(context, "ReviewFilePaths", "SBS", reviewSBSpath);
+        storageHelper.writeStringToPrivateStorage(context, "ReviewFilePaths", "Anaglyph", reviewAnaglyphPath);
+        storageHelper.writeStringToPrivateStorage(context, "ReviewFilePaths", "Left", reviewLeftPath);
+        storageHelper.writeStringToPrivateStorage(context, "ReviewFilePaths", "Right", reviewRightPath);
+    }
+
+    public void restorePaths() {
+        Log.d(TAG, "restorePaths");
+        try {
+            reviewSBSpath = storageHelper.readStringFromPrivateStorage(context, "ReviewFilePaths", "SBS");
+            if (reviewSBSpath != null) {
+                reviewSBS = new File(reviewSBSpath);
+            }
+            reviewAnaglyphPath = storageHelper.readStringFromPrivateStorage(context, "ReviewFilePaths", "Anaglyph");
+            if (reviewAnaglyphPath != null) {
+                reviewAnaglyph = new File(reviewAnaglyphPath);
+            }
+            reviewLeftPath = storageHelper.readStringFromPrivateStorage(context, "ReviewFilePaths", "Left");
+            if (reviewLeftPath != null) {
+                reviewLeft = new File(reviewLeftPath);
+// TODO loadImage into photo booth currentLeft
+            }
+            reviewRightPath = storageHelper.readStringFromPrivateStorage(context, "ReviewFilePaths", "Right");
+            if (reviewRightPath != null) {
+                reviewRight = new File(reviewRightPath);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error restoring paths", e);
         }
     }
 
@@ -325,12 +369,7 @@ public class Media {
         Toast.makeText(context, "Saved " + timestamp, Toast.LENGTH_LONG).show();
         if (pApplet != null) {
             ((PhotoBooth) pApplet).setReviewImages(leftReview, rightReview);
-            if (((MainActivity) context).reviewPrint) {
-                ((MainActivity) context).setReview();
-            }
-            else {
-                ((MainActivity) context).setAiEditReview();
-            }
+            ((MainActivity) context).setReview();
         }
     }
 

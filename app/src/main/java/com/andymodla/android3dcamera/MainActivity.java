@@ -80,10 +80,7 @@ public class MainActivity extends AppCompatActivity {
     private Parameters parameters;
 
     private boolean aiVisionEnabled = false;
-    private boolean isAiEdit = false;
-    public boolean reviewPrint = true;
-    private boolean isUdpRemoteEnabled = true; // for photo booth demo otherwise false; // default
-    private boolean isUdpTransmitter = true; // for photo booth demo otherwise false;  // default
+    public boolean isAiEdit = false;
     private UdpRemoteControl udpRemoteControl;
 
     // photo booth states definitions
@@ -105,8 +102,6 @@ public class MainActivity extends AppCompatActivity {
 
     public String hostIpAddr = "";
     public int hostPort = 8333;
-    //public String receiverIp = "";  // receiver IP
-    public int receiverPort = 9000; // receiver IP port
     public ImageSender imageSender;  // camera sends last picture URL link to an android 3D display device
 
     Timer countdownTimer = null;
@@ -116,8 +111,8 @@ public class MainActivity extends AppCompatActivity {
     volatile boolean continuousModeFeature = true;
     volatile boolean continuousMode = false;  // continuous capture is active
     public volatile int continuousCounter = 0;
-    public static final int CONTINUOUS_COUNT_DEFAULT = 59; //(one less 60)
-    public static final int CONTINUOUS_COUNT_PHOTO_BOOTH = 3; //(one less 4)
+    public static int CONTINUOUS_COUNT_DEFAULT = 59; //(one less 60)
+    //public static int CONTINUOUS_COUNT_PHOTO_BOOTH = 3; //(one less 4)
     public int CONTINUOUS_COUNT = 0;
 
     // Key codes for Photo Booth Buzzer Box, Beam Pro device: Camera, Volume up and down functionality
@@ -215,6 +210,10 @@ public class MainActivity extends AppCompatActivity {
         isAiEdit = parameters.getIsAiEdit();
         //aiVisionEnabled = parameters.getAiVisionEnabled();
 
+//        private static String title1 = "3D/AI Photo Booth by Andy Modla";
+//        private static String title2 = "Philadelphia Maker Faire - April 19, 2026";
+//        private static String instruction1 = "Look at Camera";
+//        private static String instruction2 = "";
 
         // set parameters for my XReal Beam Pro stereo window adjustment
         // Stereo Image Alignment parameters (same values as StereoPhotoMaker for alignment)
@@ -260,8 +259,8 @@ public class MainActivity extends AppCompatActivity {
         checkPermissions();
         camera = new Camera3D(this, media, parameters, photoBooth);
         media.setCamera(camera);
-        if (isUdpRemoteEnabled) {
-            if (isUdpTransmitter) { // transmitter and receiver mutually exclusive
+        if (parameters.getUdpControlEnabled()) {
+            if (parameters.getUdpTransmit()) { // transmitter and receiver mutually exclusive
                 udpRemoteControl.setUdpTransmitter(camera, hostIpAddr);
             } else {
                 udpRemoteControl.setUdpReceiver(camera, hostIpAddr);
@@ -271,9 +270,12 @@ public class MainActivity extends AppCompatActivity {
         if (photoBooth != null) {
             camera.focusDistanceIndex = 1;  // photo booth focus distance
             // set photo booth countdown
-            CONTINUOUS_COUNT = CONTINUOUS_COUNT_PHOTO_BOOTH;
-            countdownDigit = -1;
-            countdownStart = CONTINUOUS_COUNT;
+             countdownDigit = -1;
+            if (parameters.getCountDownEnabled()) {
+                countdownStart = parameters.getCountdownTimer();
+            } else {
+                countdownStart = 0;
+            }
         }
 
         // countdownTextView will be null for photo booth
@@ -446,7 +448,7 @@ public class MainActivity extends AppCompatActivity {
             Log.d(TAG, "Middle button pressed");
 
             if (isPhotoBooth) {
-                if (reviewPrint) {
+                if (isAiEdit) {
                     processPrintStateToggle();
                     //media.printImageType();
                 } else {
@@ -530,8 +532,8 @@ public class MainActivity extends AppCompatActivity {
     private void processStateToggle() {
         // toggle through photo types for display
         if (state == LIVE_VIEW_STATE) {
-            setAiEditReview();
-        } else if (state == REVIEW_AI_EDIT_STATE) {
+            setReview();
+        } else if (state == REVIEW_PHOTO_STATE) {
             setLiveView();
         }
     }
@@ -593,7 +595,7 @@ public class MainActivity extends AppCompatActivity {
             if (consumed) return true;
             switch (keyCode) {
                 case KeyEvent.KEYCODE_VOLUME_UP:
-                    if (reviewPrint) {
+                    if (isAiEdit) {
                         processPrintStateToggle();
                     } else {
                         processStateToggle();
@@ -615,7 +617,7 @@ public class MainActivity extends AppCompatActivity {
             case KeyEvent.KEYCODE_VOLUME_UP:
             case KeyEvent.KEYCODE_3D_MODE: // camera key - first turn off auto launch of native camera app
             case SHUTTER_KEY:
-            //case SHUTTER_KB_KEY:
+                //case SHUTTER_KB_KEY:
 //                if (state != LIVE_VIEW_STATE) { // ignore shutter in review state
 //                    return true;
 //                }
@@ -628,7 +630,7 @@ public class MainActivity extends AppCompatActivity {
 
             case KeyEvent.KEYCODE_VOLUME_DOWN:
             case REVIEW_KEY:
-            //case REVIEW_KB_KEY:
+                //case REVIEW_KB_KEY:
                 media.reviewPhotos(displayMode);
                 return true;
 
@@ -646,7 +648,7 @@ public class MainActivity extends AppCompatActivity {
 
             case KeyEvent.KEYCODE_BACK:
             case KeyEvent.KEYCODE_ESCAPE:
-            //case BACK_KB_KEY:
+                //case BACK_KB_KEY:
             case KeyEvent.KEYCODE_BUTTON_B:
                 if (continuousMode) {
                     setContinuousMode(false);
@@ -672,7 +674,7 @@ public class MainActivity extends AppCompatActivity {
                 return true;
 
             case SHARE_KEY:
-            //case SHARE_KB_KEY:
+                //case SHARE_KB_KEY:
                 if (isPhotoBooth) {
                     // ignore share key in photo booth
                     return true;
@@ -708,20 +710,20 @@ public class MainActivity extends AppCompatActivity {
 //                openCamera();
                 return true;
             case ANAGLYPH_KEY:
-            //case ANAGLYPH_KB_KEY:
+                //case ANAGLYPH_KB_KEY:
                 if (isPhotoBooth) {
                     displayMode = DisplayMode.ANAGLYPH;
                     photoBooth.setDisplayMode(displayMode);
                 }
                 return true;
             case MODE_KEY:
-            //case MODE_KB_KEY:
+                //case MODE_KB_KEY:
                 Toast.makeText(this, "Auto Exposure - Manual, Shutter Priority", Toast.LENGTH_SHORT).show();
 //                closeCamera();
 //                openCamera();
                 return true;
             case SHUTTER_SPEED_KEY:
-            //case SHUTTER_SPEED_KB_KEY:
+                //case SHUTTER_SPEED_KB_KEY:
                 if (isPhotoBooth) {
                     //photoBooth.keyPressedReview(keyCode, ch);
                     return true;
@@ -731,7 +733,7 @@ public class MainActivity extends AppCompatActivity {
 //                openCamera();
                 return true;
             case TIMER_KEY:
-            //case TIMER_KB_KEY:
+                //case TIMER_KB_KEY:
                 if (state != LIVE_VIEW_STATE) {
                     if (isPhotoBooth) {
                         //photoBooth.keyPressedReview(keyCode, ch);
@@ -742,7 +744,10 @@ public class MainActivity extends AppCompatActivity {
                         CONTINUOUS_COUNT = 0;
                     } else {
                         if (isPhotoBooth) {
-                            CONTINUOUS_COUNT = CONTINUOUS_COUNT_PHOTO_BOOTH;
+                            if (parameters.getCountDownEnabled())
+                                CONTINUOUS_COUNT = parameters.getCountdownTimer(); //CONTINUOUS_COUNT_PHOTO_BOOTH;
+                            else
+                                CONTINUOUS_COUNT = 0;
                         } else {
                             CONTINUOUS_COUNT = CONTINUOUS_COUNT_DEFAULT;
                         }
@@ -754,13 +759,12 @@ public class MainActivity extends AppCompatActivity {
                 return true;
 
             case ISO_KEY:
-            //case ISO_KB_KEY:
+                //case ISO_KB_KEY:
                 Toast.makeText(this, "ISO - not implemented", Toast.LENGTH_SHORT).show();
 //                closeCamera();
 //                openCamera();
                 return true;
             case DISP_KEY:
-            //case DISP_KB_KEY:
             case KeyEvent.KEYCODE_A:
                 displayMode = displayMode.next();
                 if (isPhotoBooth) {
@@ -779,7 +783,7 @@ public class MainActivity extends AppCompatActivity {
 //                openCamera();
                 return true;
             case MENU_KEY:
-            //case MENU_KB_KEY:
+                //case MENU_KB_KEY:
                 Toast.makeText(this, "MENU - not implemented", Toast.LENGTH_SHORT).show();
 //                closeCamera();
 //                openCamera();
@@ -791,7 +795,7 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(this, "Mirror=" + Boolean.toString(amirror), Toast.LENGTH_SHORT).show();
                 return true;
             case PRINT_KEY:
-            //case PRINT_KB_KEY:
+                //case PRINT_KB_KEY:
                 media.printImageType();
                 return true;
 //            case VIDEO_RECORD_KEY:
@@ -848,6 +852,11 @@ public class MainActivity extends AppCompatActivity {
     public void capturePhoto() {
         if (countdownTimer != null) return;
         if ((countdownDigit < 0)) {
+            if (parameters.getCountDownEnabled()) {
+                countdownStart = parameters.getCountdownTimer();;
+            } else {
+                countdownStart = 0;
+            }
             startCountdownSequence(countdownStart);
         } else {
             if (countdownTextView != null) countdownTextView.setVisibility(View.GONE);
@@ -865,7 +874,7 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(this, "Start Continuous Mode ", Toast.LENGTH_SHORT).show();
                 if ((countdownDigit < 0)) {
                     startCountdownSequence(countdownStart);  // calls createCameraCaptureSession() after count down finished
-                    continuousCounter = CONTINUOUS_COUNT_PHOTO_BOOTH;
+                    continuousCounter = parameters.getCountdownTimer(); //CONTINUOUS_COUNT_PHOTO_BOOTH;
                 } else {
                     continuousCounter = CONTINUOUS_COUNT;
                     camera.createCameraCaptureSession();
@@ -942,7 +951,7 @@ public class MainActivity extends AppCompatActivity {
                                         countdownTextView.setVisibility(View.GONE);
                                     }
                                     remoteFocus();
-                               } else {
+                                } else {
                                     if (isPhotoBooth) {
                                         photoBooth.setCountdown(Integer.toString(countdownDigit));
                                     } else {
@@ -964,8 +973,8 @@ public class MainActivity extends AppCompatActivity {
 
     // send remote control shutter command on local network
     public void remoteShutter() {
-        if (isUdpRemoteEnabled) {
-            if (isUdpTransmitter) {
+        if (parameters.getUdpControlEnabled()) {
+            if (parameters.getUdpTransmit()) {
                 udpRemoteControl.sendShutterPushRelease();
             }
         }
@@ -973,8 +982,8 @@ public class MainActivity extends AppCompatActivity {
 
     // send remote control focus command on local network
     public void remoteFocus() {
-        if (isUdpRemoteEnabled) {
-            if (isUdpTransmitter) {
+        if (parameters.getUdpControlEnabled()) {
+            if (parameters.getUdpTransmit()) {
                 udpRemoteControl.sendFocusReleasePush();
             }
         }
@@ -1063,7 +1072,15 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    public void updateParameters() {
+        isAiEdit = parameters.getIsAiEdit();
+        isPhotoBooth = parameters.getIsPhotoBooth();
+        //parameters.getCountDownEnabled();
+        CONTINUOUS_COUNT = parameters.getCountdownTimer();
+        //parameters.getUdpControlEnabled();
+        //parameters.getUdpTransmit();
 
+    }
     /*==================================================================
      * Permissions
      ===================================================================*/

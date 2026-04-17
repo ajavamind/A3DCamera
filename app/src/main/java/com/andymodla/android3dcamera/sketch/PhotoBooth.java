@@ -35,11 +35,6 @@ public class PhotoBooth extends PApplet {
     private static boolean DEBUG = true;
     private static boolean testMode = false;
 
-    private static String title1 = "3D/AI Photo Booth by Andy Modla";
-    private static String title2 = "Philadelphia Maker Faire - April 19, 2026";
-    private static String instruction1 = "Look at Camera";
-    private static String instruction2 = "";
-
     int black = color(0);
     int white = color(255);
     int yellow = color(255, 255, 128);
@@ -266,7 +261,7 @@ public class PhotoBooth extends PApplet {
 
         if (loadPrevious) {
             loadPrevious = false;
-            thread("reviewSetup");
+            thread("restore");
         }
         background(black);
 
@@ -329,10 +324,11 @@ public class PhotoBooth extends PApplet {
 
         if (mainActivity.state == MainActivity.LIVE_VIEW_STATE) {
             textAlign(CENTER);
-            text(instruction1, width / 2, 50);
+            text(parameters.getInst1(), width / 2, 50);
+            text(parameters.getInst2(), width / 2, 100);
             if (displayMode == DisplayMode.SBS) {
-                text(title1, width / 2, height - 96);
-                text(title2, width / 2, height - 48);
+                text(parameters.getTitle1(), width / 2, height - 96);
+                text(parameters.getTitle2(), width / 2, height - 48);
             }
             if (displayMode == DisplayMode.ANAGLYPH) {
                 text("P=" + (parallax) + "   ", width - 50, height - 96);
@@ -639,7 +635,7 @@ public class PhotoBooth extends PApplet {
         }
     }
 
-    // called by MainActivty onKeyUp to process key events for photo booth exclusively
+    // called by MainActivty onKeyUp to process key events for the photo booth exclusively
     public boolean processKeyCode(int lastKeyCode, int lastKey) {
         switch (lastKeyCode) {
             case KeyEvent.KEYCODE_A:
@@ -768,6 +764,16 @@ public class PhotoBooth extends PApplet {
 
     // Review photo for print
     volatile PImage currentSBS;
+
+    public void exit() {
+        if (DEBUG) println("exit PhotoBooth .........");
+        media.savePaths();
+    }
+
+    public void restore() {
+        if (DEBUG) println("restore .........");
+        media.restorePaths();
+    }
 
     // reviewSetup is run as a thread using Processing's thread() function
     public void reviewSetup() {
@@ -922,9 +928,9 @@ public class PhotoBooth extends PApplet {
         String leftPath = leftImageFiles.get(currentIndex);
         String rightPath = rightImageFiles.get(currentIndex);
 
-        //if (DEBUG) PApplet.println("Loading pair " + (currentIndex + 1) + "/" + leftImageFiles.size());
-        //if (DEBUG) PApplet.println("  Left: " + leftPath);
-        //if (DEBUG) PApplet.println("  Right: " + rightPath);
+        if (DEBUG) PApplet.println("Loading pair " + (currentIndex) + "/" + leftImageFiles.size());
+        if (DEBUG) PApplet.println("  Left: " + leftPath);
+        if (DEBUG) PApplet.println("  Right: " + rightPath);
 
         // Load left image
         currentLeft = loadImage(leftPath);
