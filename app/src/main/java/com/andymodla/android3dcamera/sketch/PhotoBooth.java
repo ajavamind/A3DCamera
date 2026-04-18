@@ -97,7 +97,7 @@ public class PhotoBooth extends PApplet {
             "Toggle Exposure Metering: T"
     };
 
-    private boolean loadPrevious = true;
+    private boolean loadPrevious = false;  // TODO implement load previous image before last application close
     private int captureFrameCount = 0;
     String countdown = "";  // default ignore null string
 
@@ -765,15 +765,16 @@ public class PhotoBooth extends PApplet {
     // Review photo for print
     volatile PImage currentSBS;
 
-    public void exit() {
-        if (DEBUG) println("exit PhotoBooth .........");
-        media.savePaths();
-    }
+    // TODO exit and restore take care of last image on application start up
+//    public void exit() {
+//        if (DEBUG) println("exit PhotoBooth .........");
+//        media.savePaths();
+//    }
 
-    public void restore() {
-        if (DEBUG) println("restore .........");
-        media.restorePaths();
-    }
+//    public void restore() {
+//        if (DEBUG) println("restore .........");
+//        media.restorePaths();
+//    }
 
     // reviewSetup is run as a thread using Processing's thread() function
     public void reviewSetup() {
