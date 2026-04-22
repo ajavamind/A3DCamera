@@ -89,6 +89,7 @@ public class AIvision {
                 .build();
     }
 
+    // not used for reference
     public void getInformationFromSurfaceView(SurfaceView surfaceView, String prompt) {
         if (!ready) return;
         ready = false;

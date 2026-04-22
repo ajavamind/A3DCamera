@@ -80,7 +80,7 @@ public class Media {
     private String PHOTO_PREFIX = "IMG_";
     public static String APP_REVIEW_PACKAGE = "jp.suto.stereoroidpro"; // Review with StereoRoidPro app default
     public static String APP_AIEDIT_PACKAGE = "com.andymodla.fluxkontext"; // AI edit with itcamera app default
-    public static String APP_PHOTO_REVIEW_PACKAGE = "com.google.android.apps.photosgo"; // Review with Gallery
+    public static String APP_PHOTO_REVIEW_PACKAGE = "com.google.android.apps.photosgo"; // Review with Google Gallery on XReal Beam Pro
     private String APP_CANON_PRINT_SERVICE_PACKAGE = "jp.co.canon.android.printservice.plugin";
     private String APP_LEIAPLAYER_REVIEW_PACKAGE = "com.leialoft.leiaplayer"; // Review with Leia Player app default
 
@@ -89,6 +89,7 @@ public class Media {
     private PApplet pApplet;
     private Camera3D camera;
     private StorageHelper storageHelper = new StorageHelper();
+    private ImageResizer imageResizer = new ImageResizer();
 
     // Constructor
     public Media(Context context, Parameters parameters, AIvision aiVision) {
@@ -133,6 +134,7 @@ public class Media {
         storageHelper.writeStringToPrivateStorage(context, "ReviewFilePaths", "Right", reviewRightPath);
     }
 
+    // not used work in progress,
     public void restorePaths() {
         Log.d(TAG, "restorePaths");
         try {
@@ -340,11 +342,13 @@ public class Media {
             rightReview.updatePixels();
         }
 
+        // AI Vision requires multimodal LLM server running locally on network
         if (aiVision != null) {
             String response = aiVision.getInformationFromImage(leftBitmap, aiVision.getPrompt());
             Log.d(TAG, "AI Vision response: " + response);
             Toast.makeText(context, "AI Vision response: " + response, Toast.LENGTH_SHORT).show();
         }
+
         // Save Anaglyph image and recycle Anaglyph bitmap
         if (saveAnaglyph) {
             reviewAnaglyph = createAndSaveAnaglyph(PHOTO_PREFIX + timestamp, leftBitmap, rightBitmap);
@@ -380,13 +384,13 @@ public class Media {
         }
         DisplayMode displayMode = ((MainActivity) context).getDisplayMode();
         if (displayMode == DisplayMode.SBS) {
-            sharePrintImage(reviewSBS);
+            sharePrintImage(reviewSBS, true);
         } else if (displayMode == DisplayMode.ANAGLYPH) {
-            sharePrintImage(reviewAnaglyph);
+            sharePrintImage(reviewAnaglyph, false);
         } else if (displayMode == DisplayMode.LEFT){
-            sharePrintImage(reviewLeft);
+            sharePrintImage(reviewLeft, false);
         } else {
-            sharePrintImage(reviewRight);
+            sharePrintImage(reviewRight, false);
         }
 
     }
@@ -765,7 +769,19 @@ public class Media {
         }
     }
 
-    public void sharePrintImage(File imageFile) {
+    public void sharePrintImage(File imageFile, boolean make6x4AR) {
+        if (imageFile == null) return;
+        Log.d(TAG, "sharePrintImage " + imageFile.getAbsolutePath()+ " make6x4AR=" + make6x4AR);
+
+        if (make6x4AR) {
+            String filename = imageFile.getAbsolutePath();
+            File file = imageResizer.resizeFile(filename);
+            if (file != null) {
+                imageFile = file;
+                Log.d(TAG, "6x4 image at " + file.getAbsolutePath());
+            }
+        }
+
         Uri contentUri = FileProvider.getUriForFile(context, context.getPackageName() + ".fileprovider", imageFile);
         ContentResolver resolver = context.getContentResolver();
         ContentValues contentValues = new ContentValues();

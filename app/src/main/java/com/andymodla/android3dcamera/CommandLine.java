@@ -161,7 +161,7 @@ public class CommandLine {
     }
 
     private String parseAndExecute(String cmdContent) {
-        int equalsPos = cmdContent.indexOf(" ");
+        int equalsPos = cmdContent.indexOf("=");
 
         if (equalsPos == -1) {
             // GET operation - retrieve variable value

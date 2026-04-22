@@ -11,6 +11,7 @@ import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.InputDevice;
@@ -332,6 +333,41 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        ///  for debug
+        decorView.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                // 3. Get the coordinates
+                float x = event.getX();
+                float y = event.getY();
+                Log.d(TAG, "onTouch -> X: " + x + " | Y: " + y);
+                // 4. Determine the action (Down, Move, Up)
+                int action = event.getAction();
+
+                switch (action) {
+                    case MotionEvent.ACTION_DOWN:
+                        // Log when the finger/mouse first touches the screen
+                        Log.d(TAG, "ACTION_DOWN detected at -> X: " + x + " | Y: " + y);
+                        break;
+
+                    case MotionEvent.ACTION_MOVE:
+                        // Log when the finger/mouse is sliding/moving
+                        // Note: This will spam your Logcat very fast!
+                        Log.d(TAG, "ACTION_MOVE detected at -> X: " + x + " | Y: " + y);
+                        break;
+
+                    case MotionEvent.ACTION_UP:
+                        // Log when the finger/mouse is lifted
+                        Log.d(TAG, "ACTION_UP detected at -> X: " + x + " | Y: " + y);
+                        break;
+                }
+
+                // Return true to indicate we have handled the event.
+                // Return false if you want the event to pass through to other views.
+                return true;
+            }
+        });
+
     }
 
     @Override
@@ -433,7 +469,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void handleButtonPress(int buttonState) {
         if ((buttonState & MotionEvent.BUTTON_PRIMARY) != 0) {
-            // Left mouse button pressed
+            // Left mouse button pressed (Large Shutter button on Buzzer Box)
             Log.d(TAG, "Left button pressed");
             if (isPhotoBooth) {
                 if (!camera.captureInProgress) {
@@ -443,14 +479,13 @@ public class MainActivity extends AppCompatActivity {
                 capturePhoto();
             }
         } else if ((buttonState & MotionEvent.BUTTON_TERTIARY) != 0) {
-            // Middle mouse button pressed
+            // Middle mouse button pressed (Review button on Buzzer Box)
             // handles toggle state changes in photo booth sketch
             Log.d(TAG, "Middle button pressed");
 
             if (isPhotoBooth) {
                 if (isAiEdit) {
                     processPrintStateToggle();
-                    //media.printImageType();
                 } else {
                     processStateToggle();
                 }
@@ -458,15 +493,15 @@ public class MainActivity extends AppCompatActivity {
                 media.reviewPhotos(displayMode);
             }
         } else if ((buttonState & MotionEvent.BUTTON_SECONDARY) != 0) {
-            // Right mouse button pressed
+            // Right mouse button pressed (SBS/Anaglyph/L/R button on Buzzer Box)
             Log.d(TAG, "Right button pressed");
             if (isPhotoBooth) {
                 processDisplayToggle();
-            } else {
+            } else { // Not photo booth - send to printer immediately
                 media.printImageType();
             }
         }
-        // Other buttons like BUTTON_BACK, BUTTON_FORWARD can also be checked here
+        // Other mouse buttons like BUTTON_BACK, BUTTON_FORWARD can also be checked here
     }
 
     private void handleButtonRelease(int buttonState) {
@@ -487,6 +522,29 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
+
+    public void simulateClick(View targetView, float x, float y) {
+        Log.d(TAG, "simulateClick x=" + x + " y=" + y);
+        long downTime = SystemClock.uptimeMillis();
+        long eventTime = SystemClock.uptimeMillis();
+
+        // 1. Create the DOWN event
+        MotionEvent downEvent = MotionEvent.obtain(
+                downTime, eventTime, MotionEvent.ACTION_DOWN, x, y, 0);
+
+        // 2. Create the UP event
+        MotionEvent upEvent = MotionEvent.obtain(
+                downTime, eventTime + 100, MotionEvent.ACTION_UP, x, y, 0);
+
+        // 3. Send them to the view
+        targetView.dispatchTouchEvent(downEvent);
+        targetView.dispatchTouchEvent(upEvent);
+
+        // Clean up
+        downEvent.recycle();
+        upEvent.recycle();
+    }
+
 
     private void processShutterKey() {
         if (photoBooth.isLiveView()) {
@@ -798,6 +856,13 @@ public class MainActivity extends AppCompatActivity {
                 //case PRINT_KB_KEY:
                 media.printImageType();
                 return true;
+            case KeyEvent.KEYCODE_D:
+                if (isPhotoBooth) {
+                    simulateClick(decorView,  1500, 540);
+                    return true;
+                }
+                return true;
+
 //            case VIDEO_RECORD_KEY:
 //            case VIDEO_RECORD_KB_KEY:
 //                Toast.makeText(this, "Video Record - not implemented", Toast.LENGTH_SHORT).show();
