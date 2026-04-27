@@ -248,7 +248,7 @@ public class MainActivity extends AppCompatActivity {
             photoBoothFragment = new PFragment(photoBooth);
             photoBoothFragment.setView(frame, this);
             media.setupApplet(photoBooth);
-            imageSender = new ImageSender(this);
+
             photoBooth.setMainActivity(this);
             photoBooth.setMirror(parameters.getIsMirror());
             photoBooth.setParallax(parameters.getParallaxOffset());
@@ -267,7 +267,7 @@ public class MainActivity extends AppCompatActivity {
                 udpRemoteControl.setUdpReceiver(camera, hostIpAddr);
             }
         }
-
+        imageSender = new ImageSender(this, parameters, udpRemoteControl);
         if (photoBooth != null) {
             camera.focusDistanceIndex = 1;  // photo booth focus distance
             // set photo booth countdown
@@ -385,6 +385,9 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         Log.d(TAG, "onPause()");
+        if (isFinishing()) {
+            Log.d(TAG, "isFinishing");
+        }
         camera.closeCamera();
         super.onPause();
     }
@@ -468,7 +471,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void handleButtonPress(int buttonState) {
-        if ((buttonState & MotionEvent.BUTTON_PRIMARY) != 0) {
+        if ((buttonState & MotionEvent.BUTTON_PRIMARY) != 0) { // left mouse button
             // Left mouse button pressed (Large Shutter button on Buzzer Box)
             Log.d(TAG, "Left button pressed");
             if (isPhotoBooth) {
@@ -478,10 +481,18 @@ public class MainActivity extends AppCompatActivity {
             } else {
                 capturePhoto();
             }
-        } else if ((buttonState & MotionEvent.BUTTON_TERTIARY) != 0) {
-            // Middle mouse button pressed (Review button on Buzzer Box)
-            // handles toggle state changes in photo booth sketch
+        } else if ((buttonState & MotionEvent.BUTTON_TERTIARY) != 0) { // middle mouse button
+            // mouse button pressed (SBS/Anaglyph/L/R button on Buzzer Box)
             Log.d(TAG, "Middle button pressed");
+            if (isPhotoBooth) {
+                processDisplayToggle();
+            } else { // Not photo booth - send to printer immediately
+                media.printImageType();
+            }
+        } else if ((buttonState & MotionEvent.BUTTON_SECONDARY) != 0) { // right mouse button
+            // mouse button pressed (Review button on Buzzer Box)
+            // handles toggle state changes in photo booth sketch
+            Log.d(TAG, "Right button pressed");
 
             if (isPhotoBooth) {
                 if (isAiEdit) {
@@ -491,14 +502,6 @@ public class MainActivity extends AppCompatActivity {
                 }
             } else {
                 media.reviewPhotos(displayMode);
-            }
-        } else if ((buttonState & MotionEvent.BUTTON_SECONDARY) != 0) {
-            // Right mouse button pressed (SBS/Anaglyph/L/R button on Buzzer Box)
-            Log.d(TAG, "Right button pressed");
-            if (isPhotoBooth) {
-                processDisplayToggle();
-            } else { // Not photo booth - send to printer immediately
-                media.printImageType();
             }
         }
         // Other mouse buttons like BUTTON_BACK, BUTTON_FORWARD can also be checked here

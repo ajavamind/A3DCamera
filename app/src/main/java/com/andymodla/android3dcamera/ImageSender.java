@@ -18,8 +18,16 @@ public class ImageSender {
     //private NsdManager.DiscoveryListener discoveryListener;
     private String targetImageUrl;
     private OkHttpClient httpClient = new OkHttpClient();
-    public ImageSender(Context context) {
+    private Parameters parameters;
+    private Context context;
+    private UdpRemoteControl udpRemoteControl;
+
+    // constructor
+    public ImageSender(Context context, Parameters parameters, UdpRemoteControl udpRemoteControl) {
     //nsdManager = (NsdManager) context.getSystemService(Context.NSD_SERVICE);
+        this.parameters = parameters;
+        this.context = context;
+        this.udpRemoteControl = udpRemoteControl;
     }
 
     public void sendImageUrl(String imageUrl, String ip, int port) {
@@ -29,7 +37,11 @@ public class ImageSender {
         //String ip = "192.168.8.208";   // 3D tablet Leia 1
         //int port = 9000;
         try {
-            sendUrlToReceiver(ip, port, targetImageUrl);
+            if (parameters.getUdpTransmit()){
+                sendUrlBroadcast(targetImageUrl);
+            } else {
+                sendUrlToReceiver(ip, port, targetImageUrl);
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -67,9 +79,11 @@ public class ImageSender {
 //    }
 
     private void sendUrlToReceiver(String ip, int port, String urlToSend) {
-        // Construct the URL for our NanoHTTPD server
+        // Construct the URL for our HTTPD server
         String fullUrl = "http://" + ip + ":" + port + "?imageUrl=" + urlToSend;
         // Creates a new client sharing the same connection pool but with custom timeouts
+        Log.d(TAG, "sendUrlToReceiver: " + fullUrl);
+        //OkHttpClient extendedClient = httpClient.newBuilder")
         OkHttpClient extendedClient = httpClient.newBuilder()
                 .readTimeout(60, TimeUnit.SECONDS)
                 .connectTimeout(60, TimeUnit.SECONDS)
@@ -90,4 +104,22 @@ public class ImageSender {
             }
         }).start();
     }
+
+    private void sendUrlBroadcast( String urlToSend) {
+        // Construct the URL for our UDP transmitter
+
+        Log.d(TAG, "sendUrlBroadcast: " + urlToSend);
+        new Thread(() -> {
+            try {
+                udpRemoteControl.sendBroadcast(urlToSend);
+            } catch (Exception e) {
+                //e.printStackTrace();
+                Log.d(TAG, "Exception in sendUrlToReceiver: " + e.getMessage());
+            } finally {
+                // Stop discovery to save battery once sent
+                //nsdManager.stopServiceDiscovery(discoveryListener);
+            }
+        }).start();
+    }
 }
+
