@@ -146,7 +146,7 @@ Connect a Bluetooth Mouse to control the camera app with the mouse buttons. A mo
 
 ###### Photo Booth Camera Mode (Buzzer Box)
 
-![Buzzer Box Photo Booth Controller](images/BuzzerBox.png)
+![Buzzer Box Photo Booth Controller](images/photoboothbuzzerbox2.jpg)
 
 The Buzzer box is a repurposed Bluetooth wireless mouse. The box has 3 contact switches. 
 The switches connect to buttons in the wireless mouse.
