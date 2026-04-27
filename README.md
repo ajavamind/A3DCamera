@@ -1,7 +1,11 @@
 # 3D/AI Camera Photo Booth
-**This repository is the Open source documentation for a 3D/AI Camera Photo Booth demonstration project I will be presenting at the 2026 Philadelphia Maker Faire, April 19, 2026.**
+**This repository is the open source documentation for a 3D Camera Photo Booth demonstration project I presented at the 2026 Philadelphia Maker Faire, April 19, 2026.**
 
-**The Photo Booth is a section of the A3DCamera code. See documentation at [PHOTO BOOTH](docs/PhotoBooth.md).**
+**The Photo Booth is a sub-section of the A3DCamera code and is turned on with Bluetooth keyboard configuration commands. 
+The Photo Booth mode can also be used as a regular camera app when the countdown timer is not configured. 
+It features live view Anaglyph display and 2D left and right eye viewing modes.**
+
+**See documentation at [PHOTO BOOTH](docs/PhotoBooth.md).**
 
 **Work in Progress**
 
@@ -16,18 +20,18 @@ It's a software playground for experimenting. See Experiments section below.
 
 ## Design Goals
 ### Use Cases
-The intended uses for the app are situations where the camera is not in your hands and the screen cannot or should not be touched. 
+The intended uses for the app are situations where the camera is not in your hands and the screen cannot or should not be touched or when the app display is not a touch screen. 
 Specific uses I would like to have with a 3D camera app are:
 
 * 3D Photo Booth
-* 3D live view, photo capture, or photo viewing using any stereoscope
-* Live Vidw Anaglyph 3D demonstrations of the stereo window.
+* 3D live view, photo capture, or photo viewing using any stereoscope. This worked with London Stereoscopic Company OWL stereoscope using adapters to hold the BPO in place.
+* Live View Anaglyph 3D for finding the stereo window.
 * Remote control of the camera using Bluetooth or a local WiFi network
 * Simultaneous multiple 3D cameras remote control
 * Sharing photos via email, for direct printing SBS or Anaglyph, or for review and alignment using 3D apps like [3DSteroidPro](https://play.google.com/store/apps/details?id=jp.suto.stereoroidpro&hl=en_US) and for sharing with custom 3D apps and networked 3D tablets and devices.
 * The default display mode shows the stereo image without GUI controls or other display information to allow free-viewing and stereoscopes or Anaglyph glasses. The display of the 3D parallel L/R image should be centered on the display and no larger than 130 cm wide for a stereoscope or for free-viewing the image to minimize eye strain. 
 * Turn off the display, while allowing the camera to continue functioning with remote control. Blanking the screen is for photographing wild life without disturing them. 
-Blanking the screen may help conserve battery power with long interval timer captures.
+Blanking the screen may help conserve battery power with long interval timer captures. (Only implemented with Photo Booth mode)
 
 ### Camera App Design
 For the above uses cases the app requires remote key control of its functions and not with the touch screen.
@@ -72,7 +76,7 @@ Anaglyph 3D images are stored as "_ana" suffix filename jpg files.
 * The A3DCamera/LR subfolder stores the single left and right photos.
 
 Left and right images contain limited EXIF capture information: for example- IMG20250904_r.jpg f2.2, 1/3 second, 2.16mm, ISO413
-Each camera photo captured is 4080 x 3072 pixels, the full maximum sensor size of each left and right camera. Note the aspect ratio is not 4:3.
+Each camera photo captured is 4080 x 3072 pixels, the full maximum sensor size of each left and right camera. Note the aspect ratio is not exactly 4:3.
 
 ### Display
 The app display is a centered viewfinder sized to permit use of stereoscopic "free-viewing". This is a learned eye relaxing technique you can use to help see your subject in 3D with parallal SBS left and right eye images. 
@@ -104,7 +108,7 @@ A wired USB-C connected Android keyboard can control the camera with keys simila
 
 #### Bluetooth Remote Control
 Three Bluetooth devices can be connected to the Beam Pro tablet simultaneously: Game controller, keyboard, and a mouse.
-A disadvantage of the Game controller is that it disconnect times out after about 15 minutes, whereas the mouse does not disconnect.
+A disadvantage of the Game controller is that it disconnect/unpairs after about 15 minutes, whereas the mouse does not unpair.
 
 ##### Bluetooth Game Controller Remote Control
 Here is the current key mapping for a 8BitDo Bluetooth game controller in Android mode. The controller must be paired with the Beam Pro. 
@@ -140,20 +144,24 @@ Incomplete work in progress -
 Connect a Bluetooth Mouse to control the camera app with the mouse buttons. A mouse can be rewired in a buzzer style box as a Photo Booth controller.
 
 ###### Normal Camera Mode
+This mode is the default after a clean install (no app of the XBP)
+
 * LEFT Button - Capture a photo (shutter button). In photo review mode this button sends a photo to the printer
-* MIDDLE Button - Review the last photo using a default app like 3DSteroid.
-* RIGHT Button - Share the photo with a selected app.
+* MIDDLE Button - Share the photo with a selected app.
+* RIGHT Button - Review the last photo using a default app like 3DSteroid.
+
 
 ###### Photo Booth Camera Mode (Buzzer Box)
+This mode is configured with a slash command.
 
 ![Buzzer Box Photo Booth Controller](images/photoboothbuzzerbox2.jpg)
 
 The Buzzer box is a repurposed Bluetooth wireless mouse. The box has 3 contact switches. 
 The switches connect to buttons in the wireless mouse.
 
-* LEFT Button: Start the countdown sequence to capture a photo. In photo review mode this button sends the review photo to the printer
-* MIDDLE Button: Toggle between live view and review of last captured photo in either SBS and Anaglyph display modes.
-* RIGHT Button: Toggle between SBS or Anaglyph live view display of the subject. The Anaglyph view needs red-cyan glasses for viewing stereoscopically. This Anaglyph mode is very helpful for giving the subject a reference about where to position themselves in relation to the stereo window so they can pop out the window.
+* LEFT Button: Start the countdown sequence to capture a photo. In photo review mode this button sends the review photo to the printer. In experimental Photo Booth AI Edit configuration it sends review photo to an AI image editor app.  A custom AI Edit mode is experimental and is not open source. 
+* MIDDLE Button: Toggle between SBS or Anaglyph display of the subject. The Anaglyph view needs red-cyan glasses for viewing stereoscopically. This Anaglyph mode is very helpful for giving the subject a reference about where to position themselves in relation to the stereo window so they can pop out the window. The photo booth configuration toggles SBS, Anaglyph, Left, and Right eye photos.
+* RIGHT Button: Toggle between live view and review of last captured photo in display mode set by the middle button.
    
 ### Limitations
 Captured images are on par in quality with the native camera app. However, with this camera images may still need adjustments for vertical alignment, horizontal perspective, contrast, color saturation, and sharpening.
@@ -166,7 +174,7 @@ There are no camera leveling, tilt, or subject distance suggestions from the app
 1. I discovered my camera lens vertical alignment is only off by 1 pixels so that live free-viewing is possible without eye strain for me. But the camera can not be too close to the subject.
 2. Distance to the subject should be about 1.5 meter to match the tablet's 50mm camera lens interaxial separation distance.
 3. Synchronization of the camera lens shutters is not known. However the shutter speed is automatically set by the camera so motion blur is possible.
-4. I use a Bluetooth remote to take photos instead of the button keys on the camera. This requires pairing with a remote controller or keyboard.
+4. I use a Bluetooth remote to take photos instead of the button keys on the camera. This requires pairing with a remote controller,  keyboard or mouse.
 5. The 8BitDo Bluetooth game controller is not useful for a photo booth because it times out the connection if it is not used often enough. Much better is the Bluetooth wireless mouse, it has no timeout issues.
 
 ## App Download Link
