@@ -987,6 +987,48 @@ public class PhotoBooth extends PApplet {
         }
     }
 
+    public File make6x4ImageFile(String filename) {
+        return null;
+    }
+
+    /**
+     * resize image to 6x4 aspect ratio pixels
+     * Handles all input aspect ratios without distortion using letterbox/pillarbox
+     * PImage input image
+     * returns resized image padded to 1620x1080 with white borders
+     */
+    public PImage resizeToPrint6x4(PImage img) {
+        if (DEBUG) println("resizeToPrint6x4() convert image to 6x4 aspect ratio img.width="+img.width+" img.height="+img.height);
+        float printWidth = 1800;//1620;//1680;
+        float printHeight = 1200;//1080;//1120;
+        PImage resizeImage = createImage((int)printWidth, (int)printHeight, ARGB);
+
+        // Fill background white
+        resizeImage.loadPixels();
+        for (int i = 0; i < resizeImage.pixels.length; i++) {
+            resizeImage.pixels[i] = color(0xFFFFFFFF); // white, fully opaque
+        }
+        resizeImage.updatePixels();
+
+        // Calculate scale factor to fit img inside 1800x1200 preserving aspect ratio
+        float scaleX = printWidth / (float)img.width;
+        float scaleY = printHeight / (float)img.height;
+        float scale  = min(scaleX, scaleY);
+
+        int scaledW = (int) printWidth;
+        int scaledH = (int)(img.height * scale);
+
+        // Center the scaled image
+        int offsetX = ((int) printWidth - scaledW) / 2;
+        int offsetY = ((int) printHeight - scaledH) / 2;
+
+        if (DEBUG) println("resize6x4() scale="+scale+" scaledW="+scaledW+" scaledH="+scaledH+" offsetX="+offsetX+" offsetY="+offsetY);
+
+        resizeImage.copy(img, 0, 0, img.width, img.height, offsetX, offsetY, scaledW, scaledH);
+
+        return resizeImage;
+    }
+
 //    void nextImage() {
 //        if (currentIndex < leftImageFiles.size() - 1) {
 //            currentIndex++;

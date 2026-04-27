@@ -467,6 +467,12 @@ public class UdpRemoteControl {
         }
     }
 
+    void sendBroadcast(String url) {
+        if (udpClient != null) {
+            udpClient.send("L"+url); // send broadcast message to network listeners to retrieve image url
+        }
+    }
+
     void shutterPushRelease() {
         if (udpClient != null) {
             udpClient.send("S" + getFilename(UPDATE, PHOTO_MODE));
