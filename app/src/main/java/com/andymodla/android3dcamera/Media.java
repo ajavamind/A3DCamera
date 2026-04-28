@@ -281,7 +281,7 @@ public class Media {
             return null;
         }
 
-        Bitmap sbsBitmap = StereoImage.alignLR(leftBitmap, rightBitmap, parameters.getParallaxOffset(), parameters.getVerticalOffset());
+        Bitmap sbsBitmap = StereoImage.alignLR(leftBitmap, rightBitmap, parameters.getParallaxOffset(), parameters.getVerticalOffset(), 1.5f);
         if (sbsBitmap == null) {
             Log.d(TAG, "createAndSaveSBS failed");
             return null;

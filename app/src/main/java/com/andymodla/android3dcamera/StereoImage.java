@@ -29,8 +29,10 @@ public class StereoImage {
     public static Bitmap alignLR(Bitmap imgL, Bitmap imgR, int horzOffset, int vertOffset) {
         Log.d(TAG, "alignLR horzOffset=" + horzOffset + " vertOffset=" + vertOffset);
 
+
         int w = imgL.getWidth();
         int h = imgL.getHeight();
+        Log.d(TAG, "alignLR left w=" + w + " h=" + h);
         int dw = w - Math.abs(horzOffset);
         int dh = h - Math.abs(vertOffset);
 
@@ -63,8 +65,101 @@ public class StereoImage {
         }
 
         // Create output bitmap
+        Log.d(TAG, "alignLR SBS w=" + (2*dw) + " h=" + dh);
         Bitmap temp = Bitmap.createBitmap(2 * dw, dh, Bitmap.Config.ARGB_8888);
         temp.setPixels(outputPixels, 0, 2 * dw, 0, 0, 2 * dw, dh);
+
+        return temp;
+    }
+
+    /**
+     * Align LR image pairs by moving left image using offsets.
+     * Fill unused area with black (0)
+     * Bitmap imgL left camera/eye image
+     * Bitmap imgR right camera/eye image
+     * output img size is reduced by horzOffset and vertOffset values
+     * horzOffset camera alignment horizontally to adjust stereo window placement parallax
+     * vertOffset adjust camera misalignment vertically for stereoscopic viewing
+     * Assumes LR images are exact same dimensions
+     * @param crop if >0, crops SBS image horizontally to target Aspect Ratio of 1.5 for stereo card print
+     */
+    public static Bitmap alignLR(Bitmap imgL, Bitmap imgR, int horzOffset, int vertOffset, float crop) {
+        Log.d(TAG, "alignLR horzOffset=" + horzOffset + " vertOffset=" + vertOffset);
+
+        int w = imgL.getWidth();
+        int h = imgL.getHeight();
+        Log.d(TAG, "alignLR left w=" + w + " h=" + h);
+        int dw = w - Math.abs(horzOffset);
+        int dh = h - Math.abs(vertOffset);
+
+        // Extract pixel arrays from source images
+        int[] pixelsL = new int[w * h];
+        int[] pixelsR = new int[w * h];
+        imgL.getPixels(pixelsL, 0, w, 0, 0, w, h);
+        imgR.getPixels(pixelsR, 0, w, 0, 0, w, h);
+
+        // Create output pixel array
+        int[] outputPixels = new int[2 * dw * dh];
+
+        // Calculate starting positions based on offset signs
+        int srcColL = (horzOffset >= 0) ? horzOffset : 0;
+        int srcRowL = (vertOffset >= 0) ? 0 : Math.abs(vertOffset);
+
+        // Copy rows from left and right images
+        for (int j = 0; j < dh; j++) {
+            // Calculate actual source row indices
+            int rowL = srcRowL + j;
+            int rowR = j;
+
+            // Copy left image row
+            System.arraycopy(pixelsL, rowL * w + srcColL,
+                    outputPixels, j * 2 * dw, dw);
+
+            // Copy right image row
+            System.arraycopy(pixelsR, rowR * w,
+                    outputPixels, j * 2 * dw + dw, dw);
+        }
+
+        // Create intermediate output bitmap
+        Log.d(TAG, "alignLR SBS w=" + (2*dw) + " h=" + dh);
+        Bitmap temp = Bitmap.createBitmap(2 * dw, dh, Bitmap.Config.ARGB_8888);
+        temp.setPixels(outputPixels, 0, 2 * dw, 0, 0, 2 * dw, dh);
+
+        // Apply stereoscopic crop if requested
+        if (crop > 0) {
+            int outW = temp.getWidth();
+            int outH = temp.getHeight();
+            // crop float AR = 1.5f; // aspect ratio for CP1300 6x4 print to be used for crop
+
+            // Compute crop value x
+            int x = (int) Math.max(0, (outW - crop * outH) / 4);
+            int newEyeWidth = dw - 2 * x;
+
+            // Only crop if valid width remains for each eye
+            if (newEyeWidth > 0) {
+                int newTotalWidth = 2 * newEyeWidth;
+                int[] croppedPixels = new int[newTotalWidth * outH];
+
+                for (int j = 0; j < outH; j++) {
+                    // Remove x pixels from both sides of the left image
+                    System.arraycopy(outputPixels, j * outW + x,
+                            croppedPixels, j * newTotalWidth, newEyeWidth);
+
+                    // Remove x pixels from both sides of the right image
+                    System.arraycopy(outputPixels, j * outW + dw + x,
+                            croppedPixels, j * newTotalWidth + newEyeWidth, newEyeWidth);
+                }
+
+                Bitmap croppedBitmap = Bitmap.createBitmap(newTotalWidth, outH, Bitmap.Config.ARGB_8888);
+                croppedBitmap.setPixels(croppedPixels, 0, newTotalWidth, 0, 0, newTotalWidth, outH);
+
+                // Recycle intermediate bitmap to free native memory and prevent OOM
+                if (!temp.isRecycled()) {
+                    temp.recycle();
+                }
+                temp = croppedBitmap;
+            }
+        }
 
         return temp;
     }
