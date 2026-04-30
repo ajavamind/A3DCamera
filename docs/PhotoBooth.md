@@ -53,27 +53,29 @@ Camera tripod, brackets, cables, power adapters, and a photo lamp.
 The A3dCamera app runs on the XReal Beam Pro 3D camera tablet. It must first be configured as a photo booth. Configuration is done by commands using a keyboard.
 The command is /pb true<enter>
 
-This app does not use the touch screen for input or control. 
+This app uses the touch screen for shutter release only in camera photo booth mode when the tablet is hand held. 
+The shutter button is not visible and is at the display's upper right top corner.
 
 ## Simple HTTP Server PLUS Android App
 This app runs on the XReal Beam Pro. It is a HTTP server that supplies the saved photos to a networked 3D tablet or notebook computer for review.
 This is the purchased app version 3.05. The app is configured to use the photo booth's local WIFI network.
 
+[Simple HTTP Server Plus](https://play.google.com/store/apps/details?id=com.phlox.simpleserver.plus)
+
 ## itCamera Android App
-This is the app that sends prompt requests to an AI Image editing cloud service. 
+The itCamera app sends prompt requests to an AI Image editing cloud service. 
 Images sent to the service are reduced in size and set to 6x4 aspect ratio (for the printer).
 The multimodal LLM model used for photo editing is Google "gemini-3.1-flash-image-preview" a paid service.
 This app is a work in progress and is not available as open source.
 
 AI editing is also configured by a command in the A3dCamera app.
-
-The app uses the touch screen.
+he app uses the touch screen.
 
 ## ImageDownloader Android App
-This Andrid app runs on the IQH3D SKYY glasses free tablet. It is connected by WIFI to the photo booth local network.
+This Android app runs on the IQH3D SKYY glasses free tablet. It is connected by WIFI to the photo booth local network.
 The app has a very simple HTTP server that waits for a message to download a photo from the HTTP server running on the XReal Beam Pro tablet.
-Once a new photo is downloaded the app converts it to appear on the tablet screen in 3D.
-It then waits for the next photo.
+Once a new photo is downloaded the app converts it to appear on the tablet screen in 3D with column interlace for presentation.
+The app continues to display and  waits for the next photo.
 
 The app is written in Processing Android Java and is open source.
 It can also run on the Android Leia tablets both 1 and 2 versions, but has to use the LeiaPlayer app to view in 3D.
@@ -83,5 +85,11 @@ In this way other devices with 3D displays may be able to show 3D images glasses
 
 It could also be used on another XReal Beam Pro with its glasses to download and view the photo booth's photos. (But I have not tested this feature)
 
+The APK is not ready for distribution release.
+
 ## Notes
-All the Android devices are placed in developer mode to prevent a timeout turn off. The device has to be charging to not turn off.
+In Photo Booth mode the app must be placed in developer mode with the "Stay awake" option turned on. 
+This is needed to keep the app running for 7 hours in the photo booth when power is connected to also charge the XBP.
+
+Since the booth may run for hours, all Android devices used by require developer mode to prevent a timeout turn off. 
+The device has to be charging to not sleep.
