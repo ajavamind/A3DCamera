@@ -80,6 +80,10 @@ class ParamStore {
             private boolean udpControlEnabled = false;
             private boolean udpTransmit = false;
 
+            // New parameters
+            private boolean autoReview = false;
+            private boolean sbsCropPrint = false;
+            public static final float sbsCrop = 1.5f; // aspect ratio for SBS crop to fit SBS in 6x4 print
 
             // default constructor
             public Parameters(SharedPreferences prefs, Context context) {
@@ -137,6 +141,8 @@ class ParamStore {
                 readCountDownEnabled();
                 readUdpControlEnabled();
                 readUdpTransmit();
+                readAutoReview();
+                readSbsCropPrint();
             }
 
             //------------------------------------------------------------------------------
@@ -416,6 +422,39 @@ class ParamStore {
             }
 
             //------------------------------------------------------------------------------
+            // Auto Review Parameter
+            public void readAutoReview() {
+                autoReview = prefs.getBoolean(autoReviewStore.name, Boolean.parseBoolean(autoReviewStore.defaultValue));
+            }
+
+            public boolean getAutoReview() {
+                return autoReview;
+            }
+
+            public void setAutoReview(boolean autoReview) {
+                this.autoReview = autoReview;
+                SharedPreferences.Editor editor = prefs.edit();
+                editor.putBoolean(autoReviewStore.name, autoReview);
+                editor.apply();
+            }
+
+            // SBS Crop Print Parameter
+            public void readSbsCropPrint() {
+                sbsCropPrint = prefs.getBoolean(sbsCropPrintStore.name, Boolean.parseBoolean(sbsCropPrintStore.defaultValue));
+            }
+
+            public boolean getSbsCropPrint() {
+                return sbsCropPrint;
+            }
+
+            public void setSbsCropPrint(boolean sbsCropPrint) {
+                this.sbsCropPrint = sbsCropPrint;
+                SharedPreferences.Editor editor = prefs.edit();
+                editor.putBoolean(sbsCropPrintStore.name, sbsCropPrint);
+                editor.apply();
+            }
+
+            //------------------------------------------------------------------------------
             public int getReceiverPort() {
                 return receiverPort;
             }
@@ -486,10 +525,18 @@ class ParamStore {
                     "ut", "udpTransmit", "UDP Transmit",
                     "getUdpTransmit", "setUdpTransmit", boolean.class, "false");
 
+            ParamStore autoReviewStore = new ParamStore(
+                    "ar", "autoReview", "Auto Review",
+                    "getAutoReview", "setAutoReview", boolean.class, "false");
+
+            ParamStore sbsCropPrintStore = new ParamStore(
+                    "sbs", "sbsCropPrint", "SBS Crop Print",
+                    "getSbsCropPrint", "setSbsCropPrint", boolean.class, "false");
+
             ParamStore[] paramStores = {parallaxOffsetStore, verticalOffsetStore, receiverIpStore,
                     isPhotoBoothStore, isBlankScreenStore, isSoundOnStore, isAiEditStore,
                     title1Store, title2Store, inst1Store, inst2Store, countdownTimerStore, isMirrorStore,
-                    countDownEnabledStore, udpControlEnabledStore, udpTransmitStore};
+                    countDownEnabledStore, udpControlEnabledStore, udpTransmitStore, autoReviewStore, sbsCropPrintStore};
 
             // look up parameter by abbreviation and return its current value
             public String findParam(String abbr, String value, boolean set) {

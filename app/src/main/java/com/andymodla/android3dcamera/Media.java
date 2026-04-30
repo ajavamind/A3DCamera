@@ -280,8 +280,12 @@ public class Media {
             Log.d(TAG, "createAndSaveSBS failed Bitmaps null " + timestamp);
             return null;
         }
-
-        Bitmap sbsBitmap = StereoImage.alignLR(leftBitmap, rightBitmap, parameters.getParallaxOffset(), parameters.getVerticalOffset(), 1.5f);
+        Bitmap sbsBitmap = null;
+        if (parameters.getSbsCropPrint()) {
+            sbsBitmap = StereoImage.alignLR(leftBitmap, rightBitmap, parameters.getParallaxOffset(), parameters.getVerticalOffset(), Parameters.sbsCrop);
+        } else {
+            sbsBitmap = StereoImage.alignLR(leftBitmap, rightBitmap, parameters.getParallaxOffset(), parameters.getVerticalOffset());
+        }
         if (sbsBitmap == null) {
             Log.d(TAG, "createAndSaveSBS failed");
             return null;

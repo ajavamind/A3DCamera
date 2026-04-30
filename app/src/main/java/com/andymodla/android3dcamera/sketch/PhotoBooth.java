@@ -62,6 +62,8 @@ public class PhotoBooth extends PApplet {
     int XBP_DISPLAY_HEIGHT = 1080;
 
     int displayFPS = 30; // display frames per second
+    int reviewTimeout = 0;
+    int REVIEW_TIMEOUT_SECONDS = 4;
 
     // Parallax and vertical alignment adjustments in pixels for XBP photo booth
     public volatile int parallax = 100;
@@ -266,6 +268,14 @@ public class PhotoBooth extends PApplet {
         background(black);
 
         mirror = parameters.getIsMirror();
+        if (reviewTimeout > 0) {
+            reviewTimeout--;
+            if (reviewTimeout == 1) {
+                reviewTimeout = 0;
+                mainActivity.state = MainActivity.LIVE_VIEW_STATE;
+                update = true;
+            }
+        }
 
         if (blankScreen) {
             return;
@@ -338,6 +348,10 @@ public class PhotoBooth extends PApplet {
             textAlign(RIGHT);
             fill(green);
             text("Print", width - 50, height - 48);
+            if (parameters.getSbsCropPrint() && displayMode == DisplayMode.SBS) {
+                text("Crop", width - 50, height - 96);
+            }
+
         } else if (mainActivity.state == MainActivity.REVIEW_AI_EDIT_STATE) {
             textAlign(RIGHT);
             fill(magenta);
@@ -395,8 +409,9 @@ public class PhotoBooth extends PApplet {
         fill(255);
         textAlign(CENTER, CENTER);
         textSize(96);
-        int animate = captureFrameCount / displayFPS;
-        text("Please Wait for Photos to Develop ", width / 2, height / 2);
+        //int animate = captureFrameCount / displayFPS; // TODO
+        //text("Please Wait", width / 2, height / 2);
+        reviewTimeout = REVIEW_TIMEOUT_SECONDS* displayFPS; // seconds to frames
         loop();
         //    }
     }
