@@ -45,7 +45,7 @@ When these cameras are Android phones with the [MultRemoteCamera](https://source
 Other XReal Beam Pro cameras using A3dCamera can be configured to receive these broadcast messages and trigger photo captures at the same time.
 
 ## Miscellaneous
-Camera tripod, brackets, cables, power adapters, and a photo lamp.
+Camera tripod, brackets, cables, power adapters, and optional photo lamp.
 
 # Photo Booth Software
 
@@ -63,7 +63,7 @@ This is the purchased app version 3.05. The app is configured to use the photo b
 [Simple HTTP Server Plus](https://play.google.com/store/apps/details?id=com.phlox.simpleserver.plus)
 
 ## itCamera Android App
-The itCamera app sends prompt requests to an AI Image editing cloud service. 
+The itCamera app controls AI editing of photo booth captures. It sends prompt requests to an AI Image editing cloud service. 
 Images sent to the service are reduced in size and set to 6x4 aspect ratio (for the printer).
 The multimodal LLM model used for photo editing is Google "gemini-3.1-flash-image-preview" a paid service.
 This app is a work in progress and is not available as open source.
@@ -89,7 +89,11 @@ The APK is not ready for distribution release.
 
 ## Notes
 In Photo Booth mode the app must be placed in developer mode with the "Stay awake" option turned on. 
-This is needed to keep the app running for 7 hours in the photo booth when power is connected to also charge the XBP.
+This is needed to keep the app running for 7 hours in the photo booth when power is connected to charge the XBP.
 
 Since the booth may run for hours, all Android devices used by require developer mode to prevent a timeout turn off. 
 The device has to be charging to not sleep.
+
+# Photo Booth Configuration
+
+documentation is a work in progress
