@@ -1,9 +1,5 @@
-package com.andymodla.imagedownloader;
+package com.andymodla.imagebroadcastdownloader;
 
-/**
- * Image Downloader app
- * Copyright 2025-2026, Andy Modla All Rights Reserved
- */
 import android.app.DownloadManager;
 import android.content.Context;
 import android.content.Intent;
@@ -28,6 +24,7 @@ public class DownloadHelper {
     downloadManager = (DownloadManager) context.getSystemService(Context.DOWNLOAD_SERVICE);
   }
 
+  // for reference unused
   //public void enqueueDownload(String url) {
   //  String fileName = android.webkit.URLUtil.guessFileName(url, null, null);
   //  System.out.println("url="+url);

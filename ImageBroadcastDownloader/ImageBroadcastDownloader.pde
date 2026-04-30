@@ -1,11 +1,11 @@
 /**
- * Image Downloader app for 3D Photo Booth local area network
+ * Image Broadcast Downloader app for 3D Photo Booth local area network
  * Copyright 2025-2026, Andy Modla All Rights Reserved
  */
 
 /**
  * A Processing Java Android sketch for downloading images from a http server
- * It uses a http server GET command to signal an app to request to download an image file.
+ * It uses a broadcast UDP message to signal an app to request to download an image file.
  */
 
 /**
@@ -18,7 +18,7 @@
  
  Pause Reason Codes (STATUS_PAUSED)
  If the status is STATUS_PAUSED, these codes explain why the manager is waiting.
-
+ 
  PAUSED_WAITING_TO_RETRY (1): The download is paused and will retry after a short delay.
  PAUSED_WAITING_FOR_NETWORK (2): The download is waiting for network connectivity.
  PAUSED_QUEUED_FOR_WIFI (3): The download is too large for mobile data and is waiting for a Wi-Fi connection.
@@ -34,14 +34,19 @@ import java.net.InterfaceAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.util.Enumeration;
-import com.andymodla.imagedownloader.TinyWebServer;
-import com.andymodla.imagedownloader.DownloadHelper;
+
+import com.andymodla.imagebroadcastdownloader.DownloadHelper;
+import com.andymodla.imagebroadcastdownloader.UrlSource;
 import android.media.MediaScannerConnection;
 import android.graphics.Bitmap;
 
+//import MyDebug;
+
 private DownloadHelper downloadHelper;
-String ip ="";
-int port = 9000;
+private UdpRemoteControl udpRemoteControl;
+private UrlSource urlSource;
+String hostIp;
+int port = 8000;
 String version = "1.0";
 String path;
 PImage photo;
@@ -49,35 +54,58 @@ volatile PImage colImage;
 volatile PImage originalImage;
 volatile PImage leftImage;
 volatile PImage rightImage;
-String testImage = "IMG_20260330_145622_2x1.jpg";
+//String testImage = "IMG_20260330_145622_2x1.jpg";
 boolean ready = false;
 boolean show = false;
-boolean stereo = true;
+volatile boolean stereo = false;
 int xOffset; // offset
 int sOffset;
 float ar;
 float sar;
 
-void onCreate() {  // not called from processing
+// Android Activity Life Cycle ======================================================
+
+void onCreate() {  // not called from processing, so this method is not executed!
+  // that is why we set up UDP in start()
   System.out.println("onCreate()");
 }
 
 void onStart() {
   System.out.println("onStart()");
-  ip = getHostnameAddress();
-  println("ip="+ip);
   if (downloadHelper == null) {
+    println("setup DownloadHelper");
     downloadHelper = new DownloadHelper(getContext());
   }
-  //call contructor with local ip, port , public html directory path
-  println("start web server");
-  TinyWebServer.startServer(ip, port, "", downloadHelper);
+
+  if (udpRemoteControl == null) {
+    urlSource = new UrlSource(downloadHelper);
+    println("setup UDP receiver");
+    udpRemoteControl = new UdpRemoteControl(urlSource);
+    hostIp = udpRemoteControl.getHostnameAddress();
+    println("hostIp="+hostIp);
+
+    udpRemoteControl.setUdpReceiver( hostIp);
+    String broadcastIp = udpRemoteControl.getBroadcastAddress();
+    println("Broadcast Ip="+broadcastIp);
+
+  }
+}
+
+void onPause() {
+  System.out.println("onPause");
+}
+
+void onResume() {
+  System.out.println("onResume");
 }
 
 void onDestroy() {
-  //stop webserver on destroy of service or process
-  TinyWebServer.stopServer();
+  System.out.println("onDestroy");
+  //stop UDP receiver on destroy of activity
+  udpRemoteControl.destroy();
 }
+
+// Processing ==============================================================
 
 void settings() {
   fullScreen(P2D);
@@ -87,7 +115,7 @@ void setup() {
   orientation(LANDSCAPE);
 
   background(0); // Black background
-  frameRate(5);
+  frameRate(5); //frameRate(5);
 }
 
 PImage[] splitImageLR(PImage original) {
@@ -104,13 +132,13 @@ PImage[] splitImageLR(PImage original) {
   // Create the left half image
   result[0] = createImage(iw, height, ARGB);
   result[0].copy(original, 0, 0, halfWidth, original.height, 0, 0, iw, height);
-  
+
   // Create the right half image
   result[1] = createImage(iw, height, ARGB);
   result[1].copy(original, halfWidth, 0, halfWidth, original.height, 0, 0, iw, height);
 
-  
-  //println("halfWidth="+halfWidth);  
+
+  //println("halfWidth="+halfWidth);
   //println("iw="+iw);
   //println("left w="+result[0].width + " h="+result[0].height);
   //println("right w="+result[1].width + " h="+result[1].height);
@@ -149,6 +177,18 @@ PImage columnInterlace(PImage bufL, PImage bufR) {
   return result;
 }
 
+void displayStatus() {
+      int voffset = 7*height/10;
+    text("Image Broadcast Downloader version "+ version, 50, voffset );
+    text(hostIp+":"+port, 50, height/8 + voffset+50);
+    String filename = downloadHelper.getFilename();
+    text(filename, 50, voffset + 100);
+    String displayStatus = downloadHelper.getDownloadStatus();
+    text(displayStatus, 50, voffset +150);
+    path = downloadHelper.getPath();
+    text(path, 50, voffset + 200);
+}
+
 void draw() {
   background(0);
   textSize(48);
@@ -156,15 +196,7 @@ void draw() {
 
   boolean start = downloadHelper.isStarted();
   if (!ready || start) {
-    text("Image Downloader version "+ version, 50, height/16);
-    text(ip+":"+port, 50, height/8);
-    String filename = downloadHelper.getFilename();
-    text(filename, 50, height/4);
-    String displayStatus = downloadHelper.getDownloadStatus();
-    text(displayStatus, 50, height/4+50);
-
-    path = downloadHelper.getPath();
-    text(path, 50, height/2);
+    displayStatus();
   }
 
   int status = downloadHelper.getStatus();
@@ -224,42 +256,17 @@ void draw() {
         image(colImage, sOffset, 0);
     } else {
       image(photo, xOffset, 0, width, width/ar);
+      displayStatus();
     }
   }
 }
 
-
-private String getHostnameAddress() {
-  try {
-    for (Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces(); en
-      .hasMoreElements(); ) {
-      NetworkInterface intf = en.nextElement();
-      Enumeration<NetworkInterface> niEnum = NetworkInterface.getNetworkInterfaces();
-      String last = null;
-      while (niEnum.hasMoreElements()) {
-        NetworkInterface ni = niEnum.nextElement();
-        if (!ni.isLoopback() && !ni.isPointToPoint()) {
-          for (InterfaceAddress interfaceAddress : ni.getInterfaceAddresses()) {
-            println( "network prefix length=" + interfaceAddress.getNetworkPrefixLength());
-            if (interfaceAddress.getAddress() != null) {
-
-              println( interfaceAddress.getAddress().getHostAddress());
-              last = (interfaceAddress.getAddress().getHostAddress());
-              if (last.matches("\\d*\\.\\d*\\.\\d*\\.\\d*")) {
-                return last;
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-  catch (SocketException ex) {
-    println("Socket Exception");
-  }
-  return null;
+public void receivedUrl(String url) {
+  System.out.println("url="+url);
+  downloadHelper.startDownload( url);
 }
 
+// scanImage to make it known to Android file system and apps like Gallery, etc.
 void scanImage(String absolutePath) {
   // Trigger media scanner to make image visible in gallery
   MediaScannerConnection.scanFile(getContext(), new String[]{absolutePath},
@@ -271,13 +278,36 @@ void mouseReleased() {
   stereo = !stereo;
 }
 
-//DownloadManager.Query query = new DownloadManager.Query();
-//query.setFilterById(downloadId);
-//Cursor cursor = downloadManager.query(query);
 
-//if (cursor.moveToFirst()) {
-//    int status = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_STATUS));
-//    int reason = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_REASON));
-//    // Use status and reason constants to handle the state
+//=============================================================================
+// For reference for use with Processing library, i.e. a pde type processing file
+
+//private String getHostnameAddress() {
+//  try {
+//    for (Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces(); en
+//      .hasMoreElements(); ) {
+//      NetworkInterface intf = en.nextElement();
+//      Enumeration<NetworkInterface> niEnum = NetworkInterface.getNetworkInterfaces();
+//      String last = null;
+//      while (niEnum.hasMoreElements()) {
+//        NetworkInterface ni = niEnum.nextElement();
+//        if (!ni.isLoopback() && !ni.isPointToPoint()) {
+//          for (InterfaceAddress interfaceAddress : ni.getInterfaceAddresses()) {
+//            println( "network prefix length=" + interfaceAddress.getNetworkPrefixLength());
+//            if (interfaceAddress.getAddress() != null) {
+//              println( interfaceAddress.getAddress().getHostAddress());
+//              last = (interfaceAddress.getAddress().getHostAddress());
+//              if (last.matches("\\d*\\.\\d*\\.\\d*\\.\\d*")) {
+//                return last;
+//              }
+//            }
+//          }
+//        }
+//      }
+//    }
+//  }
+//  catch (SocketException ex) {
+//    println("Socket Exception");
+//  }
+//  return null;
 //}
-//cursor.close();
