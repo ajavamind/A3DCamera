@@ -6,16 +6,23 @@
 
 # Photo Booth Equipment
 
-## XReal Beam Pro 3D Camera Tablet
+## XReal Beam Pro (256 GB version) 3D Camera Tablet
 This Android tablet is the 3D camera and photo booth controller.
 It is connected to the local WIFI network.
 It saves 3D SBS (side-by-side), anaglyph, and both left and right photos at maximum resolution taken.
 It adjusts SBS and anaglyph photos for parallax and vertical alignment before saving.
 The SBS images have reduced resolution because the camera has limited RAM memory for processing images.
 
+The app has not been tested with XBP 128 GB storage and 6 GB RAM version. 
+The 256 GB version with 8 GB RAM should perform better.
+
 ## Buzzer Box
 This is a repurposed Bluetooth mouse connected to the XReal Beam Pro. 
 It used to capture photo booth images and review the results.
+This device has to be paired with the XBP.
+
+## Bluetooth Keyboard
+A BPO paired Bluetooth keyboard is needed to configure the camera for photo booth mode.
 
 ## Mobile Monitor 
 This touch screen 1920x1080 monitor displays the photo booth live view and review photos.
