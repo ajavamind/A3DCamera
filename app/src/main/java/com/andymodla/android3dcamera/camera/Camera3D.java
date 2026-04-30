@@ -114,8 +114,8 @@ public class Camera3D {
     public static int XBP_CAMERA_WIDTH_6x4 = 1080; // small for performance - print aspect ratio
     public static int XBP_CAMERA_HEIGHT_6x4 = 720; // small for performance
 
-    public volatile int focusDistanceIndex = 1;  // default Photo Booth
-    // public volatile int focusDistanceIndex = 0;  // default HYPERFOCAL
+    //public volatile int focusDistanceIndex = 1;  // default for Photo Booth
+    public volatile int focusDistanceIndex = 0;  // default HYPERFOCAL camera
     static final float MACRO_FOCUS_DISTANCE = 10.0f;  // 100mm
     static final float HYPERFOCAL_FOCUS_DISTANCE = 0.60356647f;  // 1.66 meters
     static final float PHOTO_BOOTH_FOCUS_DISTANCE = 1.89f;  // 550mm
@@ -665,14 +665,14 @@ public class Camera3D {
 
                                 previewRequestBuilder.set(CaptureRequest.TONEMAP_MODE, CaptureRequest.TONEMAP_MODE_CONTRAST_CURVE);
                                 previewRequestBuilder.set(CaptureRequest.TONEMAP_CURVE, new TonemapCurve(curve_srgb, curve_srgb, curve_srgb));
-                                if (FOCUS_DISTANCE[focusDistanceIndex] == AUTO_FOCUS_DISTANCE) {
+                                if (FOCUS_DISTANCE[parameters.getFocusDistanceIndex()] == AUTO_FOCUS_DISTANCE) {
                                     previewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
                                 } else {
                                     previewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_OFF);
                                 }
 
                                 previewRequestBuilder.set(EXPOSURE_METERING, METERING[meteringIndex]);
-                                previewRequestBuilder.set(CaptureRequest.LENS_FOCUS_DISTANCE, FOCUS_DISTANCE[focusDistanceIndex]);
+                                previewRequestBuilder.set(CaptureRequest.LENS_FOCUS_DISTANCE, FOCUS_DISTANCE[parameters.getFocusDistanceIndex()]);
 
                                 previewRequestBuilder.set(CaptureRequest.NOISE_REDUCTION_MODE, 1); // NOISE_REDUCTION_MODE
                                 previewRequestBuilder.set(CaptureRequest.EDGE_MODE, 1); // EDGE_MODE
@@ -735,7 +735,7 @@ public class Camera3D {
                     // Set auto focus
                     //previewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
                     previewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_OFF);
-                    previewRequestBuilder.set(CaptureRequest.LENS_FOCUS_DISTANCE, FOCUS_DISTANCE[focusDistanceIndex]);
+                    previewRequestBuilder.set(CaptureRequest.LENS_FOCUS_DISTANCE, FOCUS_DISTANCE[parameters.getFocusDistanceIndex()]);
 
                     // Set auto exposure
                     //previewRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON);
@@ -862,14 +862,14 @@ public class Camera3D {
             // default TONEMAP_MODE_CONTRAST_CURVE assumed for best contrast, color and detail capture
             captureBuilder.set(CaptureRequest.TONEMAP_MODE, CaptureRequest.TONEMAP_MODE_CONTRAST_CURVE);
             captureBuilder.set(CaptureRequest.TONEMAP_CURVE, new TonemapCurve(curve_srgb, curve_srgb, curve_srgb));
-            if (FOCUS_DISTANCE[focusDistanceIndex] == AUTO_FOCUS_DISTANCE) {
+            if (FOCUS_DISTANCE[parameters.getFocusDistanceIndex()] == AUTO_FOCUS_DISTANCE) {
                 captureBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
             } else {
                 captureBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_OFF);
             }
 
             captureBuilder.set(EXPOSURE_METERING, METERING[meteringIndex]);
-            captureBuilder.set(CaptureRequest.LENS_FOCUS_DISTANCE, FOCUS_DISTANCE[focusDistanceIndex]);
+            captureBuilder.set(CaptureRequest.LENS_FOCUS_DISTANCE, FOCUS_DISTANCE[parameters.getFocusDistanceIndex()]);
 
             captureBuilder.set(CaptureRequest.NOISE_REDUCTION_MODE, 1); // NOISE_REDUCTION_MODE
             captureBuilder.set(CaptureRequest.EDGE_MODE, 1); // EDGE_MODE
@@ -1020,9 +1020,10 @@ public class Camera3D {
     }
 
     public void setFocusDistance() {
-        int i = focusDistanceIndex + 1;
+        int i = parameters.getFocusDistanceIndex() + 1;
         if (i >= FOCUS_DISTANCE.length) i = 0;
         focusDistanceIndex = i;
+        parameters.setFocusDistanceIndex(focusDistanceIndex);
         Toast.makeText(context, FOCUS_DISTANCE_NAMES[focusDistanceIndex], Toast.LENGTH_SHORT).show();
     }
 

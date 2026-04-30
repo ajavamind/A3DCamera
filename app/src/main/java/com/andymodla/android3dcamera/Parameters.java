@@ -7,7 +7,7 @@ package com.andymodla.android3dcamera;
  *
    To add parameters to this file use this prompt with gemma4 4B
    Using Parameters.java as a base pattern, I want to add more parameters as follows:
-   boolean countDownEnabled, boolean udpControlEnabled, boolean udpTransmit
+   int focusDistanceIndex
    For String default use "".
    For boolean default use false.
    For integer default use 0. Please update this file to  add these new parameters.
@@ -84,6 +84,7 @@ class ParamStore {
             private boolean autoReview = false;
             private boolean sbsCropPrint = false;
             public static final float sbsCrop = 1.5f; // aspect ratio for SBS crop to fit SBS in 6x4 print
+            private int focusDistanceIndex = 0;
 
             // default constructor
             public Parameters(SharedPreferences prefs, Context context) {
@@ -143,6 +144,7 @@ class ParamStore {
                 readUdpTransmit();
                 readAutoReview();
                 readSbsCropPrint();
+                readFocusDistanceIndex();
             }
 
             //------------------------------------------------------------------------------
@@ -455,6 +457,23 @@ class ParamStore {
             }
 
             //------------------------------------------------------------------------------
+            // Focus Distance Index Parameter
+            public void readFocusDistanceIndex() {
+                focusDistanceIndex = prefs.getInt(focusDistanceIndexStore.name, Integer.parseInt(focusDistanceIndexStore.defaultValue));
+            }
+
+            public int getFocusDistanceIndex() {
+                return focusDistanceIndex;
+            }
+
+            public void setFocusDistanceIndex(int focusDistanceIndex) {
+                this.focusDistanceIndex = focusDistanceIndex;
+                SharedPreferences.Editor editor = prefs.edit();
+                editor.putInt(focusDistanceIndexStore.name, focusDistanceIndex);
+                editor.apply(); // asynchronous save
+            }
+
+            //------------------------------------------------------------------------------
             public int getReceiverPort() {
                 return receiverPort;
             }
@@ -533,10 +552,14 @@ class ParamStore {
                     "sbs", "sbsCropPrint", "SBS Crop Print",
                     "getSbsCropPrint", "setSbsCropPrint", boolean.class, "false");
 
+            ParamStore focusDistanceIndexStore = new ParamStore(
+                    "fdi", "focusDistanceIndex", "Focus Distance Index",
+                    "getFocusDistanceIndex", "setFocusDistanceIndex", int.class, "0");
+
             ParamStore[] paramStores = {parallaxOffsetStore, verticalOffsetStore, receiverIpStore,
                     isPhotoBoothStore, isBlankScreenStore, isSoundOnStore, isAiEditStore,
                     title1Store, title2Store, inst1Store, inst2Store, countdownTimerStore, isMirrorStore,
-                    countDownEnabledStore, udpControlEnabledStore, udpTransmitStore, autoReviewStore, sbsCropPrintStore};
+                    countDownEnabledStore, udpControlEnabledStore, udpTransmitStore, autoReviewStore, sbsCropPrintStore, focusDistanceIndexStore};
 
             // look up parameter by abbreviation and return its current value
             public String findParam(String abbr, String value, boolean set) {

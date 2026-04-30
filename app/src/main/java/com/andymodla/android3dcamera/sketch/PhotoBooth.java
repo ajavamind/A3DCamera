@@ -160,6 +160,7 @@ public class PhotoBooth extends PApplet {
     public void setCamera(Camera3D camera) {
         camStereo = camera;
         this.parameters = camera.getParameters();
+
         this.media = camera.getMedia();
     }
 
@@ -366,7 +367,7 @@ public class PhotoBooth extends PApplet {
                 textAlign(LEFT);
                 textSize(48);
                 for (int i = 0; i < help.length; i++) {
-                    text(help[i], 100, 50 + i * 50);
+                    text(help[i], 100, 36 + i * 50);
                 }
                 break;
             case 2:
@@ -374,7 +375,7 @@ public class PhotoBooth extends PApplet {
                 textAlign(LEFT);
                 textSize(48);
                 for (int i = 0; i < help2.length; i++) {
-                    text(help2[i], 100, 50 + i * 50);
+                    text(help2[i], 100, 36 + i * 50);
                 }
 
                 break;

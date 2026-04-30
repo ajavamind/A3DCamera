@@ -268,8 +268,7 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         imageSender = new ImageSender(this, parameters, udpRemoteControl);
-        if (photoBooth != null) {
-            camera.focusDistanceIndex = 1;  // photo booth focus distance
+        if (photoBooth != null) { // we are in photo booth mode
             // set photo booth countdown
              countdownDigit = -1;
             if (parameters.getCountDownEnabled()) {
