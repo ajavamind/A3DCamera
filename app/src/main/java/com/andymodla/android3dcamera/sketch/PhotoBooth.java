@@ -725,7 +725,6 @@ public class PhotoBooth extends PApplet {
                         if (DEBUG) PApplet.println(s);
                     }
                 } else if (debugHelp == 2) {
-                    //help = parameters.getKeyDetails();  TODO
                     for (String s : help) {
                         if (DEBUG) PApplet.println(s);
                     }
@@ -1046,6 +1045,13 @@ public class PhotoBooth extends PApplet {
         return resizeImage;
     }
 
+    public void mouseReleased() {
+        // upper right corner is shutter release
+        if (mouseX > 2040 && mouseY < 140) {
+            if (DEBUG) PApplet.println("mouseReleased shutter release");
+            mainActivity.capturePhoto();
+        }
+    }
 //    void nextImage() {
 //        if (currentIndex < leftImageFiles.size() - 1) {
 //            currentIndex++;

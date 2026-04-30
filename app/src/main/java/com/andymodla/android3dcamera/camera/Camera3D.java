@@ -32,6 +32,7 @@ import android.media.ToneGenerator;
 import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.os.Looper;
 import android.util.Log;
 import android.util.Range;
 import android.util.Size;
@@ -1008,7 +1009,8 @@ public class Camera3D {
         // Release the ToneGenerator resources after a short delay.
         // It's crucial to release the resources to avoid memory leaks.
         // We use a Handler to delay the release so the sound has time to play.
-        new Handler().postDelayed(new Runnable() {
+
+        new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
             @Override
             public void run() {
                 toneGen.stopTone();
