@@ -63,7 +63,7 @@ public class PhotoBooth extends PApplet {
 
     int displayFPS = 30; // display frames per second
     int reviewTimeout = 0;
-    int REVIEW_TIMEOUT_SECONDS = 4;
+    int REVIEW_TIMEOUT_SECONDS = 3;
 
     // Parallax and vertical alignment adjustments in pixels for XBP photo booth
     public volatile int parallax = 100;
@@ -411,7 +411,9 @@ public class PhotoBooth extends PApplet {
         textSize(96);
         //int animate = captureFrameCount / displayFPS; // TODO
         //text("Please Wait", width / 2, height / 2);
-        reviewTimeout = REVIEW_TIMEOUT_SECONDS* displayFPS; // seconds to frames
+        if (!parameters.getAutoReview()) {
+            reviewTimeout = REVIEW_TIMEOUT_SECONDS * displayFPS; // seconds to frames
+        }
         loop();
         //    }
     }
