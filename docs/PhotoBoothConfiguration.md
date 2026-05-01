@@ -1,6 +1,8 @@
-# Parameter Command Reference
+# Photo Booth Configuration
 
-This document details the keyboard commands used to configure parameters in the Android 3D Camera application.
+## Overview
+This document provides a complete reference for the keyboard-driven command interface used to view and modify A3DCamera application parameters. 
+The system is designed for on-the-fly configuration in the photo booth directly from the camera interface.
 
 ## ⌨️ Usage Instructions
 
@@ -25,7 +27,7 @@ This document details the keyboard commands used to configure parameters in the 
 ## 📷 Configuration Modes
 
 *   **Default Values:** The default parameter values configure the device as a **3D point-and-shoot camera**.
-*   **Photo Booth Mode:** When `pb=true`, the camera enters photo booth mode but can still be handheld to take pictures.
+*   **Photo Booth Mode:** When `pb=true`, the camera enters photo booth mode but can still be handheld to take pictures. Photo booth mode shows live view SBS, Anaglyph, and Left or Right images.
 *   **Fixed Photo Booth:** With additional settings, the camera is intended to be mounted in a fixed photo booth setup.
 
 ## 📋 Parameter Table
@@ -64,7 +66,7 @@ All parameters are listed below. The full description for each parameter is prov
 
 **//cd**: Enables or disables the countdown timer for the camera.
 
-**//ct**: Set the camera countdown timer in seconds for shutter release.
+**//ct**: Set the camera countdown display timer in seconds before shutter release.
 
 **//fdi**: Set the focus distance index: 0 HyperFocal Focus Distance 1.7 m; 1 Photo Booth Focus Distance 550mm; 2 Macro Focus Distance 100mm; 3 Auto Focus Distance.
 
