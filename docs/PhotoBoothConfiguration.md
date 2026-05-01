@@ -58,43 +58,27 @@ All parameters are listed below. The full description for each parameter is prov
 
 ## 📖 Detailed Parameter Descriptions
 
-**ai**: Turns on AI Edit mode to launch another application that prompts AI to edit a photo.
-
-**ar**: In photo booth mode after a photo capture keep the booth in review mode until changed by the operator. When false the camera is ready to shoot after showing the last photo briefly.
-
-**bl**: For covering the active display with black.
-
-**cd**: Enables or disables the countdown timer for the camera.
-
-**ct**: Set the camera countdown display timer in seconds before shutter release.
-
-**fdi**: Set the focus distance index: 0 HyperFocal Focus Distance 1.7 m; 1 Photo Booth Focus Distance 550mm; 2 Macro Focus Distance 100mm; 3 Auto Focus Distance.
-
-**i1**: Photo booth instruction appearing on the top first line.
-
-**i2**: Photo booth instruction appearing on the top second line.
-
-**mr**: In photo booth mode it sets the display to a mirror image.
-
-**pb**: Configures a photo booth operation and display.
-
-**px**: Camera left and right image parallax offset for stereo window placement.
-
-**rip**: The IP Address of the device to receive a URL Link for a saved photo.
-
-**sd**: Turns the shutter sound on/off.
-
-**sbs**: When enabled the SBS photo is center cropped to fit the printer paper size 6x4.
-
-**t1**: Photo booth title appearing on the bottom first line.
-
-**t2**: Photo booth title appearing on the bottom second line.
-
-**uc**: Enables or disables Wi-Fi UDP broadcast message receive and transmit.
-
-**ut**: With Wi-Fi broadcast message control enabled, this option mutually exclusive enables transmit or receive only.
-
-**vt**: Camera left and right image vertical offset alignment for 3D camera correction.
+| Command Abbr | Full Description |
+| :--- | :--- |
+| **ai** |  Turns on AI Edit mode to launch another application that prompts AI to edit the current review photo. | 
+| **ar** |  In photo booth mode after a photo capture keep the booth in review mode until changed by the operator. When false the camera is ready to shoot after showing the last photo briefly. |
+| **bl** |  For covering the active display with black. |
+| **cd** |  Enables or disables the countdown timer for the camera. |
+| **ct** |  Set the camera timer countdown display in seconds on start of shutter release. |
+| **fdi** |  Set the focus distance index: 0 HyperFocal Focus Distance 1.7 m; 1 Photo Booth Focus Distance 550mm; 2 Macro Focus Distance 100mm; 3 Auto Focus Distance. |
+| **i1** |  Photo booth instruction appearing on the top first line. |
+| **i2** |  Photo booth instruction appearing on the top second line. |
+| **mr** |  In photo booth mode it sets the display to a mirror image. |
+| **pb** |  Configures a photo booth operation and display. |
+| **px** |  Camera left and right image parallax offset for stereo window placement. |
+| **rip** |  The IP Address of a local network device to receive a URL Link of a saved photo. |
+| **sd** |  Turns the shutter sound on/off. |
+| **sbs** |  When enabled the SBS photo is center cropped to exactly fit the printer paper size 6x4. |
+| **t1** |  Photo booth title appearing on the bottom first line. |
+| **t2** |  Photo booth title appearing on the bottom second line. |
+| **uc** |  Enables or disables Wi-Fi UDP broadcast message receive and transmit. |
+| **ut** |  With Wi-Fi broadcast message enabled, this option mutually exclusive enables transmit or receive only. |
+| **vt** |  Camera left and right image vertical offset alignment for 3D camera correction. |
 
 ## 📋 Usage Examples
 
