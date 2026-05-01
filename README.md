@@ -26,7 +26,7 @@ Specific uses I would like to have with a 3D camera app are:
 * 3D Photo Booth
 * 3D live view, photo capture, or photo viewing using any stereoscope. This worked with London Stereoscopic Company OWL stereoscope using adapters to hold the BPO in place.
 * Live View Anaglyph 3D for finding the stereo window.
-* Remote control of the camera using Bluetooth or a local WiFi network
+* Remote control of the camera using Bluetooth or a local Wi-Fi network
 * Simultaneous multiple 3D cameras remote control
 * Sharing photos via email, for direct printing SBS or Anaglyph, or for review and alignment using 3D apps like [3DSteroidPro](https://play.google.com/store/apps/details?id=jp.suto.stereoroidpro&hl=en_US) and for sharing with custom 3D apps and networked 3D tablets and devices.
 * The default display mode shows the stereo image without GUI controls or other display information to allow free-viewing and stereoscopes or Anaglyph glasses. The display of the 3D parallel L/R image should be centered on the display and no larger than 130 cm wide for a stereoscope or for free-viewing the image to minimize eye strain. 
@@ -135,8 +135,8 @@ Here are the Android keyboard keys matching the similar functions of the 8BitDo 
 
 Incomplete work in progress - 
 
-* Q - FOCUS DISTANCE - Cycle through fixed focus distances: Hyperfocal, Photo Booth, Macro
-* A - DISPLAY - Toggle change Review display mode (SBS,  Anaglyph, L/R)
+* Q - FOCUS DISTANCE - Cycle through fixed focus distances: Hyperfocal, Photo Booth, Macro, Auto Focus
+* A - DISPLAY - Toggle change Review display mode (SBS,  Anaglyph, Left, Right)
 * T - EXPOSURE METERING FN  - Cycle through exposure metering: Frame Average, Center Weighted, Spot Metering
 
 
@@ -177,17 +177,9 @@ There are no camera leveling, tilt, or subject distance suggestions from the app
 4. I use a Bluetooth remote to take photos instead of the button keys on the camera. This requires pairing with a remote controller,  keyboard or mouse.
 5. The 8BitDo Bluetooth game controller is not useful for a photo booth because it times out the connection if it is not used often enough. Much better is the Bluetooth wireless mouse, it has no timeout issues.
 
-## App Download Link
-Latest version:
+## App Download 
 
-[Version_2.0_A3DCamera_withPhoto Booth Android_app]( Coming soon).
-
-[Version_1.9_A3DCamera_Android_app](https://drive.google.com/file/d/1fq16spW2mNs7cChwZ4SOZS8CpNSVJP64/view?usp=drive_link)
-
-[Version 1.7 A3DCamera Android app](https://drive.google.com/file/d/1QpnxSPUkr-Se1CgkC5bw5PI3DDTpz99X/view?usp=sharing)
-
-
-Download the apk file into the XBeam Pro "Downloads" folder. Use the "Files" app to find and click on the A3DCamera apk file in the Downloads folder to install it. 
+Download the apk file from the Release section above into the XBeam Pro "Downloads" folder. Use the "Files" app to find and click on the A3DCamera apk file in the Downloads folder to install it. 
 You will be asked to scan the file for security, respond yes.
 
 My Beam Pro is in developers mode, but you do not have to be in that mode to install.
@@ -217,8 +209,8 @@ These two commands affect the live view image, and change the alignment of store
 2. On the navigation bar press the box or circle to exit (however neither will close the app, unless you swipe it off or clear/close all apps).
 
 ## Hardware Isssues
-1. The 8BitDo Micro Bluetooth Controller times out after 10 minutes.
-2. The XReal BP camera will time out at a maximum of 30 minutes ( Settings->screen timeout). 
+1. The 8BitDo Micro Bluetooth Controller times out after 10 minutes. The game controller is not used with the Photo Booth
+2. The XReal BP camera will time out at a maximum of 15 minutes ( Settings->screen timeout). 
    This can be extended by entering Developer mode, use developer options to set stay awake on. You must keep the device charged with the power cable connected to prevent timeout and last for a long session required for a photo booth.
    The USB data connector is connected to a small portable monitor and is powered by the XReal Beam Pro camera when charging.
    This is the camera setup for the Photo Booth (tested for at least 4 hours of operation).
@@ -232,7 +224,7 @@ Time Interval captures.
 A GUI interface: Settings menu, etc. I am thinking of a browser interface for this instead of a GUI.
 
 ## Experiments
-### 1. WiFi Remote Control
+### 1. Wi-Fi Remote Control
 The app can listen for UDP broadcast messages to control the camera triggering the shutter.
 This feature can be used to trigger multiple Beam Pro cameras at the same time. This is working with other phone cameras with custom a custom camera app, but I don't have a 2nd XBO to fully test.
 
@@ -240,7 +232,7 @@ An Android app at [RemoteCapture ](https://github.com/ajavamind/RemoteCapture) c
 
 You can also simultaneously trigger any Android device running the [MultRemoteCamera app](https://sourceforge.net/p/multi-remote-camera/wiki/Home/) Android app.
 I created this app by modifying the Open Camera (open soucre) app several years ago. My objective then was to use two phones for stereo photography.
-It reqires a local WiFi network.
+It reqires a local Wi-Fi network.
 
 **Just imagine how many stereo base views or lenticular images you could get with multiple Beam Pro cameras!**
 
@@ -287,7 +279,7 @@ There a screen shots of the output and images captured.
 Scrcpy can send windows keyboard keys to the A3DCamera app. You can get remote control with this technique. 
 You have to make the scrcpy window active, so that keys get directed to scrcpy. Do this by a mouse click on the scrcpy window showing the Beam Pro A3DCamera app display. 
 
-Sitting in another room I can see live view output of the camera and capture images with either a Bluetooth controller or WiFi using the computer keyboard.
+Sitting in another room I can see live view output of the camera and capture images with either a Bluetooth controller or Wi-Fi using the computer keyboard.
 
 
 ## Credits
