@@ -35,8 +35,9 @@ class ParamStore {
     String setterName; // Name of the setter method
     Class<?> setterParamType; // Parameter type for the value and defaultValue
     String defaultValue; // default value
+    String fullDescription; // full description of the command
 
-    public ParamStore(String abbr, String name, String desc, String getterName, String setterName, Class<?> setterParamType, String defaultValue) {
+    public ParamStore(String abbr, String name, String desc, String getterName, String setterName, Class<?> setterParamType, String defaultValue, String fullDescription) {
         this.abbr = abbr;
         this.name = name;
         this.desc = desc;
@@ -44,6 +45,7 @@ class ParamStore {
         this.setterName = setterName;
         this.setterParamType = setterParamType;
         this.defaultValue = String.valueOf(defaultValue);
+        this.fullDescription = String.valueOf(fullDescription);
     }
 }
 
@@ -482,84 +484,123 @@ class ParamStore {
 
             ParamStore parallaxOffsetStore = new ParamStore(
                     "px", "parallaxOffset", "Parallax Offset",
-                    "getParallaxOffset", "setParallaxOffset", int.class, "0");
+                    "getParallaxOffset", "setParallaxOffset", int.class, "0",
+                    "Camera left and right image parallax offset for stereo window placement."
+            );
 
             ParamStore verticalOffsetStore = new ParamStore(
                     "vt", "verticalOffset", "Vertical Offset",
-                    "getVerticalOffset", "setVerticalOffset", int.class, "0");
+                    "getVerticalOffset", "setVerticalOffset", int.class, "0",
+                    "Camera left and right image vertical offset alignment for 3D camera correction"
+            );
 
             ParamStore receiverIpStore = new ParamStore(
                     "rip", "receiverIp", "Receiver IP",
-                    "getReceiverIp", "setReceiverIp", String.class, "192.168.8.99");
+                    "getReceiverIp", "setReceiverIp", String.class, "192.168.8.99",
+                    "The IP Address of the device to receive a URL Link for a saved photo."
+            );
 
             ParamStore isPhotoBoothStore = new ParamStore(
                     "pb", "isPhotoBooth", "Photo Booth",
-                    "getIsPhotoBooth", "setIsPhotoBooth", boolean.class, "false");
+                    "getIsPhotoBooth", "setIsPhotoBooth", boolean.class, "false",
+                    "Configures a photo booth operation and display."
+            );
 
             ParamStore isBlankScreenStore = new ParamStore(
                     "bl", "isBlankScreen", "Blank Screen",
-                    "getIsBlankScreen", "setIsBlankScreen", boolean.class, "false");
+                    "getIsBlankScreen", "setIsBlankScreen", boolean.class, "false",
+                    "For covering the active display with black."
+            );
 
             ParamStore isSoundOnStore = new ParamStore(
                     "sd", "isSoundOn", "Sound On",
-                    "getIsSoundOn", "setIsSoundOn", boolean.class, "true");
+                    "getIsSoundOn", "setIsSoundOn", boolean.class, "true",
+                    "Turns on/off the shutter sound"
+            );
 
             ParamStore isAiEditStore = new ParamStore(
                     "ai", "isAiEdit", "AI Edit",
-                    "getIsAiEdit", "setIsAiEdit", boolean.class, "false");
+                    "getIsAiEdit", "setIsAiEdit", boolean.class, "false",
+                    "Turns on AI Edit mode to launch another application that prompts AI to edit a photo."
+            );
 
             ParamStore title1Store = new ParamStore(
                     "t1", "title1", "Title 1",
-                    "getTitle1", "setTitle1", String.class, "3D Photo Booth");
+                    "getTitle1", "setTitle1", String.class, "3D Photo Booth",
+                    "Photo booth title appearing on the bottom first line"
+            );
 
             ParamStore title2Store = new ParamStore(
                     "t2", "title2", "Title 2",
-                    "getTitle2", "setTitle2", String.class, "");
+                    "getTitle2", "setTitle2", String.class, "",
+                    "Photo booth title appearing on the bottom second line"
+            );
 
             ParamStore inst1Store = new ParamStore(
                     "i1", "inst1", "Instruction 1",
-                    "getInst1", "setInst1", String.class, "Look at Camera");
+                    "getInst1", "setInst1", String.class, "Look at Camera",
+                    "Photo booth instruction appearing on the top first line"
+            );
 
             ParamStore inst2Store = new ParamStore(
                     "i2", "inst2", "Instruction 2",
-                    "getInst2", "setInst2", String.class, "");
+                    "getInst2", "setInst2", String.class, "",
+                    "Photo booth instruction appearing on the top second line"
+            );
             
             ParamStore countdownTimerStore = new ParamStore(
                     "ct", "countdownTimer", "Countdown Timer",
-                    "getCountdownTimer", "setCountdownTimer", int.class, "0");
+                    "getCountdownTimer", "setCountdownTimer", int.class, "0",
+                    "Set the camera countdown timer in seconds for shutter release"
+            );
 
             ParamStore isMirrorStore = new ParamStore(
                     "mr", "isMirror", "Mirror",
-                    "getIsMirror", "setIsMirror", boolean.class, "true");
+                    "getIsMirror", "setIsMirror", boolean.class, "true",
+                    "In photo booth mode it sets the display to a mirror image."
+            );
 
             ParamStore countDownEnabledStore = new ParamStore(
                     "cd", "countDownEnabled", "Count Down Enabled",
-                    "getCountDownEnabled", "setCountDownEnabled", boolean.class, "false");
+                    "getCountDownEnabled", "setCountDownEnabled", boolean.class, "false",
+                    "Enables or disables the countdown timer for the camera."
+            );
 
             ParamStore udpControlEnabledStore = new ParamStore(
                     "uc", "udpControlEnabled", "UDP Control Enabled",
-                    "getUdpControlEnabled", "setUdpControlEnabled", boolean.class, "false");
+                    "getUdpControlEnabled", "setUdpControlEnabled", boolean.class, "false",
+                    "Enables or disables Wi-Fi UDP broadcast message receive and transmit."
+            );
 
             ParamStore udpTransmitStore = new ParamStore(
                     "ut", "udpTransmit", "UDP Transmit",
-                    "getUdpTransmit", "setUdpTransmit", boolean.class, "false");
+                    "getUdpTransmit", "setUdpTransmit", boolean.class, "false",
+                    "With Wi-Fi broadcast message control enabled, this option mutually exclusive enables transmit or receive only."
+            );
 
             ParamStore autoReviewStore = new ParamStore(
                     "ar", "autoReview", "Auto Review",
-                    "getAutoReview", "setAutoReview", boolean.class, "false");
+                    "getAutoReview", "setAutoReview", boolean.class, "false",
+                    "In photo booth mode after a photo capture keep the booth in review mode until changed by the operator. When false the camera is ready to shoot after showing the last photo briefly"
+            );
 
             ParamStore sbsCropPrintStore = new ParamStore(
                     "sbs", "sbsCropPrint", "SBS Crop Print",
-                    "getSbsCropPrint", "setSbsCropPrint", boolean.class, "false");
+                    "getSbsCropPrint", "setSbsCropPrint", boolean.class, "false",
+                    "When enabled the SBS photo is center cropped to fit the printer paper size 6x4"
+            );
 
             ParamStore focusDistanceIndexStore = new ParamStore(
                     "fdi", "focusDistanceIndex", "Focus Distance Index",
-                    "getFocusDistanceIndex", "setFocusDistanceIndex", int.class, "0");
+                    "getFocusDistanceIndex", "setFocusDistanceIndex", int.class, "0",
+                    "Set the focus distance index: 0 HyperFocal Focus Distance 1.7 m; 1 Photo Booth Focus Distance 550mm; 2 Macro Focus Distance 100mm; 3 Auto Focus Distance"
+            );
 
             ParamStore[] paramStores = {parallaxOffsetStore, verticalOffsetStore, receiverIpStore,
                     isPhotoBoothStore, isBlankScreenStore, isSoundOnStore, isAiEditStore,
                     title1Store, title2Store, inst1Store, inst2Store, countdownTimerStore, isMirrorStore,
-                    countDownEnabledStore, udpControlEnabledStore, udpTransmitStore, autoReviewStore, sbsCropPrintStore, focusDistanceIndexStore};
+                    countDownEnabledStore, udpControlEnabledStore, udpTransmitStore, autoReviewStore, sbsCropPrintStore,
+                    focusDistanceIndexStore};
 
             // look up parameter by abbreviation and return its current value
             public String findParam(String abbr, String value, boolean set) {
