@@ -2,7 +2,7 @@
 
 ## Overview
 This document provides a complete reference for the keyboard-driven command interface used to view and modify A3DCamera application parameters. 
-The system is designed for on-the-fly configuration in the photo booth directly from the camera interface.
+The system is designed for remote configuration of the photo booth directly.
 
 ## ⌨️ Usage Instructions
 
