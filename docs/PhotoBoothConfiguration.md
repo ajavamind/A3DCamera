@@ -24,12 +24,6 @@ The system is designed for on-the-fly configuration in the photo booth directly 
     *   The backslash `\` key resets the parameter to its factory default value.
     *   *Example:* `//pb=\` turns off photo booth mode (resets to default `false`).
 
-## 📷 Configuration Modes
-
-*   **Default Values:** The default parameter values configure the device as a **3D point-and-shoot camera**.
-*   **Photo Booth Mode:** When `pb=true`, the camera enters photo booth mode but can still be handheld to take pictures. Photo booth mode shows live view SBS, Anaglyph, and Left or Right images.
-*   **Fixed Photo Booth:** With additional settings, the camera is intended to be mounted in a fixed photo booth setup.
-
 ## 📋 Parameter Table
 
 All parameters are listed below. The full description for each parameter is provided in the section following this table.
@@ -56,42 +50,72 @@ All parameters are listed below. The full description for each parameter is prov
 | `ut` | UDP Transmit | boolean | `false` |
 | `vt` | Vertical Offset | int | `0` |
 
+## 📷 Configuration Modes
+
+*   **Default Values:** The default parameter values configure the device as a **3D point-and-shoot camera**.
+*   **Photo Booth Mode:** When `pb=true`, the camera enters photo booth mode but can still be handheld to take pictures. Photo booth mode shows live view SBS, Anaglyph, and Left or Right images.
+*   **Fixed Photo Booth:** With additional settings, the camera is intended to be mounted in a fixed photo booth setup.
+
 ## 📖 Detailed Parameter Descriptions
 
-**//ai**: Turns on AI Edit mode to launch another application that prompts AI to edit a photo.
+**ai**: Turns on AI Edit mode to launch another application that prompts AI to edit a photo.
 
-**//ar**: In photo booth mode after a photo capture keep the booth in review mode until changed by the operator. When false the camera is ready to shoot after showing the last photo briefly.
+**ar**: In photo booth mode after a photo capture keep the booth in review mode until changed by the operator. When false the camera is ready to shoot after showing the last photo briefly.
 
-**//bl**: For covering the active display with black.
+**bl**: For covering the active display with black.
 
-**//cd**: Enables or disables the countdown timer for the camera.
+**cd**: Enables or disables the countdown timer for the camera.
 
-**//ct**: Set the camera countdown display timer in seconds before shutter release.
+**ct**: Set the camera countdown display timer in seconds before shutter release.
 
-**//fdi**: Set the focus distance index: 0 HyperFocal Focus Distance 1.7 m; 1 Photo Booth Focus Distance 550mm; 2 Macro Focus Distance 100mm; 3 Auto Focus Distance.
+**fdi**: Set the focus distance index: 0 HyperFocal Focus Distance 1.7 m; 1 Photo Booth Focus Distance 550mm; 2 Macro Focus Distance 100mm; 3 Auto Focus Distance.
 
-**//i1**: Photo booth instruction appearing on the top first line.
+**i1**: Photo booth instruction appearing on the top first line.
 
-**//i2**: Photo booth instruction appearing on the top second line.
+**i2**: Photo booth instruction appearing on the top second line.
 
-**//mr**: In photo booth mode it sets the display to a mirror image.
+**mr**: In photo booth mode it sets the display to a mirror image.
 
-**//pb**: Configures a photo booth operation and display.
+**pb**: Configures a photo booth operation and display.
 
-**//px**: Camera left and right image parallax offset for stereo window placement.
+**px**: Camera left and right image parallax offset for stereo window placement.
 
-**//rip**: The IP Address of the device to receive a URL Link for a saved photo.
+**rip**: The IP Address of the device to receive a URL Link for a saved photo.
 
-**//sd**: Turns on/off the shutter sound.
+**sd**: Turns the shutter sound on/off.
 
-**//sbs**: When enabled the SBS photo is center cropped to fit the printer paper size 6x4.
+**sbs**: When enabled the SBS photo is center cropped to fit the printer paper size 6x4.
 
-**//t1**: Photo booth title appearing on the bottom first line.
+**t1**: Photo booth title appearing on the bottom first line.
 
-**//t2**: Photo booth title appearing on the bottom second line.
+**t2**: Photo booth title appearing on the bottom second line.
 
-**//uc**: Enables or disables Wi-Fi UDP broadcast message receive and transmit.
+**uc**: Enables or disables Wi-Fi UDP broadcast message receive and transmit.
 
-**//ut**: With Wi-Fi broadcast message control enabled, this option mutually exclusive enables transmit or receive only.
+**ut**: With Wi-Fi broadcast message control enabled, this option mutually exclusive enables transmit or receive only.
 
-**//vt**: Camera left and right image vertical offset alignment for 3D camera correction.
+**vt**: Camera left and right image vertical offset alignment for 3D camera correction.
+
+## 📋 Usage Examples
+
+| Action | Command Entry | Result |
+| :--- | :--- | :--- |
+| Check | parallax offset	//px ➔ [Enter]	| Displays: parallaxOffset = 0 |
+| Enable AI editing | 	//ai=true ➔ [Enter]	| Sets AI Edit to true |
+| Set countdown timer | 	//ct=5 ➔ [Enter]	| Sets timer to 3 seconds |
+| Reset to default | 	//pb=\ ➔ [Enter]	|  Sets Photo Booth to false |
+| Change title | 	//t1=My Booth ➔ [Enter]	|  Sets Title 1 to My Booth |
+
+
+
+## Important Notes
+
+Default Configuration: All out-of-the-box default values set the standard 3D point-and-shoot camera experience.
+
+Photo Booth Mode (pb):
+
+* Setting //pb=true activates photo booth functionality. The camera becomes active with selective live SBS, anaglyph, and single left and right eye views and can be handheld to take pictures.
+* When intended for a fixed photo booth setup, additional parameters (such as ct, cd, i1, i2, fdi, t1, t2, uc, and ut) should be configured to match the physical installation.
+* Restart Behavior: Changing certain system-level parameters (e.g., pb, uc, ut) will trigger an immediate application restart to safely reinitialize the new configuration.
+* String Formatting: When entering string parameters, quotes are not used to define strings in the command line. Spaces are preserved exactly as typed.
+
