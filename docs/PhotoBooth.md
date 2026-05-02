@@ -111,4 +111,4 @@ These devices must be charging to prevent sleep.
 
 # Photo Booth Configuration
 
-See [Photo Booth Configuration](docs/PhotoBoothConfiguration.md) documentation.
+See [Photo Booth Configuration](PhotoBoothConfiguration.md) documentation.
