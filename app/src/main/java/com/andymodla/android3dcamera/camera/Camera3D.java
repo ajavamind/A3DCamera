@@ -175,7 +175,7 @@ public class Camera3D {
 
     //volatile boolean shutterSound = true;
     public volatile boolean available = false; // PImage available to access
-    public volatile boolean captureInProgress = false;
+    public final AtomicBoolean captureInProgress = new AtomicBoolean(false);
 
     // Image processing got preview
     private final AtomicBoolean isProcessingLeft = new AtomicBoolean(false);
@@ -259,6 +259,7 @@ public class Camera3D {
         Log.d(TAG, "ro.usb.uvc.enabled=" + System.getProperty("ro.usb.uvc.enabled"));
         //System.setProperty("ro.usb.uvc.enabled", String.valueOf(true));
         //Log.d(TAG, "ro.usb.uvc.enabled="+System.getProperty("ro.usb.uvc.enabled"));
+
     }
 
     public void setpApplet(PApplet pApplet) {
@@ -269,6 +270,7 @@ public class Camera3D {
         if (isPhotobooth) {
             useProcessing = isPhotobooth;
         } else {
+            useProcessing = false;
             Log.d(TAG, "setupSurfaces()");
             // set up display surfaces
             mSurfaceView0 = ((MainActivity)context).findViewById(R.id.surfaceView);
@@ -299,7 +301,6 @@ public class Camera3D {
         if (imageReader2 != null) {
             imageReader2.close();
         }
-
     }
 
     public void startCameraThread() {
@@ -844,8 +845,9 @@ public class Camera3D {
      */
     public void createCameraCaptureSession() {
         Log.d(TAG, "createCameraCaptureSession() captureInProgress="+captureInProgress);
-        if (captureInProgress) return;
-        captureInProgress = true;
+        if (captureInProgress.get()) return;
+        captureInProgress.set(true);
+
 
         if (mCameraDevice == null || mCameraCaptureSession == null) {
             Toast.makeText(context, "Camera not ready", Toast.LENGTH_SHORT).show();
@@ -880,7 +882,8 @@ public class Camera3D {
             rightBytes = null;
             media.recycleBitmaps();
             timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
-            ((MainActivity)context).remoteShutter();
+            ((MainActivity)context).remoteShutter();  // send shutter release broadcast message
+            //Log.d(TAG, "createCameraCaptureSession() "+timestamp + " state="+((MainActivity)context).state);
 
             // left image reader
             mImageReader0.setOnImageAvailableListener(new OnImageAvailableListener() {
@@ -917,7 +920,8 @@ public class Camera3D {
                                 TotalCaptureResult result) {
                             // This method is called when the capture is complete
                             // You can process the result here if needed
-                            Log.d(TAG, "Capture completed successfully");
+                            Log.d(TAG, "Capture Request completed successfully");
+                            //captureInProgress.set(false);  // done capturing images
                         }
 
                         @Override
@@ -944,7 +948,7 @@ public class Camera3D {
                     };
 
             mCameraCaptureSession.captureSingleRequest(captureBuilder.build(), cameraExecutor, captureSingleRequestListener);
-
+            //Log.d(TAG, "createCameraCaptureSession() request sent");
         } catch (CameraAccessException e) {
             Log.e(TAG, "Error capturing images", e);
             Toast.makeText(context, "Error capturing images", Toast.LENGTH_SHORT).show();
@@ -964,7 +968,10 @@ public class Camera3D {
 
     private void saveImageFiles(Image left, Image right) {
         if (left != null && right != null) {
-            ((MainActivity)context).state = MainActivity.CAPTURE_STATE;
+            //Log.d(TAG, "saveImageFiles() "+left.getTimestamp() +" "+right.getTimestamp());
+            if (parameters.isPhotoBooth) {
+                ((MainActivity) context).state = MainActivity.CAPTURE_STATE;
+            }
             leftBytes = convertToBytes(left);
             rightBytes = convertToBytes(right);
             left.close();
@@ -974,7 +981,7 @@ public class Camera3D {
                 leftBytes = null;
                 rightBytes = null;
             }
-            captureInProgress = false; // done capturing images
+            captureInProgress.set(false);  //  done capturing images
         }
     }
 
@@ -1016,6 +1023,7 @@ public class Camera3D {
                 toneGen.stopTone();
                 toneGen.release();
             }
+
         }, 100); // 100 milliseconds is a good duration for a short tone.
     }
 

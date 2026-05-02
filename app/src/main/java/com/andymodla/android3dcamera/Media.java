@@ -379,6 +379,7 @@ public class Media {
             ((PhotoBooth) pApplet).setReviewImages(leftReview, rightReview);
             ((MainActivity) context).setReview();
         }
+        //camera.captureInProgress.set(false);
     }
 
     public void printImageType() {

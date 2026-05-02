@@ -339,23 +339,28 @@ public class MainActivity extends AppCompatActivity {
                 // 3. Get the coordinates
                 float x = event.getX();
                 float y = event.getY();
-                Log.d(TAG, "onTouch -> X: " + x + " | Y: " + y);
+                //Log.d(TAG, "onTouch -> X: " + x + " | Y: " + y);
                 // 4. Determine the action (Down, Move, Up)
                 int action = event.getAction();
 
                 switch (action) {
                     case MotionEvent.ACTION_DOWN:
                         // Log when the finger/mouse first touches the screen
-                        Log.d(TAG, "ACTION_DOWN detected at -> X: " + x + " | Y: " + y);
+                        //Log.d(TAG, "ACTION_DOWN detected at -> X: " + x + " | Y: " + y);
                         break;
 
                     case MotionEvent.ACTION_MOVE:
                         // Log when the finger/mouse is sliding/moving
                         // Note: This will spam your Logcat very fast!
-                        Log.d(TAG, "ACTION_MOVE detected at -> X: " + x + " | Y: " + y);
+                        //Log.d(TAG, "ACTION_MOVE detected at -> X: " + x + " | Y: " + y);
                         break;
 
                     case MotionEvent.ACTION_UP:
+                        // upper right corner is hidden shutter release button
+                        if (x > 2040.0 && y < 140.0) {
+                            capturePhoto();
+                        }
+
                         // Log when the finger/mouse is lifted
                         Log.d(TAG, "ACTION_UP detected at -> X: " + x + " | Y: " + y);
                         break;
@@ -474,11 +479,13 @@ public class MainActivity extends AppCompatActivity {
             // Left mouse button pressed (Large Shutter button on Buzzer Box)
             Log.d(TAG, "Left button pressed");
             if (isPhotoBooth) {
-                if (!camera.captureInProgress) {
+                if (!camera.captureInProgress.get()) {
                     processShutterKey();
                 }
             } else {
-                capturePhoto();
+                if (!camera.captureInProgress.get()) {
+                    capturePhoto();
+                }
             }
         } else if ((buttonState & MotionEvent.BUTTON_TERTIARY) != 0) { // middle mouse button
             // mouse button pressed (SBS/Anaglyph/L/R button on Buzzer Box)
@@ -666,7 +673,7 @@ public class MainActivity extends AppCompatActivity {
                     return true;
                 case KeyEvent.KEYCODE_3D_MODE:
                 case KeyEvent.KEYCODE_ENTER:
-                    if (!camera.captureInProgress) {
+                    if (!camera.captureInProgress.get()) {
                         processShutterKey();
                     }
                     return true;
@@ -682,6 +689,7 @@ public class MainActivity extends AppCompatActivity {
 //                    return true;
 //                }
                 if (continuousMode) {
+                    //Log.d(TAG, "onKeyUp - ignore shutter key in continuous mode");
                     return true; // ignore shutter key in continuous shutter
                 } else {
                     capturePhoto();
@@ -917,13 +925,14 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void capturePhoto() {
+        //Log.d(TAG, "capturePhoto()");
+        //Log.d(TAG, "captureInProgress=" + camera.captureInProgress.get());
+        if (camera.captureInProgress.get()) return;
+        //Log.d(TAG, countdownTimer != null ? "countdownTimer != null" : "countdownTimer == null");
         if (countdownTimer != null) return;
-        if ((countdownDigit < 0)) {
-            if (parameters.getCountDownEnabled()) {
-                countdownStart = parameters.getCountdownTimer();;
-            } else {
-                countdownStart = 0;
-            }
+        //Log.d(TAG, "countdownDigit=" + countdownDigit);
+        if (parameters.getCountDownEnabled()) {
+            countdownStart = parameters.getCountdownTimer();
             startCountdownSequence(countdownStart);
         } else {
             if (countdownTextView != null) countdownTextView.setVisibility(View.GONE);
@@ -972,15 +981,15 @@ public class MainActivity extends AppCompatActivity {
      */
     void startCountdownSequence(int startCount) {
         Log.d(TAG, "startCountdownSequence startCount=" + startCount);
-        if (isPhotoBooth) {
+        //if (isPhotoBooth) {
             if (startCount == 0) {
                 camera.createCameraCaptureSession(); // take a picture
                 return;
             }
-        }
+        //}
         if (countdownTimer == null) {
             countdownTimer = new Timer();
-            countdownDigit = startCount + 1;
+            countdownDigit = startCount + 1;  // for display correct
             if (isPhotoBooth) {
                 photoBooth.setCountdown(Integer.toString(countdownDigit));
             } else {
@@ -1017,7 +1026,7 @@ public class MainActivity extends AppCompatActivity {
                                         countdownTextView.setText("");
                                         countdownTextView.setVisibility(View.GONE);
                                     }
-                                    remoteFocus();
+                                    remoteFocus(); // send broadcast focus command over the network
                                 } else {
                                     if (isPhotoBooth) {
                                         photoBooth.setCountdown(Integer.toString(countdownDigit));
