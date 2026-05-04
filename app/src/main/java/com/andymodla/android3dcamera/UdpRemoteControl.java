@@ -20,6 +20,7 @@ import java.util.Vector;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import android.net.wifi.WifiManager;
 import android.util.Log;
 import android.content.Context;
 
@@ -41,8 +42,8 @@ public class UdpRemoteControl {
     private volatile UdpServer1 udpServer;    // Broadcast receiver
     private int udpPort = 8000;  // Broadcast port
     public static String httpUrl = "";
-    public static String sCount = ""; // Photo counter received from Broadcast message
-    private static final int MAXPARAM_SIZE = 16;
+    public static String sParam = ""; // Photo counter received from Broadcast message
+
     private Context context;
     private Camera3D camera;
     private boolean isUdpTransmitter = false;
@@ -138,8 +139,8 @@ public class UdpRemoteControl {
                             ToastHelper.showToast(context, "Remote Not In Photo Mode");
                         }
                     } else if (command.startsWith("S") || command.startsWith("C")) {
-                        sCount = getParam(data);
-                        if (MyDebug.LOG) Log.d(TAG, "remote takePicture() " + sCount);
+                        sParam = getParam(data);
+                        if (MyDebug.LOG) Log.d(TAG, "remote takePicture() " + sParam);
                         if (!isVideo) {
                             ((MainActivity) context).runOnUiThread(new Runnable() {
                                 public void run() {
@@ -150,8 +151,8 @@ public class UdpRemoteControl {
                             ToastHelper.showToast(context, "Remote Not In Photo Mode");
                         }
                     } else if (command.startsWith("V")) { // record/stop video
-                        sCount = getParam(data);
-                        if (MyDebug.LOG) Log.d(TAG, "remote record video " + sCount);
+                        sParam = getParam(data);
+                        if (MyDebug.LOG) Log.d(TAG, "remote record video " + sParam);
                         if (isVideo) {
                             ((MainActivity) context).runOnUiThread(new Runnable() {
                                 public void run() {
@@ -200,6 +201,14 @@ public class UdpRemoteControl {
                     if (udpServer.socket() == null) {
                         if (MyDebug.LOG) Log.d(TAG, "UdpServer not connected retry");
                     }
+                    // In setUdpReceiver(), after creating the server:
+                    WifiManager wifi = (WifiManager) context.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+                    if (wifi != null) {
+                        multicastLock = wifi.createMulticastLock("UdpRemoteControl");
+                        multicastLock.setReferenceCounted(true);
+                        multicastLock.acquire();
+                        if (MyDebug.LOG) Log.d(TAG, "Acquired MulticastLock for UDP reception");
+                    }
                 }
             }
         }
@@ -215,6 +224,10 @@ public class UdpRemoteControl {
                 udpServer.removeListener((NetListener) list.get(i));
                 if (MyDebug.LOG) Log.d(TAG, "remove NetListener " + list.get(i).toString());
             }
+            if (multicastLock != null && multicastLock.isHeld()) {
+                multicastLock.release();
+                multicastLock = null;
+            }
             udpServer.stop();
             udpServer.dispose();
             udpServer = null;
@@ -227,20 +240,33 @@ public class UdpRemoteControl {
      * Receiver section
      *
      */
+    private WifiManager.MulticastLock multicastLock;
+    private static final int MAXPARAM_SIZE = 256;
 
     private String getParam(byte[] data) {
+        if (data == null || data.length < 2) return ""; // Need at least command byte + 1 param byte
         String param = "";
         byte[] s = new byte[MAXPARAM_SIZE];
-        boolean done = false;
+        //boolean done = false;
+
+        // Safely calculate how many bytes we can actually copy
+        int maxCopy = Math.min(data.length - 1, MAXPARAM_SIZE);
+
         for (int i = 0; i < MAXPARAM_SIZE; i++) {
-            byte b = data[i + 1];
-            if (done || b == 0 || b == '\r' || b == '\n') {
-                s[i] = ' ';
-                done = true;
+            if (i < maxCopy) {
+                byte b = data[i + 1];
+                if (b == 0 || b == '\r' || b == '\n') {
+                    s[i] = ' ';
+                    //done = true;
+                } else {
+                    s[i] = b;
+                }
             } else {
-                s[i] = data[i + 1];
+                s[i] = ' ';
+                //done = true;
             }
         }
+
         param = Bytes.getAsString(s).trim();
         return param;
     }

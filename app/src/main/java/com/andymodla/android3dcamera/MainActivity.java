@@ -928,7 +928,8 @@ public class MainActivity extends AppCompatActivity {
         //Log.d(TAG, "capturePhoto()");
         //Log.d(TAG, "captureInProgress=" + camera.captureInProgress.get());
         if (camera.captureInProgress.get()) return;
-        //Log.d(TAG, countdownTimer != null ? "countdownTimer != null" : "countdownTimer == null");
+        if (isPhotoBooth && !photoBooth.isLiveView())
+            return;
         if (countdownTimer != null) return;
         //Log.d(TAG, "countdownDigit=" + countdownDigit);
         if (parameters.getCountDownEnabled()) {

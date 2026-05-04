@@ -982,6 +982,7 @@ public class Camera3D {
                 rightBytes = null;
             }
             captureInProgress.set(false);  //  done capturing images
+            Log.d(TAG, "saveImageFiles() done captureInProgress="+captureInProgress.get());
         }
     }
 
