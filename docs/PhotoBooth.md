@@ -7,7 +7,7 @@
 # Photo Booth Equipment
 
 ## XBP - XReal Beam Pro (256 GB version) 3D Camera Tablet
-The XBP is an Android tablet with a 3D camera. For this application it functions as a 3D camera, photo booth controller, and photo server.
+The XBP is an Android tablet with a 3D camera. This application functions as a 3D camera, photo booth controller, and photo server.
 
 The A3DCamera app has not been tested with a XBP with only 128 GB storage and 6 GB RAM.
 It is not known how well it will perform with less RAM.
@@ -39,21 +39,23 @@ The networked printer used to print photo booth images.
 
 ## Network Router
 This Wi-Fi network router connects all the devices used with the photo booth. It also connects to the Internet providers for AI Image editing services.
+I use the GL-iNet Slate 7 mobile router. It can optionally connect to the Internet through Wi-Fi or Cat5 cable.
 
 ## Additional Cameras
 Not shown in the block diagram are other cameras that can be triggered over Wi-Fi from the A3DCamera app when it starts to take a photo. 
 This is accomplished using network broadcast messages to waiting networked based cameras.
-When these cameras are Android phones with the [MultRemoteCamera](https://sourceforge.net/p/multi-remote-camera/wiki/Home/) Android app, the photo files will have the same date/time as the corresponding A3DCamera app photo.
+When these cameras are Android phones with the [MultRemoteCamera](https://sourceforge.net/p/multi-remote-camera/wiki/Home/) Android app installed and running, the photo files will have the same date/time as the corresponding A3DCamera app photo.
 
 In my photo booth I also use two Samsung S8 phones (introduced in 2017) each using the MultiRemoteCamera app for a custom 3D rig. 
 This phone's images are better quality than XBP (introduced in 2024) images and are not as wide angle.
 The images need post processing with Stereo Photo Maker to align and convert to 3D and set the stereo window (parallax).
-This is not done while the booth is in operation, although it is possible if the cameras also have the Simple HTTP Server PLUS Android App installed and running
+This is not done while the booth is in operation, although it is possible if the cameras also have the Simple HTTP Server PLUS Android App installed and running.
 
-Other XReal Beam Pro cameras using A3DCamera can be configured to receive these broadcast messages and trigger photo captures at the same time.
+Other XReal Beam Pro cameras using A3DCamera can be configured to receive these broadcast messages and trigger photo captures at the same time. 
+**A photo booth can use multiple Xreal Bam Pro cameraes.**
 
 ## Miscellaneous
-Camera tripod, brackets, cables, power adapters, and optional photo lamp.
+Camera tripod, brackets, cables, power adapters, extension cord, and optional photo lamp.
 
 # Photo Booth Software
 
