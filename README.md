@@ -2,10 +2,10 @@
 **This repository is the open source documentation for a 3D Camera Photo Booth demonstration project I presented at the 2026 Philadelphia Maker Faire, April 19, 2026.**
 
 **The Photo Booth is a sub-section of the A3DCamera code and is turned on with Bluetooth keyboard configuration commands. 
-The Photo Booth mode can also be used as a regular camera app when the countdown timer is not configured. 
-It features live view Anaglyph display and 2D left and right eye viewing modes.**
+The Photo Booth mode installs as a regular camera app and must be configured by enabling a countdown timer and other options. 
+The Photo Booth features parallax adjusted live view SBS (parallel side by side L/R), Anaglyph, 2D left and 2D right eye viewing modes.**
 
-**See documentation at [PHOTO BOOTH](docs/PhotoBooth.md).**
+**See documentation for the [ Photo Booth ](docs/PhotoBooth.md).**
 
 **Work in Progress**
 
@@ -21,20 +21,20 @@ It's a software playground for experimenting. See Experiments section below.
 ## Design Goals
 ### Use Cases
 The intended uses for the app are situations where the camera is not in your hands and the screen cannot or should not be touched or when the app display is not a touch screen. 
-Specific uses I would like to have with a 3D camera app are:
+The specific uses I would like to have with a 3D camera app are:
 
 * 3D Photo Booth
 * 3D live view, photo capture, or photo viewing using any stereoscope. This worked with London Stereoscopic Company OWL stereoscope using adapters to hold the BPO in place.
 * Live View Anaglyph 3D for finding the stereo window.
 * Remote control of the camera using Bluetooth or a local Wi-Fi network
-* Simultaneous multiple 3D cameras remote control
+* Simultaneous multiple 2D and 3D cameras remote control
 * Sharing photos via email, for direct printing SBS or Anaglyph, or for review and alignment using 3D apps like [3DSteroidPro](https://play.google.com/store/apps/details?id=jp.suto.stereoroidpro&hl=en_US) and for sharing with custom 3D apps and networked 3D tablets and devices.
 * The default display mode shows the stereo image without GUI controls or other display information to allow free-viewing and stereoscopes or Anaglyph glasses. The display of the 3D parallel L/R image should be centered on the display and no larger than 130 cm wide for a stereoscope or for free-viewing the image to minimize eye strain. 
 * Turn off the display, while allowing the camera to continue functioning with remote control. Blanking the screen is for photographing wild life without disturing them. 
-Blanking the screen may help conserve battery power with long interval timer captures. (Only implemented with Photo Booth mode)
+Blanking the screen helps conserve battery power with long interval timer captures. (Only implemented with Photo Booth mode)
 
 ### Camera App Design
-For the above uses cases the app requires remote key control of its functions and not with the touch screen.
+For the above uses cases the app requires remote key control of its functions and not requiring a touch screen.
 
 With the remote control requirements for the app, a minimum Bluetooth controller is needed. 
 I want to keep the GUI mostly for viewing 3D images and for showing brief information status or settings.
@@ -97,11 +97,15 @@ These values persist after app restart and adjust the saved photos, except for s
 
 ### Camera Control
 #### On Camera
-Take photos with the camera key or volume up key upon key release. There is no touch screen photo capture implemented.
+Take photos with the camera key or volume up key upon key release. In photo booth mode the volume key changes function to review and the volume down key rotates live view, anaglyph, and left/right photos.
+
+There is an invisible button at the top right of the screen for touch photo capture during live view.
 
 Use the volume down on key release to review the last photo taken. The Review function launches the [3DSteroid Pro (StereoRoidPro)](https://play.google.com/store/apps/details?id=jp.suto.stereoroidpro&hl=en_US)
 app by default to view the photo.
 If this app is not installed, you can select the app you will use for review.
+
+The camera key may need to be changed to not select the native 3D app automatically, rather function as a shutter key only.
 
 #### Wired Remote Control
 A wired USB-C connected Android keyboard can control the camera with keys similar to wireless keyboards or game controllers.
@@ -133,12 +137,11 @@ Here is the current key mapping for a 8BitDo Bluetooth game controller in Androi
 The app can also be controlled with any Bluetooth ASCII keyboard. 
 Here are the Android keyboard keys matching the similar functions of the 8BitDo Micro game controller (but not using same key code as with keyboard mode on the game controller)
 
-Incomplete work in progress - 
-
 * Q - FOCUS DISTANCE - Cycle through fixed focus distances: Hyperfocal, Photo Booth, Macro, Auto Focus
 * A - DISPLAY - Toggle change Review display mode (SBS,  Anaglyph, Left, Right)
 * T - EXPOSURE METERING FN  - Cycle through exposure metering: Frame Average, Center Weighted, Spot Metering
 
+Incomplete work in progress
 
 ##### Bluetooth Mouse Remote Control
 Connect a Bluetooth Mouse to control the camera app with the mouse buttons. A mouse can be rewired in a buzzer style box as a Photo Booth controller.
@@ -188,10 +191,10 @@ To enter developer mode, press the Settings -> About This device -> Build number
 In developer mode, use Settings -> System -> Developer options to turn on USB debugging and use Android Studio or Processing.org Android Mode SDK to download an app.
 
 The Beam Pro device may be configured to use the camera key to launch the native 3D camera app. This will interfere with the A3DCamera app operation.
-You should close all other camera apps before using A3DCamera.
+You should close all other camera apps before using A3DCamera for best performance.
 
 ## Command Line Debug
-There is no GUI for setting camera parameters. The app implements a limited command line interface to set and save some parameters.
+There is no GUI for setting camera parameters. The app implements a command line interface to set and save parameters.
 
 After connecting an Android keyboard to the app, the '/' (forward slash) key will show a prompt line to enter a command. Press the enter key to complete the command and see the results.
 
@@ -202,18 +205,18 @@ The following commands examples are coded:
 4. /v  Show the vertical alignment offset value.
 5. /xxx\  will set the xxx command default value.
 
-These two commands affect the live view image, and change the alignment of stored photos for SBS and Anaglyph.
+These two commands affect the live view image, and change the alignment of stored SBS and Anaglyph photos.
 
 ## Software Issues
 1. To pause the app without using the BACK key, swipe from the right edge to the left, to show the navigation bar.
 2. On the navigation bar press the box or circle to exit (however neither will close the app, unless you swipe it off or clear/close all apps).
 
 ## Hardware Isssues
-1. The 8BitDo Micro Bluetooth Controller times out after 10 minutes. The game controller is not used with the Photo Booth
+1. The 8BitDo Micro Bluetooth Controller times out after 10 minutes. The game controller is not used with the Photo Booth and is only experimental.
 2. The XReal BP camera will time out at a maximum of 15 minutes ( Settings->screen timeout). 
    This can be extended by entering Developer mode, use developer options to set stay awake on. You must keep the device charged with the power cable connected to prevent timeout and last for a long session required for a photo booth.
    The USB data connector is connected to a small portable monitor and is powered by the XReal Beam Pro camera when charging.
-   This is the camera setup for the Photo Booth (tested for at least 4 hours of operation).
+   This is the camera setup for the Photo Booth (tested for at least 7 hours of operation).
 
 ## Stretch Goals
 
