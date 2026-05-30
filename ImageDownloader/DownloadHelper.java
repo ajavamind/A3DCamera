@@ -25,7 +25,7 @@ public class DownloadHelper {
 
   public DownloadHelper(Context context) {
     this.context = context;
-    downloadManager = (DownloadManager) context.getSystemService(Context.DOWNLOAD_SERVICE);
+    downloadManager = (DownloadManager) context.getApplicationContext().getSystemService(Context.DOWNLOAD_SERVICE);
   }
 
   //public void enqueueDownload(String url) {

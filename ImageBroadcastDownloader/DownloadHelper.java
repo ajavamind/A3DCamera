@@ -1,5 +1,9 @@
 package com.andymodla.imagebroadcastdownloader;
 
+/**
+ * Image Broadcast Downloader app
+ * Copyright 2025-2026, Andy Modla All Rights Reserved
+ */
 import android.app.DownloadManager;
 import android.content.Context;
 import android.content.Intent;
@@ -21,7 +25,7 @@ public class DownloadHelper {
 
   public DownloadHelper(Context context) {
     this.context = context;
-    downloadManager = (DownloadManager) context.getSystemService(Context.DOWNLOAD_SERVICE);
+    downloadManager = (DownloadManager) context.getApplicationContext().getSystemService(Context.DOWNLOAD_SERVICE);
   }
 
   // for reference unused
@@ -80,12 +84,16 @@ public class DownloadHelper {
     // Save to public Pictures folder (No storage permission needed on Android 10+)
     request.setDestinationInExternalPublicDir(Environment.DIRECTORY_PICTURES, "Photobooth" + File.separator + fileName);
 
-    DownloadManager manager = (DownloadManager) context.getSystemService(Context.DOWNLOAD_SERVICE);
-    if (manager != null) {
-      downloadId = manager.enqueue(request);
-      System.out.println("Download started...");
+    //DownloadManager manager = (DownloadManager) context.getSystemService(Context.DOWNLOAD_SERVICE);
+    System.out.println("DownloadManager="+downloadManager);
+    if (downloadManager != null) {
+      downloadId = downloadManager.enqueue(request);
+      System.out.println("Download "+downloadId +" started...");
       start = true;
+    } else {
+      System.out.println("Problem with no download manager!");
     }
+    System.out.println("startDownload function end");
   }
 
   void checkDownload() {
@@ -103,31 +111,70 @@ public class DownloadHelper {
     return start;
   }
 
+  //public int getStatus() {
+  //  DownloadManager.Query query = new DownloadManager.Query();
+  //  query.setFilterById(downloadId);
+  //  android.database.Cursor cursor = downloadManager.query(query);
+  //  if (cursor.moveToFirst()) {
+  //    status = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_STATUS));
+  //    reason = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_REASON));
+  //    //System.out.println( "Status: " + status + " Reason: " + reason);
+  //    cursor.close();
+  //    return  status;
+  //  }
+  //  return -1;
+  //}
+
   public int getStatus() {
     DownloadManager.Query query = new DownloadManager.Query();
+    //System.out.println("getStatus Querying Download ID: " + downloadId);
     query.setFilterById(downloadId);
-    android.database.Cursor cursor = downloadManager.query(query);
-    if (cursor.moveToFirst()) {
-      status = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_STATUS));
-      reason = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_REASON));
-      //System.out.println( "Status: " + status + " Reason: " + reason);
-      cursor.close();
-      return  status;
+
+    // Use try-with-resources to automatically close the cursor safely
+    try (android.database.Cursor cursor = downloadManager.query(query)) {
+      if (cursor != null && cursor.moveToFirst()) {
+        // Get column indices first
+        int statusIdx = cursor.getColumnIndex(DownloadManager.COLUMN_STATUS);
+        int reasonIdx = cursor.getColumnIndex(DownloadManager.COLUMN_REASON);
+
+        // Verify columns exist before reading data
+        if (statusIdx != -1 && reasonIdx != -1) {
+          int status = cursor.getInt(statusIdx);
+          int reason = cursor.getInt(reasonIdx);
+          return status;
+        }
+      }
+    }
+    catch (Exception e) {
+      e.printStackTrace();
     }
     return -1;
   }
-
   public String getDownloadStatus() {
     DownloadManager.Query query = new DownloadManager.Query();
+    //System.out.println("getDownloadStatus Querying Download ID: " + downloadId);
+
     query.setFilterById(downloadId);
-    android.database.Cursor cursor = downloadManager.query(query);
-    if (cursor.moveToFirst()) {
-      status = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_STATUS));
-      reason = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_REASON));
-      //System.out.println( "Status: " + status + " Reason: " + reason);
-      cursor.close();
-      if (status == 8 && reason == 0) start = false;
-      return "Status=" + status + " Reason=" + reason;
+    try (android.database.Cursor cursor = downloadManager.query(query)) {
+      if (cursor != null && cursor.moveToFirst()) {
+        int statusIdx = cursor.getColumnIndex(DownloadManager.COLUMN_STATUS);
+        int reasonIdx = cursor.getColumnIndex(DownloadManager.COLUMN_REASON);
+        // Verify columns exist before reading data
+        if (statusIdx != -1 && reasonIdx != -1) {
+
+          status = cursor.getInt(statusIdx);
+          reason = cursor.getInt(reasonIdx);
+          //System.out.println( "Status: " + status + " Reason: " + reason);
+        }
+        cursor.close();
+        if (status == 8 && reason == 0) {
+          start = false;
+        }
+        return "Status=" + status + " Reason=" + reason;
+      }
+    }
+    catch (Exception e) {
+      e.printStackTrace();
     }
     return "No download found";
   }

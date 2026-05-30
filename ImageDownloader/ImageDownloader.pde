@@ -38,6 +38,7 @@ import com.andymodla.imagedownloader.TinyWebServer;
 import com.andymodla.imagedownloader.DownloadHelper;
 import android.media.MediaScannerConnection;
 import android.graphics.Bitmap;
+import android.view.View;
 
 private DownloadHelper downloadHelper;
 String ip ="";
@@ -64,6 +65,7 @@ void onCreate() {  // not called from processing
 
 void onStart() {
   System.out.println("onStart()");
+  setVisibility();
   ip = getHostnameAddress();
   println("ip="+ip);
   if (downloadHelper == null) {
@@ -78,6 +80,50 @@ void onDestroy() {
   //stop webserver on destroy of service or process
   TinyWebServer.stopServer();
 }
+
+private void setVisibility() {
+  //if (DEBUG) println("setVisibility width = "+width + " height="+height);
+  runOnUiThread(new Runnable() {
+    @Override
+      public void run() {
+      //if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+      //    // Android 11 (API 30) and above - use WindowInsetsController
+      //    WindowInsetsController controller = getWindow().getInsetsController();
+      //    if (controller != null) {
+      //        // Hide status bar and navigation bar
+      //        controller.hide(WindowInsets.Type.statusBars() | WindowInsets.Type.navigationBars());
+
+      //        // Set behavior for when user swipes to show system bars
+      //        controller.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+
+      //        // Optional: Set light status bar (uncomment if needed)
+      //        // controller.setSystemBarsAppearance(
+      //        //     WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS,
+      //        //     WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
+      //        // );
+      //    }
+
+      //    // Enable edge-to-edge layout
+      //    getWindow().setDecorFitsSystemWindows(false);
+      //} else {
+      // Fallback for older Android versions (API 29 and below)
+      int newVis = View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+        | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+        | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+        | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+        | View.SYSTEM_UI_FLAG_FULLSCREEN
+        //  | View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+        | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY;
+
+      final View decorView = getWindow().getDecorView();
+      decorView.setSystemUiVisibility(newVis);
+      //                              }
+    }
+  }
+  );
+}
+
+// Processing ==============================================================
 
 void settings() {
   fullScreen(P2D);
@@ -266,18 +312,3 @@ void scanImage(String absolutePath) {
     new String[]{"image/png"}, null);
   System.out.println( "MediaScannerConnection.scanFile Image saved: " + absolutePath);
 }
-
-void mouseReleased() {
-  stereo = !stereo;
-}
-
-//DownloadManager.Query query = new DownloadManager.Query();
-//query.setFilterById(downloadId);
-//Cursor cursor = downloadManager.query(query);
-
-//if (cursor.moveToFirst()) {
-//    int status = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_STATUS));
-//    int reason = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_REASON));
-//    // Use status and reason constants to handle the state
-//}
-//cursor.close();

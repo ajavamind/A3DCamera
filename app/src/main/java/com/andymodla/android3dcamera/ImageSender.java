@@ -111,6 +111,7 @@ public class ImageSender {
         Log.d(TAG, "sendUrlBroadcast: " + urlToSend);
         new Thread(() -> {
             try {
+                Thread.sleep(1000);
                 udpRemoteControl.sendBroadcast(urlToSend);
             } catch (Exception e) {
                 //e.printStackTrace();

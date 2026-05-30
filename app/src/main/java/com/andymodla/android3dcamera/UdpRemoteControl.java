@@ -495,7 +495,9 @@ public class UdpRemoteControl {
 
     void sendBroadcast(String url) {
         if (udpClient != null) {
-            udpClient.send("L"+url); // send broadcast message to network listeners to retrieve image url
+            String sendData = "L" + url;
+            Log.d(TAG, "sendBroadcast: " + sendData);
+            udpClient.send(sendData); // send broadcast message to network listeners to retrieve image url
         }
     }
 
