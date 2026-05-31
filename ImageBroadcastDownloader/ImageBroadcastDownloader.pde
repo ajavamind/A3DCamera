@@ -314,8 +314,6 @@ void draw() {
         rightImage.setNative(null);
 
       }
-      xOffset = 0; //(width- photo.width)/4;
-      ar = (float)photo.width / (float)photo.height;
     }
     ready = false;
     show = true;
@@ -335,8 +333,10 @@ void draw() {
       else
         image(colImage, sOffset, 0);
     } else {
+      xOffset = 0; //(width- photo.width)/4;
+      ar = (float)photo.width / (float)photo.height;
       image(photo, xOffset, 0, width, width/ar);
-      displayStatus();
+      //displayStatus();
     }
   }
 }
