@@ -42,6 +42,7 @@ import android.graphics.Bitmap;
 import android.os.Build;
 
 //import MyDebug;
+public static final boolean DEBUG = true;
 
 private DownloadHelper downloadHelper;
 private UdpRemoteControl udpRemoteControl;
@@ -52,6 +53,7 @@ String version = "1.0";
 String path;
 PImage photo;
 volatile PImage colImage;
+volatile PImage anaImage;
 volatile PImage originalImage;
 volatile PImage leftImage;
 volatile PImage rightImage;
@@ -113,6 +115,158 @@ void onDestroy() {
   udpRemoteControl.destroy();
 }
 
+
+// Processing ==============================================================
+
+void settings() {
+  fullScreen(P2D);
+}
+
+void setup() {
+  orientation(LANDSCAPE);
+
+  background(0); // Black background
+  frameRate(5);
+
+  String modelName = Build.MODEL;
+  String manufacturer = Build.MANUFACTURER;
+  String deviceName = manufacturer + " " + modelName;
+  println("DeviceInfo", "Device manufacturer: " + manufacturer + " model: "+ modelName);
+  if (modelName.equals("SM-S931U")) {
+    // Samsung S25
+  }
+  if (manufacturer.equals("IQH3D") && modelName.equals("SKYY")) {
+    conversion = COLUMN_INTERLACE;
+  } else if (manufacturer.equals("LitByLeia") && (modelName.equals("LPD-20W") || modelName.equals("LPD-10W"))) {
+    conversion = NO_CONVERSION;
+  } else {
+    conversion = ANAGLYPH;
+  }
+}
+
+
+void draw() {
+  background(0);
+  textSize(48);
+  fill(255);
+
+  boolean start = downloadHelper.isStarted();
+  if (!ready || start) {
+    displayStatus();
+  }
+
+  int status = -1;
+  if (start) status = downloadHelper.getStatus();
+  //println("getStatus ="+status);
+  if (status == 8) {
+    newPhoto = true;
+  }
+
+  if (path != null && path.startsWith("/storage") && newPhoto) {
+    //if (!show && path != null) {
+    try {
+      photo = loadImage(path);
+      System.out.println("loadImage path="+ path + " photo w="+photo.width + " h="+photo.height);
+      if (path.contains("_2x1.")) {
+        stereo = true;
+      } else {
+        stereo = false;
+      }
+      ready = true;
+    }
+    catch (Exception ex) {
+      System.out.println(ex.getClass().getSimpleName());
+      photo = null;
+      ready = false;
+      System.out.println("error loadImage "+path);
+      newPhoto = false;
+    }
+  }
+  if (ready && photo !=null && photo.width >0 && photo.height>0) {
+    if (stereo) {
+      // compute both stereo and original
+      PImage[] imagePair = splitImageLR(photo);
+      leftImage = imagePair[0];
+      rightImage = imagePair[1];
+
+      // check for anaglyph and column interlace type
+      if (conversion == COLUMN_INTERLACE) {
+        colImage = columnInterlaced3D((Bitmap)(leftImage.getNative()), (Bitmap)(rightImage.getNative()), width, height);
+        sOffset = (width - colImage.width)/2;
+        sar = (float)colImage.width / (float)colImage.height;
+      } else if (conversion == ANAGLYPH) {
+        anaImage = colorAnaglyph3D((Bitmap)(leftImage.getNative()), (Bitmap)(rightImage.getNative()), 0, 0);
+      } else {
+        conversion = NO_CONVERSION;
+      }
+      recycle(leftImage, rightImage);
+    }
+    ready = false;
+    show = true;
+    newPhoto = false;
+    println("photo processed conversion="+conversion + " stereo="+stereo);
+  }
+  if (show ) {
+    background(0);
+
+    if (conversion== COLUMN_INTERLACE && stereo) {
+      if (colImage.width < colImage.height)
+        image(colImage, sOffset, 0);
+      else
+        image(colImage, sOffset, 0);
+    } else if (conversion == ANAGLYPH && stereo) {
+      xOffset = 0; //(width- anaImage.width)/2;
+      ar = (float)anaImage.width / (float)anaImage.height;
+      image(anaImage, xOffset, 0, (float)height*ar, height);
+    } else {
+      xOffset = 0; //(width- photo.width)/2;
+      ar = (float)photo.width / (float)photo.height;
+      if (photo.width <= width) {
+        image(photo, xOffset, 0, (float)height*ar, height);
+      } else {
+        image(photo, xOffset, 0, width, ((float)width)/ar);
+      }
+    }
+    //displayStatus();
+  }
+}
+
+void recycle(PImage leftImage, PImage rightImage) {
+  Bitmap lt = ((Bitmap)(leftImage.getNative()));
+  if (lt != null) lt.recycle();
+  leftImage.setNative(null);
+
+  Bitmap rt = ((Bitmap)(rightImage.getNative()));
+  if (rt != null) rt.recycle();
+  rightImage.setNative(null);
+}
+
+void displayStatus() {
+  int voffset = 7*height/10;
+  text("Image Broadcast Downloader version "+ version, 50, voffset );
+  text(hostIp+":"+port, 50, height/8 + voffset+50);
+  String filename = downloadHelper.getFilename();
+  text(filename, 50, voffset + 100);
+  String displayStatus = downloadHelper.getDownloadStatus();
+  text(displayStatus, 50, voffset +150);
+  path = downloadHelper.getPath();
+  text("Downloader path "+path, 50, voffset + 200);
+}
+
+public void receivedUrl(String url) {
+  System.out.println("url="+url);
+  downloadHelper.startDownload( url);
+  newPhoto = true;
+}
+
+// scanImage to make it known to Android file system and apps like Gallery, etc.
+void scanImage(String absolutePath) {
+  // Trigger media scanner to make image visible in gallery
+  MediaScannerConnection.scanFile(getContext(), new String[]{absolutePath},
+    new String[]{"image/png"}, null);
+  System.out.println( "MediaScannerConnection.scanFile Image saved: " + absolutePath);
+}
+
 private void setVisibility() {
   //if (DEBUG) println("setVisibility width = "+width + " height="+height);
   runOnUiThread(new Runnable() {
@@ -153,204 +307,4 @@ private void setVisibility() {
     }
   }
   );
-}
-
-
-// Processing ==============================================================
-
-void settings() {
-  fullScreen(P2D);
-}
-
-void setup() {
-  orientation(LANDSCAPE);
-
-  background(0); // Black background
-  frameRate(5);
-
-  String modelName = Build.MODEL;
-  String manufacturer = Build.MANUFACTURER;
-  String deviceName = manufacturer + " " + modelName;
-  println("DeviceInfo", "Device manufacturer: " + manufacturer + " model: "+ modelName);
-  if (modelName.equals("SM-S931U")) {
-    // Samsung S25
-  }
-  if (manufacturer.equals("IQH3D") && modelName.equals("SKYY")) {
-    conversion = COLUMN_INTERLACE;
-  }
-  //photo = loadImage(testImage);
-  //ready = true;
-  //stereo = true;
-  //show = false;
-  //path = null;
-}
-
-//PImage[] splitImageLR(PImage original) {
-//  //println("splitImageLR w="+original.width +" h="+original.height+ " width="+width + " height="+height);
-//  // Create an array to hold the two resulting images
-//  PImage[] result = new PImage[2];
-
-//  // Calculate the width of each half, using integer division
-//  int halfWidth = original.width / 2;
-//  float ar = ((float)original.width/2) / (float)original.height;
-//  //println("original ar="+ar);
-//  float w = (float)height * ar;
-//  int iw = int(w);
-//  // Create the left half image
-//  result[0] = createImage(iw, height, ARGB);
-//  result[0].copy(original, 0, 0, halfWidth, original.height, 0, 0, iw, height);
-
-//  // Create the right half image
-//  result[1] = createImage(iw, height, ARGB);
-//  result[1].copy(original, halfWidth, 0, halfWidth, original.height, 0, 0, iw, height);
-
-
-//  //println("halfWidth="+halfWidth);
-//  //println("iw="+iw);
-//  //println("left w="+result[0].width + " h="+result[0].height);
-//  //println("right w="+result[1].width + " h="+result[1].height);
-
-//  return result;
-//}
-
-//PImage columnInterlace(PImage bufL, PImage bufR) {
-//  // 1. Create a new image with the same dimensions as left side
-
-//  PImage result = createImage(bufL.width, bufL.height, ARGB);
-
-//  bufL.loadPixels();
-//  bufR.loadPixels();
-//  result.loadPixels();
-
-//  int len = bufL.pixels.length;
-
-//  // 2. Interlace pixels
-//  // We use a step of 2 to be much faster than using modulo (%)
-//  for (int i = 0; i < len; i += 2) {
-//    // Copy even pixel from Left
-//    result.pixels[i] = bufL.pixels[i];
-
-//    // Copy odd pixel from Right (check bounds to prevent crash on odd-length arrays)
-//    if (i + 1 < len) {
-//      result.pixels[i + 1] = bufR.pixels[i + 1];
-//    }
-//  }
-
-//  result.updatePixels();
-
-//  // Note: Do NOT call bufL.recycle() here because we may want to use
-//  // them in the function that called this one.
-
-//  return result;
-//}
-
-void displayStatus() {
-  int voffset = 7*height/10;
-  text("Image Broadcast Downloader version "+ version, 50, voffset );
-  text(hostIp+":"+port, 50, height/8 + voffset+50);
-  String filename = downloadHelper.getFilename();
-  text(filename, 50, voffset + 100);
-  String displayStatus = downloadHelper.getDownloadStatus();
-  text(displayStatus, 50, voffset +150);
-  path = downloadHelper.getPath();
-  text("Downloader path "+path, 50, voffset + 200);
-}
-
-void draw() {
-  background(0);
-  textSize(48);
-  fill(255);
-
-  boolean start = downloadHelper.isStarted();
-  if (!ready || start) {
-    displayStatus();
-  }
-
-  int status = -1;
-  if (start) status = downloadHelper.getStatus();
-  //println("getStatus ="+status);
-  if (status == 8) {
-    newPhoto = true;
-  } 
-
-  if (path != null && path.startsWith("/storage") && newPhoto) {
-    //if (!show && path != null) {
-    try {
-      photo = loadImage(path);
-      println("photo w="+photo.width + " h="+photo.height);
-      if (path.contains("_2x1.")) {
-        stereo = true;
-      } else {
-        stereo = false;
-      }
-      ready = true;
-    }
-    catch (Exception e) {
-      photo = null;
-      ready = false;
-      // newPhoto = false;
-    }
-  }
-  if (ready && photo !=null && photo.width >0 && photo.height>0) {
-    if (stereo) {
-      // compute both stereo and original
-      PImage[] imagePair = splitImageLR(photo);
-      leftImage = imagePair[0];
-      rightImage = imagePair[1];
-
-      // check for anaglyph and column interlace type
-      if (conversion == COLUMN_INTERLACE) {
-        colImage = createColumnInterlaced3D((Bitmap)(leftImage.getNative()), (Bitmap)(rightImage.getNative()), width, height);
-        println("colImage "+colImage);
-        sOffset = (width - colImage.width)/2;
-        sar = (float)colImage.width / (float)colImage.height;
-
-        Bitmap lt = ((Bitmap)(leftImage.getNative()));
-        if (lt != null) lt.recycle();
-        leftImage.setNative(null);
-
-        Bitmap rt = ((Bitmap)(rightImage.getNative()));
-        if (rt != null) rt.recycle();
-        rightImage.setNative(null);
-
-      }
-    }
-    ready = false;
-    show = true;
-    newPhoto = false;
-    println("photo processed");
-  }
-  if (show ) {
-    background(0);
-
-    if (conversion== COLUMN_INTERLACE && stereo) {
-      //image(colImage, x, 0, width, (float)width/ar);
-      //image(colImage, sOffset, 0, sar*height, height);
-      //image(colImage, sOffset, 0);
-
-      if (colImage.width < colImage.height)
-        image(colImage, sOffset, 0);
-      else
-        image(colImage, sOffset, 0);
-    } else {
-      xOffset = 0; //(width- photo.width)/4;
-      ar = (float)photo.width / (float)photo.height;
-      image(photo, xOffset, 0, width, width/ar);
-      //displayStatus();
-    }
-  }
-}
-
-public void receivedUrl(String url) {
-  System.out.println("url="+url);
-  downloadHelper.startDownload( url);
-  newPhoto = true;
-}
-
-// scanImage to make it known to Android file system and apps like Gallery, etc.
-void scanImage(String absolutePath) {
-  // Trigger media scanner to make image visible in gallery
-  MediaScannerConnection.scanFile(getContext(), new String[]{absolutePath},
-    new String[]{"image/png"}, null);
-  System.out.println( "MediaScannerConnection.scanFile Image saved: " + absolutePath);
 }

@@ -19,14 +19,14 @@ PImage[] splitImageLR(PImage original) {
   result[0].setNative(Bitmap.createBitmap(halfWidth, original.height, Bitmap.Config.ARGB_8888));
   result[0].copy(original, 0, 0, halfWidth, original.height, 0, 0, halfWidth, original.height);
   result[0].loadPixels();
-  result[0].updatePixels();
-  
+  //result[0].updatePixels();
+
   // Create the right half image
   result[1] = createImage(halfWidth, original.height, ARGB);
   result[1].setNative(Bitmap.createBitmap(halfWidth, original.height, Bitmap.Config.ARGB_8888));
   result[1].copy(original, halfWidth, 0, halfWidth, original.height, 0, 0, halfWidth, original.height);
   result[1].loadPixels();
-  result[1].updatePixels();
+  //result[1].updatePixels();
   return result;
 }
 
@@ -39,7 +39,7 @@ PImage[] splitImageLR(PImage original) {
  * @param targetHeight NATIVE hardware height
  * @return New interlaced PImage. Caller MUST recycle leftImg, rightImg, and this result when done.
  */
-PImage createColumnInterlaced3D(Bitmap leftImg, Bitmap rightImg, int targetWidth, int targetHeight) {
+PImage columnInterlaced3D(Bitmap leftImg, Bitmap rightImg, int targetWidth, int targetHeight) {
   println("createColumnInterlaced3D");
   // 1. Scale both images to native resolution while preserving aspect ratio
   // Uses nearest-neighbor interpolation to prevent left/right eye color bleeding
@@ -109,4 +109,67 @@ Bitmap scaleWithLetterbox(Bitmap src, int targetW, int targetH) {
   canvas.drawBitmap(src, srcRect, dstRect, paint);
 
   return dst;
+}
+
+/**
+ * Create color anaglyph Bitmap from left and right eye view Bitmaps
+ * with horizontal offset for stereo window and vertical offset for camera alignment correction
+ *
+ * @param bufL       Left eye view image
+ * @param bufR       Right eye view image
+ * @param horzOffset Horizontal offset for stereo window placement parallax
+ * @param vertOffset Vertical offset for camera alignment correction
+ */
+PImage colorAnaglyph3D(Bitmap bufL, Bitmap bufR, int horzOffset, int vertOffset) {
+  if (DEBUG) println("colorAnaglyph3D horzOffset=" + horzOffset + " vertOffset=" + vertOffset);
+
+  if (bufL == null || bufR == null) {
+    if (DEBUG) println("colorAnaglyph null images");
+    return null;
+  }
+
+  int w = bufL.getWidth();
+  int h = bufL.getHeight();
+
+  // Pre-allocate pixel arrays for batch processing
+  int[] pixelsL = new int[w * h];
+  int[] pixelsR = new int[w * h];
+  int[] pixelsA = new int[w * h];
+
+  // Get all pixels at once (much faster than individual getPixel calls)
+  bufL.getPixels(pixelsL, 0, w, 0, 0, w, h);
+  bufR.getPixels(pixelsR, 0, w, 0, 0, w, h);
+
+  // Process pixels with optimized indexing
+  int idx = 0;
+  int srcIdx;
+  int srcRow, srcCol;
+
+  for (int j = 0; j < h; j++) {
+    for (int i = 0; i < w; i++) {
+      // Calculate source position with offsets
+      srcRow = j + vertOffset;
+      srcCol = i + horzOffset;
+
+      // Check bounds
+      if (srcRow >= 0 && srcRow < h && srcCol >= 0 && srcCol < w) {
+        srcIdx = srcRow * w + srcCol;
+        // Merge: red channel from left, cyan (GB) from right
+        pixelsA[idx] = (pixelsL[srcIdx] & 0xFFFF0000) | (pixelsR[idx] & 0x0000FFFF);
+      } else {
+        // Make unused pixels transparent
+        pixelsA[idx] = 0;
+      }
+      idx++;
+    }
+  }
+
+  // Create output bitmap and set all pixels at once
+  Bitmap bufA = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+  bufA.setPixels(pixelsA, 0, w, 0, 0, w, h);
+
+  PImage anaImage = createImage(w, h, ARGB);
+  anaImage.setNative(bufA);
+  anaImage.loadPixels();
+  return anaImage;
 }
