@@ -35,6 +35,7 @@ import android.os.HandlerThread;
 import android.os.Looper;
 import android.util.Log;
 import android.util.Range;
+import android.util.Rational;
 import android.util.Size;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -156,7 +157,7 @@ public class Camera3D {
             0.2667f, 0.5532f, 0.3333f, 0.6125f, 0.4000f, 0.6652f, 0.4667f, 0.7130f,
             0.5333f, 0.7569f, 0.6000f, 0.7977f, 0.6667f, 0.8360f, 0.7333f, 0.8721f,
             0.8000f, 0.9063f, 0.8667f, 0.9389f, 0.9333f, 0.9701f, 1.0000f, 1.0000f};
-
+    private int exposureCompensationIndex = 0;
     private static final CaptureRequest.Key<Integer> EXPOSURE_METERING = new CaptureRequest.Key<>("org.codeaurora.qcamera3.exposure_metering.exposure_metering_mode", Integer.TYPE);
     private static final int FRAME_AVERAGE = 0; // normal behavior
     private static final int CENTER_WEIGHTED = 1;
@@ -273,8 +274,8 @@ public class Camera3D {
             useProcessing = false;
             Log.d(TAG, "setupSurfaces()");
             // set up display surfaces
-            mSurfaceView0 = ((MainActivity)context).findViewById(R.id.surfaceView);
-            mSurfaceView2 = ((MainActivity)context).findViewById(R.id.surfaceView2);
+            mSurfaceView0 = ((MainActivity) context).findViewById(R.id.surfaceView);
+            mSurfaceView2 = ((MainActivity) context).findViewById(R.id.surfaceView2);
 
             mSurfaceHolder0 = mSurfaceView0.getHolder();
             mSurfaceHolder2 = mSurfaceView2.getHolder();
@@ -327,17 +328,17 @@ public class Camera3D {
             mCameraThread.quitSafely(); // Safely shut down the looper
             mImageReaderThread0.quitSafely();
             try {
-            mCameraThread.join(); // Wait for the thread to finish
-            mCameraThread = null;
-            mCameraHandler = null;
-            if (cameraExecutor != null) {
-                cameraExecutor.shutdown(); // Non-blocking request to stop
-                cameraExecutor = null;
-            }
+                mCameraThread.join(); // Wait for the thread to finish
+                mCameraThread = null;
+                mCameraHandler = null;
+                if (cameraExecutor != null) {
+                    cameraExecutor.shutdown(); // Non-blocking request to stop
+                    cameraExecutor = null;
+                }
 
-            mImageReaderThread0.join();
-            mImageReaderThread0 = null;
-            mImageReaderHandler0 = null;
+                mImageReaderThread0.join();
+                mImageReaderThread0 = null;
+                mImageReaderHandler0 = null;
             } catch (InterruptedException e) {
                 Log.e(TAG, "Interrupted while stopping camera thread", e);
             }
@@ -405,7 +406,7 @@ public class Camera3D {
                         Image image = reader.acquireLatestImage();
                         if (image == null) return;
                         // if we are already busy processing a frame or not in live view state
-                        if (isProcessingLeft.get() ||((MainActivity)context).state != LIVE_VIEW_STATE) {
+                        if (isProcessingLeft.get() || ((MainActivity) context).state != LIVE_VIEW_STATE) {
                             // Drop the frame by closing it immediately to free the buffer
                             image.close();
                             return;
@@ -440,7 +441,7 @@ public class Camera3D {
                         Image image = reader.acquireLatestImage();
                         if (image == null) return;
                         // if we are already busy processing a frame
-                        if (isProcessingRight.get() || ((MainActivity)context).state != LIVE_VIEW_STATE) {
+                        if (isProcessingRight.get() || ((MainActivity) context).state != LIVE_VIEW_STATE) {
                             // Drop the frame by closing it immediately to free the buffer
                             image.close();
                             return;
@@ -556,7 +557,39 @@ public class Camera3D {
                 Log.e(TAG, "Camera access exception", e);
             }
         }
+        initExposureCompensation();
+    }
 
+    private void initExposureCompensation() {
+        try {
+            // 1. Get the camera characteristics for your current camera ID
+            CameraCharacteristics characteristics = mCameraManager.getCameraCharacteristics(stereoCameraId);
+
+            // 2. Get the allowed index range (e.g., Min: -6, Max: 6)
+            Range<Integer> compensationRange = characteristics.get(CameraCharacteristics.CONTROL_AE_COMPENSATION_RANGE);
+            int minIndex = compensationRange.getLower();
+            int maxIndex = compensationRange.getUpper();
+
+            // 3. Get the step size / EV increment (e.g., 0.3333 means 1 step = 1/3 EV)
+            Rational stepSize = characteristics.get(CameraCharacteristics.CONTROL_AE_COMPENSATION_STEP);
+            float stepFloat = stepSize != null ? stepSize.floatValue() : 0.0f;
+
+            // 4. Convert your target EV into the target index
+            float targetEV = 0f;
+            int exposureCompensationIndex = 0;
+
+            if (stepFloat > 0.0f) {
+                // Index = Target EV / Step Size (rounded to the nearest integer)
+                exposureCompensationIndex = Math.round(targetEV / stepFloat);
+            }
+
+            // 5. Clamp the index to ensure it stays within hardware boundaries
+            if (exposureCompensationIndex < minIndex) exposureCompensationIndex = minIndex;
+            if (exposureCompensationIndex > maxIndex) exposureCompensationIndex = maxIndex;
+
+        } catch (CameraAccessException e) {
+            Log.e(TAG, "Failed to read AE compensation range", e);
+        }
     }
 
     private final CameraDevice.StateCallback mStateCallback = new CameraDevice.StateCallback() {
@@ -664,8 +697,15 @@ public class Camera3D {
                                 previewRequestBuilder.addTarget(mSurfaceHolder0.getSurface());
                                 previewRequestBuilder.addTarget(mSurfaceHolder2.getSurface());
 
-                                previewRequestBuilder.set(CaptureRequest.TONEMAP_MODE, CaptureRequest.TONEMAP_MODE_CONTRAST_CURVE);
-                                previewRequestBuilder.set(CaptureRequest.TONEMAP_CURVE, new TonemapCurve(curve_srgb, curve_srgb, curve_srgb));
+                                //previewRequestBuilder.set(CaptureRequest.TONEMAP_MODE, CaptureRequest.TONEMAP_MODE_CONTRAST_CURVE);
+                                //previewRequestBuilder.set(CaptureRequest.TONEMAP_CURVE, new TonemapCurve(curve_srgb, curve_srgb, curve_srgb));
+                                // Explicit AE mode & compensation
+                                previewRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON);
+                                previewRequestBuilder.set(CaptureRequest.CONTROL_AE_EXPOSURE_COMPENSATION, exposureCompensationIndex);
+
+                                //  Let system handle tonemapping (remove custom curve)
+                                previewRequestBuilder.set(CaptureRequest.TONEMAP_MODE, CaptureRequest.TONEMAP_MODE_FAST);
+
                                 if (FOCUS_DISTANCE[parameters.getFocusDistanceIndex()] == AUTO_FOCUS_DISTANCE) {
                                     previewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
                                 } else {
@@ -740,16 +780,27 @@ public class Camera3D {
 
                     // Set auto exposure
                     //previewRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON);
-                    previewRequestBuilder.set(CaptureRequest.TONEMAP_MODE, CaptureRequest.TONEMAP_MODE_CONTRAST_CURVE);
-                    previewRequestBuilder.set(CaptureRequest.TONEMAP_CURVE, new TonemapCurve(curve_srgb, curve_srgb, curve_srgb));
+
+                    // Explicit AE mode & compensation
+                    previewRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON);
+                    previewRequestBuilder.set(CaptureRequest.CONTROL_AE_EXPOSURE_COMPENSATION, exposureCompensationIndex);
+
+                    //  Let system handle tonemapping (remove custom curve)
+                    previewRequestBuilder.set(CaptureRequest.TONEMAP_MODE, CaptureRequest.TONEMAP_MODE_FAST);
+
+                    //previewRequestBuilder.set(CaptureRequest.TONEMAP_MODE, CaptureRequest.TONEMAP_MODE_CONTRAST_CURVE);
+                    //previewRequestBuilder.set(CaptureRequest.TONEMAP_CURVE, new TonemapCurve(curve_srgb, curve_srgb, curve_srgb));
+
                     previewRequestBuilder.set(CaptureRequest.NOISE_REDUCTION_MODE, CaptureRequest.NOISE_REDUCTION_MODE_FAST); // NOISE_REDUCTION_MODE 1
                     previewRequestBuilder.set(CaptureRequest.EDGE_MODE, CaptureRequest.EDGE_MODE_FAST); // EDGE_MODE 1
                     //previewRequestBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, new Range<>(30, 30));
                     //previewRequestBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, bestRange);
                     //previewRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE, CameraMetadata.CONTROL_AE_MODE_ON_LOW_LIGHT_BOOST_BRIGHTNESS_PRIORITY); // Android 15+
                     previewRequestBuilder.set(EXPOSURE_METERING, METERING[meteringIndex]);
+
                     // Set scene mode
-                    previewRequestBuilder.set(CaptureRequest.CONTROL_EXTENDED_SCENE_MODE, 1);
+                    previewRequestBuilder.set(CaptureRequest.CONTROL_EXTENDED_SCENE_MODE, 1); // sync left and right cameras
+
                     // Set flash mode
 //                    if (enableFlash) {
 //                        previewRequestBuilder.set(CaptureRequest.FLASH_MODE, CaptureRequest.FLASH_MODE_TORCH);
@@ -844,7 +895,7 @@ public class Camera3D {
      * Create a camera capture session to take a picture
      */
     public void createCameraCaptureSession() {
-        Log.d(TAG, "createCameraCaptureSession() captureInProgress="+captureInProgress);
+        Log.d(TAG, "createCameraCaptureSession() captureInProgress=" + captureInProgress);
         if (captureInProgress.get()) return;
         captureInProgress.set(true);
 
@@ -862,8 +913,14 @@ public class Camera3D {
             captureBuilder.addTarget(mImageReader2.getSurface());
 
             // default TONEMAP_MODE_CONTRAST_CURVE assumed for best contrast, color and detail capture
-            captureBuilder.set(CaptureRequest.TONEMAP_MODE, CaptureRequest.TONEMAP_MODE_CONTRAST_CURVE);
-            captureBuilder.set(CaptureRequest.TONEMAP_CURVE, new TonemapCurve(curve_srgb, curve_srgb, curve_srgb));
+            //captureBuilder.set(CaptureRequest.TONEMAP_MODE, CaptureRequest.TONEMAP_MODE_CONTRAST_CURVE);
+            //captureBuilder.set(CaptureRequest.TONEMAP_CURVE, new TonemapCurve(curve_srgb, curve_srgb, curve_srgb));
+            // Sync with preview brightness settings
+            captureBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON);
+            captureBuilder.set(CaptureRequest.CONTROL_AE_EXPOSURE_COMPENSATION, exposureCompensationIndex);
+            captureBuilder.set(CaptureRequest.TONEMAP_MODE, CaptureRequest.TONEMAP_MODE_HIGH_QUALITY);
+
+
             if (FOCUS_DISTANCE[parameters.getFocusDistanceIndex()] == AUTO_FOCUS_DISTANCE) {
                 captureBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
             } else {
@@ -882,7 +939,7 @@ public class Camera3D {
             rightBytes = null;
             media.recycleBitmaps();
             timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
-            ((MainActivity)context).remoteShutter();  // send shutter release broadcast message
+            ((MainActivity) context).remoteShutter();  // send shutter release broadcast message
             //Log.d(TAG, "createCameraCaptureSession() "+timestamp + " state="+((MainActivity)context).state);
 
             // left image reader
@@ -890,7 +947,7 @@ public class Camera3D {
                 @Override
                 public void onImageAvailable(ImageReader reader) {
                     imageL = reader.acquireLatestImage();
-                    if (((MainActivity)context).state == LIVE_VIEW_STATE) {
+                    if (((MainActivity) context).state == LIVE_VIEW_STATE) {
                         saveImageFiles(imageL, imageR);
                     } else {
                         if (imageL != null) imageL.close();
@@ -903,7 +960,7 @@ public class Camera3D {
                 @Override
                 public void onImageAvailable(ImageReader reader) {
                     imageR = reader.acquireLatestImage();
-                    if (((MainActivity)context).state == LIVE_VIEW_STATE) {
+                    if (((MainActivity) context).state == LIVE_VIEW_STATE) {
                         saveImageFiles(imageL, imageR);
                     } else {
                         if (imageR != null) imageR.close();
@@ -982,7 +1039,7 @@ public class Camera3D {
                 rightBytes = null;
             }
             captureInProgress.set(false);  //  done capturing images
-            Log.d(TAG, "saveImageFiles() done captureInProgress="+captureInProgress.get());
+            Log.d(TAG, "saveImageFiles() done captureInProgress=" + captureInProgress.get());
         }
     }
 

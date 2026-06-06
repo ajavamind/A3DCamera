@@ -19,62 +19,66 @@ PImage[] splitImageLR(PImage original) {
   result[0].setNative(Bitmap.createBitmap(halfWidth, original.height, Bitmap.Config.ARGB_8888));
   result[0].copy(original, 0, 0, halfWidth, original.height, 0, 0, halfWidth, original.height);
   result[0].loadPixels();
-  //result[0].updatePixels();
 
   // Create the right half image
   result[1] = createImage(halfWidth, original.height, ARGB);
   result[1].setNative(Bitmap.createBitmap(halfWidth, original.height, Bitmap.Config.ARGB_8888));
   result[1].copy(original, halfWidth, 0, halfWidth, original.height, 0, 0, halfWidth, original.height);
   result[1].loadPixels();
-  //result[1].updatePixels();
   return result;
 }
 
 /**
- * Creates a column-interlaced 3D bitmap optimized for SKYY 3D autostereoscopic displays.
- *
+ * Creates a column-interlaced 3D bitmap optimized for display size,
+ * SKYY 3D autostereoscopic displays and LeTv android TV
+ * The imput bit maps are recycled.
+ 
+ * @param conversion   perform Column or Row interlacing left and right image stereo
  * @param leftImg      Source left-eye image
  * @param rightImg     Source right-eye image
  * @param targetWidth  NATIVE hardware width (do not use scaled/display pixels)
  * @param targetHeight NATIVE hardware height
  * @return New interlaced PImage. Caller MUST recycle leftImg, rightImg, and this result when done.
  */
-PImage columnInterlaced3D(Bitmap leftImg, Bitmap rightImg, int targetWidth, int targetHeight) {
-  println("createColumnInterlaced3D");
+PImage interlaced3D(int conversion, Bitmap leftImg, Bitmap rightImg, int targetWidth, int targetHeight) {
+  println("interlaced3D " + conversion);
+  if (!(conversion == COLUMN_INTERLACE || conversion == ROW_INTERLACE)) return null;
+
   // 1. Scale both images to native resolution while preserving aspect ratio
   // Uses nearest-neighbor interpolation to prevent left/right eye color bleeding
   Bitmap scaledLeft = scaleWithLetterbox(leftImg, targetWidth, targetHeight);
+  leftImg.recycle();
   Bitmap scaledRight = scaleWithLetterbox(rightImg, targetWidth, targetHeight);
+  rightImg.recycle();
 
-  // 2. Extract pixel arrays
-  int[] leftPixels = new int[targetWidth * targetHeight];
-  int[] rightPixels = new int[targetWidth * targetHeight];
-  scaledLeft.getPixels(leftPixels, 0, targetWidth, 0, 0, targetWidth, targetHeight);
-  scaledRight.getPixels(rightPixels, 0, targetWidth, 0, 0, targetWidth, targetHeight);
-
-  // 3. Column interlace (Even columns = Left Eye, Odd columns = Right Eye)
-  int[] interlacedPixels = new int[targetWidth * targetHeight];
-  for (int y = 0; y < targetHeight; y++) {
-    int rowOffset = y * targetWidth;
-    // Step by 2 to avoid modulo operator and improve cache locality
-    for (int x = 0; x < targetWidth; x += 2) {
-      interlacedPixels[rowOffset + x] = leftPixels[rowOffset + x];
-      if (x + 1 < targetWidth) {
-        interlacedPixels[rowOffset + x + 1] = rightPixels[rowOffset + x + 1];
+  // 2. Column interlace (Even columns = Left Eye, Odd columns = Right Eye)
+  if (conversion == COLUMN_INTERLACE) {
+    for (int y=0; y<scaledLeft.getHeight(); y++) {
+      for (int x=0; x<scaledLeft.getWidth(); x++) {
+        if (x%2 == 0) {
+          //scaledLeft.setPixel(x, y, scaledLeft.getPixel(x, y));
+        } else {
+          scaledLeft.setPixel(x, y, scaledRight.getPixel(x, y));
+        }
+      }
+    }
+  } else {  // Row interlaced
+    for (int y=0; y<scaledLeft.getHeight(); y++) {
+      for (int x=0; x<scaledLeft.getWidth(); x++) {
+        if (y%2 == 0) {
+          //scaledLeft.setPixel(x, y, scaledLeft.getPixel(x, y));
+        } else {
+          scaledLeft.setPixel(x, y, scaledRight.getPixel(x, y));
+        }
       }
     }
   }
 
-  // 4. Build final bitmap
-  Bitmap result = Bitmap.createBitmap(targetWidth, targetHeight, Bitmap.Config.ARGB_8888);
-  result.setPixels(interlacedPixels, 0, targetWidth, 0, 0, targetWidth, targetHeight);
-
   // Clean up intermediate bitmaps immediately
-  scaledLeft.recycle();
   scaledRight.recycle();
 
   PImage clImage = createImage(targetWidth, targetHeight, ARGB);
-  clImage.setNative(result);
+  clImage.setNative(scaledLeft);
   return clImage;
 }
 
@@ -85,6 +89,7 @@ PImage columnInterlaced3D(Bitmap leftImg, Bitmap rightImg, int targetWidth, int 
 Bitmap scaleWithLetterbox(Bitmap src, int targetW, int targetH) {
   // Calculate uniform scale to fit within target without stretching
   if (src == null) println("scaleWithLetterbox src null");
+  
   float scale = Math.min((float) targetW / src.getWidth(), (float) targetH / src.getHeight());
   int newW = Math.round(src.getWidth() * scale);
   int newH = Math.round(src.getHeight() * scale);

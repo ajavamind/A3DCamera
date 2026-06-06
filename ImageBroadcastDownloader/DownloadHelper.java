@@ -150,6 +150,7 @@ public class DownloadHelper {
     }
     return -1;
   }
+  
   public String getDownloadStatus() {
     DownloadManager.Query query = new DownloadManager.Query();
     //System.out.println("getDownloadStatus Querying Download ID: " + downloadId);

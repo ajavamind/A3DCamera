@@ -35,14 +35,41 @@ import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.util.Enumeration;
 import android.view.View;
+import android.view.KeyEvent;
 import com.andymodla.imagebroadcastdownloader.DownloadHelper;
 import com.andymodla.imagebroadcastdownloader.UrlSource;
 import android.media.MediaScannerConnection;
 import android.graphics.Bitmap;
 import android.os.Build;
+import processing.core.*;
+import processing.event.*;
+import processing.opengl.*;
+
+import java.util.HashMap;
+import java.util.ArrayList;
+import java.io.File;
+import java.io.BufferedReader;
+import java.io.PrintWriter;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.IOException;
+import android.content.Context;
+import android.graphics.Bitmap;
+import android.hardware.display.DisplayManager;
+import android.opengl.GLES20;
+import android.view.Display;
+import android.view.SurfaceHolder;
+import android.view.WindowManager;
+
+import static android.content.Context.DISPLAY_SERVICE;
+import static android.content.Context.WINDOW_SERVICE;
 
 //import MyDebug;
 public static final boolean DEBUG = true;
+String modelName;
+String manufacturer;
+String deviceName;
+;
 
 private DownloadHelper downloadHelper;
 private UdpRemoteControl udpRemoteControl;
@@ -50,28 +77,42 @@ private UrlSource urlSource;
 String hostIp;
 int port = 8000;
 String version = "1.0";
-String path;
+volatile public String path;
 PImage photo;
-volatile PImage colImage;
+volatile PImage interlacedImage;
+//volatile PImage rowImage;
 volatile PImage anaImage;
 volatile PImage originalImage;
 volatile PImage leftImage;
 volatile PImage rightImage;
+PImage[] imagePair;
+
 String testImage = "IMG_20260330_145622_2x1.jpg";
 volatile boolean ready = false;
 volatile boolean show = false;
 volatile boolean stereo = false;
-boolean newPhoto = false;
+volatile public boolean newPhoto = false;
 
-int NO_CONVERSION = 0;
-int COLUMN_INTERLACE = 1;
-int ANAGLYPH = 2;
+private static final int NO_CONVERSION = 0;
+private static final int COLUMN_INTERLACE = 1;
+private static final int ROW_INTERLACE = 2;
+private static final int ANAGLYPH = 3;
+private static final int SBS = 4;
 int conversion = NO_CONVERSION;
 
-int xOffset; // offset
+String[] conversionName = {"NONE", "COLUMN", "ROW", "ANAGLYPH", "SBS"};
+float xOffset;
 int sOffset;
 float ar;
 float sar;
+Display dispArray[];
+int LeTvWidth = 3840;
+int LeTvHeight = 2160;
+int ScreenWidth;
+int ScreenHeight;
+boolean LETV = false;
+volatile public boolean useDownloader = false;
+String message="No Errors";
 
 // Android Activity Life Cycle ======================================================
 
@@ -83,13 +124,13 @@ void onCreate() {  // not called from processing, so this method is not executed
 void onStart() {
   System.out.println("onStart()");
   setVisibility();
-  if (downloadHelper == null) {
+  if (downloadHelper == null  && useDownloader) {
     println("setup DownloadHelper");
     downloadHelper = new DownloadHelper(getContext());
   }
+  urlSource = new UrlSource(downloadHelper, this);
 
   if (udpRemoteControl == null) {
-    urlSource = new UrlSource(downloadHelper);
     println("setup UDP receiver");
     udpRemoteControl = new UdpRemoteControl(urlSource);
     hostIp = udpRemoteControl.getHostnameAddress();
@@ -117,89 +158,194 @@ void onDestroy() {
 
 
 // Processing ==============================================================
+int lastKeyCode= -1;
+
+void keyPressed() {
+  lastKeyCode = keyCode;
+  println("Keycode("+keyCode+")");
+}
 
 void settings() {
-  fullScreen(P2D);
+  modelName = Build.MODEL;
+  manufacturer = Build.MANUFACTURER;
+  deviceName = manufacturer + " " + modelName;
+  println("DeviceInfo", "Device manufacturer: " + manufacturer + " model: "+ modelName);
+  if (modelName.equals("SM-S931U")) {
+    // Samsung S25
+    //conversion = SBS;
+    //conversion = COLUMN_INTERLACE; // for test
+    conversion = ANAGLYPH; // test
+    //LETV = true;  // for test
+  } else if (manufacturer.equals("IQH3D") && modelName.equals("SKYY")) {
+    conversion = COLUMN_INTERLACE;
+  } else if (manufacturer.toLowerCase().equals("letv")) {
+    conversion = ROW_INTERLACE;
+    LETV = true;
+    useDownloader = false;
+  } else if (manufacturer.equals("LitByLeia") && (modelName.equals("LPD-20W") || modelName.equals("LPD-10W"))) {
+    conversion = NO_CONVERSION;
+  } else if (manufacturer.equals("Sony") && (modelName.equals("G8142") )) {
+    conversion = SBS;
+  } else {
+    conversion = ANAGLYPH;
+  }
+
+  if (LETV) {
+    ScreenWidth = LeTvWidth;
+    ScreenHeight = LeTvHeight;
+    size(ScreenWidth, ScreenHeight);
+    fullScreen();
+    smooth();
+  } else {
+    fullScreen(P2D);
+  }
 }
 
 void setup() {
   orientation(LANDSCAPE);
-
   background(0); // Black background
   frameRate(5);
 
-  String modelName = Build.MODEL;
-  String manufacturer = Build.MANUFACTURER;
-  String deviceName = manufacturer + " " + modelName;
-  println("DeviceInfo", "Device manufacturer: " + manufacturer + " model: "+ modelName);
-  if (modelName.equals("SM-S931U")) {
-    // Samsung S25
+  // Get debug information from the DisplayManager
+  DisplayManager dm = (DisplayManager) getActivity().getApplicationContext().getSystemService(DISPLAY_SERVICE);
+  if (dm != null) {
+    dispArray = dm.getDisplays();
+
+    if (dispArray.length>0) {
+      //Context displayContext = getActivity().getApplicationContext().createDisplayContext(dispArray[0]);
+      //WindowManager wm = (WindowManager)displayContext.getSystemService(WINDOW_SERVICE);
+      for (int i=0; i<dispArray.length; i++) {
+        println(dispArray[i].toString());
+      }
+    }
   }
-  if (manufacturer.equals("IQH3D") && modelName.equals("SKYY")) {
-    conversion = COLUMN_INTERLACE;
-  } else if (manufacturer.equals("LitByLeia") && (modelName.equals("LPD-20W") || modelName.equals("LPD-10W"))) {
-    conversion = NO_CONVERSION;
-  } else {
-    conversion = ANAGLYPH;
+  // change the surface to desired 3840x2160 actual TV screen dimensions
+  // because LeTV default screen for apps is 1920x1080
+  if (LETV) {
+    try {
+      //getSurface().getSurfaceHolder().addCallback(this);
+      getSurface().getSurfaceHolder().setFixedSize(LeTvWidth, LeTvHeight);
+      GLES20.glViewport(0, 0, LeTvWidth, LeTvHeight);
+    }
+    catch (Exception e) {
+    }
+    // wait for surface size change callback kludge
+    delay(200);
   }
+  println("setup() ready="+ready);
 }
 
+//@Override
+//public void surfaceCreated(SurfaceHolder holder) {
+
+//}
+
+//@Override
+//public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+//    ready = true;
+//    println("surfaceChanged "+ format + " width="+width+ " height="+height);
+//}
+
+//@Override
+//public void surfaceDestroyed(SurfaceHolder holder) {
+
+//}
 
 void draw() {
   background(0);
   textSize(48);
   fill(255);
 
-  boolean start = downloadHelper.isStarted();
+  if (lastKeyCode > 0) {
+    int kc = lastKeyCode - KeyEvent.KEYCODE_0;
+    conversion = (kc>=0 && kc<conversionName.length) ? kc: 0;
+    lastKeyCode = -1;
+    newPhoto = true;
+  }
+
+  boolean start = false;
+  if (useDownloader) {
+    start = downloadHelper.isStarted();
+  } else {
+    start = true;
+  }
+
   if (!ready || start) {
     displayStatus();
   }
 
-  int status = -1;
-  if (start) status = downloadHelper.getStatus();
-  //println("getStatus ="+status);
-  if (status == 8) {
-    newPhoto = true;
+  if (useDownloader) {
+    int status = -1;
+    if (start) status = downloadHelper.getStatus();
+    //println("getStatus ="+status);
+    if (status == 8) {
+      newPhoto = true;
+    }
   }
 
-  if (path != null && path.startsWith("/storage") && newPhoto) {
+  //if (path != null && path.startsWith("/storage") && newPhoto) {
+  if (path != null && newPhoto) {
     //if (!show && path != null) {
     try {
+      System.out.println("loadImage("+path+")");
       photo = loadImage(path);
-      System.out.println("loadImage path="+ path + " photo w="+photo.width + " h="+photo.height);
+      if (photo != null && photo.width>0 && photo.height>0) {
+        System.out.println("Null image loadImage path="+ path + " photo w="+photo.width + " h="+photo.height);
+      } else {
+        message = "loadImage Error path="+path + " photo null or not read";
+      }
       if (path.contains("_2x1.")) {
         stereo = true;
       } else {
         stereo = false;
       }
       ready = true;
+      newPhoto = false;
     }
     catch (Exception ex) {
       System.out.println(ex.getClass().getSimpleName());
-      photo = null;
-      ready = false;
+      //ready = false;
       System.out.println("error loadImage "+path);
+      fill(255);
+      message = "loadImage exception "+ ex.getClass().getSimpleName() + " path="+path;
       newPhoto = false;
     }
   }
   if (ready && photo !=null && photo.width >0 && photo.height>0) {
     if (stereo) {
-      // compute both stereo and original
-      PImage[] imagePair = splitImageLR(photo);
+      // Convert image format for stereo display
+
+      recycle(leftImage);
+      recycle(rightImage);
+
+      imagePair = splitImageLR(photo);
       leftImage = imagePair[0];
       rightImage = imagePair[1];
+      imagePair[0] = null;
+      imagePair[1] = null;
+
+      // Letv has a very small RAM computer (3GB)
+      // we have to conserve memory to avoid out of memory
+      if (LETV) recycle(photo); // not using photo any more
 
       // check for anaglyph and column interlace type
-      if (conversion == COLUMN_INTERLACE) {
-        colImage = columnInterlaced3D((Bitmap)(leftImage.getNative()), (Bitmap)(rightImage.getNative()), width, height);
-        sOffset = (width - colImage.width)/2;
-        sar = (float)colImage.width / (float)colImage.height;
-      } else if (conversion == ANAGLYPH) {
+      switch(conversion) {
+      case COLUMN_INTERLACE:
+      case ROW_INTERLACE:
+        interlacedImage = interlaced3D(conversion, (Bitmap)(leftImage.getNative()), (Bitmap)(rightImage.getNative()), width, height);
+        sOffset = (width - interlacedImage.width)/2;
+        sar = (float)interlacedImage.width / (float)interlacedImage.height;
+        break;
+      case ANAGLYPH:
         anaImage = colorAnaglyph3D((Bitmap)(leftImage.getNative()), (Bitmap)(rightImage.getNative()), 0, 0);
-      } else {
-        conversion = NO_CONVERSION;
+        break;
+      case SBS:
+        // assumes photo is split only
+        break;
+      default:
+        break;
       }
-      recycle(leftImage, rightImage);
+      //recycle(leftImage, rightImage);
     }
     ready = false;
     show = true;
@@ -209,57 +355,69 @@ void draw() {
   if (show ) {
     background(0);
 
-    if (conversion== COLUMN_INTERLACE && stereo) {
-      if (colImage.width < colImage.height)
-        image(colImage, sOffset, 0);
+    if ((conversion == COLUMN_INTERLACE) && stereo) {
+      if (interlacedImage.width < interlacedImage.height)
+        image(interlacedImage, sOffset, 0);
       else
-        image(colImage, sOffset, 0);
+        image(interlacedImage, sOffset, 0);
+    } else if (conversion == ROW_INTERLACE && stereo) {
+      if (interlacedImage.width < interlacedImage.height)
+        image(interlacedImage, sOffset, 0);
+      else
+        image(interlacedImage, sOffset, 0);
     } else if (conversion == ANAGLYPH && stereo) {
-      xOffset = 0; //(width- anaImage.width)/2;
       ar = (float)anaImage.width / (float)anaImage.height;
+      xOffset = ((float)width - ((float)height*ar))/2.0;
       image(anaImage, xOffset, 0, (float)height*ar, height);
-    } else {
+    } else if (conversion == SBS) {
       xOffset = 0; //(width- photo.width)/2;
       ar = (float)photo.width / (float)photo.height;
-      if (photo.width <= width) {
-        image(photo, xOffset, 0, (float)height*ar, height);
-      } else {
-        image(photo, xOffset, 0, width, ((float)width)/ar);
-      }
+      // assume SBS
+      float h = ((float)width)/ar;
+      image(photo, 0, ((float)height-h)/2, width, h);
+    } else { // no conversion
+      xOffset = 0; //(width- photo.width)/2;
+      ar = (float)photo.width / (float)photo.height;
+      image(photo, xOffset, 0, (float)height*ar, height);
     }
-    //displayStatus();
   }
 }
 
 void recycle(PImage leftImage, PImage rightImage) {
-  Bitmap lt = ((Bitmap)(leftImage.getNative()));
-  if (lt != null) lt.recycle();
-  leftImage.setNative(null);
+  recycle(leftImage);
+  recycle(rightImage);
+}
 
-  Bitmap rt = ((Bitmap)(rightImage.getNative()));
-  if (rt != null) rt.recycle();
-  rightImage.setNative(null);
+void recycle(PImage img) {
+  if (img == null) return;
+
+  Bitmap bitmap = ((Bitmap)(img.getNative()));
+  if (bitmap != null) {
+    if (!bitmap.isRecycled()) bitmap.recycle();
+  }
+  img.setNative(null);
 }
 
 void displayStatus() {
+  text(message, 100, 100);
   int voffset = 7*height/10;
-  text("Image Broadcast Downloader version "+ version, 50, voffset );
-  text(hostIp+":"+port, 50, height/8 + voffset+50);
-  String filename = downloadHelper.getFilename();
-  text(filename, 50, voffset + 100);
-  String displayStatus = downloadHelper.getDownloadStatus();
-  text(displayStatus, 50, voffset +150);
-  path = downloadHelper.getPath();
-  text("Downloader path "+path, 50, voffset + 200);
-}
-
-public void receivedUrl(String url) {
-  System.out.println("url="+url);
-  downloadHelper.startDownload( url);
-  newPhoto = true;
+  int inc = 50;
+  text("Image Broadcast Downloader version "+ version + " " + manufacturer + " "+modelName, 50, voffset );
+  text("stereo="+stereo+ " conversion="+conversionName[conversion] +
+    " screen width="+width +" height="+height+ " LETV="+LETV+" useDownloader="+useDownloader, 50, voffset+inc);
+  text(hostIp+":"+port, 50, voffset+2*inc);
+  if (downloadHelper != null) {
+    String filename = downloadHelper.getFilename();
+    text(filename, 50, voffset + 3*inc);
+    String displayStatus = downloadHelper.getDownloadStatus();
+    text(displayStatus, 50, voffset +4*inc);
+    if (useDownloader) path = downloadHelper.getPath();
+  }
+  text("Downloader path "+path, 50, voffset + 5*inc);
 }
 
 // scanImage to make it known to Android file system and apps like Gallery, etc.
+// Not needed when using Downloader service.
 void scanImage(String absolutePath) {
   // Trigger media scanner to make image visible in gallery
   MediaScannerConnection.scanFile(getContext(), new String[]{absolutePath},

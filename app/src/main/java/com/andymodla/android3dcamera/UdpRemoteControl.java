@@ -46,7 +46,7 @@ public class UdpRemoteControl {
 
     private Context context;
     private Camera3D camera;
-    private boolean isUdpTransmitter = false;
+    //private boolean isUdpTransmitter = false;
 
     // Transmitter section variables
     private static final int doubleTriggerDelay = 100;
@@ -87,7 +87,7 @@ public class UdpRemoteControl {
      */
     public void setUdpTransmitter(Camera3D camera, String hostIpAddress) {
         this.camera = camera;
-        isUdpTransmitter = true;
+        //isUdpTransmitter = true;
         if (MyDebug.LOG) Log.d(TAG, "setUdpTransmitter " + hostIpAddress);
         executorService = Executors.newSingleThreadExecutor();
         //if (isUdpTransmitter) {
