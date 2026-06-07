@@ -53,24 +53,27 @@ import java.io.PrintWriter;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.IOException;
-import android.content.Context;
+
 import android.graphics.Bitmap;
 import android.hardware.display.DisplayManager;
 import android.opengl.GLES20;
 import android.view.Display;
 import android.view.SurfaceHolder;
 import android.view.WindowManager;
-
+import android.app.ActivityManager;
+import android.view.KeyEvent;
+import android.content.Context; // Required if calling from a Fragment or Service
 import static android.content.Context.DISPLAY_SERVICE;
 import static android.content.Context.WINDOW_SERVICE;
+import static android.content.Context.ACTIVITY_SERVICE;
 
 //import MyDebug;
-public static final boolean DEBUG = true;
+
+public static final boolean DEBUG = false;
 String modelName;
 String manufacturer;
 String deviceName;
-;
-
+ActivityManager activityManager;
 private DownloadHelper downloadHelper;
 private UdpRemoteControl udpRemoteControl;
 private UrlSource urlSource;
@@ -78,9 +81,8 @@ String hostIp;
 int port = 8000;
 String version = "1.0";
 volatile public String path;
-PImage photo;
+volatile PImage photo;
 volatile PImage interlacedImage;
-//volatile PImage rowImage;
 volatile PImage anaImage;
 volatile PImage originalImage;
 volatile PImage leftImage;
@@ -92,6 +94,9 @@ volatile boolean ready = false;
 volatile boolean show = false;
 volatile boolean stereo = false;
 volatile public boolean newPhoto = false;
+volatile boolean statusDisplay = false;
+volatile boolean debugLoadImage = false;
+volatile public boolean useDownloader = true;
 
 private static final int NO_CONVERSION = 0;
 private static final int COLUMN_INTERLACE = 1;
@@ -111,13 +116,13 @@ int LeTvHeight = 2160;
 int ScreenWidth;
 int ScreenHeight;
 boolean LETV = false;
-volatile public boolean useDownloader = false;
-String message="No Errors";
+String message1="No Errors";
+String message2="";
 
 // Android Activity Life Cycle ======================================================
 
-void onCreate() {  // not called from processing, so this method is not executed!
-  // that is why we set up UDP in start()
+void onCreate() {  // not called from processing, so this method is never executed!
+  // that is why we set up UDP server in start()
   System.out.println("onCreate()");
 }
 
@@ -154,6 +159,8 @@ void onDestroy() {
   System.out.println("onDestroy");
   //stop UDP receiver on destroy of activity
   udpRemoteControl.destroy();
+  udpRemoteControl = null;
+  imageDestroy();
 }
 
 
@@ -165,6 +172,10 @@ void keyPressed() {
   println("Keycode("+keyCode+")");
 }
 
+void mousePressed() {
+  statusDisplay = !statusDisplay;
+}
+
 void settings() {
   modelName = Build.MODEL;
   manufacturer = Build.MANUFACTURER;
@@ -173,7 +184,6 @@ void settings() {
   if (modelName.equals("SM-S931U")) {
     // Samsung S25
     //conversion = SBS;
-    //conversion = COLUMN_INTERLACE; // for test
     conversion = ANAGLYPH; // test
     //LETV = true;  // for test
   } else if (manufacturer.equals("IQH3D") && modelName.equals("SKYY")) {
@@ -181,7 +191,7 @@ void settings() {
   } else if (manufacturer.toLowerCase().equals("letv")) {
     conversion = ROW_INTERLACE;
     LETV = true;
-    useDownloader = false;
+    useDownloader = false;  // LeTv has problem with the downloader service or writing photos to storage TODO figure this out
   } else if (manufacturer.equals("LitByLeia") && (modelName.equals("LPD-20W") || modelName.equals("LPD-10W"))) {
     conversion = NO_CONVERSION;
   } else if (manufacturer.equals("Sony") && (modelName.equals("G8142") )) {
@@ -205,6 +215,7 @@ void setup() {
   orientation(LANDSCAPE);
   background(0); // Black background
   frameRate(5);
+  activityManager = (ActivityManager) getActivity().getApplicationContext().getSystemService(ACTIVITY_SERVICE);
 
   // Get debug information from the DisplayManager
   DisplayManager dm = (DisplayManager) getActivity().getApplicationContext().getSystemService(DISPLAY_SERVICE);
@@ -229,7 +240,7 @@ void setup() {
     }
     catch (Exception e) {
     }
-    // wait for surface size change callback kludge
+    // wait for surface size change, no callback kludge
     delay(200);
   }
   println("setup() ready="+ready);
@@ -256,11 +267,25 @@ void draw() {
   textSize(48);
   fill(255);
 
+  // Process key commands
   if (lastKeyCode > 0) {
-    int kc = lastKeyCode - KeyEvent.KEYCODE_0;
-    conversion = (kc>=0 && kc<conversionName.length) ? kc: 0;
-    lastKeyCode = -1;
-    newPhoto = true;
+    if (lastKeyCode == 4429) {  // key 123 on LeTv remote
+      debugLoadImage = !debugLoadImage;
+    } else if (lastKeyCode == 166 || lastKeyCode == KeyEvent.KEYCODE_VOLUME_UP) {  // channel up TV
+      useDownloader = !useDownloader;
+    } else if (lastKeyCode == 167 || lastKeyCode == KeyEvent.KEYCODE_VOLUME_DOWN) {  // channel down TV
+      conversion++;
+      if (conversion >= conversionName.length) {
+        conversion = NO_CONVERSION;
+      }
+      newPhoto = true;
+    } else {
+      int kc = lastKeyCode - KeyEvent.KEYCODE_0;
+      conversion = (kc >= 0 && kc < conversionName.length) ? kc: 0;
+      newPhoto = true;
+    }
+
+    lastKeyCode = -1; // clear keyCode
   }
 
   boolean start = false;
@@ -283,18 +308,20 @@ void draw() {
     }
   }
 
-  //if (path != null && path.startsWith("/storage") && newPhoto) {
   if (path != null && newPhoto) {
-    //if (!show && path != null) {
     try {
       System.out.println("loadImage("+path+")");
-      photo = loadImage(path);
-      if (photo != null && photo.width>0 && photo.height>0) {
-        System.out.println("Null image loadImage path="+ path + " photo w="+photo.width + " h="+photo.height);
+      if (!debugLoadImage) {
+        photo = loadImage(path);
       } else {
-        message = "loadImage Error path="+path + " photo null or not read";
+        photo = loadImage(testImage);
       }
-      if (path.contains("_2x1.")) {
+      if (photo != null && photo.width>0 && photo.height>0) {
+        System.out.println("Valid image path="+ path + " photo w="+photo.width + " h="+photo.height);
+      } else {
+        message1 = "loadImage Error path="+path + " photo null or not read";
+      }
+      if (path.contains("_2x1.")) {  // check if stereo suffix present
         stereo = true;
       } else {
         stereo = false;
@@ -307,7 +334,8 @@ void draw() {
       //ready = false;
       System.out.println("error loadImage "+path);
       fill(255);
-      message = "loadImage exception "+ ex.getClass().getSimpleName() + " path="+path;
+      message1 = "loadImage exception "+ ex.getClass().getSimpleName();
+      message2 = "path="+path;
       newPhoto = false;
     }
   }
@@ -328,7 +356,7 @@ void draw() {
       // we have to conserve memory to avoid out of memory
       if (LETV) recycle(photo); // not using photo any more
 
-      // check for anaglyph and column interlace type
+      // check for conversion types
       switch(conversion) {
       case COLUMN_INTERLACE:
       case ROW_INTERLACE:
@@ -345,7 +373,6 @@ void draw() {
       default:
         break;
       }
-      //recycle(leftImage, rightImage);
     }
     ready = false;
     show = true;
@@ -380,6 +407,9 @@ void draw() {
       ar = (float)photo.width / (float)photo.height;
       image(photo, xOffset, 0, (float)height*ar, height);
     }
+    if (statusDisplay) {
+      displayStatus();
+    }
   }
 }
 
@@ -398,22 +428,46 @@ void recycle(PImage img) {
   img.setNative(null);
 }
 
+void imageDestroy() {
+  recycle(photo);
+  recycle(interlacedImage);
+  recycle(anaImage);
+  recycle(originalImage);
+  recycle(leftImage);
+  recycle(rightImage);
+}
+
 void displayStatus() {
-  text(message, 100, 100);
-  int voffset = 7*height/10;
+  int voffset = 6*height/10;
   int inc = 50;
-  text("Image Broadcast Downloader version "+ version + " " + manufacturer + " "+modelName, 50, voffset );
-  text("stereo="+stereo+ " conversion="+conversionName[conversion] +
-    " screen width="+width +" height="+height+ " LETV="+LETV+" useDownloader="+useDownloader, 50, voffset+inc);
-  text(hostIp+":"+port, 50, voffset+2*inc);
+  int margin = 50;
+  int memoryClassMb = activityManager.getMemoryClass();
+  int largeMemoryClassMb = activityManager.getLargeMemoryClass();
+
+  text(message1, margin, 100);
+  text(message2, margin, 100 + inc);
+
+  text("Image Broadcast Downloader version "+ version + " " + manufacturer + " "+modelName, margin, voffset );
+  voffset += inc;
+  text("Listening On "+hostIp+":"+port, margin, voffset);
+  voffset += inc;
+  text("Standard Heap Limit: " + memoryClassMb + " MB"+" Large Heap Limit: " + largeMemoryClassMb + " MB", margin, voffset);
+  voffset += inc;
+  text("stereo="+stereo+ " conversion="+conversionName[conversion] + " screen width="+width +" height="+height, margin, voffset);
+  voffset += inc;
+  text("LETV="+LETV+" useDownloader="+useDownloader + " testImage="+debugLoadImage, margin, voffset);
+  voffset += inc;
   if (downloadHelper != null) {
     String filename = downloadHelper.getFilename();
-    text(filename, 50, voffset + 3*inc);
+    text(filename, margin, voffset );
+    voffset += inc;
     String displayStatus = downloadHelper.getDownloadStatus();
-    text(displayStatus, 50, voffset +4*inc);
+    text(displayStatus, margin, voffset);
+    voffset += inc;
     if (useDownloader) path = downloadHelper.getPath();
   }
-  text("Downloader path "+path, 50, voffset + 5*inc);
+  text("Downloader path "+path, margin, voffset + inc);
+  voffset += inc;
 }
 
 // scanImage to make it known to Android file system and apps like Gallery, etc.

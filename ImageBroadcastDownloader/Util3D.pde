@@ -62,7 +62,8 @@ PImage interlaced3D(int conversion, Bitmap leftImg, Bitmap rightImg, int targetW
         }
       }
     }
-  } else {  // Row interlaced
+  // Row interlaced
+  } else {  
     for (int y=0; y<scaledLeft.getHeight(); y++) {
       for (int x=0; x<scaledLeft.getWidth(); x++) {
         if (y%2 == 0) {
