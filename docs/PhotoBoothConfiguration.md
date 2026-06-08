@@ -6,23 +6,23 @@ The system is designed for remote configuration of the photo booth directly.
 
 ## ⌨️ Usage Instructions
 
-*   **Input Method:** Commands are entered using the keyboard.
-*   **Command Prefix:** Type `//` followed by the command abbreviation to initiate a command.
+*   **Input Method:** Slash commands are entered using the keyboard.
+*   **Command Prefix:** Type `/` followed by the command abbreviation to initiate a command.
 *   **Read Value:** Press **Enter** after the command to display the current parameter value.
 *   **Set Value:** Type `=setvalue` followed by **Enter** to set the parameter.
-    *   *Example:* `//pb=true` followed by Enter sets Photo Booth mode.
+    *   *Example:* `/pb=true` followed by Enter sets Photo Booth mode.
 *   **String Parameters:**
     *   Do **not** use quotes.
     *   Spaces separate words.
     *   The **Enter** key defines the end of the string.
-    *   *Example:* `//t1=3D Photo Booth` sets the title.
+    *   *Example:* `/t1=3D Photo Booth` sets the title.
 *   **Navigation:**
-    *   **Left / Right Arrow Keys:** Position the cursor within the input.
+    *   **Left and Right Arrow Keys:** Position the cursor within the input.
     *   **Backspace:** Erases the previous character.
     *   **Delete:** Erases the character after the cursor.
 *   **Reset to Default:**
     *   The backslash `\` key resets the parameter to its factory default value.
-    *   *Example:* `//pb=\` turns off photo booth mode (resets to default `false`).
+    *   *Example:* `/pb=\` turns off photo booth mode (resets to default `false`).
 
 ## 📋 Parameter Table
 
@@ -84,11 +84,11 @@ All parameters are listed below. The full description for each parameter is prov
 
 | Action | Command Entry | Result |
 | :--- | :--- | :--- |
-| Check | parallax offset	//px ➔ [Enter]	| Displays: parallaxOffset = 0 |
-| Enable AI editing | 	//ai=true ➔ [Enter]	| Sets AI Edit to true |
-| Set countdown timer | 	//ct=5 ➔ [Enter]	| Sets timer to 3 seconds |
-| Reset to default | 	//pb=\ ➔ [Enter]	|  Sets Photo Booth to false |
-| Change title | 	//t1=My Booth ➔ [Enter]	|  Sets Title 1 to My Booth |
+| Check | parallax offset	/px ➔ [Enter]	| Displays: parallaxOffset = 0 |
+| Enable AI editing | 	/ai=true ➔ [Enter]	| Sets AI Edit to true |
+| Set countdown timer | 	/ct=5 ➔ [Enter]	| Sets timer to 3 seconds |
+| Reset to default | 	/pb=\ ➔ [Enter]	|  Sets Photo Booth to false |
+| Change title | 	/t1=My Booth ➔ [Enter]	|  Sets Title 1 to My Booth |
 
 
 
@@ -98,7 +98,7 @@ Default Configuration: All out-of-the-box default values set the standard 3D poi
 
 Photo Booth Mode (pb):
 
-* Setting //pb=true activates photo booth functionality. The camera becomes active with selective live SBS, anaglyph, and single left and right eye views and can be handheld to take pictures.
+* Setting /pb=true activates photo booth functionality. The camera becomes active with selective live SBS, anaglyph, and single left and right eye views and can be handheld to take pictures.
 * When intended for a fixed photo booth setup, additional parameters (such as ct, cd, i1, i2, fdi, t1, t2, uc, and ut) should be configured to match the physical installation.
 * Restart Behavior: Changing certain system-level parameters (e.g., pb, uc, ut) will trigger an immediate application restart to safely reinitialize the new configuration.
 * String Formatting: When entering string parameters, quotes are not used to define strings in the command line. Spaces are preserved exactly as typed.
