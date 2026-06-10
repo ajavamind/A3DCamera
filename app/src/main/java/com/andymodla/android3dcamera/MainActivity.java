@@ -97,7 +97,7 @@ public class MainActivity extends AppCompatActivity {
 
     // Photo booth variables
     public boolean isPhotoBooth = true;
-    private PhotoBooth photoBooth;  // photo booth sketch
+    public PhotoBooth photoBooth;  // photo booth sketch
     PFragment photoBoothFragment;  // processing library photo booth fragment
     View decorView; // screen window view for camera app
 
@@ -755,15 +755,21 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             case FN_KEY:
             case FN_KB_KEY:
-                //camera.closeCamera();
+                if (state != LIVE_VIEW_STATE) {
+                    return true;
+                }
+                camera.closeCamera();
                 camera.setMeteringIndex();
-                //camera.openCamera();
+                camera.openCamera();
                 return true;
             case FOCUS_DISTANCE_KEY: // change focus distance, should be sub menu
             case FOCUS_DISTANCE_KB_KEY: // change focus distance, should be sub menu
-                //camera.closeCamera();
+                if (state != LIVE_VIEW_STATE) {
+                    return true;
+                }
+                camera.closeCamera();
                 camera.setFocusDistance();
-                //camera.openCamera();
+                camera.openCamera();
                 return true;
 //            case KeyEvent.KEYCODE_ENTER:
 //            case OK_KEY:
@@ -786,7 +792,7 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             case MODE_KEY:
                 //case MODE_KB_KEY:
-                Toast.makeText(this, "Auto Exposure - Manual, Shutter Priority", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Mode - not implemented", Toast.LENGTH_SHORT).show();
 //                closeCamera();
 //                openCamera();
                 return true;
@@ -930,6 +936,7 @@ public class MainActivity extends AppCompatActivity {
         if (camera.captureInProgress.get()) return;
         if (isPhotoBooth && !photoBooth.isLiveView())
             return;
+
         if (countdownTimer != null) return;
         //Log.d(TAG, "countdownDigit=" + countdownDigit);
         if (parameters.getCountDownEnabled()) {

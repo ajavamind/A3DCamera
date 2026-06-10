@@ -62,7 +62,7 @@ public class PhotoBooth extends PApplet {
     int XBP_DISPLAY_HEIGHT = 1080;
 
     int displayFPS = 30; // display frames per second
-    int reviewTimeout = 0;
+    int reviewTimeout = -1;
     int REVIEW_TIMEOUT_SECONDS = 3;
 
     // Parallax and vertical alignment adjustments in pixels for XBP photo booth
@@ -276,6 +276,9 @@ public class PhotoBooth extends PApplet {
                 mainActivity.state = MainActivity.LIVE_VIEW_STATE;
                 update = true;
             }
+        } else if (reviewTimeout == 0) {
+            mainActivity.state = MainActivity.LIVE_VIEW_STATE;
+            update = true;
         }
 
         if (blankScreen) {
@@ -410,13 +413,14 @@ public class PhotoBooth extends PApplet {
         fill(255);
         textAlign(CENTER, CENTER);
         textSize(96);
-        //int animate = captureFrameCount / displayFPS; // TODO
-        //text("Please Wait", width / 2, height / 2);
+
         if (!parameters.getAutoReview()) {
             reviewTimeout = REVIEW_TIMEOUT_SECONDS * displayFPS; // seconds to frames
+            PApplet.println("Photo booth reviewTimeout = " + reviewTimeout);
+        } else {
+            PApplet.println("Photo booth auto review reviewTimeout = " + reviewTimeout);
         }
         loop();
-        //    }
     }
 
     private void drawLiveView() {
@@ -807,18 +811,17 @@ public class PhotoBooth extends PApplet {
 
     }
 
-
     public void setReviewImages(PImage left, PImage right) {
-        //if (currentLeft != null) ((Bitmap) currentLeft.getNative()).recycle();
-        //if (currentRight != null) ((Bitmap) currentRight.getNative()).recycle();
         currentLeft = left;
         currentRight = right;
         imagesLoaded = true;
+        update = true;
     }
 
     void drawReview() {
         // PApplet.println("drawReview()");
-        if (imagesLoaded && currentLeft != null && currentRight != null) {
+        if (imagesLoaded && currentLeft != null && currentRight != null
+            && !((Bitmap)currentLeft.getNative()).isRecycled() && !((Bitmap)currentRight.getNative()).isRecycled()) {
             boolean saveMirror = mirror;  // review does not display mirror image
             mirror = false;
             if (displayMode == DisplayMode.SBS) {

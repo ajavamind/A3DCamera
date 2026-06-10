@@ -54,7 +54,7 @@ public class Media {
 
     // Image Save File modes
     // at least one of these booleans must be true;
-    private volatile boolean saveAnaglyph = true;
+    private volatile boolean saveAnaglyph = false;
     private volatile boolean saveSBS = true;
     private volatile boolean saveLR = true;
 
@@ -104,21 +104,6 @@ public class Media {
 
     public void setCamera(Camera3D camera) {
         this.camera = camera;
-    }
-    /**
-     * Recycle bitmaps
-     *
-     * @return
-     */
-    public void recycleBitmaps() {
-        if (leftBitmap != null) {
-            leftBitmap.recycle();
-            leftBitmap = null;
-        }
-        if (rightBitmap != null) {
-            rightBitmap.recycle();
-            rightBitmap = null;
-        }
     }
 
     public void savePaths() {
@@ -203,15 +188,22 @@ public class Media {
 
         if (left) {
             filename += "_l.jpg";
+            bitmap = leftBitmap;
         } else {
             filename += "_r.jpg";
+            bitmap = rightBitmap;
         }
 
         BitmapFactory.Options options = new BitmapFactory.Options();
-        if (((MainActivity)context).isPhotoBooth) {
-            options.inSampleSize = 2; // Try reducing image size to avoid out of memory error
-        }
-        // options.inPreferredConfig = Bitmap.Config.ARGB_8888; // Try specifying a config
+        options.inPreferredConfig = Bitmap.Config.ARGB_8888; // specify a config
+//        if (((MainActivity)context).isPhotoBooth) {
+//            options.inSampleSize = 2; // reducing image size to avoid out of memory error
+//        }
+        // 1. Crucial: Tell the decoder to reuse our existing memory allocation buffer
+        options.inBitmap = bitmap;
+        // 2. Ensure mutable status so it can be safely written over
+        options.inMutable = true;
+        options.inSampleSize = 1;
 
         Log.d(TAG, "SaveImageFile " + filename);
         bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length, options);
@@ -242,7 +234,7 @@ public class Media {
             Log.e(TAG, "Error saving image", e);
             return null;
         }
-        //System.gc();
+        Log.d(TAG, "saveImageFile "+filename + " width=" + bitmap.getWidth() + " height=" + bitmap.getHeight() );
         return bitmap;
     }
 
@@ -318,7 +310,9 @@ public class Media {
             Log.e(TAG, "Error saving SBS image", e);
             return null;
         }
-        sbsBitmap.recycle();
+        finally {
+            sbsBitmap.recycle();
+        }
         return file;
     }
 
@@ -328,23 +322,6 @@ public class Media {
         timestamp = camera.getTimestamp();
         leftBitmap = saveImageFile(leftBytes, PHOTO_PREFIX + timestamp, true); // left
         rightBitmap = saveImageFile(rightBytes, PHOTO_PREFIX + timestamp, false); // right
-
-        if (pApplet != null) {  // Processing sketch is present
-            if (leftReview != null) {
-                ((Bitmap)leftReview.getNative()).recycle();
-            }
-            if (rightReview != null) {
-                ((Bitmap)rightReview.getNative()).recycle();
-            }
-            leftReview = pApplet.createImage(leftBitmap.getWidth(), leftBitmap.getHeight(), PImage.ARGB);
-            rightReview = pApplet.createImage(rightBitmap.getWidth(), rightBitmap.getHeight(), PImage.ARGB);
-            leftReview.setNative(leftBitmap);
-            rightReview.setNative(rightBitmap);
-            leftReview.loadPixels();
-            leftReview.updatePixels();
-            rightReview.loadPixels();
-            rightReview.updatePixels();
-        }
 
         // AI Vision requires multimodal LLM server running locally on network
         if (aiVision != null) {
@@ -374,30 +351,56 @@ public class Media {
             }
         }
         //ToastHelper.showToast(context, "Saved " + timestamp);
-        Toast.makeText(context, "Saved " + timestamp, Toast.LENGTH_LONG).show();
-        if (pApplet != null) {
+        //Toast.makeText(context, "Saved " + timestamp, Toast.LENGTH_LONG).show();
+        if (pApplet != null) {  // Processing sketch is present
+            leftReview = pApplet.createImage(leftBitmap.getWidth(), leftBitmap.getHeight(), PImage.ARGB);
+            rightReview = pApplet.createImage(rightBitmap.getWidth(), rightBitmap.getHeight(), PImage.ARGB);
+            leftReview.setNative(leftBitmap);
+            rightReview.setNative(rightBitmap);
+            leftReview.loadPixels();
+            leftReview.updatePixels();
+            rightReview.loadPixels();
+            rightReview.updatePixels();
+
             ((PhotoBooth) pApplet).setReviewImages(leftReview, rightReview);
             ((MainActivity) context).setReview();
         }
-        //camera.captureInProgress.set(false);
+        Toast.makeText(context, "Saved " + timestamp, Toast.LENGTH_LONG).show();
+
     }
 
     public void printImageType() {
-        if (reviewSBS == null || reviewAnaglyph == null || reviewLeft == null || reviewRight == null) {
-            Toast.makeText(context, "Nothing to Print", Toast.LENGTH_SHORT).show();
-            return;
-        }
         DisplayMode displayMode = ((MainActivity) context).getDisplayMode();
         if (displayMode == DisplayMode.SBS) {
+            if (reviewSBS == null) {
+                nothingToPrint();
+                return;
+            }
             sharePrintImage(reviewSBS, true);
         } else if (displayMode == DisplayMode.ANAGLYPH) {
+            if (reviewAnaglyph == null) {
+                nothingToPrint();
+                return;
+            }
             sharePrintImage(reviewAnaglyph, false);
         } else if (displayMode == DisplayMode.LEFT){
+            if (reviewLeft == null) {
+                nothingToPrint();
+                return;
+            }
             sharePrintImage(reviewLeft, false);
-        } else {
+        } else if (displayMode == DisplayMode.RIGHT){
+            if (reviewRight == null) {
+                nothingToPrint();
+                return;
+            }
             sharePrintImage(reviewRight, false);
         }
 
+    }
+
+    private void nothingToPrint() {
+        Toast.makeText(context, "Nothing to Print", Toast.LENGTH_SHORT).show();
     }
 
     public File getMediaFile() {
@@ -639,6 +642,7 @@ public class Media {
         try {
             // ... (Keep your existing resizing logic to get a Bitmap) ...
             BitmapFactory.Options options = new BitmapFactory.Options();
+            options.inPreferredConfig = Bitmap.Config.ARGB_8888; // Try specifying a config
             options.inJustDecodeBounds = true;
             BitmapFactory.decodeFile(sourceFile.getAbsolutePath(), options);
             options.inSampleSize = calculateInSampleSize(options, -1, maxHeight);

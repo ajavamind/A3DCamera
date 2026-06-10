@@ -898,7 +898,7 @@ public class Camera3D {
         Log.d(TAG, "createCameraCaptureSession() captureInProgress=" + captureInProgress);
         if (captureInProgress.get()) return;
         captureInProgress.set(true);
-
+        if (((MainActivity)context).photoBooth.isLiveView()) ((MainActivity)context).photoBooth.noLoop();
 
         if (mCameraDevice == null || mCameraCaptureSession == null) {
             Toast.makeText(context, "Camera not ready", Toast.LENGTH_SHORT).show();
@@ -937,7 +937,7 @@ public class Camera3D {
             imageR = null;
             leftBytes = null;
             rightBytes = null;
-            media.recycleBitmaps();
+            //media.recycleBitmaps();
             timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
             ((MainActivity) context).remoteShutter();  // send shutter release broadcast message
             //Log.d(TAG, "createCameraCaptureSession() "+timestamp + " state="+((MainActivity)context).state);
@@ -1015,14 +1015,6 @@ public class Camera3D {
         }
     }
 
-    public void disposePImage() {
-        ((Bitmap) leftImage.getNative()).recycle();
-        ((Bitmap) rightImage.getNative()).recycle();
-        leftImage = null;
-        rightImage = null;
-        //System.gc();
-    }
-
     private void saveImageFiles(Image left, Image right) {
         if (left != null && right != null) {
             //Log.d(TAG, "saveImageFiles() "+left.getTimestamp() +" "+right.getTimestamp());
@@ -1040,6 +1032,7 @@ public class Camera3D {
             }
             captureInProgress.set(false);  //  done capturing images
             Log.d(TAG, "saveImageFiles() done captureInProgress=" + captureInProgress.get());
+            ((MainActivity) context).photoBooth.loop();
         }
     }
 

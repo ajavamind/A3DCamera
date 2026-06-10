@@ -183,7 +183,7 @@ public class StereoImage {
 
         int w = bufL.getWidth();
         int h = bufL.getHeight();
-
+        Log.d(TAG, "colorAnaglyph left image width=" +w+ " height=" +h);
         // Pre-allocate pixel arrays for batch processing
         int[] pixelsL = new int[w * h];
         int[] pixelsR = new int[w * h];
