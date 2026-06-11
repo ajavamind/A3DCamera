@@ -65,6 +65,8 @@ public class Media {
     volatile Bitmap rightBitmap;
     public volatile PImage leftReview;
     public volatile PImage rightReview;
+    private Bitmap sbsBitmap;
+    private Bitmap anaglyphBitmap;
 
     private String timestamp;
     volatile private File reviewSBS;
@@ -272,14 +274,15 @@ public class Media {
             Log.d(TAG, "createAndSaveSBS failed Bitmaps null " + timestamp);
             return null;
         }
-        Bitmap sbsBitmap = null;
+
         if (parameters.getSbsCropPrint()) {
-            sbsBitmap = StereoImage.alignLR(leftBitmap, rightBitmap, parameters.getParallaxOffset(), parameters.getVerticalOffset(), Parameters.sbsCrop);
+            sbsBitmap = StereoImage.alignLR(leftBitmap, rightBitmap, parameters.getParallaxOffset(), parameters.getVerticalOffset(), Parameters.sbsCrop, sbsBitmap);
         } else {
-            sbsBitmap = StereoImage.alignLR(leftBitmap, rightBitmap, parameters.getParallaxOffset(), parameters.getVerticalOffset());
+            sbsBitmap = StereoImage.alignLR(leftBitmap, rightBitmap, parameters.getParallaxOffset(), parameters.getVerticalOffset(), 0, sbsBitmap);
         }
+
         if (sbsBitmap == null) {
-            Log.d(TAG, "createAndSaveSBS failed");
+            Log.d(TAG, "createAndSaveSBS failed to allocate sbsBitmap");
             return null;
         }
 
@@ -300,18 +303,13 @@ public class Media {
                 Log.d(TAG, "imageSender.sendImageUrl " + imageUrl);
                 ((MainActivity) context).imageSender.sendImageUrl(imageUrl, parameters.getReceiverIp(), parameters.getReceiverPort());
             }
-// unused code for later discover and send implementation instead of fixed receiver IP address
-//            if (((MainActivity) context).imageUrlSender != null) {
-//                String imageUrl = "http://"+((MainActivity) context).senderHost+":"+((MainActivity) context).senderPort+File.separator+filename;
-//                Log.d(TAG, "imageUrlSender.discoverAndSend " + imageUrl);
-//                ((MainActivity) context).imageUrlSender.discoverAndSend(imageUrl);
-//            }
+
         } catch (IOException e) {
             Log.e(TAG, "Error saving SBS image", e);
             return null;
         }
         finally {
-            sbsBitmap.recycle();
+
         }
         return file;
     }
@@ -340,7 +338,7 @@ public class Media {
             if (((MainActivity) context).getContinuousMode()) {
                 timestamp += "_" + (((MainActivity) context).CONTINUOUS_COUNT - counter + 1);
             }
-            // Save SBS image and keep file, and recycle SBS bitmap
+            // Save SBS image and keep file
             if (crossEye) {
                 reviewSBS = createAndSaveSBS(PHOTO_PREFIX + timestamp, rightBitmap, leftBitmap);
             } else {

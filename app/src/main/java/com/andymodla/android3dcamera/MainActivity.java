@@ -598,6 +598,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void processStateToggle() {
         // toggle through photo types for display
+        Log.d(TAG, "processStateToggle");
         if (state == LIVE_VIEW_STATE) {
             setReview();
         } else if (state == REVIEW_PHOTO_STATE) {
@@ -607,14 +608,17 @@ public class MainActivity extends AppCompatActivity {
 
     public void setLiveView() {
         state = LIVE_VIEW_STATE;
+        photoBooth.loop();
     }
 
     public void setReview() {
         state = REVIEW_PHOTO_STATE;
+        photoBooth.loop();
     }
 
     public void setAiEditReview() {
         state = REVIEW_AI_EDIT_STATE;
+        photoBooth.loop();
     }
 
 
@@ -931,12 +935,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void capturePhoto() {
-        //Log.d(TAG, "capturePhoto()");
-        //Log.d(TAG, "captureInProgress=" + camera.captureInProgress.get());
+        Log.d(TAG, "capturePhoto() captureInProgress=" + camera.captureInProgress.get());
         if (camera.captureInProgress.get()) return;
-        if (isPhotoBooth && !photoBooth.isLiveView())
+        if (isPhotoBooth && !photoBooth.isLiveView()) {
+            setLiveView();
             return;
-
+        }
         if (countdownTimer != null) return;
         //Log.d(TAG, "countdownDigit=" + countdownDigit);
         if (parameters.getCountDownEnabled()) {

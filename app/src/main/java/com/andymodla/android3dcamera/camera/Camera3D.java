@@ -937,7 +937,7 @@ public class Camera3D {
             imageR = null;
             leftBytes = null;
             rightBytes = null;
-            //media.recycleBitmaps();
+
             timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
             ((MainActivity) context).remoteShutter();  // send shutter release broadcast message
             //Log.d(TAG, "createCameraCaptureSession() "+timestamp + " state="+((MainActivity)context).state);
