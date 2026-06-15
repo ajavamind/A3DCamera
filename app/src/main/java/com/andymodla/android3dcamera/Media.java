@@ -54,7 +54,7 @@ public class Media {
 
     // Image Save File modes
     // at least one of these booleans must be true;
-    private volatile boolean saveAnaglyph = false;
+    private volatile boolean saveAnaglyph = true;
     private volatile boolean saveSBS = true;
     private volatile boolean saveLR = true;
 
@@ -247,7 +247,7 @@ public class Media {
             return null;
         }
 
-        Bitmap anaglyphBitmap = StereoImage.colorAnaglyph(leftBitmap, rightBitmap, parameters.getParallaxOffset(), parameters.getVerticalOffset());
+        anaglyphBitmap = StereoImage.colorAnaglyph(leftBitmap, rightBitmap, parameters.getParallaxOffset(), parameters.getVerticalOffset());
 
         // Save anaglyph image
         String filename = timestamp + "_ana.jpg";
@@ -348,8 +348,7 @@ public class Media {
                 ((MainActivity) context).nextContinuousCapturePhoto();
             }
         }
-        //ToastHelper.showToast(context, "Saved " + timestamp);
-        //Toast.makeText(context, "Saved " + timestamp, Toast.LENGTH_LONG).show();
+
         if (pApplet != null) {  // Processing sketch is present
             leftReview = pApplet.createImage(leftBitmap.getWidth(), leftBitmap.getHeight(), PImage.ARGB);
             rightReview = pApplet.createImage(rightBitmap.getWidth(), rightBitmap.getHeight(), PImage.ARGB);
@@ -361,10 +360,15 @@ public class Media {
             rightReview.updatePixels();
 
             ((PhotoBooth) pApplet).setReviewImages(leftReview, rightReview);
-            ((MainActivity) context).setReview();
+            if (parameters.getAutoReview()) {
+                ((MainActivity) context).setReview();
+            } else {
+                ((MainActivity) context).setLiveView();
+            }
         }
-        Toast.makeText(context, "Saved " + timestamp, Toast.LENGTH_LONG).show();
-
+        if (!parameters.getIsBlankScreen()) {
+            Toast.makeText(context, "Saved " + timestamp, Toast.LENGTH_SHORT).show();
+        }
     }
 
     public void printImageType() {

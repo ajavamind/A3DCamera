@@ -1018,21 +1018,18 @@ public class Camera3D {
     private void saveImageFiles(Image left, Image right) {
         if (left != null && right != null) {
             //Log.d(TAG, "saveImageFiles() "+left.getTimestamp() +" "+right.getTimestamp());
-            if (parameters.isPhotoBooth) {
-                ((MainActivity) context).state = MainActivity.CAPTURE_STATE;
-            }
             leftBytes = convertToBytes(left);
             rightBytes = convertToBytes(right);
             left.close();
             right.close();
             if (leftBytes != null && rightBytes != null) {
+                //((MainActivity) context).state = MainActivity.REVIEW_PHOTO_STATE;
                 media.saveImageFiles(leftBytes, rightBytes);
                 leftBytes = null;
                 rightBytes = null;
             }
             captureInProgress.set(false);  //  done capturing images
             Log.d(TAG, "saveImageFiles() done captureInProgress=" + captureInProgress.get());
-            ((MainActivity) context).photoBooth.loop();
         }
     }
 

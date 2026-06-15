@@ -271,12 +271,28 @@ void draw() {
   if (lastKeyCode > 0) {
     if (lastKeyCode == 4429) {  // key 123 on LeTv remote
       debugLoadImage = !debugLoadImage;
-    } else if (lastKeyCode == 166 || lastKeyCode == KeyEvent.KEYCODE_VOLUME_UP) {  // channel up TV
-      useDownloader = !useDownloader;
-    } else if (lastKeyCode == 167 || lastKeyCode == KeyEvent.KEYCODE_VOLUME_DOWN) {  // channel down TV
+    } else if (lastKeyCode == 166 ) {  // channel up TV
       conversion++;
       if (conversion >= conversionName.length) {
         conversion = NO_CONVERSION;
+      }
+      newPhoto = true;
+    } else if (lastKeyCode == 167) {  // channel down TV
+      conversion--;
+      if (conversion < 0) {
+        conversion = SBS;
+      }
+      newPhoto = true;
+    } else if (lastKeyCode == KeyEvent.KEYCODE_VOLUME_UP) {  // volume up
+      conversion++;
+      if (conversion >= conversionName.length) {
+        conversion = NO_CONVERSION;
+      }
+      newPhoto = true;
+    } else if (lastKeyCode == KeyEvent.KEYCODE_VOLUME_DOWN) {  // volume down
+      conversion--;
+      if (conversion < 0) {
+        conversion = SBS;
       }
       newPhoto = true;
     } else {

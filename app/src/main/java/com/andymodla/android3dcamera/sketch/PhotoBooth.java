@@ -44,6 +44,7 @@ public class PhotoBooth extends PApplet {
     int gray = color(128);
 
     MainActivity mainActivity;
+    Thread animationThread;
     Camera3D camStereo;  // The stereo camera used with the device
     Parameters parameters; // Application parameters
     Media media;
@@ -62,8 +63,8 @@ public class PhotoBooth extends PApplet {
     int XBP_DISPLAY_HEIGHT = 1080;
 
     int displayFPS = 30; // display frames per second
-    int reviewTimeout = -1;
-    int REVIEW_TIMEOUT_SECONDS = 2;
+    int reviewTimeout = 0;
+    int MAX_REVIEW_TIMEOUT_SECONDS = 120;
 
     // Parallax and vertical alignment adjustments in pixels for XBP photo booth
     public volatile int parallax = 100;
@@ -119,6 +120,13 @@ public class PhotoBooth extends PApplet {
         this.mainActivity = mainActivity;
     }
 
+    public void wakeUp() {
+        if (animationThread != null) {
+            // Triggers draw() immediately
+            // TODO this is not working
+        }
+    }
+
     public void settings() {
         // set size for XReal Beam Pro full display
         // draw canvas size and render using OpenGL
@@ -132,7 +140,11 @@ public class PhotoBooth extends PApplet {
         background(black);
         smooth();
         frameRate(displayFPS);
-        mainActivity.state = MainActivity.LIVE_VIEW_STATE;
+
+        // Capture the thread running setup() and draw()
+        animationThread = Thread.currentThread();
+
+        //mainActivity.state = MainActivity.LIVE_VIEW_STATE;
 
         //gui = new Gui();
         //gui.setup(this);
@@ -157,6 +169,15 @@ public class PhotoBooth extends PApplet {
         update = true;
     }
 
+    public void onBackPressed() {
+        if (DEBUG) println("onBackPressed()");
+    }
+
+    public void backPressed() {
+        if (DEBUG) println("backPressed()");
+        return;
+    }
+
     public void setCamera(Camera3D camera) {
         camStereo = camera;
         this.parameters = camera.getParameters();
@@ -166,11 +187,6 @@ public class PhotoBooth extends PApplet {
 
     public boolean isLiveView() {
         if (mainActivity.state == MainActivity.LIVE_VIEW_STATE) return true;
-        return false;
-    }
-
-    public boolean isCapture() {
-        if (mainActivity.state == MainActivity.CAPTURE_STATE) return true;
         return false;
     }
 
@@ -244,6 +260,14 @@ public class PhotoBooth extends PApplet {
         update = true;
     }
 
+    public void setReviewTimeout(int reviewTimeout) {
+        if (parameters.getAutoReview()) {
+            this.reviewTimeout = MAX_REVIEW_TIMEOUT_SECONDS*displayFPS;
+        } else {
+            this.reviewTimeout = reviewTimeout;
+        }
+    }
+
     void showCountdown(boolean sbs) {
         if (countdown.isEmpty()) {
             return;
@@ -269,15 +293,14 @@ public class PhotoBooth extends PApplet {
         background(black);
 
         mirror = parameters.getIsMirror();
+
         if (reviewTimeout > 0) {
             reviewTimeout--;
-            if (reviewTimeout == 1) {
-                reviewTimeout = 0;
+            if (reviewTimeout == 0) {
                 mainActivity.state = MainActivity.LIVE_VIEW_STATE;
                 update = true;
             }
         } else if (reviewTimeout == 0) {
-            mainActivity.state = MainActivity.LIVE_VIEW_STATE;
             update = true;
         }
 
@@ -290,8 +313,6 @@ public class PhotoBooth extends PApplet {
 
         if (isLiveView()) {
             drawLiveView();
-        } else if (isCapture()) {
-            drawCapture();
         } else if (isReview()) {
             drawReview();
         } else if (isReviewEdit()) {
@@ -391,37 +412,6 @@ public class PhotoBooth extends PApplet {
             saveScreenshot();
             screenshot = false;
         }
-    }
-
-    void drawCapture() {
-        // PApplet.println("drawReview()");
-//        if (imagesLoaded && currentLeft != null && currentRight != null) {
-//            boolean saveMirror = mirror;  // review does not display mirror image
-//            mirror = false;
-//            if (displayMode == DisplayMode.SBS) {
-//                drawSBS(currentLeft, currentRight);
-//            } else if (displayMode == DisplayMode.ANAGLYPH) {
-//                drawAnaglyph(currentLeft, currentRight);
-//            } else if (displayMode == DisplayMode.LEFT) {
-//                drawPhoto(currentLeft);
-//            } else if (displayMode == DisplayMode.RIGHT) {
-//                drawPhoto(currentRight);
-//            }
-//            mirror = saveMirror;
-//        } else {
-        // Display message if no images
-        fill(255);
-        textAlign(CENTER, CENTER);
-        textSize(96);
-
-        if (parameters.getAutoReview()) {
-            // stay in review mode until button exits review mode
-            PApplet.println("Photo booth auto review reviewTimeout = " + reviewTimeout);
-        } else {
-            reviewTimeout = 2; //REVIEW_TIMEOUT_SECONDS * displayFPS; // seconds to frames
-            PApplet.println("Photo booth reviewTimeout = " + reviewTimeout);
-        }
-        loop();
     }
 
     private void drawLiveView() {
@@ -821,8 +811,8 @@ public class PhotoBooth extends PApplet {
 
     void drawReview() {
         // PApplet.println("drawReview()");
-        if (imagesLoaded && currentLeft != null && currentRight != null
-            && !((Bitmap)currentLeft.getNative()).isRecycled() && !((Bitmap)currentRight.getNative()).isRecycled()) {
+        if (imagesLoaded && currentLeft != null && currentRight != null) {
+            //&& !((Bitmap)currentLeft.getNative()).isRecycled() && !((Bitmap)currentRight.getNative()).isRecycled()) {
             boolean saveMirror = mirror;  // review does not display mirror image
             mirror = false;
             if (displayMode == DisplayMode.SBS) {
@@ -842,11 +832,6 @@ public class PhotoBooth extends PApplet {
             textSize(48);
             text("Waiting for Photo", width / 2, height / 2);
         }
-//        fill(255);
-//        textAlign(CENTER, CENTER);
-//        textSize(48);
-//        text("Review Photo", width/2, height/2);
-
     }
 
     /**
@@ -940,7 +925,7 @@ public class PhotoBooth extends PApplet {
     }
 
     void loadCurrentImage() {
-        if (DEBUG) PApplet.println("loadCurrentImage() state=" + mainActivity.state);
+        if (DEBUG) PApplet.println("loadCurrentImage() state=" + MainActivity.stateName[mainActivity.state]);
         if (leftImageFiles.isEmpty() || currentIndex < 0 || currentIndex >= leftImageFiles.size()) {
             imagesLoaded = false;
             if (DEBUG) PApplet.println("loadCurrentImage failed");

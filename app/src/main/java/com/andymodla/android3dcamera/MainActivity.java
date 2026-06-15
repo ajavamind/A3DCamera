@@ -86,11 +86,10 @@ public class MainActivity extends AppCompatActivity {
 
     // photo booth states definitions
     public static final int LIVE_VIEW_STATE = 0;
-    public static final int CAPTURE_STATE = 1;
-    public static final int REVIEW_PHOTO_STATE = 2;
-    public static final int REVIEW_AI_EDIT_STATE = 3;
+    public static final int REVIEW_PHOTO_STATE = 1;
+    public static final int REVIEW_AI_EDIT_STATE = 2;
     public volatile int state = LIVE_VIEW_STATE;
-
+    public static final String stateName[] = {"LIVE_VIEW_STATE", "REVIEW_PHOTO_STATE", "REVIEW_AI_EDIT_STATE"};
     public volatile DisplayMode displayMode = DisplayMode.SBS;
 
     private boolean exitApp = false; // exit app flag with back or esc button
@@ -598,8 +597,8 @@ public class MainActivity extends AppCompatActivity {
 
     private void processStateToggle() {
         // toggle through photo types for display
-        Log.d(TAG, "processStateToggle");
-        if (state == LIVE_VIEW_STATE) {
+        Log.d(TAG, "processStateToggle state="+stateName[state]);
+        if (state == LIVE_VIEW_STATE ) {
             setReview();
         } else if (state == REVIEW_PHOTO_STATE) {
             setLiveView();
@@ -608,19 +607,31 @@ public class MainActivity extends AppCompatActivity {
 
     public void setLiveView() {
         state = LIVE_VIEW_STATE;
-        photoBooth.loop();
+        wakeUpSketch();
     }
 
     public void setReview() {
         state = REVIEW_PHOTO_STATE;
-        photoBooth.loop();
+        wakeUpSketch();
     }
 
     public void setAiEditReview() {
         state = REVIEW_AI_EDIT_STATE;
-        photoBooth.loop();
+        wakeUpSketch();
     }
 
+    public void wakeUpSketch() {
+        // Inside your native Android event handling block:
+        runOnUiThread(new Runnable() {
+            public void run() {
+                // Kickstart the Processing animation
+                camera.available = true;
+                photoBooth.loop();
+                photoBooth.wakeUp();  // not implemented
+            }
+        });
+
+    }
 
     /*==================================================================
      * Key Events
@@ -657,6 +668,10 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public boolean onKeyUp(int keyCode, KeyEvent event) {
         char ch = (char) event.getUnicodeChar();
+        if (ch == 65535 && keyCode == 0) { // special case all other keys
+            // ignore key
+            return true;
+        }
         Log.d(TAG, "onKeyUp " + keyCode + " " + ch);
         if (commandLine != null && commandLine.processCommandLineKey(keyCode, ch)) {
             return true;
@@ -720,7 +735,8 @@ public class MainActivity extends AppCompatActivity {
 
             case KeyEvent.KEYCODE_BACK:
             case KeyEvent.KEYCODE_ESCAPE:
-                //case BACK_KB_KEY:
+                    //moveTaskToBack(true);
+                    return true;
             case KeyEvent.KEYCODE_BUTTON_B:
                 if (continuousMode) {
                     setContinuousMode(false);
@@ -729,7 +745,7 @@ public class MainActivity extends AppCompatActivity {
                 }
                 if (state == REVIEW_PHOTO_STATE) {
                     // turn on camera for entering live view state
-                    state = LIVE_VIEW_STATE;
+                    //state = LIVE_VIEW_STATE;
                     camera.openCamera();
                     setLiveView();
                     return true;

@@ -85,7 +85,9 @@ class ParamStore {
             // New parameters
             private boolean autoReview = false;
             private boolean sbsCropPrint = false;
-            public static final float sbsCrop = 1.5f; // aspect ratio for SBS crop to fit SBS in 6x4 print
+            public static final float sbsCrop = 1.777777778f;  // aspect ratio for SBS crop to fit SBS in 1080p or 2160p (4K) screen
+            //public static final float sbsCrop = 1.5f; // aspect ratio for SBS crop to fit SBS in 6x4 print
+            //public static final float sbsCrop = 2.0f; // aspect ratio for SBS crop to fit SBS in square print
             private int focusDistanceIndex = 0;
 
             // default constructor
