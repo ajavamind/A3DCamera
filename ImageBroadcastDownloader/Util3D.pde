@@ -77,7 +77,7 @@ PImage interlaced3D(int conversion, Bitmap leftImg, Bitmap rightImg, int targetW
 
   // Clean up intermediate bitmaps immediately
   scaledRight.recycle();
-
+  scaledRight = null;
   PImage clImage = createImage(targetWidth, targetHeight, ARGB);
   clImage.setNative(scaledLeft);
   return clImage;

@@ -36,10 +36,15 @@ import java.net.SocketException;
 import java.util.Enumeration;
 import android.view.View;
 import android.view.KeyEvent;
+import android.graphics.Point;
+import java.io.InputStream;
+import java.net.URL;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+
 import com.andymodla.imagebroadcastdownloader.DownloadHelper;
 import com.andymodla.imagebroadcastdownloader.UrlSource;
 import android.media.MediaScannerConnection;
-import android.graphics.Bitmap;
 import android.os.Build;
 import processing.core.*;
 import processing.event.*;
@@ -69,7 +74,8 @@ import static android.content.Context.ACTIVITY_SERVICE;
 
 //import MyDebug;
 
-public static final boolean DEBUG = false;
+private static final boolean DEBUG = false;
+private static String renderer = P2D;
 String modelName;
 String manufacturer;
 String deviceName;
@@ -84,7 +90,6 @@ volatile public String path;
 volatile PImage photo;
 volatile PImage interlacedImage;
 volatile PImage anaImage;
-volatile PImage originalImage;
 volatile PImage leftImage;
 volatile PImage rightImage;
 PImage[] imagePair;
@@ -105,17 +110,23 @@ private static final int ANAGLYPH = 3;
 private static final int SBS = 4;
 int conversion = NO_CONVERSION;
 
-String[] conversionName = {"NONE", "COLUMN", "ROW", "ANAGLYPH", "SBS"};
+private static final String[] conversionName = {"NONE", "COLUMN", "ROW", "ANAGLYPH", "SBS"};
 float xOffset;
 int sOffset;
 float ar;
 float sar;
-Display dispArray[];
+
 int LeTvWidth = 3840;
 int LeTvHeight = 2160;
 int ScreenWidth;
 int ScreenHeight;
+int realWidth;
+int realHeight;
+int realWidth2;
+int realHeight2;
 boolean LETV = false;
+boolean SKYY = false;
+boolean SONY4K = false;
 String message1="No Errors";
 String message2="";
 
@@ -179,15 +190,17 @@ void mousePressed() {
 void settings() {
   modelName = Build.MODEL;
   manufacturer = Build.MANUFACTURER;
+  //manufacturer = "letv";  // force manufacturer for testing with LeTV
   deviceName = manufacturer + " " + modelName;
   println("DeviceInfo", "Device manufacturer: " + manufacturer + " model: "+ modelName);
   if (modelName.equals("SM-S931U")) {
     // Samsung S25
-    //conversion = SBS;
-    conversion = ANAGLYPH; // test
+    conversion = SBS;
+    //conversion = ANAGLYPH; // test
     //LETV = true;  // for test
   } else if (manufacturer.equals("IQH3D") && modelName.equals("SKYY")) {
     conversion = COLUMN_INTERLACE;
+    SKYY = true;
   } else if (manufacturer.toLowerCase().equals("letv")) {
     conversion = ROW_INTERLACE;
     LETV = true;
@@ -195,7 +208,12 @@ void settings() {
   } else if (manufacturer.equals("LitByLeia") && (modelName.equals("LPD-20W") || modelName.equals("LPD-10W"))) {
     conversion = NO_CONVERSION;
   } else if (manufacturer.equals("Sony") && (modelName.equals("G8142") )) {
+    // Sony Xperia XZ Premium phone used in a stereoscope
     conversion = SBS;
+    SONY4K = true;
+  } else if (manufacturer.equals("Sony") && (modelName.equals("BRAVIA 4K VH2") )) {
+    conversion = ANAGLYPH;  // not a 3D display, no stereoscope viewing, not free viewing
+    SONY4K = true;
   } else {
     conversion = ANAGLYPH;
   }
@@ -206,8 +224,65 @@ void settings() {
     size(ScreenWidth, ScreenHeight);
     fullScreen();
     smooth();
+  } else if (SKYY) {
+    ScreenWidth = 2560; // real display size
+    ScreenHeight = 1600;
+    size(ScreenWidth, ScreenHeight, renderer);
+    fullScreen(renderer);
+    smooth();
+  } else if (SONY4K) {
+    ScreenWidth = 3840; // real display size
+    ScreenHeight = 2160;
+    size(ScreenWidth, ScreenHeight, renderer);
+    fullScreen(renderer);
+    smooth();
   } else {
-    fullScreen(P2D);
+    //double AR = 1920.0 / 1080.0;
+    //int w = (int) (((double) displayHeight) * AR);
+    //size(w, displayHeight, renderer);
+    //println("size("+w+","+displayHeight+")");
+    fullScreen(renderer);
+  }
+  println("width="+width+" height="+height);
+}
+
+void getDisplayInformation() {
+  Display displays[];
+  println("getDisplayInformation()");
+  activityManager = (ActivityManager) getActivity().getApplicationContext().getSystemService(ACTIVITY_SERVICE);
+
+  // Get debug information from the DisplayManager
+  DisplayManager dm = (DisplayManager) getActivity().getApplicationContext().getSystemService(DISPLAY_SERVICE);
+  if (dm != null) {
+    displays = dm.getDisplays();
+
+    if (displays.length>0) {
+      //Context displayContext = getActivity().getApplicationContext().createDisplayContext(dispArray[0]);
+      //WindowManager wm = (WindowManager)displayContext.getSystemService(WINDOW_SERVICE);
+      if (DEBUG) {
+        for (int i=0; i<displays.length; i++) {
+          println(displays[i].toString());
+          println();
+          println();
+        }
+      }
+
+      Point outSize = new Point();
+
+      // Fetch the absolute raw dimensions for first display
+      displays[0].getRealSize(outSize);
+
+      realWidth = outSize.x;
+      realHeight = outSize.y;
+      println("Display 0 real size w="+realWidth+ " h="+realHeight);
+      
+      if (displays.length >= 2) {
+        displays[1].getRealSize(outSize);
+        realWidth2 = outSize.x;
+        realHeight2 = outSize.y;
+        println("Display 1 real size w="+realWidth2+ " h="+realHeight2);
+      }
+    }
   }
 }
 
@@ -215,21 +290,9 @@ void setup() {
   orientation(LANDSCAPE);
   background(0); // Black background
   frameRate(5);
-  activityManager = (ActivityManager) getActivity().getApplicationContext().getSystemService(ACTIVITY_SERVICE);
 
-  // Get debug information from the DisplayManager
-  DisplayManager dm = (DisplayManager) getActivity().getApplicationContext().getSystemService(DISPLAY_SERVICE);
-  if (dm != null) {
-    dispArray = dm.getDisplays();
+  getDisplayInformation();
 
-    if (dispArray.length>0) {
-      //Context displayContext = getActivity().getApplicationContext().createDisplayContext(dispArray[0]);
-      //WindowManager wm = (WindowManager)displayContext.getSystemService(WINDOW_SERVICE);
-      for (int i=0; i<dispArray.length; i++) {
-        println(dispArray[i].toString());
-      }
-    }
-  }
   // change the surface to desired 3840x2160 actual TV screen dimensions
   // because LeTV default screen for apps is 1920x1080
   if (LETV) {
@@ -244,6 +307,7 @@ void setup() {
     delay(200);
   }
   println("setup() ready="+ready);
+  System.gc();
 }
 
 //@Override
@@ -295,7 +359,7 @@ void draw() {
         conversion = SBS;
       }
       newPhoto = true;
-    } else {
+    } else if (lastKeyCode >= KeyEvent.KEYCODE_0 && lastKeyCode < (KeyEvent.KEYCODE_0 + conversionName.length)) {
       int kc = lastKeyCode - KeyEvent.KEYCODE_0;
       conversion = (kc >= 0 && kc < conversionName.length) ? kc: 0;
       newPhoto = true;
@@ -324,11 +388,17 @@ void draw() {
     }
   }
 
-  if (path != null && newPhoto) {
+  if (path != null && path.length() > 0 && newPhoto) {
+    imageDestroy(); // force recycle when newPhoto is loaded
+    System.gc();
     try {
       System.out.println("loadImage("+path+")");
       if (!debugLoadImage) {
+        if (LETV) {
+          photo = loadImageScaling(path);
+        } else {
         photo = loadImage(path);
+        }
       } else {
         photo = loadImage(testImage);
       }
@@ -368,7 +438,7 @@ void draw() {
       imagePair[0] = null;
       imagePair[1] = null;
 
-      // Letv has a very small RAM computer (3GB)
+      // Letv uses a very small RAM computer (3GB)
       // we have to conserve memory to avoid out of memory
       if (LETV) recycle(photo); // not using photo any more
 
@@ -393,7 +463,7 @@ void draw() {
     ready = false;
     show = true;
     newPhoto = false;
-    println("photo processed conversion="+conversion + " stereo="+stereo);
+    println("photo processed conversion="+conversionName[conversion] + " stereo="+stereo);
   }
   if (show ) {
     background(0);
@@ -429,6 +499,47 @@ void draw() {
   }
 }
 
+PImage loadImageScaling(String url) {
+  PImage img = null;
+  boolean isError = false;
+  try {
+    // 1. Open network stream
+    InputStream stream = new URL(url).openStream();
+    
+    // 2. Options to downsample the image data 
+    BitmapFactory.Options options = new BitmapFactory.Options();
+    
+    // An inSampleSize of 4 reads only 1 out of every 4 pixels. 
+    // This reduces the image RAM usage by a factor of 16 (4x4).
+    //options.inSampleSize = 4; 
+    options.inSampleSize = 2; 
+    
+    // 3. Decode stream safely into a downscaled native Android Bitmap
+    Bitmap bitmap = BitmapFactory.decodeStream(stream, null, options);
+    stream.close();
+    
+    if (bitmap != null) {
+      // 4. Safely convert the Android Bitmap over to a Processing PImage
+      img = new PImage(bitmap.getWidth(), bitmap.getHeight(), ARGB);
+      bitmap.getPixels(img.pixels, 0, img.width, 0, 0, img.width, img.height);
+      img.updatePixels();
+      
+      // Clean up native memory
+      bitmap.recycle(); 
+    } else {
+      isError = true;
+    }
+  } catch (Exception e) {
+    e.printStackTrace();
+    isError = true;
+  }
+  if (isError) {
+    return null;
+  } else {
+    return img;
+  }
+}
+
 void recycle(PImage leftImage, PImage rightImage) {
   recycle(leftImage);
   recycle(rightImage);
@@ -448,7 +559,6 @@ void imageDestroy() {
   recycle(photo);
   recycle(interlacedImage);
   recycle(anaImage);
-  recycle(originalImage);
   recycle(leftImage);
   recycle(rightImage);
 }
@@ -465,7 +575,7 @@ void displayStatus() {
 
   text("Image Broadcast Downloader version "+ version + " " + manufacturer + " "+modelName, margin, voffset );
   voffset += inc;
-  text("Listening On "+hostIp+":"+port, margin, voffset);
+  text("Listening On "+hostIp+":"+ port + " realWidth="+realWidth + " realHeight="+realHeight, margin, voffset);
   voffset += inc;
   text("Standard Heap Limit: " + memoryClassMb + " MB"+" Large Heap Limit: " + largeMemoryClassMb + " MB", margin, voffset);
   voffset += inc;
