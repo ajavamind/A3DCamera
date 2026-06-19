@@ -3,7 +3,7 @@
     <uses-feature android:glEsVersion="0x00020000" android:required="true"/>
     <supports-screens android:anyDensity="true" android:largeScreens="true" android:normalScreens="true" android:smallScreens="false"/>
     <application android:icon="@mipmap/ic_launcher" android:label=" Image Broadcast Downloader" android:largeHeap="true" android:requestLegacyExternalStorage="true" android:usesCleartextTraffic="true">
-        <activity android:exported="true" android:name=".MainActivity" android:theme="@style/Theme.AppCompat.Light.NoActionBar.FullScreen">
+        <activity android:exported="true" android:name=".MainActivity" android:configChanges="keyboard|keyboardHidden|navigation" android:theme="@style/Theme.AppCompat.Light.NoActionBar.FullScreen">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>

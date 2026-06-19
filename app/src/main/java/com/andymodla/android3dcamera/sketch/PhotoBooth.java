@@ -76,7 +76,6 @@ public class PhotoBooth extends PApplet {
     DisplayMode displayMode = DisplayMode.SBS;
     volatile boolean update = false;
     volatile boolean zoom = false;
-    volatile boolean blankScreen = false;
     boolean screenshot = false;
     int debugHelp = 0;
     String[] help;
@@ -190,7 +189,7 @@ public class PhotoBooth extends PApplet {
     }
 
     public void toggleBlankScreen() {
-        blankScreen = !blankScreen;
+        parameters.setIsBlankScreen(!parameters.getIsBlankScreen());
         update = true;
     }
 
@@ -277,7 +276,7 @@ public class PhotoBooth extends PApplet {
             update = true;
         }
 
-        if (blankScreen) {
+        if (parameters.getIsBlankScreen()) {
             return;
         }
 

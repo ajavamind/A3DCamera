@@ -118,9 +118,13 @@ class ParamStore {
                         method.invoke(this, Integer.parseInt(value.toString()));
                     else if (store.setterParamType == String.class)
                         method.invoke(this, value.toString());
-                    else if (store.setterParamType == boolean.class)
+                    else if (store.setterParamType == boolean.class) {
+                        if (value.toString().equals("on")) method.invoke(this, true);
+                        else if (value.toString().equals("off")) method.invoke(this, false);
+                        else if (value.toString().equals("true")) method.invoke(this, true);
+                        else if (value.toString().equals("false"))
                         method.invoke(this, Boolean.parseBoolean(value.toString()));
-                    else method.invoke(this, value);
+                    } else method.invoke(this, value);
                 } catch (Exception e) {
                     // Handle potential exceptions
                     Log.e(TAG, "Error Parameters calling setter: " + e.getMessage());
