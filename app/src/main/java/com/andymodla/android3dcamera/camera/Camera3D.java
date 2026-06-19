@@ -175,7 +175,7 @@ public class Camera3D {
     private static final CaptureRequest.Key<Integer> SHARPNESS = new CaptureRequest.Key<>("org.codeaurora.qcamera3.sharpness.strength", Integer.class);
 
     //volatile boolean shutterSound = true;
-    public volatile boolean available = false; // PImage available to access
+    public final AtomicBoolean available = new AtomicBoolean(false); // PImage available to access
     public final AtomicBoolean captureInProgress = new AtomicBoolean(false);
 
     // Image processing got preview
@@ -479,7 +479,7 @@ public class Camera3D {
             leftImage.updatePixels();
             rightImage.loadPixels();
             rightImage.updatePixels();
-            available = true;
+            available.set(true);
         }
     }
 
@@ -647,10 +647,6 @@ public class Camera3D {
             mCameraDevice = null;
         }
         stopCameraThread();
-        // Call this from a background executor
-//        new Thread(() -> {
-//            stopCameraThread(); // This now contains the join() calls
-//        }).start();
 
     }
 
@@ -735,6 +731,30 @@ public class Camera3D {
 
         } catch (CameraAccessException e) {
             Log.e(TAG, "Camera access exception", e);
+        }
+    }
+
+    public void pauseCameraPreviewSession() {
+        Log.d(TAG, "pauseCameraPreviewSession()");
+
+        if (mCameraCaptureSession != null) {
+            try {
+                mCameraCaptureSession.stopRepeating();
+                mCameraCaptureSession.abortCaptures();
+            } catch (CameraAccessException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    public void resumeCameraPreviewSession() {
+        Log.d(TAG, "startCameraPreviewSession()");
+        if (mCameraCaptureSession != null) {
+            try {
+                mCameraCaptureSession.setRepeatingRequest(previewRequestBuilder.build(), null, mCameraHandler);
+            } catch (CameraAccessException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
@@ -898,7 +918,6 @@ public class Camera3D {
         Log.d(TAG, "createCameraCaptureSession() captureInProgress=" + captureInProgress);
         if (captureInProgress.get()) return;
         captureInProgress.set(true);
-        if (((MainActivity)context).photoBooth.isLiveView()) ((MainActivity)context).photoBooth.noLoop();
 
         if (mCameraDevice == null || mCameraCaptureSession == null) {
             Toast.makeText(context, "Camera not ready", Toast.LENGTH_SHORT).show();
@@ -906,6 +925,7 @@ public class Camera3D {
             if (mCameraCaptureSession == null) Log.e(TAG, "mCameraCaptureSession is null");
             return;
         }
+
         try {
             // Create capture request for both cameras
             CaptureRequest.Builder captureBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
@@ -977,6 +997,7 @@ public class Camera3D {
                                 TotalCaptureResult result) {
                             // This method is called when the capture is complete
                             // You can process the result here if needed
+
                             Log.d(TAG, "Capture Request completed successfully");
                             //captureInProgress.set(false);  // done capturing images
                         }
@@ -1023,7 +1044,6 @@ public class Camera3D {
             left.close();
             right.close();
             if (leftBytes != null && rightBytes != null) {
-                //((MainActivity) context).state = MainActivity.REVIEW_PHOTO_STATE;
                 media.saveImageFiles(leftBytes, rightBytes);
                 leftBytes = null;
                 rightBytes = null;

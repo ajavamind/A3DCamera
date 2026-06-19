@@ -269,7 +269,7 @@ public class MainActivity extends AppCompatActivity {
         imageSender = new ImageSender(this, parameters, udpRemoteControl);
         if (photoBooth != null) { // we are in photo booth mode
             // set photo booth countdown
-             countdownDigit = -1;
+            countdownDigit = -1;
             if (parameters.getCountDownEnabled()) {
                 countdownStart = parameters.getCountdownTimer();
             } else {
@@ -555,11 +555,11 @@ public class MainActivity extends AppCompatActivity {
 
 
     private void processShutterKey() {
-        if (photoBooth.isLiveView()) {
+        if (isLiveView()) {
             capturePhoto();
-        } else if (photoBooth.isReview()) {
+        } else if (isReview()) {
             media.printImageType();
-        } else if (photoBooth.isReviewEdit()) {
+        } else if (isReviewEdit()) {
             File mediaFile = media.getMediaFile();
             if (mediaFile == null) {
                 Toast.makeText(this, "Nothing To Edit", Toast.LENGTH_SHORT).show();
@@ -597,39 +597,55 @@ public class MainActivity extends AppCompatActivity {
 
     private void processStateToggle() {
         // toggle through photo types for display
-        Log.d(TAG, "processStateToggle state="+stateName[state]);
-        if (state == LIVE_VIEW_STATE ) {
+        Log.d(TAG, "processStateToggle state=" + stateName[state]);
+        if (state == LIVE_VIEW_STATE) {
             setReview();
         } else if (state == REVIEW_PHOTO_STATE) {
             setLiveView();
         }
     }
 
+    public boolean isLiveView() {
+        if (state == MainActivity.LIVE_VIEW_STATE) return true;
+        return false;
+    }
+
+    public boolean isReview() {
+        if (state == MainActivity.REVIEW_PHOTO_STATE) return true;
+        return false;
+    }
+
+    public boolean isReviewEdit() {
+        if (state == MainActivity.REVIEW_AI_EDIT_STATE) return true;
+        return false;
+    }
+
     public void setLiveView() {
         state = LIVE_VIEW_STATE;
-        wakeUpSketch();
+        wakeUpSketch(state);
     }
 
     public void setReview() {
         state = REVIEW_PHOTO_STATE;
-        wakeUpSketch();
+        wakeUpSketch(state);
     }
 
     public void setAiEditReview() {
         state = REVIEW_AI_EDIT_STATE;
-        wakeUpSketch();
+        wakeUpSketch(state);
     }
 
-    public void wakeUpSketch() {
-        // Inside your native Android event handling block:
-        runOnUiThread(new Runnable() {
-            public void run() {
-                // Kickstart the Processing animation
-                camera.available = true;
-                photoBooth.loop();
-                photoBooth.wakeUp();  // not implemented
-            }
-        });
+    public void wakeUpSketch(int theState) {
+        Log.d(TAG, "wakeUpSketch state=" + stateName[theState]);
+        if (isPhotoBooth && isReview()) {
+            camera.pauseCameraPreviewSession();
+        } else if (isPhotoBooth && isLiveView()) {
+            camera.resumeCameraPreviewSession();
+        }
+
+        camera.available.set(true);
+        photoBooth.loop();
+        Log.d(TAG, "wakeUpSketch isLooping="+photoBooth.isLooping());
 
     }
 
@@ -735,8 +751,8 @@ public class MainActivity extends AppCompatActivity {
 
             case KeyEvent.KEYCODE_BACK:
             case KeyEvent.KEYCODE_ESCAPE:
-                    //moveTaskToBack(true);
-                    return true;
+                //moveTaskToBack(true);
+                return true;
             case KeyEvent.KEYCODE_BUTTON_B:
                 if (continuousMode) {
                     setContinuousMode(false);
@@ -894,7 +910,7 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             case KeyEvent.KEYCODE_D:
                 if (isPhotoBooth) {
-                    simulateClick(decorView,  1500, 540);
+                    simulateClick(decorView, 1500, 540);
                     return true;
                 }
                 return true;
@@ -953,7 +969,7 @@ public class MainActivity extends AppCompatActivity {
     public void capturePhoto() {
         Log.d(TAG, "capturePhoto() captureInProgress=" + camera.captureInProgress.get());
         if (camera.captureInProgress.get()) return;
-        if (isPhotoBooth && !photoBooth.isLiveView()) {
+        if (isPhotoBooth && !isLiveView()) {
             setLiveView();
             return;
         }
@@ -1010,10 +1026,10 @@ public class MainActivity extends AppCompatActivity {
     void startCountdownSequence(int startCount) {
         Log.d(TAG, "startCountdownSequence startCount=" + startCount);
         //if (isPhotoBooth) {
-            if (startCount == 0) {
-                camera.createCameraCaptureSession(); // take a picture
-                return;
-            }
+        if (startCount == 0) {
+            camera.createCameraCaptureSession(); // take a picture
+            return;
+        }
         //}
         if (countdownTimer == null) {
             countdownTimer = new Timer();

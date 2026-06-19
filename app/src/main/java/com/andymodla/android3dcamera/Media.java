@@ -207,16 +207,17 @@ public class Media {
         options.inMutable = true;
         options.inSampleSize = 1;
 
-        Log.d(TAG, "SaveImageFile " + filename);
         bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length, options);
         if (bitmap == null) {
             Log.e(TAG, "Image decoding failed! " + (left ? "left" : "right"));
             return null;
         } else {
             if (!saveLR) {
+                Log.d(TAG, "SaveImageFile not saved " + filename);
                 return bitmap;
             }
         }
+        Log.d(TAG, "SaveImageFile " + filename);
 
         File file = new File(Environment.getExternalStoragePublicDirectory(BASE_FOLDER + File.separator + SAVE_FOLDER + File.separator + SAVE_LR_FOLDER), filename);
 
@@ -308,9 +309,6 @@ public class Media {
             Log.e(TAG, "Error saving SBS image", e);
             return null;
         }
-        finally {
-
-        }
         return file;
     }
 
@@ -350,8 +348,10 @@ public class Media {
         }
 
         if (pApplet != null) {  // Processing sketch is present
-            leftReview = pApplet.createImage(leftBitmap.getWidth(), leftBitmap.getHeight(), PImage.ARGB);
-            rightReview = pApplet.createImage(rightBitmap.getWidth(), rightBitmap.getHeight(), PImage.ARGB);
+            if (leftReview == null || rightReview == null) {
+                leftReview = pApplet.createImage(leftBitmap.getWidth(), leftBitmap.getHeight(), PImage.ARGB);
+                rightReview = pApplet.createImage(rightBitmap.getWidth(), rightBitmap.getHeight(), PImage.ARGB);
+            }
             leftReview.setNative(leftBitmap);
             rightReview.setNative(rightBitmap);
             leftReview.loadPixels();
@@ -363,7 +363,7 @@ public class Media {
             if (parameters.getAutoReview()) {
                 ((MainActivity) context).setReview();
             } else {
-                ((MainActivity) context).setLiveView();
+                //((MainActivity) context).setLiveView();
             }
         }
         if (!parameters.getIsBlankScreen()) {

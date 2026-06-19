@@ -44,10 +44,11 @@ public class PhotoBooth extends PApplet {
     int gray = color(128);
 
     MainActivity mainActivity;
-    Thread animationThread;
     Camera3D camStereo;  // The stereo camera used with the device
     Parameters parameters; // Application parameters
     Media media;
+
+    private int state; // initialized from MainActivity, used in draw() to determine what to draw
 
     PImage imgLeft;
     PImage imgRight;
@@ -71,7 +72,7 @@ public class PhotoBooth extends PApplet {
     public volatile int verticalAlignment = -1;
     public volatile boolean mirror = false;
     public volatile boolean crossEye = false;
-    public volatile int brightness = -6;
+
     DisplayMode displayMode = DisplayMode.SBS;
     volatile boolean update = false;
     volatile boolean zoom = false;
@@ -115,16 +116,8 @@ public class PhotoBooth extends PApplet {
     int frameX = (XBP_DISPLAY_WIDTH - frameWidth) / 2;  // 2400 pixel screen minus frameWidth/2
     int frameY = (XBP_DISPLAY_HEIGHT - frameHeight) / 2;
 
-    //Gui gui;
     public void setMainActivity(MainActivity mainActivity) {
         this.mainActivity = mainActivity;
-    }
-
-    public void wakeUp() {
-        if (animationThread != null) {
-            // Triggers draw() immediately
-            // TODO this is not working
-        }
     }
 
     public void settings() {
@@ -141,14 +134,7 @@ public class PhotoBooth extends PApplet {
         smooth();
         frameRate(displayFPS);
 
-        // Capture the thread running setup() and draw()
-        animationThread = Thread.currentThread();
-
-        //mainActivity.state = MainActivity.LIVE_VIEW_STATE;
-
-        //gui = new Gui();
-        //gui.setup(this);
-
+// splash screen for 3D photo booth
 //        splashLeft = loadImage("FlowerPot_l.JPG");
 //        splashRight = loadImage("FlowerPot_r.JPG");
 //        if (DEBUG)
@@ -183,21 +169,6 @@ public class PhotoBooth extends PApplet {
         this.parameters = camera.getParameters();
 
         this.media = camera.getMedia();
-    }
-
-    public boolean isLiveView() {
-        if (mainActivity.state == MainActivity.LIVE_VIEW_STATE) return true;
-        return false;
-    }
-
-    public boolean isReview() {
-        if (mainActivity.state == MainActivity.REVIEW_PHOTO_STATE) return true;
-        return false;
-    }
-
-    public boolean isReviewEdit() {
-        if (mainActivity.state == MainActivity.REVIEW_AI_EDIT_STATE) return true;
-        return false;
     }
 
     public void update() {
@@ -285,7 +256,7 @@ public class PhotoBooth extends PApplet {
     }
 
     public void draw() {
-
+        state = mainActivity.state ;
         if (loadPrevious) {
             loadPrevious = false;
             thread("restore");
@@ -297,7 +268,9 @@ public class PhotoBooth extends PApplet {
         if (reviewTimeout > 0) {
             reviewTimeout--;
             if (reviewTimeout == 0) {
+                //mainActivity.state = MainActivity.LIVE_VIEW_STATE;
                 mainActivity.state = MainActivity.LIVE_VIEW_STATE;
+                state = mainActivity.state;
                 update = true;
             }
         } else if (reviewTimeout == 0) {
@@ -307,15 +280,16 @@ public class PhotoBooth extends PApplet {
         if (blankScreen) {
             return;
         }
+
         if (camStereo == null) {
             return;
         }
 
-        if (isLiveView()) {
+        if (state == MainActivity.LIVE_VIEW_STATE) {
             drawLiveView();
-        } else if (isReview()) {
+        } else if (state == MainActivity.REVIEW_PHOTO_STATE) {
             drawReview();
-        } else if (isReviewEdit()) {
+        } else if (state == MainActivity.REVIEW_AI_EDIT_STATE) {
             drawReview();
         }
         if (magnifyScale[magnifyIndex] > 1.0f) {
@@ -348,16 +322,17 @@ public class PhotoBooth extends PApplet {
             sMode = "Right";
         }
 
-        if (isLiveView()) {
+        if (state == MainActivity.LIVE_VIEW_STATE) {
             text("Live", 50, height - 48);
-        } else if (isReview()) {
+        } else if (state == MainActivity.REVIEW_PHOTO_STATE) {
             text("Review Print", 50, height - 48);
-        } else if (isReviewEdit()) {
+        } else if (state == MainActivity.REVIEW_AI_EDIT_STATE) {
             text("Review Edit", 50, height - 48);
         }
         text(sMode, 50, height - 96);
 
-        if (mainActivity.state == MainActivity.LIVE_VIEW_STATE) {
+        //if (mainActivity.state == MainActivity.LIVE_VIEW_STATE) {
+        if (state == MainActivity.LIVE_VIEW_STATE) {
             textAlign(CENTER);
             text(parameters.getInst1(), width / 2, 50);
             text(parameters.getInst2(), width / 2, 100);
@@ -369,15 +344,14 @@ public class PhotoBooth extends PApplet {
                 text("P=" + (parallax) + "   ", width - 50, height - 96);
                 text("V=" + (verticalAlignment) + "   ", width - 50, height - 48);
             }
-        } else if (mainActivity.state == MainActivity.REVIEW_PHOTO_STATE) {
+        } else if (state == MainActivity.REVIEW_PHOTO_STATE) {
             textAlign(RIGHT);
             fill(green);
             text("Print", width - 50, height - 48);
             if (parameters.getSbsCropPrint() && displayMode == DisplayMode.SBS) {
                 text("Crop", width - 50, height - 96);
             }
-
-        } else if (mainActivity.state == MainActivity.REVIEW_AI_EDIT_STATE) {
+        } else if (state == MainActivity.REVIEW_AI_EDIT_STATE) {
             textAlign(RIGHT);
             fill(magenta);
             text("AI Edit", width - 50, height - 48);
@@ -416,8 +390,8 @@ public class PhotoBooth extends PApplet {
 
     private void drawLiveView() {
 
-        if (camStereo.available) {
-            camStereo.available = false;
+        if (camStereo.available.get()) {
+            camStereo.available.set(false);
             imgLeft = camStereo.leftImage;
             imgRight = camStereo.rightImage;
             AR = (float) imgLeft.width / (float) imgLeft.height;
@@ -629,6 +603,41 @@ public class PhotoBooth extends PApplet {
         drawGrid(true);
     }
 
+    public void drawPhotoNoClip(PImage img) {
+        float offsetX = 0;
+        float offsetY = 0;
+        float anaglyphW = (float) height * AR;
+        float displayX = ((float) width - anaglyphW) / 2;
+
+        push();
+        // Center the rendering origin to the display box on screen
+        translate(displayX, 0);
+        translate(-(float) parallax / 2, -(float) verticalAlignment / 2);
+
+        if (mirror) {
+            translate(anaglyphW, 0);
+            scale(-1, 1);
+        }
+
+        if (zoom) {
+            // Calculate crop boundaries relative to the source image size
+            float scaleFactor = magnifyScale[magnifyIndex];
+            int srcW = (int) (((float) img.width) / scaleFactor);
+            int srcH = (int)(((float) img.height) / scaleFactor);
+            int srcX = (img.width - srcW) / 2;
+            int srcY = (img.height - srcH) / 2;
+
+            // Draw only the zoomed sub-section stretched to the destination size
+            image(img, 0, 0, anaglyphW, height, srcX, srcY, srcX + srcW, srcY + srcH);
+        } else {
+            // Draw the full image normally
+            image(img, 0, 0, anaglyphW, height);
+        }
+        pop();
+
+        drawGrid(true);
+    }
+
     void drawGrid(boolean full) {
         if (!testMode) return;
         fill(yellow);
@@ -772,10 +781,6 @@ public class PhotoBooth extends PApplet {
     // Review photos for display;
     volatile PImage currentLeft;
     volatile PImage currentRight;
-    volatile boolean imagesLoaded = false;
-
-    // Review photo for print
-    volatile PImage currentSBS;
 
     // TODO exit and restore take care of last image on application start up
 //    public void exit() {
@@ -788,31 +793,16 @@ public class PhotoBooth extends PApplet {
 //        media.restorePaths();
 //    }
 
-    // reviewSetup is run as a thread using Processing's thread() function
-    public void reviewSetup() {
-        if (DEBUG) PApplet.println("reviewSetup()");
-        // Load image file list
-        boolean listAvailable = loadImageFileList();
-
-        // Load the first image if available
-        if (listAvailable) {
-            loadCurrentImage();
-            update = true;
-        }
-
-    }
-
     public void setReviewImages(PImage left, PImage right) {
         currentLeft = left;
         currentRight = right;
-        imagesLoaded = true;
+        //imagesLoaded = true;
         update = true;
     }
 
     void drawReview() {
         // PApplet.println("drawReview()");
-        if (imagesLoaded && currentLeft != null && currentRight != null) {
-            //&& !((Bitmap)currentLeft.getNative()).isRecycled() && !((Bitmap)currentRight.getNative()).isRecycled()) {
+        if (currentLeft != null && currentRight != null && currentLeft.width>0 && currentLeft.height>0 && currentRight.width>0 && currentRight.height>0 ) {
             boolean saveMirror = mirror;  // review does not display mirror image
             mirror = false;
             if (displayMode == DisplayMode.SBS) {
@@ -839,125 +829,124 @@ public class PhotoBooth extends PApplet {
      *
      * @return true if images loaded, false if failed to load any image
      */
+//    public boolean loadImageFileList() {
+//        leftImageFiles = new ArrayList<String>();
+//        rightImageFiles = new ArrayList<String>();
+//
+//        // Get the external storage directory
+//        File externalStorage = Environment.getExternalStorageDirectory();
+//        File lrFolder = new File(externalStorage, FOLDER_PATH);
+//
+//        if (!lrFolder.exists() || !lrFolder.isDirectory()) {
+//            if (DEBUG) PApplet.println("Folder not found: " + lrFolder.getAbsolutePath());
+//            return false;
+//        }
+//
+//        // Temporary lists to collect all left and right files
+//        ArrayList<String> tempLeftFiles = new ArrayList<String>();
+//        ArrayList<String> tempRightFiles = new ArrayList<String>();
+//
+//        // Get all JPG/JPEG files
+//        File[] files = lrFolder.listFiles();
+//        if (files != null) {
+//            for (File file : files) {
+//                if (file.isFile()) {
+//                    String name = file.getName().toLowerCase();
+//                    String fullPath = file.getAbsolutePath();
+//
+//                    if (name.toLowerCase().endsWith(".jpg") || name.toLowerCase().endsWith(".jpeg")) {
+//                        // Check if it's a left or right image
+//                        String nameWithoutExt = name.substring(0, name.lastIndexOf('.'));
+//
+//                        if (nameWithoutExt.toLowerCase().endsWith("_l")) {
+//                            tempLeftFiles.add(fullPath);
+//                        } else if (nameWithoutExt.toLowerCase().endsWith("_r")) {
+//                            tempRightFiles.add(fullPath);
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//
+//        // Sort both lists in ascending order
+//        Collections.sort(tempLeftFiles);
+//        Collections.sort(tempRightFiles);
+//
+//        // Match pairs: for each left file, find corresponding right file
+//        for (String leftPath : tempLeftFiles) {
+//            String leftFilename = new File(leftPath).getName();
+//            String leftBase = getBaseName(leftFilename);
+//
+//            // Look for matching right file
+//            for (String rightPath : tempRightFiles) {
+//                String rightFilename = new File(rightPath).getName();
+//                String rightBase = getBaseName(rightFilename);
+//
+//                if (leftBase.equals(rightBase)) {
+//                    // Found a matching pair
+//                    leftImageFiles.add(leftPath);
+//                    rightImageFiles.add(rightPath);
+//                    //if (DEBUG) PApplet.println("Pairs: " + leftPath + " " + rightPath);
+//                    break;
+//                }
+//            }
+//        }
+//        currentIndex = leftImageFiles.size() - 1;
+//        //if (DEBUG) PApplet.println("Found " + leftImageFiles.size() + " matching image pairs");
+//        //if (DEBUG) PApplet.println("First pair: " + leftImageFiles.get(0) + " " + rightImageFiles.get(0));
+//        //if (DEBUG) PApplet.println("Last pair: " + leftImageFiles.get(leftImageFiles.size() - 1) + " " + rightImageFiles.get(rightImageFiles.size() - 1));
+//        return true;
+//    }
+//
+//    // Helper function to get base filename without _l/_r suffix and extension
+//    String getBaseName(String filename) {
+//        // Remove extension
+//        String nameWithoutExt = filename.substring(0, filename.lastIndexOf('.'));
+//
+//        // Remove _l or _r suffix
+//        if (nameWithoutExt.endsWith("_l")) {
+//            return nameWithoutExt.substring(0, nameWithoutExt.length() - 2);
+//        } else if (nameWithoutExt.endsWith("_r")) {
+//            return nameWithoutExt.substring(0, nameWithoutExt.length() - 2);
+//        }
+//
+//        return nameWithoutExt;
+//    }
 
-    public boolean loadImageFileList() {
-        leftImageFiles = new ArrayList<String>();
-        rightImageFiles = new ArrayList<String>();
-
-        // Get the external storage directory
-        File externalStorage = Environment.getExternalStorageDirectory();
-        File lrFolder = new File(externalStorage, FOLDER_PATH);
-
-        if (!lrFolder.exists() || !lrFolder.isDirectory()) {
-            if (DEBUG) PApplet.println("Folder not found: " + lrFolder.getAbsolutePath());
-            return false;
-        }
-
-        // Temporary lists to collect all left and right files
-        ArrayList<String> tempLeftFiles = new ArrayList<String>();
-        ArrayList<String> tempRightFiles = new ArrayList<String>();
-
-        // Get all JPG/JPEG files
-        File[] files = lrFolder.listFiles();
-        if (files != null) {
-            for (File file : files) {
-                if (file.isFile()) {
-                    String name = file.getName().toLowerCase();
-                    String fullPath = file.getAbsolutePath();
-
-                    if (name.toLowerCase().endsWith(".jpg") || name.toLowerCase().endsWith(".jpeg")) {
-                        // Check if it's a left or right image
-                        String nameWithoutExt = name.substring(0, name.lastIndexOf('.'));
-
-                        if (nameWithoutExt.toLowerCase().endsWith("_l")) {
-                            tempLeftFiles.add(fullPath);
-                        } else if (nameWithoutExt.toLowerCase().endsWith("_r")) {
-                            tempRightFiles.add(fullPath);
-                        }
-                    }
-                }
-            }
-        }
-
-        // Sort both lists in ascending order
-        Collections.sort(tempLeftFiles);
-        Collections.sort(tempRightFiles);
-
-        // Match pairs: for each left file, find corresponding right file
-        for (String leftPath : tempLeftFiles) {
-            String leftFilename = new File(leftPath).getName();
-            String leftBase = getBaseName(leftFilename);
-
-            // Look for matching right file
-            for (String rightPath : tempRightFiles) {
-                String rightFilename = new File(rightPath).getName();
-                String rightBase = getBaseName(rightFilename);
-
-                if (leftBase.equals(rightBase)) {
-                    // Found a matching pair
-                    leftImageFiles.add(leftPath);
-                    rightImageFiles.add(rightPath);
-                    //if (DEBUG) PApplet.println("Pairs: " + leftPath + " " + rightPath);
-                    break;
-                }
-            }
-        }
-        currentIndex = leftImageFiles.size() - 1;
-        //if (DEBUG) PApplet.println("Found " + leftImageFiles.size() + " matching image pairs");
-        //if (DEBUG) PApplet.println("First pair: " + leftImageFiles.get(0) + " " + rightImageFiles.get(0));
-        //if (DEBUG) PApplet.println("Last pair: " + leftImageFiles.get(leftImageFiles.size() - 1) + " " + rightImageFiles.get(rightImageFiles.size() - 1));
-        return true;
-    }
-
-    // Helper function to get base filename without _l/_r suffix and extension
-    String getBaseName(String filename) {
-        // Remove extension
-        String nameWithoutExt = filename.substring(0, filename.lastIndexOf('.'));
-
-        // Remove _l or _r suffix
-        if (nameWithoutExt.endsWith("_l")) {
-            return nameWithoutExt.substring(0, nameWithoutExt.length() - 2);
-        } else if (nameWithoutExt.endsWith("_r")) {
-            return nameWithoutExt.substring(0, nameWithoutExt.length() - 2);
-        }
-
-        return nameWithoutExt;
-    }
-
-    void loadCurrentImage() {
-        if (DEBUG) PApplet.println("loadCurrentImage() state=" + MainActivity.stateName[mainActivity.state]);
-        if (leftImageFiles.isEmpty() || currentIndex < 0 || currentIndex >= leftImageFiles.size()) {
-            imagesLoaded = false;
-            if (DEBUG) PApplet.println("loadCurrentImage failed");
-            return;
-        }
-
-        String leftPath = leftImageFiles.get(currentIndex);
-        String rightPath = rightImageFiles.get(currentIndex);
-
-        if (DEBUG) PApplet.println("Loading pair " + (currentIndex) + "/" + leftImageFiles.size());
-        if (DEBUG) PApplet.println("  Left: " + leftPath);
-        if (DEBUG) PApplet.println("  Right: " + rightPath);
-
-        // Load left image
-        currentLeft = loadImage(leftPath);
-        if (currentLeft == null) {
-            if (DEBUG) PApplet.println("Failed to load left image");
-            imagesLoaded = false;
-            return;
-        }
-
-        // Load right image
-        currentRight = loadImage(rightPath);
-        if (currentRight == null) {
-            if (DEBUG) PApplet.println("Failed to load right image");
-            imagesLoaded = false;
-            return;
-        }
-        update = true;
-        imagesLoaded = true;
-        if (DEBUG) PApplet.println("loadCurrentImage success.");
-    }
+//    void loadCurrentImage() {
+//        if (DEBUG) PApplet.println("loadCurrentImage() state=" + MainActivity.stateName[mainActivity.state]);
+//        if (leftImageFiles.isEmpty() || currentIndex < 0 || currentIndex >= leftImageFiles.size()) {
+//            imagesLoaded = false;
+//            if (DEBUG) PApplet.println("loadCurrentImage failed");
+//            return;
+//        }
+//
+//        String leftPath = leftImageFiles.get(currentIndex);
+//        String rightPath = rightImageFiles.get(currentIndex);
+//
+//        if (DEBUG) PApplet.println("Loading pair " + (currentIndex) + "/" + leftImageFiles.size());
+//        if (DEBUG) PApplet.println("  Left: " + leftPath);
+//        if (DEBUG) PApplet.println("  Right: " + rightPath);
+//
+//        // Load left image
+//        currentLeft = loadImage(leftPath);
+//        if (currentLeft == null) {
+//            if (DEBUG) PApplet.println("Failed to load left image");
+//            imagesLoaded = false;
+//            return;
+//        }
+//
+//        // Load right image
+//        currentRight = loadImage(rightPath);
+//        if (currentRight == null) {
+//            if (DEBUG) PApplet.println("Failed to load right image");
+//            imagesLoaded = false;
+//            return;
+//        }
+//        update = true;
+//        imagesLoaded = true;
+//        if (DEBUG) PApplet.println("loadCurrentImage success.");
+//    }
 
     // copied from PApplet.java Processing-Android
     public PImage loadImage(String filename) {
@@ -1036,7 +1025,7 @@ public class PhotoBooth extends PApplet {
     }
 
     public void mouseReleased() {
-        // upper right corner is shutter release
+        // upper right corner is shutter release invisible button
         if (mouseX > 2040 && mouseY < 140) {
             if (DEBUG) PApplet.println("mouseReleased shutter release");
             mainActivity.capturePhoto();
