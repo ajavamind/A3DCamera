@@ -86,6 +86,7 @@ public class UdpRemoteControl {
      * and netStatus.
      */
     public void setUdpTransmitter(Camera3D camera, String hostIpAddress) {
+        if (hostIpAddress == null) return;
         this.camera = camera;
         //isUdpTransmitter = true;
         if (MyDebug.LOG) Log.d(TAG, "setUdpTransmitter " + hostIpAddress);
@@ -458,6 +459,7 @@ public class UdpRemoteControl {
     }
 
     void sendFocusReleasePush() {
+        if (executorService == null) { return;}
         //  When you need to call the network method:
         executorService.execute(new Runnable() {
             @Override
@@ -508,6 +510,7 @@ public class UdpRemoteControl {
         }
     }
     void sendShutterPushRelease() {
+        if (executorService == null) { return;}
         //  When you need to call the network method:
         executorService.execute(new Runnable() {
             @Override
