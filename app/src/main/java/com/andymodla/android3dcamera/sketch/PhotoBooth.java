@@ -69,6 +69,7 @@ public class PhotoBooth extends PApplet {
 
     // Parallax and vertical alignment adjustments in pixels for XBP photo booth
     public volatile int parallax = 100;
+    private static final int DELTA_PARALLAX = 1;
     public volatile int verticalAlignment = -1;
     public volatile boolean mirror = false;
     public volatile boolean crossEye = false;
@@ -302,8 +303,8 @@ public class PhotoBooth extends PApplet {
             textSize(48);
             fill(yellow);
             textAlign(LEFT);
-            text("parallax = " + (parallax) + " mirror = " + mirror + " zoom = " + zoom + " w = " + imgLeft.width + " h =" + imgLeft.height, 50, height - 96);
-            text("vertical = " + (verticalAlignment) + " magnify = " + magnifyScale[magnifyIndex], 50, height - 48);
+            text("mirror=" + mirror + " zoom=" + zoom + " w=" + imgLeft.width + " h=" + imgLeft.height, width/8, height - 96);
+            text("parallax=" + (parallax) + " vertical=" + (verticalAlignment) + " magnify=" + magnifyScale[magnifyIndex], width/8, height - 48);
         }
 
         // draw text on screen
@@ -324,24 +325,30 @@ public class PhotoBooth extends PApplet {
         if (state == MainActivity.LIVE_VIEW_STATE) {
             text("Live", 50, height - 48);
         } else if (state == MainActivity.REVIEW_PHOTO_STATE) {
-            text("Review Print", 50, height - 48);
+            text("Review", 50, height - 48);
         } else if (state == MainActivity.REVIEW_AI_EDIT_STATE) {
-            text("Review Edit", 50, height - 48);
+            text("Review", 50, height - 48);
         }
         text(sMode, 50, height - 96);
 
         //if (mainActivity.state == MainActivity.LIVE_VIEW_STATE) {
         if (state == MainActivity.LIVE_VIEW_STATE) {
             textAlign(CENTER);
-            text(parameters.getInst1(), width / 2, 50);
-            text(parameters.getInst2(), width / 2, 100);
-            if (displayMode == DisplayMode.SBS) {
-                text(parameters.getTitle1(), width / 2, height - 96);
-                text(parameters.getTitle2(), width / 2, height - 48);
+            if (!(DEBUG && testMode)) {
+                text(parameters.getInst1(), width / 2, 50);
+                text(parameters.getInst2(), width / 2, 100);
+                if (displayMode == DisplayMode.SBS) {
+                    text(parameters.getTitle1(), width / 2, height - 96);
+                    text(parameters.getTitle2(), width / 2, height - 48);
+                }
+            }
+            textAlign(LEFT);
+            if (crossEye){
+                text("X Eye", (float) (9 * width) /10 , height - 96);
             }
             if (displayMode == DisplayMode.ANAGLYPH) {
-                text("P=" + (parallax) + "   ", width - 50, height - 96);
-                text("V=" + (verticalAlignment) + "   ", width - 50, height - 48);
+                text("Px=" + (parallax) + "   ", (float) (9 * width) /10 , height - 96);
+                text("Vt=" + (verticalAlignment) + "   ", (float) (9 * width) /10, height - 48);
             }
         } else if (state == MainActivity.REVIEW_PHOTO_STATE) {
             textAlign(RIGHT);
@@ -444,7 +451,11 @@ public class PhotoBooth extends PApplet {
             scale(magnifyScale[magnifyIndex], magnifyScale[magnifyIndex]);
         }
 
-        image(imgLeft, -offsetX, -offsetY, imgWidth, imgHeight);
+        if (crossEye) {
+            image(imgRight, -offsetX, -offsetY, imgWidth, imgHeight);
+        } else {
+            image(imgLeft, -offsetX, -offsetY, imgWidth, imgHeight);
+        }
         pop();
         noClip();
 
@@ -464,7 +475,12 @@ public class PhotoBooth extends PApplet {
             scale(magnifyScale[magnifyIndex], magnifyScale[magnifyIndex]);
         }
 
-        image(imgRight, -offsetX, -offsetY, imgWidth, imgHeight);
+        if (crossEye) {
+            image(imgLeft, -offsetX, -offsetY, imgWidth, imgHeight);
+        } else {
+            image(imgRight, -offsetX, -offsetY, imgWidth, imgHeight);
+        }
+
         pop();
         noClip();
 
@@ -682,15 +698,8 @@ public class PhotoBooth extends PApplet {
                 }
                 //if (DEBUG) PApplet.println("magnifyScale = " + magnifyScale[magnifyIndex] + " magnifyIndex");
                 break;
-//            case KeyEvent.KEYCODE_M:
-//                toggleMirror();
-//                break;
             case KeyEvent.KEYCODE_X:
                 toggleCrossEye();
-                break;
-            case KeyEvent.KEYCODE_P:
-                // save current parallax in shared preferences
-                parameters.setParallaxOffset(parallax);
                 break;
 //            case KeyEvent.KEYCODE_FORWARD:  // 125 forward media button on mouse: mirror toggle
 //                File mediaFile = media.getMediaFile();
@@ -710,13 +719,17 @@ public class PhotoBooth extends PApplet {
                 DEBUG = !DEBUG;
                 break;
             case KeyEvent.KEYCODE_MINUS:
-                setParallax(parallax - 2);
-                if (DEBUG) PApplet.println("parallax = " + parallax);
+                //setParallax(parallax - 2);
+                parameters.setParallaxOffset(parallax-DELTA_PARALLAX);
+                parallax = parameters.getParallaxOffset();
+                //if (DEBUG) PApplet.println("parallax = " + parallax)
                 break;
             case KeyEvent.KEYCODE_PLUS:
             case KeyEvent.KEYCODE_EQUALS:
-                setParallax(parallax + 2);
-                if (DEBUG) PApplet.println("parallax = " + parallax);
+                //setParallax(parallax + 2);
+                parameters.setParallaxOffset(parallax+DELTA_PARALLAX);
+                parallax = parameters.getParallaxOffset();
+                //if (DEBUG) PApplet.println("parallax = " + parallax);
                 break;
             case KeyEvent.KEYCODE_H:  // help screens for debug
             case KeyEvent.KEYCODE_HELP:

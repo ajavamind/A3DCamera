@@ -170,7 +170,8 @@ class ParamStore {
                 // Save to SharedPreferences
                 SharedPreferences.Editor editor = prefs.edit();
                 editor.putInt(parallaxOffsetStore.name, parallaxOffset);
-                editor.apply(); // asynchronous save
+                editor.commit(); // synchronous save: do it now
+                //editor.apply(); // asynchronous save
             }
 
             //------------------------------------------------------------------------------
