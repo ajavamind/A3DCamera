@@ -38,6 +38,7 @@ import android.view.View;
 import android.view.KeyEvent;
 import android.graphics.Point;
 import java.io.InputStream;
+import java.io.FileOutputStream;
 import java.net.URL;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -127,6 +128,7 @@ int realHeight2;
 boolean LETV = false;
 boolean SKYY = false;
 boolean SONY4K = false;
+boolean FREEVI = false;  // flightdeck 3D tablet: not working because build needs API 15 Processing Android Mode library and gradle version to match
 String message1="No Errors";
 String message2="";
 
@@ -188,6 +190,7 @@ void mousePressed() {
 }
 
 void settings() {
+  // Determine display requirements from the manufacturer and model
   modelName = Build.MODEL;
   manufacturer = Build.MANUFACTURER;
   //manufacturer = "letv";  // force manufacturer for testing with LeTV
@@ -214,6 +217,10 @@ void settings() {
   } else if (manufacturer.equals("Sony") && (modelName.equals("BRAVIA 4K VH2") )) {
     conversion = ANAGLYPH;  // not a 3D display, no stereoscope viewing, not free viewing
     SONY4K = true;
+  } else if (manufacturer.equals("Texas_Instruments_Inc") && (modelName.equals("A6100") )) {
+    conversion = COLUMN_INTERLACE;
+    FREEVI = true;
+    useDownloader = false;  // FlightDeck Android version does support downloader, but will not use
   } else {
     conversion = ANAGLYPH;
   }
@@ -236,6 +243,9 @@ void settings() {
     size(ScreenWidth, ScreenHeight, renderer);
     fullScreen(renderer);
     smooth();
+  } else if (FREEVI) {
+    size(1920, 1080, P3D);
+    set3Dmode(true);
   } else {
     //double AR = 1920.0 / 1080.0;
     //int w = (int) (((double) displayHeight) * AR);
@@ -275,7 +285,7 @@ void getDisplayInformation() {
       realWidth = outSize.x;
       realHeight = outSize.y;
       println("Display 0 real size w="+realWidth+ " h="+realHeight);
-      
+
       if (displays.length >= 2) {
         displays[1].getRealSize(outSize);
         realWidth2 = outSize.x;
@@ -283,6 +293,22 @@ void getDisplayInformation() {
         println("Display 1 real size w="+realWidth2+ " h="+realHeight2);
       }
     }
+  }
+}
+
+// for FREEVI tablet only
+public void set3Dmode(boolean on) {
+  try {
+    FileOutputStream output = new FileOutputStream("/dev/mi3d_tn_ctrl");
+    if (on) {
+      output.write(32);  // turn on vertical barrier for landscape mode
+    } else {
+      output.write(16);  // turn off barrier
+    }
+    output.close();
+  }
+  catch (IOException e) {
+    e.printStackTrace();
   }
 }
 
@@ -397,7 +423,7 @@ void draw() {
         if (LETV) {
           photo = loadImageScaling(path);
         } else {
-        photo = loadImage(path);
+          photo = loadImage(path);
         }
       } else {
         photo = loadImage(testImage);
@@ -505,31 +531,32 @@ PImage loadImageScaling(String url) {
   try {
     // 1. Open network stream
     InputStream stream = new URL(url).openStream();
-    
-    // 2. Options to downsample the image data 
+
+    // 2. Options to downsample the image data
     BitmapFactory.Options options = new BitmapFactory.Options();
-    
-    // An inSampleSize of 4 reads only 1 out of every 4 pixels. 
+
+    // An inSampleSize of 4 reads only 1 out of every 4 pixels.
     // This reduces the image RAM usage by a factor of 16 (4x4).
-    //options.inSampleSize = 4; 
-    options.inSampleSize = 2; 
-    
+    //options.inSampleSize = 4;
+    options.inSampleSize = 2;
+
     // 3. Decode stream safely into a downscaled native Android Bitmap
     Bitmap bitmap = BitmapFactory.decodeStream(stream, null, options);
     stream.close();
-    
+
     if (bitmap != null) {
       // 4. Safely convert the Android Bitmap over to a Processing PImage
       img = new PImage(bitmap.getWidth(), bitmap.getHeight(), ARGB);
       bitmap.getPixels(img.pixels, 0, img.width, 0, 0, img.width, img.height);
       img.updatePixels();
-      
+
       // Clean up native memory
-      bitmap.recycle(); 
+      bitmap.recycle();
     } else {
       isError = true;
     }
-  } catch (Exception e) {
+  }
+  catch (Exception e) {
     e.printStackTrace();
     isError = true;
   }

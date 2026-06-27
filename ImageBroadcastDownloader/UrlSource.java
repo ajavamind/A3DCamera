@@ -25,6 +25,7 @@ public class UrlSource {
 
   public void receivedUrl(String url) {
     this.url = url;
+    imageBroadcastDownloader.delay(2000);
     if (imageBroadcastDownloader.useDownloader) {
       System.out.println("UrlSource.receivedUrl() use Downloader service for url="+url);
       // downloader save the image in Pictures folder storage
@@ -35,7 +36,7 @@ public class UrlSource {
       System.out.println("UrlSource.receivedUrl() use loadImage for url="+imageBroadcastDownloader.path);
       imageBroadcastDownloader.newPhoto = true;
       Thread.yield();
-      imageBroadcastDownloader.delay(2000);
+
     }
 
   }

@@ -91,9 +91,9 @@ public class DownloadHelper {
       System.out.println("Download "+downloadId +" started...");
       start = true;
     } else {
-      System.out.println("Problem with no download manager!");
+      System.out.println("No download manager exists!");
     }
-    System.out.println("startDownload function end");
+    System.out.println("startDownload function started");
   }
 
   void checkDownload() {
@@ -150,7 +150,14 @@ public class DownloadHelper {
     }
     return -1;
   }
-  
+
+  String[] DOWNLOADER_STATUS = {"PENDING", "RUNNING", "PAUSED", "SUCCESSFUL", "FAILED"};
+  final static int STATUS_PENDING = 1; //  The download is waiting to start.
+  final static int STATUS_RUNNING = 2;  //The download is currently in progress.
+  final static int STATUS_PAUSED = 4; //  The download is paused (e.g., waiting for network or manual pause).
+  final static int STATUS_SUCCESSFUL = 8; //  The download has completed successfully.
+  final static int STATUS_FAILED = 16;  // The download has failed and will not be retried.
+
   public String getDownloadStatus() {
     DownloadManager.Query query = new DownloadManager.Query();
     //System.out.println("getDownloadStatus Querying Download ID: " + downloadId);
@@ -171,12 +178,35 @@ public class DownloadHelper {
         if (status == 8 && reason == 0) {
           start = false;
         }
-        return "Status=" + status + " Reason=" + reason;
+        return "Status=" + getStatusName(status) + " Reason=" + reason;
       }
     }
     catch (Exception e) {
       e.printStackTrace();
     }
-    return "No download found";
+    return "No Download Request Found";
+  }
+
+
+  String getStatusName(int status) {
+    switch (status) {
+    case STATUS_PENDING:
+      return DOWNLOADER_STATUS[0];
+
+    case STATUS_RUNNING:
+      return DOWNLOADER_STATUS[1];
+
+    case STATUS_PAUSED:
+      return DOWNLOADER_STATUS[2];
+
+    case STATUS_SUCCESSFUL:
+      return DOWNLOADER_STATUS[3];
+
+    case STATUS_FAILED:
+      return DOWNLOADER_STATUS[4];
+
+    default:
+      return "UNKNOWN";
+    }
   }
 }
