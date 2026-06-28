@@ -108,8 +108,8 @@ public class Camera3D {
     int CAMERA_HEIGHT_AR_1_1 = 3072;
     int CAMERA_WIDTH_AR_SMALL = 1080;
     int CAMERA_HEIGHT_AR_SMALL = 1080;
-    public static int XBP_CAMERA_WIDTH = 1280; // small for performance - camera aspect ratio
-    public static int XBP_CAMERA_HEIGHT = 960; // small for performance
+    public static int XBP_CAMERA_DISPLAY_WIDTH = 1280; // small for performance - camera aspect ratio
+    public static int XBP_CAMERA_DISPLAY_HEIGHT = 960; // small for performance
     //public static int XBP_CAMERA_WIDTH = 1920; // small for performance - camera aspect ratio
     //public static int XBP_CAMERA_HEIGHT = 1080; // small for performance
     public static int XBP_CAMERA_WIDTH_6x4 = 1080; // small for performance - print aspect ratio
@@ -157,6 +157,7 @@ public class Camera3D {
             0.2667f, 0.5532f, 0.3333f, 0.6125f, 0.4000f, 0.6652f, 0.4667f, 0.7130f,
             0.5333f, 0.7569f, 0.6000f, 0.7977f, 0.6667f, 0.8360f, 0.7333f, 0.8721f,
             0.8000f, 0.9063f, 0.8667f, 0.9389f, 0.9333f, 0.9701f, 1.0000f, 1.0000f};
+
     private int exposureCompensationIndex = 0;
     private static final CaptureRequest.Key<Integer> EXPOSURE_METERING = new CaptureRequest.Key<>("org.codeaurora.qcamera3.exposure_metering.exposure_metering_mode", Integer.TYPE);
     private static final int FRAME_AVERAGE = 0; // normal behavior
@@ -220,13 +221,12 @@ public class Camera3D {
             // back cameras
             leftCameraId = "3";  // cross eye
             rightCameraId = "1";
-            //crossEye = true;
             stereoCameraId = "5";  // logical (left "1" and right "3") back cameras
 
             //cameraWidth = 4656; // 16Mp Back camera width lens pixels
             //cameraHeight = 3496;// 16MP Back camera height lens pixels
             cameraWidth = 3264; // 16Mp Front camera width lens pixels
-            cameraHeight = 2448;// 16MP Frpmt camera height lens pixels
+            cameraHeight = 2448;// 16MP Front camera height lens pixels
 /*
             cameraId=0 Set: [] back left camera
             cameraId=1 Set: [] back right camera
@@ -523,18 +523,17 @@ public class Camera3D {
 //            return;
 //        }
 
-        // Setup ImageReaders for capture
-        cameraWidth = CAMERA_WIDTH_DEFAULT; // camera width lens pixels
+        // Setup ImageReaders for image capture
+        cameraWidth = CAMERA_WIDTH_DEFAULT; // use default image camera width lens pixels
         cameraHeight = CAMERA_HEIGHT_DEFAULT;
         mImageReader0 = ImageReader.newInstance(cameraWidth, cameraHeight, ImageFormat.JPEG, 2);  // 2 maxImages
         mImageReader2 = ImageReader.newInstance(cameraWidth, cameraHeight, ImageFormat.JPEG, 2);  // 2 maxImages
 
         if (useProcessing) {
             // Create ImageReaders for YUV preview with buffer count
-            cameraWidth = XBP_CAMERA_WIDTH;
-            cameraHeight = XBP_CAMERA_HEIGHT;
-            //cameraWidth = XBP_CAMERA_WIDTH_6x4;
-            //cameraHeight = XBP_CAMERA_HEIGHT_6x4;
+            // use the display size for preview
+            cameraWidth = XBP_CAMERA_DISPLAY_WIDTH;
+            cameraHeight = XBP_CAMERA_DISPLAY_HEIGHT;
 
             imageReader0 = ImageReader.newInstance(cameraWidth, cameraHeight, ImageFormat.YUV_420_888, 4);
             imageReader0.setOnImageAvailableListener(imageAvailableListener, mImageReaderHandler0);

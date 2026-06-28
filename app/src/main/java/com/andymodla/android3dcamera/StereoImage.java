@@ -19,13 +19,15 @@ public class StereoImage {
     private static final String TAG = "A3DCamera";
 
     /**
-     * Align LR image pairs by moving left image using offsets.
+     * Align LR image pairs by shifting both eyes symmetrically (half offset each, opposite directions).
+     * Matches the parallax approach used by PhotoBooth.drawSBS() so the saved SBS image
+     * has the same stereo content as what the live display shows.
      * Uses a reusable output bitmap to eliminate per-call allocations.
      *
      * @param imgL       Left camera/eye image
      * @param imgR       Right camera/eye image
-     * @param horzOffset Horizontal alignment offset
-     * @param vertOffset Vertical alignment offset
+     * @param horzOffset Horizontal alignment offset (split: -horzOffset/2 on left, +horzOffset/2 on right)
+     * @param vertOffset Vertical alignment offset (split: -vertOffset/2 on left, +vertOffset/2 on right)
      * @param crop       >0 crops SBS image horizontally to target aspect ratio
      * @param sbsBitmap  Reusable output bitmap. Pass null on first call, then reuse the returned instance.
      * @return The aligned & cropped SBS bitmap (the same instance passed in)
@@ -52,12 +54,19 @@ public class StereoImage {
             throw new IllegalArgumentException("Offsets too large, resulting dimensions are non-positive.");
         }
 
-        // 1. Pre-calculate final dimensions & source column offsets
+        // 1. Pre-calculate final dimensions & source offsets.
+        //    Symmetric split: each eye shifts by half the total offset in opposite directions.
+        //    Matches PhotoBooth.drawSBS() which uses translate(-parallax/2) / translate(+parallax/2).
         int finalH = dh;
         int finalW = 2 * dw;
-        int leftSrcCol  = (horzOffset >= 0) ? horzOffset : 0;
-        int rightSrcCol = 0;
+        int halfHorz = horzOffset / 2;
+        int halfVert = vertOffset / 2;
+        int leftSrcCol  = (halfHorz >= 0) ? halfHorz : 0;
+        int rightSrcCol = (halfHorz >= 0) ? 0 : Math.abs(halfHorz);
         int copyWidth   = dw;
+        // Vertical source rows: each eye shifted by half vertOffset in opposite directions
+        int srcRowLBase = (halfVert >= 0) ? 0 : Math.abs(halfVert);
+        int srcRowRBase = (halfVert >= 0) ? halfVert : 0;
 
         // Apply crop parameters upfront if requested.
         // Crop from all 4 edges (both inner and outer edges of each eye)
@@ -99,13 +108,10 @@ public class StereoImage {
         // Output buffer sized exactly to the final region
         int[] outPixels = new int[finalW * finalH];
 
-        // Vertical offset handling (preserves original asymmetric logic)
-        int srcRowL = (vertOffset >= 0) ? 0 : Math.abs(vertOffset);
-
-        // 4. Direct row-by-row assembly into final array
+        // 4. Direct row-by-row assembly into final array (symmetric offsets)
         for (int j = 0; j < finalH; j++) {
-            int rowL = srcRowL + j;
-            int rowR = j;
+            int rowL = srcRowLBase + j;
+            int rowR = srcRowRBase + j;
 
             System.arraycopy(lPixels, rowL * w + leftSrcCol, outPixels, j * finalW, copyWidth);
             System.arraycopy(rPixels, rowR * w + rightSrcCol, outPixels, j * finalW + copyWidth, copyWidth);

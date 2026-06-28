@@ -30,12 +30,10 @@ public class ImageSender {
         this.udpRemoteControl = udpRemoteControl;
     }
 
-    public void sendImageUrl(String imageUrl, String ip, int port) {
+    public void sendImageUrl(String ip, int port, String imageUrl) {
+        if (ip ==null || ip.isEmpty() || port <= 0 || imageUrl == null || imageUrl.isEmpty())
+            return;
         this.targetImageUrl = imageUrl;
-        //String ip = "10.0.0.50";   // 3D tablet destination
-        //String ip = "192.168.8.131";   // 3D tablet IQH3D SKYY
-        //String ip = "192.168.8.208";   // 3D tablet Leia 1
-        //int port = 9000;
         try {
             if (parameters.getUdpTransmit()){
                 sendUrlBroadcast(targetImageUrl);

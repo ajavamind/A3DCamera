@@ -57,6 +57,7 @@ class ParamStore {
             // Stereo Image Alignment parameters
             // same values as StereoPhotoMaker displays after automatic alignment of a
             // reference calibration stereo photo.
+            // parallax and vertical offsets are in pixels for camera image captured correction
             public int parallaxOffset = 0;  // left/right horizontal offset parallax for stereo window placement
             public int verticalOffset = 0;  // left/right camera vertical offset alignment for camera correction
             public boolean isSoundOn = true;
@@ -504,14 +505,14 @@ class ParamStore {
 
             ParamStore receiverIpStore = new ParamStore(
                     "rip", "receiverIp", "Receiver IP",
-                    "getReceiverIp", "setReceiverIp", String.class, "192.168.8.99",
+                    "getReceiverIp", "setReceiverIp", String.class, "",
                     "The IP Address of the device to receive a URL Link for a saved photo."
             );
 
             ParamStore isPhotoBoothStore = new ParamStore(
                     "pb", "isPhotoBooth", "Photo Booth",
-                    "getIsPhotoBooth", "setIsPhotoBooth", boolean.class, "false",
-                    "Configures a photo booth operation and display."
+                    "getIsPhotoBooth", "setIsPhotoBooth", boolean.class, "true",
+                    "Configures a photo booth camera operation and display."
             );
 
             ParamStore isBlankScreenStore = new ParamStore(
@@ -534,7 +535,7 @@ class ParamStore {
 
             ParamStore title1Store = new ParamStore(
                     "t1", "title1", "Title 1",
-                    "getTitle1", "setTitle1", String.class, "3D Photo Booth",
+                    "getTitle1", "setTitle1", String.class, "",   // "3D Photo Booth",
                     "Photo booth title appearing on the bottom first line"
             );
 
@@ -546,7 +547,7 @@ class ParamStore {
 
             ParamStore inst1Store = new ParamStore(
                     "i1", "inst1", "Instruction 1",
-                    "getInst1", "setInst1", String.class, "Look at Camera",
+                    "getInst1", "setInst1", String.class, "",    //  "Look at Camera",
                     "Photo booth instruction appearing on the top first line"
             );
 

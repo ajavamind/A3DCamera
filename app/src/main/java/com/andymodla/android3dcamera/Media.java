@@ -106,6 +106,8 @@ public class Media {
 
     public void setCamera(Camera3D camera) {
         this.camera = camera;
+        leftReview = pApplet.createImage(Camera3D.CAMERA_WIDTH_DEFAULT, Camera3D.CAMERA_HEIGHT_DEFAULT, PImage.ARGB);
+        rightReview = pApplet.createImage(Camera3D.CAMERA_WIDTH_DEFAULT, Camera3D.CAMERA_HEIGHT_DEFAULT, PImage.ARGB);
     }
 
     public void savePaths() {
@@ -302,7 +304,7 @@ public class Media {
             if (((MainActivity) context).imageSender != null) {
                 String imageUrl = "http://"+((MainActivity) context).hostIpAddr+":"+((MainActivity) context).hostPort+File.separator+filename;
                 Log.d(TAG, "imageSender.sendImageUrl " + imageUrl);
-                ((MainActivity) context).imageSender.sendImageUrl(imageUrl, parameters.getReceiverIp(), parameters.getReceiverPort());
+                ((MainActivity) context).imageSender.sendImageUrl(parameters.getReceiverIp(), parameters.getReceiverPort(), imageUrl );
             }
 
         } catch (IOException e) {

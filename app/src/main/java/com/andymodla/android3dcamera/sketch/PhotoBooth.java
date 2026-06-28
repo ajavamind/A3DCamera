@@ -55,11 +55,11 @@ public class PhotoBooth extends PApplet {
     //PImage splashLeft;
     //PImage splashRight;
 
-    int XBP_CAMERA_WIDTH = 1280;
-    int XBP_CAMERA_HEIGHT = 960;
+    int XBP_CAMERA_DISPLAY_WIDTH = 1280;
+    int XBP_CAMERA_DISPLAY_HEIGHT = 960;
 
-    int cameraWidth = XBP_CAMERA_WIDTH;  // default
-    int cameraHeight = XBP_CAMERA_HEIGHT;
+    int cameraWidth = XBP_CAMERA_DISPLAY_WIDTH;  // default
+    int cameraHeight = XBP_CAMERA_DISPLAY_HEIGHT;
     int XBP_DISPLAY_WIDTH = 2400;
     int XBP_DISPLAY_HEIGHT = 1080;
 
@@ -67,12 +67,14 @@ public class PhotoBooth extends PApplet {
     int reviewTimeout = 0;
     int MAX_REVIEW_TIMEOUT_SECONDS = 120;
 
-    // Parallax and vertical alignment adjustments in pixels for XBP photo booth
-    public volatile int parallax = 100;
+    // Parallax and vertical alignment adjustments in pixels for XBP photo booth display
+    private volatile int parallax = 0;  // display parallax - converted from camera sensor parallax
     private static final int DELTA_PARALLAX = 1;
-    public volatile int verticalAlignment = -1;
-    public volatile boolean mirror = false;
-    public volatile boolean crossEye = false;
+    private volatile int verticalAlignment = 0;
+    private volatile boolean mirror = false;
+    private volatile boolean crossEye = false;
+    private volatile boolean grid = false;
+    private volatile boolean photoBoothTitle = false;
 
     DisplayMode displayMode = DisplayMode.SBS;
     volatile boolean update = false;
@@ -86,12 +88,13 @@ public class PhotoBooth extends PApplet {
             "Cycle Display Mode: A",
             "Decrease Parallax: Minus (-)",
             "Increase Parallax: Plus (+) or Equals (=)",
-            "Save Parallax: P",
             "Screenshot: C",
             "Toggle Blank Screen: B",
+            "Toggle Photo Booth Title: P",
+            "Toggle Grid: G",
             "Toggle Cross-Eye: X",
             "Toggle Mirror: M",
-            "Toggle Zoom State: Z",
+            "Toggle Zoom ON/OFF: Z",
             "Zoom In: Right Bracket (])",
             "Zoom Out: Left Bracket ([)",
             "View Help/Parameters: H",
@@ -111,20 +114,21 @@ public class PhotoBooth extends PApplet {
     float AR = 1.33333333f;  // aspect ratio for XReal Beam Pro camera image sensor
 
     // Display frame inside full screen AR 4:3
-    int frameWidth = 2048;
-    int frameHeight = 1080;
-    int frameX = (XBP_DISPLAY_WIDTH - frameWidth) / 2;  // 2400 pixel screen minus frameWidth/2
-    int frameY = (XBP_DISPLAY_HEIGHT - frameHeight) / 2;
+    private static final int XBP_DISPLAY_FRAME_WIDTH = 2048;
+    private static final int XBP_DISPLAY_FRAME_HEIGHT = 1080;
+    // calculate position of frame in full screen
+    int frameX = (XBP_DISPLAY_WIDTH - XBP_DISPLAY_FRAME_WIDTH) / 2;  // 2400 pixel screen minus XBP_DISPLAY_FRAME_WIDTH/2
+    int frameY = (XBP_DISPLAY_HEIGHT - XBP_DISPLAY_FRAME_HEIGHT) / 2;
 
     public void setMainActivity(MainActivity mainActivity) {
         this.mainActivity = mainActivity;
     }
 
     public void settings() {
-        // set size for XReal Beam Pro full display
+        // set processing sketch size for XReal Beam Pro full display
         // draw canvas size and render using OpenGL
         //fullScreen(P2D);
-        size(2400, 1080, P2D);
+        size(XBP_DISPLAY_WIDTH, XBP_DISPLAY_HEIGHT, P2D);
     }
 
     public void setup() {
@@ -133,18 +137,6 @@ public class PhotoBooth extends PApplet {
         background(black);
         smooth();
         frameRate(displayFPS);
-
-// splash screen for 3D photo booth
-//        splashLeft = loadImage("FlowerPot_l.JPG");
-//        splashRight = loadImage("FlowerPot_r.JPG");
-//        if (DEBUG)
-//            PApplet.println("splashLeft width=" + splashLeft.width + " height=" + splashLeft.height);
-//        if (DEBUG)
-//            PApplet.println("splashRight width=" + splashRight.width + " height=" + splashRight.height);
-//        float ar = (float) splashLeft.width / (float) splashLeft.height;
-//
-//        image(splashLeft, frameX, 180, frameWidth / 2 - parallax, (frameWidth / 2 - parallax) / ar);
-//        image(splashRight, frameX + frameWidth / 2 + parallax, 180, frameWidth / 2 - parallax, (frameWidth / 2 - parallax) / ar);
 
         textSize(72);
         textAlign(CENTER, CENTER);
@@ -199,6 +191,15 @@ public class PhotoBooth extends PApplet {
         update = true;
     }
 
+    public void toggleGrid() {
+        grid = !grid;
+        update = true;
+    }
+    public void togglePhotoBooth() {
+        photoBoothTitle = !photoBoothTitle;
+        update = true;
+    }
+
     public void setMirror(boolean mirror) {
         if (DEBUG) PApplet.println("setMirror(" + mirror + ")");
         this.mirror = mirror;
@@ -217,13 +218,31 @@ public class PhotoBooth extends PApplet {
     }
 
     public void setParallax(int parallax) {
-        this.parallax = parallax;
+        this.parallax = toDisplayPixels(parallax);
         update = true;
     }
 
     public void setVerticalAlignment(int verticalAlignment) {
         this.verticalAlignment = verticalAlignment;
         update = true;
+    }
+
+    /**
+     * Convert a display-pixel offset to camera-pixel offset.
+     */
+    public int toCameraPixels(int displayPixels) {
+        float dispImgWidth = (float) XBP_DISPLAY_FRAME_WIDTH / 2;
+        return (int) Math.round(displayPixels * (float) Camera3D.CAMERA_WIDTH_DEFAULT / dispImgWidth);
+    }
+
+    /**
+     * Convert a camera-pixel offset to display-pixel offset (inverse of toCameraPixels).
+     */
+    public int toDisplayPixels(int cameraPixels) {
+        float dispImgWidth = (float) XBP_DISPLAY_FRAME_WIDTH / 2;
+        int displayPixels = (int) Math.round(cameraPixels * dispImgWidth / (float) Camera3D.CAMERA_WIDTH_DEFAULT);
+        if (DEBUG) println( "toDisplayPixels(" + cameraPixels + ") = " + displayPixels);
+        return displayPixels;
     }
 
     public void setCountdown(String countdown) {
@@ -248,8 +267,8 @@ public class PhotoBooth extends PApplet {
         textAlign(CENTER, CENTER);
 
         if (sbs) {
-            text(countdown, frameX + frameWidth / 4, height / 2);
-            text(countdown, frameX + 3 * frameWidth / 4 - 40, height / 2);
+            text(countdown, frameX + XBP_DISPLAY_FRAME_WIDTH / 4, height / 2);
+            text(countdown, frameX + 3 * XBP_DISPLAY_FRAME_WIDTH / 4 - 40, height / 2);
         } else {
             text(countdown, width / 2, height / 2);
         }
@@ -292,78 +311,79 @@ public class PhotoBooth extends PApplet {
         } else if (state == MainActivity.REVIEW_AI_EDIT_STATE) {
             drawReview();
         }
-        if (magnifyScale[magnifyIndex] > 1.0f) {
+        if (photoBoothTitle) {
+            if (magnifyScale[magnifyIndex] > 1.0f) {
+                textSize(48);
+                fill(yellow);
+                textAlign(LEFT);
+                text("+" + magnifyScale[magnifyIndex] + "    ", width - 200, height - 4);
+            }
+            // camera and review mode display test mode for debug
+            if (DEBUG && testMode) {
+                textSize(48);
+                fill(yellow);
+                textAlign(LEFT);
+                text("mirror=" + mirror + " zoom=" + zoom + " w=" + imgLeft.width + " h=" + imgLeft.height, width / 8, height - 96);
+                text("parallax=" + (parameters.getParallaxOffset()) + " vertical=" + (parameters.getVerticalOffset()) + " magnify=" + magnifyScale[magnifyIndex], width / 8, height - 48);
+            }
+
+            // draw text on screen
             textSize(48);
             fill(yellow);
             textAlign(LEFT);
-            text("+" + magnifyScale[magnifyIndex] + "    ", width - 200, height - 4);
-        }
-        // camera and review mode display test mode for debug
-        if (DEBUG && testMode) {
-            textSize(48);
-            fill(yellow);
-            textAlign(LEFT);
-            text("mirror=" + mirror + " zoom=" + zoom + " w=" + imgLeft.width + " h=" + imgLeft.height, width/8, height - 96);
-            text("parallax=" + (parallax) + " vertical=" + (verticalAlignment) + " magnify=" + magnifyScale[magnifyIndex], width/8, height - 48);
-        }
+            String sMode = "";
+            if (displayMode == DisplayMode.SBS) {
+                sMode = "SBS";
+            } else if (displayMode == DisplayMode.ANAGLYPH) {
+                sMode = "Anaglyph";
+            } else if (displayMode == DisplayMode.LEFT) {
+                sMode = "Left";
+            } else if (displayMode == DisplayMode.RIGHT) {
+                sMode = "Right";
+            }
 
-        // draw text on screen
-        textSize(48);
-        fill(yellow);
-        textAlign(LEFT);
-        String sMode = "";
-        if (displayMode == DisplayMode.SBS) {
-            sMode = "SBS";
-        } else if (displayMode == DisplayMode.ANAGLYPH) {
-            sMode = "Anaglyph";
-        } else if (displayMode == DisplayMode.LEFT) {
-            sMode = "Left";
-        } else if (displayMode == DisplayMode.RIGHT) {
-            sMode = "Right";
-        }
+            if (state == MainActivity.LIVE_VIEW_STATE) {
+                text("Live", 50, height - 48);
+            } else if (state == MainActivity.REVIEW_PHOTO_STATE) {
+                text("Review", 50, height - 48);
+            } else if (state == MainActivity.REVIEW_AI_EDIT_STATE) {
+                text("Review", 50, height - 48);
+            }
+            text(sMode, 50, height - 96);
 
-        if (state == MainActivity.LIVE_VIEW_STATE) {
-            text("Live", 50, height - 48);
-        } else if (state == MainActivity.REVIEW_PHOTO_STATE) {
-            text("Review", 50, height - 48);
-        } else if (state == MainActivity.REVIEW_AI_EDIT_STATE) {
-            text("Review", 50, height - 48);
-        }
-        text(sMode, 50, height - 96);
-
-        //if (mainActivity.state == MainActivity.LIVE_VIEW_STATE) {
-        if (state == MainActivity.LIVE_VIEW_STATE) {
-            textAlign(CENTER);
-            if (!(DEBUG && testMode)) {
-                text(parameters.getInst1(), width / 2, 50);
-                text(parameters.getInst2(), width / 2, 100);
-                if (displayMode == DisplayMode.SBS) {
-                    text(parameters.getTitle1(), width / 2, height - 96);
-                    text(parameters.getTitle2(), width / 2, height - 48);
+            //if (mainActivity.state == MainActivity.LIVE_VIEW_STATE) {
+            if (state == MainActivity.LIVE_VIEW_STATE) {
+                textAlign(CENTER);
+                if (!(DEBUG && testMode)) {
+                    text(parameters.getInst1(), width / 2, 50);
+                    text(parameters.getInst2(), width / 2, 100);
+                    if (displayMode == DisplayMode.SBS) {
+                        text(parameters.getTitle1(), width / 2, height - 96);
+                        text(parameters.getTitle2(), width / 2, height - 48);
+                    }
                 }
-            }
-            textAlign(LEFT);
-            if (crossEye){
-                text("X Eye", (float) (9 * width) /10 , height - 96);
-            }
-            if (displayMode == DisplayMode.ANAGLYPH) {
-                text("Px=" + (parallax) + "   ", (float) (9 * width) /10 , height - 96);
-                text("Vt=" + (verticalAlignment) + "   ", (float) (9 * width) /10, height - 48);
-            }
-        } else if (state == MainActivity.REVIEW_PHOTO_STATE) {
-            textAlign(RIGHT);
-            fill(green);
-            text("Print", width - 50, height - 48);
-            if (parameters.getSbsCropPrint() && displayMode == DisplayMode.SBS) {
-                text("Crop", width - 50, height - 96);
-            }
-        } else if (state == MainActivity.REVIEW_AI_EDIT_STATE) {
-            textAlign(RIGHT);
-            fill(magenta);
-            text("AI Edit", width - 50, height - 48);
+                textAlign(LEFT);
+                if (crossEye) {
+                    text("X Eye", (float) (9 * width) / 10, height - 96);
+                }
+                if (displayMode == DisplayMode.ANAGLYPH) {
+                    text("px=" + (parameters.getParallaxOffset()) + "   ", (float) (9 * width) / 10, height - 96);
+                    text("vt=" + (parameters.getVerticalOffset()) + "   ", (float) (9 * width) / 10, height - 48);
+                }
+            } else if (state == MainActivity.REVIEW_PHOTO_STATE) {
+                textAlign(RIGHT);
+                fill(green);
+                text("Print", width - 50, height - 48);
+                if (parameters.getSbsCropPrint() && displayMode == DisplayMode.SBS) {
+                    text("Crop", width - 50, height - 96);
+                }
+            } else if (state == MainActivity.REVIEW_AI_EDIT_STATE) {
+                textAlign(RIGHT);
+                fill(magenta);
+                text("AI Edit", width - 50, height - 48);
 
+            }
         }
-
         switch (debugHelp) {
             // overlays everything on screen
             case 1:
@@ -422,11 +442,11 @@ public class PhotoBooth extends PApplet {
         float offsetY = 0;
 
         // Calculate base image dimensions - each image gets half the frame width
-        float imgWidth = (float) frameWidth / 2;
+        float imgWidth = (float) XBP_DISPLAY_FRAME_WIDTH / 2;
         float imgHeight = imgWidth / AR;
 
         // Center vertically within frame
-        float baseVerticalOffset = frameY + (frameHeight - imgHeight) / 2;
+        float baseVerticalOffset = frameY + (XBP_DISPLAY_FRAME_HEIGHT - imgHeight) / 2;
 
         // Calculate zoom offsets - these keep the zoomed image centered in its half-frame
         if (zoom) {
@@ -484,7 +504,9 @@ public class PhotoBooth extends PApplet {
         pop();
         noClip();
 
-        drawGrid(false);
+        if (grid) {
+            drawGrid(false);
+        }
     }
 
     public void drawAnaglyph(PImage imgLeft, PImage imgRight) {
@@ -576,7 +598,9 @@ public class PhotoBooth extends PApplet {
 //            rect(0, height - abs(verticalAlignment), width, abs(verticalAlignment));  // bottom of image
 //        }
 
-        drawGrid(true);
+        if (grid) {
+            drawGrid(true);
+        }
     }
 
     public void drawPhoto(PImage img) {
@@ -615,7 +639,9 @@ public class PhotoBooth extends PApplet {
         pop();
         noClip();
 
-        drawGrid(true);
+        if (grid) {
+            drawGrid(true);
+        }
     }
 
     public void drawPhotoNoClip(PImage img) {
@@ -650,11 +676,13 @@ public class PhotoBooth extends PApplet {
         }
         pop();
 
-        drawGrid(true);
+        if (grid) {
+            drawGrid(true);
+        }
     }
 
     void drawGrid(boolean full) {
-        if (!testMode) return;
+        //if (!testMode) return;
         fill(yellow);
         int s = 2;
         if (full) {
@@ -664,16 +692,17 @@ public class PhotoBooth extends PApplet {
             rect(width / 2 - s / 2, 0, s, height);
         } else {
             // Horizontal line (center of frame)
-            rect(0, frameHeight / 2 - s / 2, width, s);
+            rect(0, XBP_DISPLAY_FRAME_HEIGHT / 2 - s / 2, width, s);
             // First vertical line (1/4 of frame width)
-            rect(frameX + frameWidth / 4 - s / 2, 0, s, frameHeight);
+            rect(frameX + XBP_DISPLAY_FRAME_WIDTH / 4 - s / 2, 0, s, XBP_DISPLAY_FRAME_HEIGHT);
             // Second vertical line (3/4 of frame width)
-            rect(frameX + 3 * frameWidth / 4 - s / 2, 0, s, frameHeight);
+            rect(frameX + 3 * XBP_DISPLAY_FRAME_WIDTH / 4 - s / 2, 0, s, XBP_DISPLAY_FRAME_HEIGHT);
         }
     }
 
     // called by MainActivty onKeyUp to process key events for the photo booth exclusively
     public boolean processKeyCode(int lastKeyCode, int lastKey) {
+        int iParallax;
         switch (lastKeyCode) {
             case KeyEvent.KEYCODE_A:
                 displayMode = displayMode.next();
@@ -719,17 +748,23 @@ public class PhotoBooth extends PApplet {
                 DEBUG = !DEBUG;
                 break;
             case KeyEvent.KEYCODE_MINUS:
-                //setParallax(parallax - 2);
-                parameters.setParallaxOffset(parallax-DELTA_PARALLAX);
-                parallax = parameters.getParallaxOffset();
-                //if (DEBUG) PApplet.println("parallax = " + parallax)
+                iParallax = parameters.getParallaxOffset() - DELTA_PARALLAX;
+                parameters.setParallaxOffset(iParallax);
+                parallax = toDisplayPixels(iParallax);
+                if (DEBUG) PApplet.println("parallax = " + parallax);
                 break;
             case KeyEvent.KEYCODE_PLUS:
             case KeyEvent.KEYCODE_EQUALS:
-                //setParallax(parallax + 2);
-                parameters.setParallaxOffset(parallax+DELTA_PARALLAX);
-                parallax = parameters.getParallaxOffset();
-                //if (DEBUG) PApplet.println("parallax = " + parallax);
+                iParallax = parameters.getParallaxOffset() + DELTA_PARALLAX;
+                parameters.setParallaxOffset(iParallax);
+                parallax = toDisplayPixels(iParallax);
+                if (DEBUG) PApplet.println("parallax = " + parallax);
+                break;
+            case KeyEvent.KEYCODE_G:
+                toggleGrid();
+                break;
+            case KeyEvent.KEYCODE_P:
+                togglePhotoBooth();
                 break;
             case KeyEvent.KEYCODE_H:  // help screens for debug
             case KeyEvent.KEYCODE_HELP:
@@ -771,9 +806,9 @@ public class PhotoBooth extends PApplet {
 //            line(0, height / 2, width, height / 2);
 //            line(width / 2, 0, width / 2, height);
 //        } else {
-//            line(0, frameHeight / 2, width, frameHeight / 2);
-//            line(frameX + frameWidth / 4, 0, frameX + frameWidth / 4, frameHeight);
-//            line(frameX + 3 * frameWidth / 4, 0, frameX + 3 * frameWidth / 4, frameHeight);
+//            line(0, XBP_DISPLAY_FRAME_HEIGHT / 2, width, XBP_DISPLAY_FRAME_HEIGHT / 2);
+//            line(frameX + XBP_DISPLAY_FRAME_WIDTH / 4, 0, frameX + XBP_DISPLAY_FRAME_WIDTH / 4, XBP_DISPLAY_FRAME_HEIGHT);
+//            line(frameX + 3 * XBP_DISPLAY_FRAME_WIDTH / 4, 0, frameX + 3 * XBP_DISPLAY_FRAME_WIDTH / 4, XBP_DISPLAY_FRAME_HEIGHT);
 //        }
 //    }
 
@@ -782,7 +817,6 @@ public class PhotoBooth extends PApplet {
      * Review Code
      */
     // Constants
-    final String FOLDER_PATH = "/DCIM/A3DCamera/LR";
     final int SLIDESHOW_DELAY = 2500; // 2 seconds
 
     // Review Global variables

@@ -140,8 +140,8 @@ public class MainActivity extends AppCompatActivity {
     static final int BACK_KEY = KeyEvent.KEYCODE_BACK;  // KeyEvent.KEYCODE_BUTTON_B = 97 KEYCODE_BACK = 04
     static final int SHARE_KEY = KeyEvent.KEYCODE_BUTTON_MODE;  // 110
 
-    // Key codes for 8BitDo Micro Bluetooth Keyboard controller (in Keyboard mode)
-    // FOR DOCUMENTATION ONLY - NOT USED
+// Key codes for 8BitDo Micro Bluetooth Keyboard controller (in Keyboard mode)
+// FOR DOCUMENTATION ONLY - NOT USED
 //    static final int SHUTTER_KB_KEY = KeyEvent.KEYCODE_M;
 //    static final int FOCUS_DISTANCE_KB_KEY = KeyEvent.KEYCODE_R;
 //    static final int MODE_KB_KEY = KeyEvent.KEYCODE_L;
