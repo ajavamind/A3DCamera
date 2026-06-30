@@ -69,7 +69,7 @@ public class PhotoBooth extends PApplet {
 
     // Parallax and vertical alignment adjustments in pixels for XBP photo booth display
     private volatile int parallax = 0;  // display parallax - converted from camera sensor parallax
-    private static final int DELTA_PARALLAX = 1;
+    private static final int DELTA_PARALLAX = 2;
     private volatile int verticalAlignment = 0;
     private volatile boolean mirror = false;
     private volatile boolean crossEye = false;
@@ -129,10 +129,11 @@ public class PhotoBooth extends PApplet {
         // draw canvas size and render using OpenGL
         //fullScreen(P2D);
         size(XBP_DISPLAY_WIDTH, XBP_DISPLAY_HEIGHT, P2D);
+        if (DEBUG) System.out.println("Photo Booth Sketch settings()");
     }
 
     public void setup() {
-        if (DEBUG) PApplet.println("Photo Booth Sketch setup");
+        if (DEBUG) System.out.println("Photo Booth Sketch setup()");
         orientation(LANDSCAPE);
         background(black);
         smooth();
@@ -243,6 +244,33 @@ public class PhotoBooth extends PApplet {
         int displayPixels = (int) Math.round(cameraPixels * dispImgWidth / (float) Camera3D.CAMERA_WIDTH_DEFAULT);
         if (DEBUG) println( "toDisplayPixels(" + cameraPixels + ") = " + displayPixels);
         return displayPixels;
+    }
+
+    // reference not used:
+    public int REFtoCameraPixels(int displayPixels) {
+        int camWidth;
+        if (imgLeft != null && imgLeft.width > 0) {
+            camWidth = imgLeft.width; // live camera image width
+        } else {
+            camWidth = XBP_DISPLAY_FRAME_WIDTH; // fallback: known sensor width
+        }
+        float dispImgWidth = (float) camWidth / 2;
+        return (int) Math.round(displayPixels * (float) camWidth / dispImgWidth);
+    }
+
+    /**
+     * Convert a camera-pixel offset to display-pixel offset (inverse of toCameraPixels).
+     */
+     //reference not used:
+    public int REFtoDisplayPixels(int cameraPixels) {
+        int camWidth;
+        if (imgLeft != null && imgLeft.width > 0) {
+            camWidth = imgLeft.width;
+        } else {
+            camWidth = XBP_DISPLAY_FRAME_WIDTH;
+        }
+        float dispImgWidth = (float) camWidth / 2;
+        return (int) Math.round(cameraPixels * dispImgWidth / (float) camWidth);
     }
 
     public void setCountdown(String countdown) {
@@ -698,6 +726,10 @@ public class PhotoBooth extends PApplet {
             // Second vertical line (3/4 of frame width)
             rect(frameX + 3 * XBP_DISPLAY_FRAME_WIDTH / 4 - s / 2, 0, s, XBP_DISPLAY_FRAME_HEIGHT);
         }
+        // draw hidden buttons
+        fill(gray);
+        rect(MainActivity.HIDDEN_SHUTTER_BUTTON_X, 0, width - MainActivity.HIDDEN_SETTINGS_BUTTON_X, MainActivity.HIDDEN_SETTINGS_BUTTON_Y);
+        rect(0, 0, MainActivity.HIDDEN_SETTINGS_BUTTON_X, MainActivity.HIDDEN_SETTINGS_BUTTON_Y);
     }
 
     // called by MainActivty onKeyUp to process key events for the photo booth exclusively
@@ -842,7 +874,6 @@ public class PhotoBooth extends PApplet {
     public void setReviewImages(PImage left, PImage right) {
         currentLeft = left;
         currentRight = right;
-        //imagesLoaded = true;
         update = true;
     }
 
@@ -1070,11 +1101,22 @@ public class PhotoBooth extends PApplet {
         return resizeImage;
     }
 
+    /**
+     * Processing mouseReleased event handler
+     * This code overrides main activity's decorView.setOnTouchListener(new View.OnTouchListener()
+     * Currently this implements the same functions but is subject to change
+     */
     public void mouseReleased() {
+        int x = mouseX;
+        int y = mouseY;
         // upper right corner is shutter release invisible button
-        if (mouseX > 2040 && mouseY < 140) {
+        if (x > MainActivity.HIDDEN_SHUTTER_BUTTON_X && y < MainActivity.HIDDEN_SHUTTER_BUTTON_Y) {
             if (DEBUG) PApplet.println("mouseReleased shutter release");
             mainActivity.capturePhoto();
+        // upper left corner is settings menu invisible button
+        } else if (x < MainActivity.HIDDEN_SETTINGS_BUTTON_X && y < MainActivity.HIDDEN_SETTINGS_BUTTON_Y) {
+            if (DEBUG) PApplet.println("mouseReleased photo booth settings");
+            mainActivity.launchSettings();
         }
     }
 //    void nextImage() {

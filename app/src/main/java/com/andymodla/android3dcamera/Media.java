@@ -106,8 +106,8 @@ public class Media {
 
     public void setCamera(Camera3D camera) {
         this.camera = camera;
-        leftReview = pApplet.createImage(Camera3D.CAMERA_WIDTH_DEFAULT, Camera3D.CAMERA_HEIGHT_DEFAULT, PImage.ARGB);
-        rightReview = pApplet.createImage(Camera3D.CAMERA_WIDTH_DEFAULT, Camera3D.CAMERA_HEIGHT_DEFAULT, PImage.ARGB);
+//        leftReview = pApplet.createImage(Camera3D.CAMERA_WIDTH_DEFAULT, Camera3D.CAMERA_HEIGHT_DEFAULT, PImage.ARGB);
+//        rightReview = pApplet.createImage(Camera3D.CAMERA_WIDTH_DEFAULT, Camera3D.CAMERA_HEIGHT_DEFAULT, PImage.ARGB);
     }
 
     public void savePaths() {

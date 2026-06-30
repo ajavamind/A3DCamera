@@ -67,8 +67,8 @@ class ParamStore {
             public boolean isPhotoBooth = false;
             public boolean isMirror = true; // for photo booth only
 
-            String receiverIp = "";  // device IP address to receive URL link to saved photo
-            int receiverPort = 9000;  // device port to receive URL link to saved photo
+            private String receiverIp = "";  // device IP address to receive URL link to saved photo
+            private int receiverPort = 9000;  // device port to receive URL link to saved photo
 
             private boolean isBlankScreen = false;  // for display covered
 
@@ -172,7 +172,7 @@ class ParamStore {
                 SharedPreferences.Editor editor = prefs.edit();
                 editor.putInt(parallaxOffsetStore.name, parallaxOffset);
                 editor.commit(); // synchronous save: do it now
-                //editor.apply(); // asynchronous save
+                ((MainActivity) this.context).updateParameters();
             }
 
             //------------------------------------------------------------------------------
@@ -189,7 +189,8 @@ class ParamStore {
                 // Save to SharedPreferences
                 SharedPreferences.Editor editor = prefs.edit();
                 editor.putInt(verticalOffsetStore.name, verticalOffset);
-                editor.apply(); // asynchronous save
+                editor.commit(); // asynchronous save
+                ((MainActivity) this.context).updateParameters();
             }
 
             //------------------------------------------------------------------------------
@@ -206,7 +207,8 @@ class ParamStore {
                 // Save to SharedPreferences
                 SharedPreferences.Editor editor = prefs.edit();
                 editor.putString(receiverIpStore.name, receiverIp);
-                editor.apply(); // asynchronous save
+                editor.commit(); // asynchronous save
+                ((MainActivity) this.context).updateParameters();
             }
 
             //------------------------------------------------------------------------------
@@ -219,14 +221,15 @@ class ParamStore {
             }
 
             public void setIsPhotoBooth(boolean isPhotoBooth) {
+                boolean changed = (this.isPhotoBooth != isPhotoBooth);
                 this.isPhotoBooth = isPhotoBooth;
                 // Save to SharedPreferences
                 SharedPreferences.Editor editor = prefs.edit();
                 editor.putBoolean(isPhotoBoothStore.name, isPhotoBooth);
                 editor.commit(); // synchronous save: do it now and return
                 //editor.apply();   // asynchronous save
-                // Needs restart to reinitialize the application
-                ((MainActivity) context).restartApp();
+                // Needs restart to reinitialize the application (only if value actually changed)
+                if (changed) ((MainActivity) context).restartApp();
             }
 
             //------------------------------------------------------------------------------
@@ -243,8 +246,8 @@ class ParamStore {
                 // Save to SharedPreferences
                 SharedPreferences.Editor editor = prefs.edit();
                 editor.putBoolean(isBlankScreenStore.name, isBlankScreen);
-                editor.apply(); // asynchronous save
-
+                editor.commit(); // asynchronous save
+                ((MainActivity) this.context).updateParameters();
             }
 
             //------------------------------------------------------------------------------
@@ -261,8 +264,8 @@ class ParamStore {
                 // Save to SharedPreferences
                 SharedPreferences.Editor editor = prefs.edit();
                 editor.putBoolean(isSoundOnStore.name, isSoundOn);
-                editor.apply(); // asynchronous save
-
+                editor.commit(); // asynchronous save
+                ((MainActivity) this.context).updateParameters();
             }
 
 
@@ -280,7 +283,8 @@ class ParamStore {
                 // Save to SharedPreferences
                 SharedPreferences.Editor editor = prefs.edit();
                 editor.putBoolean(isMirrorStore.name, isMirror);
-                editor.apply(); // asynchronous save
+                editor.commit(); // asynchronous save
+                ((MainActivity) this.context).updateParameters();
 
             }
 
@@ -297,8 +301,8 @@ class ParamStore {
                 // Save to SharedPreferences
                 SharedPreferences.Editor editor = prefs.edit();
                 editor.putBoolean(isAiEditStore.name, isAiEdit);
-                editor.apply(); // asynchronous save
-                ((MainActivity) context).updateParameters();
+                editor.commit(); // asynchronous save
+                ((MainActivity) this.context).updateParameters();
             }
 
             public void readTitle1() {
@@ -314,7 +318,8 @@ class ParamStore {
                 // Save to SharedPreferences
                 SharedPreferences.Editor editor = prefs.edit();
                 editor.putString(title1Store.name, title1);
-                editor.apply(); // asynchronous save
+                editor.commit(); // synchronous save
+                ((MainActivity) this.context).updateParameters();
             }
             
             public void readTitle2() {
@@ -330,7 +335,8 @@ class ParamStore {
                 // Save to SharedPreferences
                 SharedPreferences.Editor editor = prefs.edit();
                 editor.putString(title2Store.name, title2);
-                editor.apply(); // asynchronous save
+                editor.commit(); // synchronous save
+                ((MainActivity) this.context).updateParameters();
             }
 
             public void readInst1() {
@@ -346,7 +352,8 @@ class ParamStore {
                 // Save to SharedPreferences
                 SharedPreferences.Editor editor = prefs.edit();
                 editor.putString(inst1Store.name, instruction1);
-                editor.apply(); // asynchronous save
+                editor.commit(); // synchronous save
+                ((MainActivity) this.context).updateParameters();
             }
 
             public void readInst2() {
@@ -362,7 +369,8 @@ class ParamStore {
                 // Save to SharedPreferences
                 SharedPreferences.Editor editor = prefs.edit();
                 editor.putString(inst2Store.name, instruction2);
-                editor.apply(); // asynchronous save
+                editor.commit(); // synchronous save
+                ((MainActivity) this.context).updateParameters();
             }
 
             public void readCountdownTimer() {
@@ -378,8 +386,8 @@ class ParamStore {
                 // Save to SharedPreferences
                 SharedPreferences.Editor editor = prefs.edit();
                 editor.putInt(countdownTimerStore.name, countdownTimer);
-                editor.apply(); // asynchronous save
-                ((MainActivity) context).updateParameters();
+                editor.commit(); // synchronous save
+                ((MainActivity) this.context).updateParameters();
             }
 
             public void readCountDownEnabled() {
@@ -394,8 +402,8 @@ class ParamStore {
                 this.countDownEnabled = countDownEnabled;
                 SharedPreferences.Editor editor = prefs.edit();
                 editor.putBoolean(countDownEnabledStore.name, countDownEnabled);
-                editor.apply();
-                ((MainActivity) context).updateParameters();
+                editor.commit();
+                ((MainActivity) this.context).updateParameters();
             }
 
             public void readUdpControlEnabled() {
@@ -407,12 +415,13 @@ class ParamStore {
             }
 
             public void setUdpControlEnabled(boolean udpControlEnabled) {
+                boolean changed = (this.udpControlEnabled != udpControlEnabled);
                 this.udpControlEnabled = udpControlEnabled;
                 SharedPreferences.Editor editor = prefs.edit();
                 editor.putBoolean(udpControlEnabledStore.name, udpControlEnabled);
                 editor.commit();
-                // Needs restart to reinitialize the application
-                ((MainActivity) context).restartApp();
+                // Needs restart to reinitialize the application (only if value actually changed)
+                if (changed) ((MainActivity) context).restartApp();
 
             }
 
@@ -425,12 +434,13 @@ class ParamStore {
             }
 
             public void setUdpTransmit(boolean udpTransmit) {
+                boolean changed = (this.udpTransmit != udpTransmit);
                 this.udpTransmit = udpTransmit;
                 SharedPreferences.Editor editor = prefs.edit();
                 editor.putBoolean(udpTransmitStore.name, udpTransmit);
                 editor.commit();
-                // Needs restart to reinitialize the application
-                ((MainActivity) context).restartApp();
+                // Needs restart to reinitialize the application (only if value actually changed)
+                if (changed) ((MainActivity) context).restartApp();
 
             }
 
@@ -448,7 +458,8 @@ class ParamStore {
                 this.autoReview = autoReview;
                 SharedPreferences.Editor editor = prefs.edit();
                 editor.putBoolean(autoReviewStore.name, autoReview);
-                editor.apply();
+                editor.commit();
+                ((MainActivity) this.context).updateParameters();
             }
 
             // SBS Crop Print Parameter
@@ -464,7 +475,8 @@ class ParamStore {
                 this.sbsCropPrint = sbsCropPrint;
                 SharedPreferences.Editor editor = prefs.edit();
                 editor.putBoolean(sbsCropPrintStore.name, sbsCropPrint);
-                editor.apply();
+                editor.commit();
+                ((MainActivity) this.context).updateParameters();
             }
 
             //------------------------------------------------------------------------------
@@ -481,7 +493,8 @@ class ParamStore {
                 this.focusDistanceIndex = focusDistanceIndex;
                 SharedPreferences.Editor editor = prefs.edit();
                 editor.putInt(focusDistanceIndexStore.name, focusDistanceIndex);
-                editor.apply(); // asynchronous save
+                editor.commit(); // synchronous save
+                ((MainActivity) this.context).updateParameters();
             }
 
             //------------------------------------------------------------------------------

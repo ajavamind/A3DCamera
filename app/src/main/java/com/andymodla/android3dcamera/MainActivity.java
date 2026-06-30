@@ -78,7 +78,7 @@ public class MainActivity extends AppCompatActivity {
     private AIvision aiVision;  // local network small multimodal vision AI model server (Google Gemma 3 8B 4_K_M GGUF)
     private Media media;
     private Camera3D camera;
-    private Parameters parameters;
+    public static Parameters parameters;
 
     private boolean aiVisionEnabled = false;
     public boolean isAiEdit = false;
@@ -165,6 +165,10 @@ public class MainActivity extends AppCompatActivity {
     static final int CONTINUOUS_KB_KEY = KeyEvent.KEYCODE_K;
     static final int MIRROR_KB_KEY = KeyEvent.KEYCODE_M;
 
+    public static int HIDDEN_SHUTTER_BUTTON_X = 2040;
+    public static int HIDDEN_SHUTTER_BUTTON_Y = 140;
+    public static int HIDDEN_SETTINGS_BUTTON_X = 360;
+    public static int HIDDEN_SETTINGS_BUTTON_Y = 140;
 
     private TextView countdownTextView;
     private CommandLine commandLine;
@@ -198,7 +202,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
+        Log.d(TAG, "A3DCamera onCreate()");
         initLibYuv(); // Initialize native yuvlib library
 
         // initialize Parmeters from storage
@@ -356,8 +360,11 @@ public class MainActivity extends AppCompatActivity {
 
                     case MotionEvent.ACTION_UP:
                         // upper right corner is hidden shutter release button
-                        if (x > 2040.0 && y < 140.0) {
+                        if (x > HIDDEN_SHUTTER_BUTTON_X && y < HIDDEN_SHUTTER_BUTTON_Y) {
                             capturePhoto();
+                        // upper left corner is hidden launch settings button
+                        } else if (x < HIDDEN_SETTINGS_BUTTON_X && y < HIDDEN_SETTINGS_BUTTON_Y) {
+                            launchSettings();
                         }
 
                         // Log when the finger/mouse is lifted
@@ -386,7 +393,14 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onRestart() {
+        super.onRestart();
+        Log.d(TAG, "onRestart()");
+    }
+
+    @Override
     protected void onPause() {
+        super.onPause();
         Log.d(TAG, "onPause()");
         if (isFinishing()) {
             Log.d(TAG, "isFinishing");
@@ -898,6 +912,10 @@ public class MainActivity extends AppCompatActivity {
 //                closeCamera();
 //                openCamera();
                 return true;
+            case KeyEvent.KEYCODE_J:
+                // Launch Settings Activity
+                launchSettings();
+                 return true;
             case MIRROR_KB_KEY:
                 boolean amirror = parameters.getIsMirror();
                 amirror = !amirror;
@@ -964,6 +982,12 @@ public class MainActivity extends AppCompatActivity {
 
     public void setContinuousCounter(int continuousCounter) {
         this.continuousCounter = continuousCounter;
+    }
+
+    public void launchSettings() {
+        // Launch Settings Activity
+        Intent settingsIntent = new Intent(this, SettingsActivity.class);
+        startActivity(settingsIntent);
     }
 
     public void capturePhoto() {
@@ -1197,6 +1221,7 @@ public class MainActivity extends AppCompatActivity {
         isPhotoBooth = parameters.getIsPhotoBooth();
         //parameters.getCountDownEnabled();
         CONTINUOUS_COUNT = parameters.getCountdownTimer();
+        camera.focusDistanceIndex = parameters.getFocusDistanceIndex();
         //parameters.getUdpControlEnabled();
         //parameters.getUdpTransmit();
 
