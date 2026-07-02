@@ -74,7 +74,7 @@ public class Camera3D {
     Parameters parameters;
     PApplet pApplet; // Processing sketch base class
 
-    private boolean useProcessing = false;
+    private boolean useProcessingSketch = false;
     private CameraManager mCameraManager;
     private CameraDevice mCameraDevice;
     private CameraCaptureSession mCameraCaptureSession;
@@ -267,11 +267,11 @@ public class Camera3D {
         this.pApplet = pApplet;
     }
 
-    public void init(boolean isPhotobooth) {
-        if (isPhotobooth) {
-            useProcessing = isPhotobooth;
+    public void init(boolean isBasicCamera) {
+        if (!isBasicCamera) {
+            useProcessingSketch = true;
         } else {
-            useProcessing = false;
+            useProcessingSketch = false;
             Log.d(TAG, "setupSurfaces()");
             // set up display surfaces
             mSurfaceView0 = ((MainActivity) context).findViewById(R.id.surfaceView);
@@ -529,7 +529,7 @@ public class Camera3D {
         mImageReader0 = ImageReader.newInstance(cameraWidth, cameraHeight, ImageFormat.JPEG, 2);  // 2 maxImages
         mImageReader2 = ImageReader.newInstance(cameraWidth, cameraHeight, ImageFormat.JPEG, 2);  // 2 maxImages
 
-        if (useProcessing) {
+        if (useProcessingSketch) {
             // Create ImageReaders for YUV preview with buffer count
             // use the display size for preview
             cameraWidth = XBP_CAMERA_DISPLAY_WIDTH;
@@ -595,7 +595,7 @@ public class Camera3D {
         @Override
         public void onOpened(@NonNull CameraDevice camera) { // Open camera
             mCameraDevice = camera;
-            if (useProcessing) {
+            if (useProcessingSketch) {
                 createProcessingPreviewSession();
             } else {
                 if ((mSurfaceView0 != null && mSurfaceView2.isAttachedToWindow()) && mSurfaceView2 != null && mSurfaceView2.isAttachedToWindow()) {

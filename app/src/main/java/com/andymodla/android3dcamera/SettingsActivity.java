@@ -2,8 +2,10 @@ package com.andymodla.android3dcamera;
 
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.CompoundButton;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.SeekBar;
@@ -45,10 +47,16 @@ public class SettingsActivity extends AppCompatActivity {
     private RadioButton rbFocusMacro;
     private RadioButton rbFocusAuto;
 
+    // --- RadioGroup for camera mode ---
+    private RadioGroup rgCameraMode;
+    private RadioButton rbBasicCameraMode;
+    private RadioButton rbAnaglyphCameraMode;
+    private RadioButton rbPhotoBoothCameraMode;
+
     // --- Switch references (boolean parameters) ---
     private Switch swSoundOn;
     private Switch swAiEdit;
-    private Switch swPhotoBooth;
+    //private Switch swPhotoBooth;
     private Switch swMirror;
     private Switch swBlankScreen;
     private Switch swCountDownEnabled;
@@ -58,12 +66,15 @@ public class SettingsActivity extends AppCompatActivity {
     private Switch swSbsCropPrint;
 
     // --- EditText references (string parameters) ---
-    private EditText etReceiverIp;
+    //private EditText etReceiverIp;
     private TextView tvReceiverPort; // read-only
     private EditText etTitle1;
     private EditText etTitle2;
     private EditText etInstruction1;
     private EditText etInstruction2;
+
+    private LinearLayout conditional1SettingsLayout;
+    private LinearLayout conditional2SettingsLayout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -78,6 +89,28 @@ public class SettingsActivity extends AppCompatActivity {
         bindViews();
         loadValues();
         setupListeners();
+        setCameraModeVisibility();
+    }
+
+    public void setCameraModeVisibility() {
+        conditional1SettingsLayout = findViewById(R.id.layout_conditional_anaglyph);
+        conditional2SettingsLayout = findViewById(R.id.layout_conditional_photobooth);
+
+        int mode = parameters.getCameraMode();
+        if (mode == 0) {
+            conditional1SettingsLayout.setVisibility(View.GONE);
+            conditional2SettingsLayout.setVisibility(View.GONE);
+        }
+
+        if (mode == 1) {
+            conditional1SettingsLayout.setVisibility(View.VISIBLE);
+            conditional2SettingsLayout.setVisibility(View.GONE);
+        }
+
+        if (mode == 2) {
+            conditional1SettingsLayout.setVisibility(View.VISIBLE);
+            conditional2SettingsLayout.setVisibility(View.VISIBLE);
+        }
     }
 
     @Override
@@ -111,10 +144,15 @@ public class SettingsActivity extends AppCompatActivity {
         rbFocusMacro = findViewById(R.id.rb_focus_macro);
         rbFocusAuto = findViewById(R.id.rb_focus_auto);
 
+        rgCameraMode = findViewById(R.id.rg_camera_mode);
+        rbBasicCameraMode = findViewById(R.id.rb_basic_camera_mode);
+        rbAnaglyphCameraMode = findViewById(R.id.rb_anaglyph_camera_mode);
+        rbPhotoBoothCameraMode = findViewById(R.id.rb_photo_booth_camera_mode);
+
         // Switches
         swSoundOn = findViewById(R.id.sw_sound_on);
         swAiEdit = findViewById(R.id.sw_ai_edit);
-        swPhotoBooth = findViewById(R.id.sw_photo_booth);
+        //swPhotoBooth = findViewById(R.id.sw_photo_booth);
         swMirror = findViewById(R.id.sw_mirror);
         swBlankScreen = findViewById(R.id.sw_blank_screen);
         swCountDownEnabled = findViewById(R.id.sw_count_down_enabled);
@@ -124,7 +162,7 @@ public class SettingsActivity extends AppCompatActivity {
         swSbsCropPrint = findViewById(R.id.sw_sbs_crop_print);
 
         // Strings
-        etReceiverIp = findViewById(R.id.et_receiver_ip);
+        //etReceiverIp = findViewById(R.id.et_receiver_ip);
         tvReceiverPort = findViewById(R.id.tv_receiver_port);
         etTitle1 = findViewById(R.id.et_title_1);
         etTitle2 = findViewById(R.id.et_title_2);
@@ -132,7 +170,7 @@ public class SettingsActivity extends AppCompatActivity {
         etInstruction2 = findViewById(R.id.et_instruction_2);
 
         // Force single-line for edit texts
-        etReceiverIp.setSingleLine(true);
+        //etReceiverIp.setSingleLine(true);
         etTitle1.setSingleLine(true);
         etTitle2.setSingleLine(true);
         etInstruction1.setSingleLine(true);
@@ -164,28 +202,37 @@ public class SettingsActivity extends AppCompatActivity {
             case 0: rgFocusDistance.check(R.id.rb_focus_hyperfocal); break;
             case 1: rgFocusDistance.check(R.id.rb_focus_photobooth); break;
             case 2: rgFocusDistance.check(R.id.rb_focus_macro); break;
-            default: rgFocusDistance.check(R.id.rb_focus_auto); break;
+            case 3: rgFocusDistance.check(R.id.rb_focus_auto); break;
+            default: rgFocusDistance.check(R.id.rb_focus_hyperfocal); break;
         }
 
-        // --- Booleans ---
-        swSoundOn.setChecked(parameters.getIsSoundOn());
-        swAiEdit.setChecked(parameters.getIsAiEdit());
-        swPhotoBooth.setChecked(parameters.getIsPhotoBooth());
-        swMirror.setChecked(parameters.getIsMirror());
-        swBlankScreen.setChecked(parameters.getIsBlankScreen());
-        swCountDownEnabled.setChecked(parameters.getCountDownEnabled());
-        swUdpControlEnabled.setChecked(parameters.getUdpControlEnabled());
-        swUdpTransmit.setChecked(parameters.getUdpTransmit());
-        swAutoReview.setChecked(parameters.getAutoReview());
-        swSbsCropPrint.setChecked(parameters.getSbsCropPrint());
+        // Camera mode index: 0=basic camera, 1=anaglyph camera, 2=photo booth camera
+        int cmi = parameters.getCameraMode();
+        switch (cmi) {
+            case 0: rgCameraMode.check(R.id.rb_basic_camera_mode); break;
+            case 1: rgCameraMode.check(R.id.rb_anaglyph_camera_mode); break;
+            case 2: rgCameraMode.check(R.id.rb_photo_booth_camera_mode); break;
+            default: rgCameraMode.check(R.id.rb_basic_camera_mode); break;
+        }
 
-        // --- Strings ---
-        etReceiverIp.setText(parameters.getReceiverIp());
-        tvReceiverPort.setText(String.valueOf(parameters.getReceiverPort()));
-        etTitle1.setText(parameters.getTitle1());
-        etTitle2.setText(parameters.getTitle2());
-        etInstruction1.setText(parameters.getInst1());
-        etInstruction2.setText(parameters.getInst2());
+            swSoundOn.setChecked(parameters.getIsSoundOn());
+            swCountDownEnabled.setChecked(parameters.getCountDownEnabled());
+            swUdpControlEnabled.setChecked(parameters.getUdpControlEnabled());
+            swUdpTransmit.setChecked(parameters.getUdpTransmit());
+            tvReceiverPort.setText(String.valueOf(parameters.getReceiverPort()));
+
+
+            swAiEdit.setChecked(parameters.getIsAiEdit());
+            swMirror.setChecked(parameters.getIsMirror());
+            swBlankScreen.setChecked(parameters.getIsBlankScreen());
+            etTitle1.setText(parameters.getTitle1());
+            etTitle2.setText(parameters.getTitle2());
+            etInstruction1.setText(parameters.getInst1());
+            etInstruction2.setText(parameters.getInst2());
+            swAutoReview.setChecked(parameters.getAutoReview());
+            swSbsCropPrint.setChecked(parameters.getSbsCropPrint());
+
+
     }
 
     // ===================== LISTENERS (UI-only, no saving) =====================
@@ -227,14 +274,14 @@ public class SettingsActivity extends AppCompatActivity {
             if (!hasFocus && v instanceof EditText) {
                 String val = ((EditText) v).getText().toString().trim();
                 int id = v.getId();
-                if (id == R.id.et_receiver_ip) parameters.setReceiverIp(val);
-                else if (id == R.id.et_title_1) parameters.setTitle1(val);
+                //if (id == R.id.et_receiver_ip) parameters.setReceiverIp(val);
+                if (id == R.id.et_title_1) parameters.setTitle1(val);
                 else if (id == R.id.et_title_2) parameters.setTitle2(val);
                 else if (id == R.id.et_instruction_1) parameters.setInst1(val);
                 else if (id == R.id.et_instruction_2) parameters.setInst2(val);
             }
         };
-        etReceiverIp.setOnFocusChangeListener(textSaveListener);
+
         etTitle1.setOnFocusChangeListener(textSaveListener);
         etTitle2.setOnFocusChangeListener(textSaveListener);
         etInstruction1.setOnFocusChangeListener(textSaveListener);
@@ -252,7 +299,7 @@ public class SettingsActivity extends AppCompatActivity {
         if (getCurrentFocus() != null) {
             getCurrentFocus().clearFocus();
         }
-        etReceiverIp.clearFocus();
+        //etReceiverIp.clearFocus();
         etTitle1.clearFocus();
         etTitle2.clearFocus();
         etInstruction1.clearFocus();
@@ -277,10 +324,22 @@ public class SettingsActivity extends AppCompatActivity {
         }
         parameters.setFocusDistanceIndex(focusIndex);
 
+        // Camera Mode from RadioGroup
+        checkedId = rgCameraMode.getCheckedRadioButtonId();
+        int cameraMode;
+        if (checkedId == R.id.rb_basic_camera_mode) {
+            cameraMode = 0;
+        } else if (checkedId == R.id.rb_anaglyph_camera_mode) {
+            cameraMode = 1;
+        } else {
+            cameraMode = 2;
+        }
+        parameters.setCameraMode(cameraMode);
+
         // --- Booleans ---
         parameters.setIsSoundOn(swSoundOn.isChecked());
         parameters.setIsAiEdit(swAiEdit.isChecked());
-        parameters.setIsPhotoBooth(swPhotoBooth.isChecked());
+        //parameters.setIsPhotoBooth(swPhotoBooth.isChecked());
         parameters.setIsMirror(swMirror.isChecked());
         parameters.setIsBlankScreen(swBlankScreen.isChecked());
         parameters.setCountDownEnabled(swCountDownEnabled.isChecked());
@@ -290,7 +349,7 @@ public class SettingsActivity extends AppCompatActivity {
         parameters.setSbsCropPrint(swSbsCropPrint.isChecked());
 
         // --- Strings ---
-        parameters.setReceiverIp(etReceiverIp.getText().toString().trim());
+        //parameters.setReceiverIp(etReceiverIp.getText().toString().trim());
         parameters.setTitle1(etTitle1.getText().toString().trim());
         parameters.setTitle2(etTitle2.getText().toString().trim());
         parameters.setInst1(etInstruction1.getText().toString().trim());

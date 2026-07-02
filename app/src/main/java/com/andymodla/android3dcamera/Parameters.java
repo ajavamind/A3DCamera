@@ -54,6 +54,12 @@ class ParamStore {
             private final SharedPreferences prefs;
             private final Context context;
 
+            // Camera application modes
+            public static final int BASIC_MODE = 0;
+            public static final int ANAGLYPH_MODE = 1;
+            public static final int PHOTO_BOOTH_MODE = 2;
+            volatile int cameraMode = BASIC_MODE;
+
             // Stereo Image Alignment parameters
             // same values as StereoPhotoMaker displays after automatic alignment of a
             // reference calibration stereo photo.
@@ -64,11 +70,11 @@ class ParamStore {
             public boolean isAiEdit = true;
 
             // photo booth parameters
-            public boolean isPhotoBooth = false;
+            //public boolean isPhotoBooth = false;
             public boolean isMirror = true; // for photo booth only
 
-            private String receiverIp = "";  // device IP address to receive URL link to saved photo
-            private int receiverPort = 9000;  // device port to receive URL link to saved photo
+            //private String receiverIp = "";  // device IP address to receive URL link to saved photo
+            private int receiverPort = 8000;  // device port to receive URL link to saved photo
 
             private boolean isBlankScreen = false;  // for display covered
 
@@ -138,8 +144,8 @@ class ParamStore {
             public void init() {
                 readParallaxOffset();
                 readVerticalOffset();
-                readReceiverIp();
-                readIsPhotoBooth();
+                //readReceiverIp();
+                readCameraMode();
                 readIsBlankScreen();
                 readIsSoundOn();
                 readIsAiEdit();
@@ -194,38 +200,59 @@ class ParamStore {
             }
 
             //------------------------------------------------------------------------------
-            public void readReceiverIp() {
-                receiverIp = prefs.getString(receiverIpStore.name, receiverIpStore.defaultValue);
-            }
-
-            public String getReceiverIp() {
-                return receiverIp;
-            }
-
-            public void setReceiverIp(String receiverIp) {
-                this.receiverIp = receiverIp;
-                // Save to SharedPreferences
-                SharedPreferences.Editor editor = prefs.edit();
-                editor.putString(receiverIpStore.name, receiverIp);
-                editor.commit(); // asynchronous save
-                ((MainActivity) this.context).updateParameters();
-            }
+//            public void readReceiverIp() {
+//                receiverIp = prefs.getString(receiverIpStore.name, receiverIpStore.defaultValue);
+//            }
+//
+//            public String getReceiverIp() {
+//                return receiverIp;
+//            }
+//
+//            public void setReceiverIp(String receiverIp) {
+//                this.receiverIp = receiverIp;
+//                // Save to SharedPreferences
+//                SharedPreferences.Editor editor = prefs.edit();
+//                editor.putString(receiverIpStore.name, receiverIp);
+//                editor.commit(); // asynchronous save
+//                ((MainActivity) this.context).updateParameters();
+//            }
 
             //------------------------------------------------------------------------------
-            public void readIsPhotoBooth() {
-                isPhotoBooth = prefs.getBoolean(isPhotoBoothStore.name, Boolean.parseBoolean(isPhotoBoothStore.defaultValue));
+//            public void readIsPhotoBooth() {
+//                isPhotoBooth = prefs.getBoolean(isPhotoBoothStore.name, Boolean.parseBoolean(isPhotoBoothStore.defaultValue));
+//            }
+
+            public boolean isBasicCameraMode() {
+                return (getCameraMode() == BASIC_MODE);
             }
 
-            public boolean getIsPhotoBooth() {
-                return isPhotoBooth;
+//            public void setIsPhotoBooth(boolean isPhotoBooth) {
+//                boolean changed = (this.isPhotoBooth != isPhotoBooth);
+//                this.isPhotoBooth = isPhotoBooth;
+//                // Save to SharedPreferences
+//                SharedPreferences.Editor editor = prefs.edit();
+//                editor.putBoolean(isPhotoBoothStore.name, isPhotoBooth);
+//                editor.commit(); // synchronous save: do it now and return
+//                //editor.apply();   // asynchronous save
+//                // Needs restart to reinitialize the application (only if value actually changed)
+//                if (changed) ((MainActivity) context).restartApp();
+//            }
+
+            //------------------------------------------------------------------------------
+            public void readCameraMode() {
+                cameraMode = prefs.getInt(cameraModeStore.name, Integer.parseInt(cameraModeStore.defaultValue));
             }
 
-            public void setIsPhotoBooth(boolean isPhotoBooth) {
-                boolean changed = (this.isPhotoBooth != isPhotoBooth);
-                this.isPhotoBooth = isPhotoBooth;
+            public int getCameraMode() {
+                return cameraMode;
+            }
+
+            public void setCameraMode(int cameraMode) {
+                boolean changed = (this.cameraMode != cameraMode);
+                this.cameraMode = cameraMode;
                 // Save to SharedPreferences
                 SharedPreferences.Editor editor = prefs.edit();
-                editor.putBoolean(isPhotoBoothStore.name, isPhotoBooth);
+                editor.putInt(cameraModeStore.name, this.cameraMode);
                 editor.commit(); // synchronous save: do it now and return
                 //editor.apply();   // asynchronous save
                 // Needs restart to reinitialize the application (only if value actually changed)
@@ -526,6 +553,12 @@ class ParamStore {
                     "pb", "isPhotoBooth", "Photo Booth",
                     "getIsPhotoBooth", "setIsPhotoBooth", boolean.class, "true",
                     "Configures a photo booth camera operation and display."
+            );
+
+            ParamStore cameraModeStore = new ParamStore(
+                    "mode", "cameraMode", "Application Camera Mode",
+                    "getCameraMode", "setCameraMode", int.class, "0",
+                    "Configures application camera mode: Basic, Anaglyph, Photo Booth."
             );
 
             ParamStore isBlankScreenStore = new ParamStore(

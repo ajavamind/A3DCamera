@@ -8,6 +8,7 @@
     android:background="#1A1A1A"
     android:fillViewport="true"
     android:paddingStart="100dp"
+    android:paddingEnd="100dp"
     android:scrollbarStyle="outsideOverlay">
 
     <LinearLayout
@@ -16,13 +17,408 @@
         android:orientation="vertical"
         android:padding="16dp">
 
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Settings"
+            android:textColor="#4FC3F7"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp" />
+
         <!-- ============================================================ -->
-        <!-- SECTION 1: Stereo Alignment                                  -->
+        <!-- SECTION 1: Application Mode                                  -->
+        <!-- ============================================================ -->
+        <!-- Camera Mode -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Camera Mode"
+            android:textColor="#E0E0E0"
+            android:textSize="14sp"
+            android:layout_marginBottom="2dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Enable camera mode (performs a restart)"
+            android:textColor="#9E9E9E"
+            android:textSize="11sp"
+            android:layout_marginBottom="4dp" />
+
+        <RadioGroup
+            android:id="@+id/rg_camera_mode"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginBottom="12dp">
+
+            <RadioButton
+                android:id="@+id/rb_basic_camera_mode"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Basic Camera Mode"
+                android:textColor="#FFFFFF"
+                android:textSize="13sp"
+                android:buttonTint="#4FC3F7"
+                android:layout_marginBottom="4dp" />
+
+            <RadioButton
+                android:id="@+id/rb_anaglyph_camera_mode"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Anaglyph Camera Mode"
+                android:textColor="#FFFFFF"
+                android:textSize="13sp"
+                android:buttonTint="#4FC3F7"
+                android:layout_marginBottom="4dp" />
+
+            <RadioButton
+                android:id="@+id/rb_photo_booth_camera_mode"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Photo Booth Camera Mode"
+                android:textColor="#FFFFFF"
+                android:textSize="13sp"
+                android:buttonTint="#4FC3F7"
+                android:layout_marginBottom="4dp" />
+        </RadioGroup>
+
+        <!-- ============================================================ -->
+        <!-- SECTION 5: Camera                                            -->
         <!-- ============================================================ -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Stereo Alignment"
+            android:text="Camera"
+            android:textColor="#4FC3F7"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp" />
+
+        <!-- Sound On -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="12dp">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Shutter Sound"
+                    android:textColor="#E0E0E0"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Enable/disable shutter sound"
+                    android:textColor="#9E9E9E"
+                    android:textSize="11sp" />
+            </LinearLayout>
+
+            <Switch
+                android:id="@+id/sw_sound_on"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:thumbTint="#4FC3F7"
+                android:trackTint="#2A4FC3F7" />
+        </LinearLayout>
+
+
+        <!-- Countdown Enabled -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="8dp">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Countdown Enabled"
+                    android:textColor="#E0E0E0"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Enable countdown timer before shutter release"
+                    android:textColor="#9E9E9E"
+                    android:textSize="11sp" />
+            </LinearLayout>
+
+            <Switch
+                android:id="@+id/sw_count_down_enabled"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:thumbTint="#4FC3F7"
+                android:trackTint="#2A4FC3F7" />
+        </LinearLayout>
+
+        <!-- Countdown Timer -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Countdown Timer (seconds)"
+            android:textColor="#E0E0E0"
+            android:textSize="14sp"
+            android:layout_marginBottom="2dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Seconds to count down before shutter release"
+            android:textColor="#9E9E9E"
+            android:textSize="11sp"
+            android:layout_marginBottom="4dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="12dp">
+
+            <SeekBar
+                android:id="@+id/seek_countdown"
+                android:layout_width="0dp"
+                android:layout_height="24dp"
+				android:minHeight="24dp"
+				android:maxHeight="24dp"
+                android:layout_weight="1"
+                android:thumbTint="#4FC3F7"
+                android:progressTint="#4FC3F7"
+                android:secondaryProgressTint="#1A4FC3F7" />
+
+            <TextView
+                android:id="@+id/tv_countdown_value"
+                android:layout_width="50dp"
+                android:layout_height="wrap_content"
+                android:text="0s"
+                android:textColor="#FFFFFF"
+                android:textSize="14sp"
+                android:gravity="end"
+                android:layout_marginStart="8dp" />
+        </LinearLayout>
+
+        <!-- Focus Distance Index (RadioGroup) -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Focus Distance"
+            android:textColor="#E0E0E0"
+            android:textSize="14sp"
+            android:layout_marginBottom="2dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Select camera focus distance preset"
+            android:textColor="#9E9E9E"
+            android:textSize="11sp"
+            android:layout_marginBottom="4dp" />
+
+        <RadioGroup
+            android:id="@+id/rg_focus_distance"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginBottom="12dp">
+
+            <RadioButton
+                android:id="@+id/rb_focus_hyperfocal"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="HyperFocal Focus Distance 1.7 m"
+                android:textColor="#FFFFFF"
+                android:textSize="13sp"
+                android:buttonTint="#4FC3F7"
+                android:layout_marginBottom="4dp" />
+
+            <RadioButton
+                android:id="@+id/rb_focus_photobooth"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Photo Booth Focus Distance 550mm"
+                android:textColor="#FFFFFF"
+                android:textSize="13sp"
+                android:buttonTint="#4FC3F7"
+                android:layout_marginBottom="4dp" />
+
+            <RadioButton
+                android:id="@+id/rb_focus_macro"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Macro Focus Distance 100mm"
+                android:textColor="#FFFFFF"
+                android:textSize="13sp"
+                android:buttonTint="#4FC3F7"
+                android:layout_marginBottom="4dp" />
+
+            <RadioButton
+                android:id="@+id/rb_focus_auto"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Auto Focus Distance"
+                android:textColor="#FFFFFF"
+                android:textSize="13sp"
+                android:buttonTint="#4FC3F7"
+                android:layout_marginBottom="4dp" />
+        </RadioGroup>
+
+        <!-- ============================================================ -->
+        <!-- SECTION 6: Network                                           -->
+        <!-- ============================================================ -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Broadcast Network"
+            android:textColor="#4FC3F7"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp" />
+
+		
+        <!-- Broadcast Transmit/Receive Port (read-only) -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="12dp">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Broadcast Port"
+                    android:textColor="#E0E0E0"
+                    android:textSize="13sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Network port for broadcast messages (read-only)"
+                    android:textColor="#9E9E9E"
+                    android:textSize="11sp" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tv_receiver_port"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="8000"
+                android:textColor="#4FC3F7"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <!-- Broadcast Control Enabled -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="8dp">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Broadcast Control"
+                    android:textColor="#E0E0E0"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Enable Wi-Fi broadcast controller for either transmit or receive (performs a restart)"
+                    android:textColor="#9E9E9E"
+                    android:textSize="11sp" />
+            </LinearLayout>
+
+            <Switch
+                android:id="@+id/sw_udp_control_enabled"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:thumbTint="#4FC3F7"
+                android:trackTint="#2A4FC3F7" />
+        </LinearLayout>
+
+        <!-- Broadcast Transmit -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="12dp">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Broadcast Mode"
+                    android:textColor="#E0E0E0"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Transmit or receive (performs a restart)"
+                    android:textColor="#9E9E9E"
+                    android:textSize="11sp" />
+            </LinearLayout>
+
+            <Switch
+                android:id="@+id/sw_udp_transmit"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:thumbTint="#4FC3F7"
+                android:trackTint="#2A4FC3F7" />
+        </LinearLayout>
+		
+		
+        <!-- ============================================================ -->
+        <!-- SECTION 2: Stereo Alignment                                  -->
+        <!-- ============================================================ -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Stereo Window Alignment"
             android:textColor="#4FC3F7"
             android:textSize="18sp"
             android:textStyle="bold"
@@ -120,14 +516,71 @@
                 android:gravity="end"
                 android:layout_marginStart="8dp" />
         </LinearLayout>
+		
+		<!-- ============================================================ -->
+        <!-- SECTION 2: Anaglyph Options                                   -->
+        <!-- ============================================================ -->
+		
+        <LinearLayout
+            android:id="@+id/layout_conditional_anaglyph"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
 
+        <!-- Blank Screen -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="12dp">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Blank Screen"
+                    android:textColor="#E0E0E0"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Cover active display with black"
+                    android:textColor="#9E9E9E"
+                    android:textSize="11sp" />
+            </LinearLayout>
+
+            <Switch
+                android:id="@+id/sw_blank_screen"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:thumbTint="#4FC3F7"
+                android:trackTint="#2A4FC3F7" />
+        </LinearLayout>
+
+
+        </LinearLayout>
         <!-- ============================================================ -->
-        <!-- SECTION 2: Display Options                                   -->
+        <!-- SECTION 3: Photo Booth Options                                   -->
         <!-- ============================================================ -->
+		
+        <LinearLayout
+            android:id="@+id/layout_conditional_photobooth"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+			
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Display Options"
+            android:text="Photo Booth Display Options"
             android:textColor="#4FC3F7"
             android:textSize="18sp"
             android:textStyle="bold"
@@ -171,93 +624,6 @@
                 android:trackTint="#2A4FC3F7" />
         </LinearLayout>
 
-        <!-- Blank Screen -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginBottom="12dp">
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Blank Screen"
-                    android:textColor="#E0E0E0"
-                    android:textSize="14sp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Cover active display with black"
-                    android:textColor="#9E9E9E"
-                    android:textSize="11sp" />
-            </LinearLayout>
-
-            <Switch
-                android:id="@+id/sw_blank_screen"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:thumbTint="#4FC3F7"
-                android:trackTint="#2A4FC3F7" />
-        </LinearLayout>
-
-        <!-- ============================================================ -->
-        <!-- SECTION 3: Photo Booth                                       -->
-        <!-- ============================================================ -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Photo Booth"
-            android:textColor="#4FC3F7"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:layout_marginTop="8dp"
-            android:layout_marginBottom="8dp" />
-
-        <!-- Photo Booth Mode -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginBottom="8dp">
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Photo Booth Mode"
-                    android:textColor="#E0E0E0"
-                    android:textSize="14sp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Enable photo booth camera operation (requires restart)"
-                    android:textColor="#9E9E9E"
-                    android:textSize="11sp" />
-            </LinearLayout>
-
-            <Switch
-                android:id="@+id/sw_photo_booth"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:thumbTint="#4FC3F7"
-                android:trackTint="#2A4FC3F7" />
-        </LinearLayout>
-
         <!-- Auto Review -->
         <LinearLayout
             android:layout_width="match_parent"
@@ -282,7 +648,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Stay in review mode after capture until operator changes"
+                    android:text="Stay in review mode after capture until booth operator resumes live video"
                     android:textColor="#9E9E9E"
                     android:textSize="11sp" />
             </LinearLayout>
@@ -295,13 +661,13 @@
                 android:trackTint="#2A4FC3F7" />
         </LinearLayout>
 
-        <!-- Countdown Enabled -->
+        <!-- AI Edit -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:layout_marginBottom="8dp">
+            android:layout_marginBottom="12dp">
 
             <LinearLayout
                 android:layout_width="0dp"
@@ -312,70 +678,24 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Countdown Enabled"
+                    android:text="AI Edit Mode"
                     android:textColor="#E0E0E0"
                     android:textSize="14sp" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Enable countdown timer before shutter release"
+                    android:text="Launch AI application to edit captured photo"
                     android:textColor="#9E9E9E"
                     android:textSize="11sp" />
             </LinearLayout>
 
             <Switch
-                android:id="@+id/sw_count_down_enabled"
+                android:id="@+id/sw_ai_edit"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:thumbTint="#4FC3F7"
                 android:trackTint="#2A4FC3F7" />
-        </LinearLayout>
-
-        <!-- Countdown Timer -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Countdown Timer (seconds)"
-            android:textColor="#E0E0E0"
-            android:textSize="14sp"
-            android:layout_marginBottom="2dp" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Seconds to count down before shutter release"
-            android:textColor="#9E9E9E"
-            android:textSize="11sp"
-            android:layout_marginBottom="4dp" />
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginBottom="12dp">
-
-            <SeekBar
-                android:id="@+id/seek_countdown"
-                android:layout_width="0dp"
-                android:layout_height="24dp"
-				android:minHeight="24dp"
-				android:maxHeight="24dp"
-                android:layout_weight="1"
-                android:thumbTint="#4FC3F7"
-                android:progressTint="#4FC3F7"
-                android:secondaryProgressTint="#1A4FC3F7" />
-
-            <TextView
-                android:id="@+id/tv_countdown_value"
-                android:layout_width="50dp"
-                android:layout_height="wrap_content"
-                android:text="0s"
-                android:textColor="#FFFFFF"
-                android:textSize="14sp"
-                android:gravity="end"
-                android:layout_marginStart="8dp" />
         </LinearLayout>
 
         <!-- ============================================================ -->
@@ -479,313 +799,15 @@
             android:textSize="13sp"
             android:layout_marginBottom="12dp" />
 
-        <!-- ============================================================ -->
-        <!-- SECTION 5: Camera                                            -->
-        <!-- ============================================================ -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Camera"
-            android:textColor="#4FC3F7"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:layout_marginTop="8dp"
-            android:layout_marginBottom="8dp" />
 
-        <!-- Sound On -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginBottom="12dp">
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Shutter Sound"
-                    android:textColor="#E0E0E0"
-                    android:textSize="14sp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Enable/disable shutter sound"
-                    android:textColor="#9E9E9E"
-                    android:textSize="11sp" />
-            </LinearLayout>
-
-            <Switch
-                android:id="@+id/sw_sound_on"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:thumbTint="#4FC3F7"
-                android:trackTint="#2A4FC3F7" />
-        </LinearLayout>
-
-        <!-- AI Edit -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginBottom="12dp">
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="AI Edit Mode"
-                    android:textColor="#E0E0E0"
-                    android:textSize="14sp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Launch AI application to edit captured photo"
-                    android:textColor="#9E9E9E"
-                    android:textSize="11sp" />
-            </LinearLayout>
-
-            <Switch
-                android:id="@+id/sw_ai_edit"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:thumbTint="#4FC3F7"
-                android:trackTint="#2A4FC3F7" />
-        </LinearLayout>
-
-        <!-- Focus Distance Index (RadioGroup) -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Focus Distance"
-            android:textColor="#E0E0E0"
-            android:textSize="14sp"
-            android:layout_marginBottom="2dp" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Select camera focus distance preset"
-            android:textColor="#9E9E9E"
-            android:textSize="11sp"
-            android:layout_marginBottom="4dp" />
-
-        <RadioGroup
-            android:id="@+id/rg_focus_distance"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:layout_marginBottom="12dp">
-
-            <RadioButton
-                android:id="@+id/rb_focus_hyperfocal"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="HyperFocal Focus Distance 1.7 m"
-                android:textColor="#FFFFFF"
-                android:textSize="13sp"
-                android:buttonTint="#4FC3F7"
-                android:layout_marginBottom="4dp" />
-
-            <RadioButton
-                android:id="@+id/rb_focus_photobooth"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Photo Booth Focus Distance 550mm"
-                android:textColor="#FFFFFF"
-                android:textSize="13sp"
-                android:buttonTint="#4FC3F7"
-                android:layout_marginBottom="4dp" />
-
-            <RadioButton
-                android:id="@+id/rb_focus_macro"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Macro Focus Distance 100mm"
-                android:textColor="#FFFFFF"
-                android:textSize="13sp"
-                android:buttonTint="#4FC3F7"
-                android:layout_marginBottom="4dp" />
-
-            <RadioButton
-                android:id="@+id/rb_focus_auto"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Auto Focus Distance"
-                android:textColor="#FFFFFF"
-                android:textSize="13sp"
-                android:buttonTint="#4FC3F7"
-                android:layout_marginBottom="4dp" />
-        </RadioGroup>
 
         <!-- ============================================================ -->
-        <!-- SECTION 6: Network                                           -->
+        <!-- Photo Booth Print Output                                            -->
         <!-- ============================================================ -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Network"
-            android:textColor="#4FC3F7"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:layout_marginTop="8dp"
-            android:layout_marginBottom="8dp" />
-
-        <!-- Receiver IP -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Receiver IP Address"
-            android:textColor="#E0E0E0"
-            android:textSize="13sp"
-            android:layout_marginBottom="2dp" />
-
-        <EditText
-            android:id="@+id/et_receiver_ip"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="e.g. 192.168.1.100"
-            android:inputType="text"
-            android:background="@android:drawable/edit_text"
-            android:textColor="#000000"
-            android:textColorHint="#888888"
-            android:padding="8dp"
-            android:textSize="13sp"
-            android:layout_marginBottom="8dp" />
-
-        <!-- Receiver Port (read-only) -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginBottom="12dp">
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Receiver Port"
-                    android:textColor="#E0E0E0"
-                    android:textSize="13sp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Port for receiving URL link (read-only)"
-                    android:textColor="#9E9E9E"
-                    android:textSize="11sp" />
-            </LinearLayout>
-
-            <TextView
-                android:id="@+id/tv_receiver_port"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="9000"
-                android:textColor="#4FC3F7"
-                android:textSize="14sp"
-                android:textStyle="bold" />
-        </LinearLayout>
-
-        <!-- UDP Control Enabled -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginBottom="8dp">
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="UDP Control"
-                    android:textColor="#E0E0E0"
-                    android:textSize="14sp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Enable Wi-Fi UDP broadcast control (requires restart)"
-                    android:textColor="#9E9E9E"
-                    android:textSize="11sp" />
-            </LinearLayout>
-
-            <Switch
-                android:id="@+id/sw_udp_control_enabled"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:thumbTint="#4FC3F7"
-                android:trackTint="#2A4FC3F7" />
-        </LinearLayout>
-
-        <!-- UDP Transmit -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginBottom="12dp">
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="UDP Transmit"
-                    android:textColor="#E0E0E0"
-                    android:textSize="14sp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Transmit or receive only (requires restart)"
-                    android:textColor="#9E9E9E"
-                    android:textSize="11sp" />
-            </LinearLayout>
-
-            <Switch
-                android:id="@+id/sw_udp_transmit"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:thumbTint="#4FC3F7"
-                android:trackTint="#2A4FC3F7" />
-        </LinearLayout>
-
-        <!-- ============================================================ -->
-        <!-- SECTION 7: Output                                            -->
-        <!-- ============================================================ -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Output"
+            android:text="Photo Booth Print Output"
             android:textColor="#4FC3F7"
             android:textSize="18sp"
             android:textStyle="bold"
@@ -828,11 +850,13 @@
                 android:thumbTint="#4FC3F7"
                 android:trackTint="#2A4FC3F7" />
         </LinearLayout>
+        </LinearLayout>
 
         <!-- Spacer at bottom -->
         <View
+		    android:background="#8A8ACA"
             android:layout_width="match_parent"
-            android:layout_height="32dp" />
+            android:layout_height="16dp" />
 
     </LinearLayout>
 

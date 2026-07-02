@@ -11,7 +11,9 @@ import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.SystemClock;
+import android.provider.Settings;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.InputDevice;
@@ -95,7 +97,8 @@ public class MainActivity extends AppCompatActivity {
     private boolean exitApp = false; // exit app flag with back or esc button
 
     // Photo booth variables
-    public boolean isPhotoBooth = true;
+    //public boolean !isBasicCamera = false;
+    public boolean isBasicCamera = true;
     public PhotoBooth photoBooth;  // photo booth sketch
     PFragment photoBoothFragment;  // processing library photo booth fragment
     View decorView; // screen window view for camera app
@@ -191,6 +194,16 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private final ActivityResultLauncher<Intent> storageActivityResultLauncher =
+            registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
+                // Check if the user granted the permission after returning to the app
+                if (Environment.isExternalStorageManager()) {
+                    Toast.makeText(this, "All Files Access Granted!", Toast.LENGTH_SHORT).show();
+                    // Proceed with your file operations
+                } else {
+                    Toast.makeText(this, "Permission Denied. Cannot access files.", Toast.LENGTH_SHORT).show();
+                }
+            });
 
     /*==================================================================
      * Activity Lifecycle methods
@@ -205,12 +218,12 @@ public class MainActivity extends AppCompatActivity {
         Log.d(TAG, "A3DCamera onCreate()");
         initLibYuv(); // Initialize native yuvlib library
 
-        // initialize Parmeters from storage
+        // initialize Parameters from storage
         // shared preferences
         SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         parameters = new Parameters(prefs, this);
         parameters.init();
-        isPhotoBooth = parameters.getIsPhotoBooth();
+        isBasicCamera = parameters.isBasicCameraMode();
         isAiEdit = parameters.getIsAiEdit();
         //aiVisionEnabled = parameters.getAiVisionEnabled();
 
@@ -241,7 +254,7 @@ public class MainActivity extends AppCompatActivity {
             aiVision = new AIvision(this);
         }
 
-        if (isPhotoBooth) {
+        if (!isBasicCamera) {
             FrameLayout frame = new FrameLayout(this);
             frame.setId(CompatUtils.getUniqueViewId());
             setContentView(frame, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
@@ -327,7 +340,7 @@ public class MainActivity extends AppCompatActivity {
         decorView.post(new Runnable() {
             @Override
             public void run() {
-                camera.init(isPhotoBooth);
+                camera.init(isBasicCamera);
                 camera.openCamera();
                 if (photoBooth != null) {
                     photoBooth.setCamera(camera);
@@ -385,11 +398,11 @@ public class MainActivity extends AppCompatActivity {
         super.onStart();
         Log.d(TAG, "onStart()");
         setVisibility();
-        //if (!isPhotoBooth) {
+
         if (commandLine == null) {
             commandLine = new CommandLine(this, parameters, splashMessage + " Version: " + BuildConfig.VERSION_NAME);
         }
-        //}
+
     }
 
     @Override
@@ -491,7 +504,7 @@ public class MainActivity extends AppCompatActivity {
         if ((buttonState & MotionEvent.BUTTON_PRIMARY) != 0) { // left mouse button
             // Left mouse button pressed (Large Shutter button on Buzzer Box)
             Log.d(TAG, "Left button pressed");
-            if (isPhotoBooth) {
+            if (!isBasicCamera) {
                 if (!camera.captureInProgress.get()) {
                     processShutterKey();
                 }
@@ -503,7 +516,7 @@ public class MainActivity extends AppCompatActivity {
         } else if ((buttonState & MotionEvent.BUTTON_TERTIARY) != 0) { // middle mouse button
             // mouse button pressed (SBS/Anaglyph/L/R button on Buzzer Box)
             Log.d(TAG, "Middle button pressed");
-            if (isPhotoBooth) {
+            if (!isBasicCamera) {
                 processDisplayToggle();
             } else { // Not photo booth - send to printer immediately
                 media.printImageType();
@@ -513,7 +526,7 @@ public class MainActivity extends AppCompatActivity {
             // handles toggle state changes in photo booth sketch
             Log.d(TAG, "Right button pressed");
 
-            if (isPhotoBooth) {
+            if (!isBasicCamera) {
                 if (isAiEdit) {
                     processPrintStateToggle();
                 } else {
@@ -534,12 +547,12 @@ public class MainActivity extends AppCompatActivity {
         // Handle mouse wheel events
         if (delta > 0) {
             // Scrolled Up (away from user)
-            if (isPhotoBooth) {
+            if (!isBasicCamera) {
                 photoBooth.processKeyCode(KeyEvent.KEYCODE_RIGHT_BRACKET, 0);
             }
         } else if (delta < 0) {
             // Scrolled Down (toward user)
-            if (isPhotoBooth) {
+            if (!isBasicCamera) {
                 photoBooth.processKeyCode(KeyEvent.KEYCODE_LEFT_BRACKET, 0);
             }
         }
@@ -651,9 +664,9 @@ public class MainActivity extends AppCompatActivity {
 
     public void wakeUpSketch(int theState) {
         Log.d(TAG, "wakeUpSketch state=" + stateName[theState]);
-        if (isPhotoBooth && isReview()) {
+        if (!isBasicCamera && isReview()) {
             camera.pauseCameraPreviewSession();
-        } else if (isPhotoBooth && isLiveView()) {
+        } else if (!isBasicCamera && isLiveView()) {
             camera.resumeCameraPreviewSession();
         }
 
@@ -706,7 +719,7 @@ public class MainActivity extends AppCompatActivity {
         if (commandLine != null && commandLine.processCommandLineKey(keyCode, ch)) {
             return true;
         }
-        if (isPhotoBooth) {
+        if (!isBasicCamera) {
             boolean consumed = photoBooth.processKeyCode(keyCode, ch);
             if (consumed) return true;
             switch (keyCode) {
@@ -793,7 +806,7 @@ public class MainActivity extends AppCompatActivity {
 
             case SHARE_KEY:
                 //case SHARE_KB_KEY:
-                if (isPhotoBooth) {
+                if (!isBasicCamera) {
                     // ignore share key in photo booth
                     return true;
                 } else {
@@ -835,7 +848,7 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             case ANAGLYPH_KEY:
                 //case ANAGLYPH_KB_KEY:
-                if (isPhotoBooth) {
+                if (!isBasicCamera) {
                     displayMode = DisplayMode.ANAGLYPH;
                     photoBooth.setDisplayMode(displayMode);
                 }
@@ -848,7 +861,7 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             case SHUTTER_SPEED_KEY:
                 //case SHUTTER_SPEED_KB_KEY:
-                if (isPhotoBooth) {
+                if (!isBasicCamera) {
                     //photoBooth.keyPressedReview(keyCode, ch);
                     return true;
                 }
@@ -859,7 +872,7 @@ public class MainActivity extends AppCompatActivity {
             case TIMER_KEY:
                 //case TIMER_KB_KEY:
                 if (state != LIVE_VIEW_STATE) {
-                    if (isPhotoBooth) {
+                    if (!isBasicCamera) {
                         //photoBooth.keyPressedReview(keyCode, ch);
                     }
                     return true;
@@ -867,7 +880,7 @@ public class MainActivity extends AppCompatActivity {
                     if (CONTINUOUS_COUNT > 0) {
                         CONTINUOUS_COUNT = 0;
                     } else {
-                        if (isPhotoBooth) {
+                        if (!isBasicCamera) {
                             if (parameters.getCountDownEnabled())
                                 CONTINUOUS_COUNT = parameters.getCountdownTimer(); //CONTINUOUS_COUNT_PHOTO_BOOTH;
                             else
@@ -891,7 +904,7 @@ public class MainActivity extends AppCompatActivity {
             case DISP_KEY:
             case KeyEvent.KEYCODE_A:
                 displayMode = displayMode.next();
-                if (isPhotoBooth) {
+                if (!isBasicCamera) {
                     photoBooth.setDisplayMode(displayMode);
                 }
                 if (displayMode == DisplayMode.SBS) {
@@ -927,7 +940,7 @@ public class MainActivity extends AppCompatActivity {
                 media.printImageType();
                 return true;
             case KeyEvent.KEYCODE_D:
-                if (isPhotoBooth) {
+                if (!isBasicCamera) {
                     simulateClick(decorView, 1500, 540);
                     return true;
                 }
@@ -993,7 +1006,7 @@ public class MainActivity extends AppCompatActivity {
     public void capturePhoto() {
         Log.d(TAG, "capturePhoto() captureInProgress=" + camera.captureInProgress.get());
         if (camera.captureInProgress.get()) return;
-        if (isPhotoBooth && !isLiveView()) {
+        if (!isBasicCamera && !isLiveView()) {
             setLiveView();
             return;
         }
@@ -1049,16 +1062,16 @@ public class MainActivity extends AppCompatActivity {
      */
     void startCountdownSequence(int startCount) {
         Log.d(TAG, "startCountdownSequence startCount=" + startCount);
-        //if (isPhotoBooth) {
+
         if (startCount == 0) {
             camera.createCameraCaptureSession(); // take a picture
             return;
         }
-        //}
+
         if (countdownTimer == null) {
             countdownTimer = new Timer();
             countdownDigit = startCount + 1;  // for display correct
-            if (isPhotoBooth) {
+            if (!isBasicCamera) {
                 photoBooth.setCountdown(Integer.toString(countdownDigit));
             } else {
                 countdownTextView.setText(Integer.toString(countdownDigit));
@@ -1075,7 +1088,7 @@ public class MainActivity extends AppCompatActivity {
                         MainActivity.this.runOnUiThread(new Runnable() {
                             public void run() {
                                 // hide digit display
-                                if (isPhotoBooth) {
+                                if (!isBasicCamera) {
                                     photoBooth.setCountdown("");
                                 } else {
                                     countdownTextView.setText("");
@@ -1088,7 +1101,7 @@ public class MainActivity extends AppCompatActivity {
                         MainActivity.this.runOnUiThread(new Runnable() {
                             public void run() {
                                 if (countdownDigit == 0) {
-                                    if (isPhotoBooth) {
+                                    if (!isBasicCamera) {
                                         photoBooth.setCountdown("");
                                     } else {
                                         countdownTextView.setText("");
@@ -1096,7 +1109,7 @@ public class MainActivity extends AppCompatActivity {
                                     }
                                     remoteFocus(); // send broadcast focus command over the network
                                 } else {
-                                    if (isPhotoBooth) {
+                                    if (!isBasicCamera) {
                                         photoBooth.setCountdown(Integer.toString(countdownDigit));
                                     } else {
                                         countdownTextView.setText(Integer.toString(countdownDigit));
@@ -1218,7 +1231,7 @@ public class MainActivity extends AppCompatActivity {
 
     public void updateParameters() {
         isAiEdit = parameters.getIsAiEdit();
-        isPhotoBooth = parameters.getIsPhotoBooth();
+        isBasicCamera = parameters.isBasicCameraMode();
         //parameters.getCountDownEnabled();
         CONTINUOUS_COUNT = parameters.getCountdownTimer();
         camera.focusDistanceIndex = parameters.getFocusDistanceIndex();
@@ -1241,6 +1254,8 @@ public class MainActivity extends AppCompatActivity {
                 break;
             }
         }
+
+        checkAndRequestStoragePermission();
 
         if (needsPermission) {
             Log.d(TAG, "Needs permission");
@@ -1277,6 +1292,26 @@ public class MainActivity extends AppCompatActivity {
         int largeHeapSize = am.getLargeMemoryClass();
 
         System.out.println("Standard: " + standardHeapSize + "MB, Large: " + largeHeapSize + "MB");
+    }
+
+    private void checkAndRequestStoragePermission() {
+        // Since min SDK is 31, no need to check Build.VERSION.SDK_INT for older versions
+        if (Environment.isExternalStorageManager()) {
+            // Permission is already present; perform your file logic
+
+            Toast.makeText(this, "File Permission already granted", Toast.LENGTH_SHORT).show();
+        } else {
+            // Permission is missing; ask programmatically
+            try {
+                Intent intent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
+                intent.setData(Uri.parse("package:" + getPackageName()));
+                storageActivityResultLauncher.launch(intent);
+            } catch (Exception e) {
+                // Fallback option if the specific app-setting intent fails
+                Intent intent = new Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION);
+                storageActivityResultLauncher.launch(intent);
+            }
+        }
     }
 
 // For reference not used

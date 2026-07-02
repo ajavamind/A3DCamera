@@ -74,7 +74,7 @@ public class PhotoBooth extends PApplet {
     private volatile boolean mirror = false;
     private volatile boolean crossEye = false;
     private volatile boolean grid = false;
-    private volatile boolean photoBoothTitle = false;
+    private volatile boolean showPhotoBoothTitle = false;
 
     DisplayMode displayMode = DisplayMode.SBS;
     volatile boolean update = false;
@@ -196,8 +196,8 @@ public class PhotoBooth extends PApplet {
         grid = !grid;
         update = true;
     }
-    public void togglePhotoBooth() {
-        photoBoothTitle = !photoBoothTitle;
+    public void toggleShowPhotoBoothTitle() {
+        showPhotoBoothTitle = !showPhotoBoothTitle;
         update = true;
     }
 
@@ -339,7 +339,7 @@ public class PhotoBooth extends PApplet {
         } else if (state == MainActivity.REVIEW_AI_EDIT_STATE) {
             drawReview();
         }
-        if (photoBoothTitle) {
+        if (showPhotoBoothTitle) {
             if (magnifyScale[magnifyIndex] > 1.0f) {
                 textSize(48);
                 fill(yellow);
@@ -796,7 +796,7 @@ public class PhotoBooth extends PApplet {
                 toggleGrid();
                 break;
             case KeyEvent.KEYCODE_P:
-                togglePhotoBooth();
+                toggleShowPhotoBoothTitle();
                 break;
             case KeyEvent.KEYCODE_H:  // help screens for debug
             case KeyEvent.KEYCODE_HELP:
@@ -1117,7 +1117,11 @@ public class PhotoBooth extends PApplet {
         } else if (x < MainActivity.HIDDEN_SETTINGS_BUTTON_X && y < MainActivity.HIDDEN_SETTINGS_BUTTON_Y) {
             if (DEBUG) PApplet.println("mouseReleased photo booth settings");
             mainActivity.launchSettings();
+        } else if (x > (frameX+(XBP_DISPLAY_FRAME_WIDTH/2)-100) && x < (frameX +(XBP_DISPLAY_FRAME_WIDTH/2) +100) && y > (XBP_DISPLAY_FRAME_HEIGHT/2 - 100) && y < (XBP_DISPLAY_FRAME_HEIGHT/2 + 100)) {
+            if (DEBUG) PApplet.println("mouseReleased photo booth show grid");
+            processKeyCode(KeyEvent.KEYCODE_G, 'G');
         }
+        if (DEBUG) PApplet.println("mouseReleased photo booth x="+x+" y="+y);
     }
 //    void nextImage() {
 //        if (currentIndex < leftImageFiles.size() - 1) {

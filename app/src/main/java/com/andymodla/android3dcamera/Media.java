@@ -304,7 +304,7 @@ public class Media {
             if (((MainActivity) context).imageSender != null) {
                 String imageUrl = "http://"+((MainActivity) context).hostIpAddr+":"+((MainActivity) context).hostPort+File.separator+filename;
                 Log.d(TAG, "imageSender.sendImageUrl " + imageUrl);
-                ((MainActivity) context).imageSender.sendImageUrl(parameters.getReceiverIp(), parameters.getReceiverPort(), imageUrl );
+                //((MainActivity) context).imageSender.sendImageUrl(parameters.getReceiverIp(), parameters.getReceiverPort(), imageUrl );
             }
 
         } catch (IOException e) {
