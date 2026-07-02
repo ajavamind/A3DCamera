@@ -339,7 +339,7 @@ public class PhotoBooth extends PApplet {
         } else if (state == MainActivity.REVIEW_AI_EDIT_STATE) {
             drawReview();
         }
-        if (showPhotoBoothTitle) {
+        if (parameters.isPhotoBoothCameraMode()) {
             if (magnifyScale[magnifyIndex] > 1.0f) {
                 textSize(48);
                 fill(yellow);
@@ -382,7 +382,7 @@ public class PhotoBooth extends PApplet {
             //if (mainActivity.state == MainActivity.LIVE_VIEW_STATE) {
             if (state == MainActivity.LIVE_VIEW_STATE) {
                 textAlign(CENTER);
-                if (!(DEBUG && testMode)) {
+                if (parameters.isPhotoBoothCameraMode()) {
                     text(parameters.getInst1(), width / 2, 50);
                     text(parameters.getInst2(), width / 2, 100);
                     if (displayMode == DisplayMode.SBS) {

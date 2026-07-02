@@ -214,7 +214,7 @@ public class Media {
             Log.e(TAG, "Image decoding failed! " + (left ? "left" : "right"));
             return null;
         } else {
-            if (!saveLR) {
+            if (parameters.isBasicCameraMode() || parameters.isAnaglyphCameraMode()) {
                 Log.d(TAG, "SaveImageFile not saved " + filename);
                 return bitmap;
             }
@@ -329,7 +329,7 @@ public class Media {
         }
 
         // Save Anaglyph image and recycle Anaglyph bitmap
-        if (saveAnaglyph) {
+        if (parameters.isPhotoBoothCameraMode() ) {
             reviewAnaglyph = createAndSaveAnaglyph(PHOTO_PREFIX + timestamp, leftBitmap, rightBitmap);
         }
         if (saveSBS) {

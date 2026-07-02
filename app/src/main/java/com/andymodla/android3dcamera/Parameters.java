@@ -25,6 +25,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import processing.core.PApplet;
+
 //------------------------------------------------------------------------------
 
 class ParamStore {
@@ -144,7 +146,6 @@ class ParamStore {
             public void init() {
                 readParallaxOffset();
                 readVerticalOffset();
-                //readReceiverIp();
                 readCameraMode();
                 readIsBlankScreen();
                 readIsSoundOn();
@@ -226,6 +227,14 @@ class ParamStore {
                 return (getCameraMode() == BASIC_MODE);
             }
 
+            public boolean isAnaglyphCameraMode() {
+                return (getCameraMode() == ANAGLYPH_MODE);
+            }
+
+            public boolean isPhotoBoothCameraMode() {
+                return (getCameraMode() == PHOTO_BOOTH_MODE);
+            }
+
 //            public void setIsPhotoBooth(boolean isPhotoBooth) {
 //                boolean changed = (this.isPhotoBooth != isPhotoBooth);
 //                this.isPhotoBooth = isPhotoBooth;
@@ -241,6 +250,7 @@ class ParamStore {
             //------------------------------------------------------------------------------
             public void readCameraMode() {
                 cameraMode = prefs.getInt(cameraModeStore.name, Integer.parseInt(cameraModeStore.defaultValue));
+                //Log.d(TAG, "readCameraMode: " + cameraMode);
             }
 
             public int getCameraMode() {
