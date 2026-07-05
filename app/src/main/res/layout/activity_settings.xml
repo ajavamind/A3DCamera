@@ -270,6 +270,135 @@
                 android:layout_marginBottom="4dp" />
         </RadioGroup>
 
+        <!-- Exposure Metering Index (RadioGroup) -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Exposure Metering"
+            android:textColor="#E0E0E0"
+            android:textSize="14sp"
+            android:layout_marginBottom="2dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Select camera exposure metering mode"
+            android:textColor="#9E9E9E"
+            android:textSize="11sp"
+            android:layout_marginBottom="4dp" />
+
+        <RadioGroup
+            android:id="@+id/rg_exposure_metering"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginBottom="12dp">
+
+            <RadioButton
+                android:id="@+id/rb_exposure_frame_average"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Frame Average (normal)"
+                android:textColor="#FFFFFF"
+                android:textSize="13sp"
+                android:buttonTint="#4FC3F7"
+                android:layout_marginBottom="4dp" />
+
+            <RadioButton
+                android:id="@+id/rb_exposure_center_weighted"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Center Weighted"
+                android:textColor="#FFFFFF"
+                android:textSize="13sp"
+                android:buttonTint="#4FC3F7"
+                android:layout_marginBottom="4dp" />
+
+            <RadioButton
+                android:id="@+id/rb_exposure_spot"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Spot Metering"
+                android:textColor="#FFFFFF"
+                android:textSize="13sp"
+                android:buttonTint="#4FC3F7"
+                android:layout_marginBottom="4dp" />
+        </RadioGroup>
+
+        <!-- Save LR -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="12dp">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Save LR"
+                    android:textColor="#E0E0E0"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Override cameraMode to save Left/Right image files"
+                    android:textColor="#9E9E9E"
+                    android:textSize="11sp" />
+            </LinearLayout>
+
+            <Switch
+                android:id="@+id/sw_save_lr"
+                android:layout_width="60dp"
+                android:layout_height="32dp"
+                android:thumbTint="@color/switch_thumb_selector"
+                android:trackTint="@color/switch_track_selector" />
+        </LinearLayout>
+
+        <!-- Save Anaglyph -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="12dp">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Save Anaglyph"
+                    android:textColor="#E0E0E0"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Override cameraMode to save Anaglyph image files"
+                    android:textColor="#9E9E9E"
+                    android:textSize="11sp" />
+            </LinearLayout>
+
+            <Switch
+                android:id="@+id/sw_save_anaglyph"
+                android:layout_width="60dp"
+                android:layout_height="32dp"
+                android:thumbTint="@color/switch_thumb_selector"
+                android:trackTint="@color/switch_track_selector" />
+        </LinearLayout>
+
         <!-- ============================================================ -->
         <!-- SECTION 6: Network                                           -->
         <!-- ============================================================ -->
@@ -442,6 +571,8 @@
 				android:minHeight="24dp"
 				android:maxHeight="24dp"
                 android:layout_weight="1"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
                 android:thumbTint="#4FC3F7"
                 android:progressTint="#4FC3F7"
                 android:secondaryProgressTint="#1A4FC3F7" />
@@ -488,6 +619,8 @@
 				android:minHeight="24dp"
 				android:maxHeight="24dp"
                 android:layout_weight="1"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
                 android:thumbTint="#4FC3F7"
                 android:progressTint="#4FC3F7"
                 android:secondaryProgressTint="#1A4FC3F7" />

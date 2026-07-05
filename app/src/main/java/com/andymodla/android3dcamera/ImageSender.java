@@ -39,8 +39,6 @@ public class ImageSender {
         try {
             if (parameters.getUdpTransmit()) {
                 sendUrlBroadcast(targetImageUrl);
-            } else {
-                //sendUrlToReceiver(ip, port, targetImageUrl);
             }
         } catch (Exception e) {
             e.printStackTrace();

@@ -650,7 +650,7 @@ class ParamStore {
             
             ParamStore countdownTimerStore = new ParamStore(
                     "ct", "countdownTimer", "Countdown Timer",
-                    "getCountdownTimer", "setCountdownTimer", int.class, "0",
+                    "getCountdownTimer", "setCountdownTimer", int.class, "3",
                     "Set the camera countdown timer in seconds for shutter release"
             );
 

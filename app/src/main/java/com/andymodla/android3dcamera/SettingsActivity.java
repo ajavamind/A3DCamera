@@ -2,6 +2,7 @@ package com.andymodla.android3dcamera;
 
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.view.KeyEvent;
 import android.view.View;
 import android.widget.CompoundButton;
 import android.widget.EditText;
@@ -48,6 +49,15 @@ public class SettingsActivity extends AppCompatActivity {
     private RadioButton rbFocusPhotobooth;
     private RadioButton rbFocusMacro;
     private RadioButton rbFocusAuto;
+
+    // --- RadioGroup for exposure metering ---
+    private RadioGroup rgExposureMetering;
+    private RadioButton rbExposureFrameAverage;
+    private RadioButton rbExposureCenterWeighted;
+    private RadioButton rbExposureSpot;
+
+    private Switch swSaveLr;
+    private Switch swSaveAnaglyph;
 
     // --- RadioGroup for camera mode ---
     private RadioGroup rgCameraMode;
@@ -151,6 +161,16 @@ public class SettingsActivity extends AppCompatActivity {
         rbAnaglyphCameraMode = findViewById(R.id.rb_anaglyph_camera_mode);
         rbPhotoBoothCameraMode = findViewById(R.id.rb_photo_booth_camera_mode);
 
+        // Exposure metering RadioGroup
+        rgExposureMetering = findViewById(R.id.rg_exposure_metering);
+        rbExposureFrameAverage = findViewById(R.id.rb_exposure_frame_average);
+        rbExposureCenterWeighted = findViewById(R.id.rb_exposure_center_weighted);
+        rbExposureSpot = findViewById(R.id.rb_exposure_spot);
+
+        // Save LR / Save Anaglyph Switches
+        swSaveLr = findViewById(R.id.sw_save_lr);
+        swSaveAnaglyph = findViewById(R.id.sw_save_anaglyph);
+
         // Switches
         swSoundOn = findViewById(R.id.sw_sound_on);
         swAiEdit = findViewById(R.id.sw_ai_edit);
@@ -206,6 +226,18 @@ public class SettingsActivity extends AppCompatActivity {
             default: rgFocusDistance.check(R.id.rb_focus_hyperfocal); break;
         }
 
+        // Exposure metering index: 0=frameAverage, 1=centerWeighted, 2=spot
+        int emi = parameters.getExposureMeteringIndex();
+        switch (emi) {
+            case 0: rgExposureMetering.check(R.id.rb_exposure_frame_average); break;
+            case 1: rgExposureMetering.check(R.id.rb_exposure_center_weighted); break;
+            case 2: rgExposureMetering.check(R.id.rb_exposure_spot); break;
+            default: rgExposureMetering.check(R.id.rb_exposure_frame_average); break;
+        }
+
+        swSaveLr.setChecked(parameters.getSaveLr());
+        swSaveAnaglyph.setChecked(parameters.getSaveAnaglyph());
+
         // Camera mode index: 0=basic camera, 1=anaglyph camera, 2=photo booth camera
         int cmi = parameters.getCameraMode();
         switch (cmi) {
@@ -248,6 +280,20 @@ public class SettingsActivity extends AppCompatActivity {
             @Override public void onStartTrackingTouch(SeekBar seekBar) { }
             @Override public void onStopTrackingTouch(SeekBar seekBar) { }
         });
+        seekParallax.setOnKeyListener((v, keyCode, event) -> {
+            if (event.getAction() == KeyEvent.ACTION_DOWN) {
+                int current = seekParallax.getProgress();
+                int delta = 2;
+                if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT || keyCode == KeyEvent.KEYCODE_BUTTON_L2) {
+                    seekParallax.setProgress(Math.max(seekParallax.getMin(), current - delta));
+                    return true;
+                } else if (keyCode == KeyEvent.KEYCODE_DPAD_RIGHT || keyCode == KeyEvent.KEYCODE_BUTTON_R2) {
+                    seekParallax.setProgress(Math.min(seekParallax.getMax(), current + delta));
+                    return true;
+                }
+            }
+            return false;
+        });
 
         // --- Vertical Offset SeekBar ---
         seekVertical.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
@@ -257,6 +303,20 @@ public class SettingsActivity extends AppCompatActivity {
             }
             @Override public void onStartTrackingTouch(SeekBar seekBar) { }
             @Override public void onStopTrackingTouch(SeekBar seekBar) { }
+        });
+        seekVertical.setOnKeyListener((v, keyCode, event) -> {
+            if (event.getAction() == KeyEvent.ACTION_DOWN) {
+                int current = seekVertical.getProgress();
+                int delta = 1;
+                if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT || keyCode == KeyEvent.KEYCODE_BUTTON_L2) {
+                    seekVertical.setProgress(Math.max(seekVertical.getMin(), current - delta));
+                    return true;
+                } else if (keyCode == KeyEvent.KEYCODE_DPAD_RIGHT || keyCode == KeyEvent.KEYCODE_BUTTON_R2) {
+                    seekVertical.setProgress(Math.min(seekVertical.getMax(), current + delta));
+                    return true;
+                }
+            }
+            return false;
         });
 
         // --- Countdown Timer Slider (Material, label shows value on thumb) ---
@@ -318,6 +378,22 @@ public class SettingsActivity extends AppCompatActivity {
             focusIndex = 3;
         }
         parameters.setFocusDistanceIndex(focusIndex);
+
+        // Exposure metering from RadioGroup
+        checkedId = rgExposureMetering.getCheckedRadioButtonId();
+        int exposureIndex;
+        if (checkedId == R.id.rb_exposure_frame_average) {
+            exposureIndex = 0;
+        } else if (checkedId == R.id.rb_exposure_center_weighted) {
+            exposureIndex = 1;
+        } else {
+            exposureIndex = 2;
+        }
+        parameters.setExposureMeteringIndex(exposureIndex);
+
+        // Save LR / Save Anaglyph switches
+        parameters.setSaveLr(swSaveLr.isChecked());
+        parameters.setSaveAnaglyph(swSaveAnaglyph.isChecked());
 
         // Camera Mode from RadioGroup
         checkedId = rgCameraMode.getCheckedRadioButtonId();

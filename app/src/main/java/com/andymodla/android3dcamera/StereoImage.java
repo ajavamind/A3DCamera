@@ -178,8 +178,8 @@ public class StereoImage {
         }
 
         // Create output bitmap and set all pixels at once
-        Bitmap bufA = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
-        bufA.setPixels(pixelsA, 0, w, 0, 0, w, h);
+        Bitmap bufA = Bitmap.createBitmap(w-(abs(horzOffset)), h, Bitmap.Config.ARGB_8888);
+        bufA.setPixels(pixelsA, 0, w, 0, 0, w-(abs(horzOffset)), h);
 
         return bufA;
     }
