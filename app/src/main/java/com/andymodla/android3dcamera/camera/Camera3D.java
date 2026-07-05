@@ -159,11 +159,12 @@ public class Camera3D {
             0.8000f, 0.9063f, 0.8667f, 0.9389f, 0.9333f, 0.9701f, 1.0000f, 1.0000f};
 
     private int exposureCompensationIndex = 0;
+
     private static final CaptureRequest.Key<Integer> EXPOSURE_METERING = new CaptureRequest.Key<>("org.codeaurora.qcamera3.exposure_metering.exposure_metering_mode", Integer.TYPE);
     private static final int FRAME_AVERAGE = 0; // normal behavior
     private static final int CENTER_WEIGHTED = 1;
     private static final int SPOT_METERING = 2;
-    int meteringIndex = 1;  // default
+    //int meteringIndex = 1;  // default
     static final int[] METERING = {FRAME_AVERAGE, CENTER_WEIGHTED, SPOT_METERING};
     String[] METERING_NAMES = {"FRAME AVERAGE", "CENTER WEIGHTED", "SPOT METERING"};
 
@@ -707,7 +708,7 @@ public class Camera3D {
                                     previewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_OFF);
                                 }
 
-                                previewRequestBuilder.set(EXPOSURE_METERING, METERING[meteringIndex]);
+                                previewRequestBuilder.set(EXPOSURE_METERING, METERING[parameters.getExposureMeteringIndex()]);
                                 previewRequestBuilder.set(CaptureRequest.LENS_FOCUS_DISTANCE, FOCUS_DISTANCE[parameters.getFocusDistanceIndex()]);
 
                                 previewRequestBuilder.set(CaptureRequest.NOISE_REDUCTION_MODE, 1); // NOISE_REDUCTION_MODE
@@ -815,7 +816,7 @@ public class Camera3D {
                     //previewRequestBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, new Range<>(30, 30));
                     //previewRequestBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, bestRange);
                     //previewRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE, CameraMetadata.CONTROL_AE_MODE_ON_LOW_LIGHT_BOOST_BRIGHTNESS_PRIORITY); // Android 15+
-                    previewRequestBuilder.set(EXPOSURE_METERING, METERING[meteringIndex]);
+                    previewRequestBuilder.set(EXPOSURE_METERING, METERING[parameters.getExposureMeteringIndex()]);
 
                     // Set scene mode
                     previewRequestBuilder.set(CaptureRequest.CONTROL_EXTENDED_SCENE_MODE, 1); // sync left and right cameras
@@ -946,7 +947,7 @@ public class Camera3D {
                 captureBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_OFF);
             }
 
-            captureBuilder.set(EXPOSURE_METERING, METERING[meteringIndex]);
+            captureBuilder.set(EXPOSURE_METERING, METERING[parameters.getExposureMeteringIndex()]);
             captureBuilder.set(CaptureRequest.LENS_FOCUS_DISTANCE, FOCUS_DISTANCE[parameters.getFocusDistanceIndex()]);
 
             captureBuilder.set(CaptureRequest.NOISE_REDUCTION_MODE, 1); // NOISE_REDUCTION_MODE
@@ -1102,9 +1103,10 @@ public class Camera3D {
         Toast.makeText(context, FOCUS_DISTANCE_NAMES[focusDistanceIndex], Toast.LENGTH_SHORT).show();
     }
 
-    public void setMeteringIndex() {
-        meteringIndex++;
+    public void setExposureMeteringIndex() {
+        int meteringIndex = parameters.getExposureMeteringIndex() + 1;
         if (meteringIndex >= METERING.length) meteringIndex = 0;
+        parameters.setExposureMeteringIndex(meteringIndex);
         Toast.makeText(context, METERING_NAMES[meteringIndex], Toast.LENGTH_SHORT).show();
 
     }

@@ -3,6 +3,7 @@
 <!-- Copyright 2025-2026 Andy Modla All Rights Reserved -->
 
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#1A1A1A"
@@ -129,14 +130,14 @@
 
             <Switch
                 android:id="@+id/sw_sound_on"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:thumbTint="#4FC3F7"
-                android:trackTint="#2A4FC3F7" />
+                android:layout_width="60dp"
+                android:layout_height="32dp"
+                android:thumbTint="@color/switch_thumb_selector"
+                android:trackTint="@color/switch_track_selector" />
         </LinearLayout>
 
 
-        <!-- Countdown Enabled -->
+        <!-- Countdown Enable -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -153,7 +154,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Countdown Enabled"
+                    android:text="Countdown Enable"
                     android:textColor="#E0E0E0"
                     android:textSize="14sp" />
 
@@ -167,14 +168,15 @@
 
             <Switch
                 android:id="@+id/sw_count_down_enabled"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:thumbTint="#4FC3F7"
-                android:trackTint="#2A4FC3F7" />
+                android:layout_width="60dp"
+                android:layout_height="32dp"
+                android:thumbTint="@color/switch_thumb_selector"
+                android:trackTint="@color/switch_track_selector" />
         </LinearLayout>
 
         <!-- Countdown Timer -->
         <TextView
+		android:id="@+id/tv_countdown_value"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Countdown Timer (seconds)"
@@ -190,34 +192,18 @@
             android:textSize="11sp"
             android:layout_marginBottom="4dp" />
 
-        <LinearLayout
+        <com.google.android.material.slider.Slider
+            android:id="@+id/slider_countdown"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginBottom="12dp">
-
-            <SeekBar
-                android:id="@+id/seek_countdown"
-                android:layout_width="0dp"
-                android:layout_height="24dp"
-				android:minHeight="24dp"
-				android:maxHeight="24dp"
-                android:layout_weight="1"
-                android:thumbTint="#4FC3F7"
-                android:progressTint="#4FC3F7"
-                android:secondaryProgressTint="#1A4FC3F7" />
-
-            <TextView
-                android:id="@+id/tv_countdown_value"
-                android:layout_width="50dp"
-                android:layout_height="wrap_content"
-                android:text="0s"
-                android:textColor="#FFFFFF"
-                android:textSize="14sp"
-                android:gravity="end"
-                android:layout_marginStart="8dp" />
-        </LinearLayout>
+			android:layout_marginBottom="12dp"
+            android:value="3.0"
+            android:valueFrom="0"
+            android:valueTo="30"
+            android:stepSize="1"
+            app:labelBehavior="withinBounds"
+            app:tickVisible="true"
+            />
 
         <!-- Focus Distance Index (RadioGroup) -->
         <TextView
@@ -337,7 +323,7 @@
                 android:textStyle="bold" />
         </LinearLayout>
 
-        <!-- Broadcast Control Enabled -->
+        <!-- Broadcast Control Enable -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -354,7 +340,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Broadcast Control"
+                    android:text="Broadcast Enable"
                     android:textColor="#E0E0E0"
                     android:textSize="14sp" />
 
@@ -368,10 +354,10 @@
 
             <Switch
                 android:id="@+id/sw_udp_control_enabled"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:thumbTint="#4FC3F7"
-                android:trackTint="#2A4FC3F7" />
+                android:layout_width="60dp"
+                android:layout_height="32dp"
+                android:thumbTint="@color/switch_thumb_selector"
+                android:trackTint="@color/switch_track_selector" />
         </LinearLayout>
 
         <!-- Broadcast Transmit -->
@@ -398,17 +384,17 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Transmit or receive (performs a restart)"
+                    android:text="Receive (off - default) or Transmit (on) (performs a restart)"
                     android:textColor="#9E9E9E"
                     android:textSize="11sp" />
             </LinearLayout>
 
             <Switch
                 android:id="@+id/sw_udp_transmit"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:thumbTint="#4FC3F7"
-                android:trackTint="#2A4FC3F7" />
+                android:layout_width="60dp"
+                android:layout_height="32dp"
+                android:thumbTint="@color/switch_thumb_selector"
+                android:trackTint="@color/switch_track_selector" />
         </LinearLayout>
 		
 		
@@ -558,10 +544,10 @@
 
             <Switch
                 android:id="@+id/sw_blank_screen"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:thumbTint="#4FC3F7"
-                android:trackTint="#2A4FC3F7" />
+                android:layout_width="60dp"
+                android:layout_height="32dp"
+                android:thumbTint="@color/switch_thumb_selector"
+                android:trackTint="@color/switch_track_selector" />
         </LinearLayout>
 
 
@@ -618,10 +604,10 @@
 
             <Switch
                 android:id="@+id/sw_mirror"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:thumbTint="#4FC3F7"
-                android:trackTint="#2A4FC3F7" />
+                android:layout_width="60dp"
+                android:layout_height="32dp"
+                android:thumbTint="@color/switch_thumb_selector"
+                android:trackTint="@color/switch_track_selector" />
         </LinearLayout>
 
         <!-- Auto Review -->
@@ -655,10 +641,10 @@
 
             <Switch
                 android:id="@+id/sw_auto_review"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:thumbTint="#4FC3F7"
-                android:trackTint="#2A4FC3F7" />
+                android:layout_width="60dp"
+                android:layout_height="32dp"
+                android:thumbTint="@color/switch_thumb_selector"
+                android:trackTint="@color/switch_track_selector" />
         </LinearLayout>
 
         <!-- AI Edit -->
@@ -692,10 +678,10 @@
 
             <Switch
                 android:id="@+id/sw_ai_edit"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:thumbTint="#4FC3F7"
-                android:trackTint="#2A4FC3F7" />
+                android:layout_width="60dp"
+                android:layout_height="32dp"
+                android:thumbTint="@color/switch_thumb_selector"
+                android:trackTint="@color/switch_track_selector" />
         </LinearLayout>
 
         <!-- ============================================================ -->
@@ -845,10 +831,10 @@
 
             <Switch
                 android:id="@+id/sw_sbs_crop_print"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:thumbTint="#4FC3F7"
-                android:trackTint="#2A4FC3F7" />
+                android:layout_width="60dp"
+                android:layout_height="32dp"
+                android:thumbTint="@color/switch_thumb_selector"
+                android:trackTint="@color/switch_track_selector" />
         </LinearLayout>
         </LinearLayout>
 

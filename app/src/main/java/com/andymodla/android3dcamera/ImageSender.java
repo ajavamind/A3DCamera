@@ -24,21 +24,23 @@ public class ImageSender {
 
     // constructor
     public ImageSender(Context context, Parameters parameters, UdpRemoteControl udpRemoteControl) {
-    //nsdManager = (NsdManager) context.getSystemService(Context.NSD_SERVICE);
+        //nsdManager = (NsdManager) context.getSystemService(Context.NSD_SERVICE);
         this.parameters = parameters;
         this.context = context;
         this.udpRemoteControl = udpRemoteControl;
     }
 
     public void sendImageUrl(String ip, int port, String imageUrl) {
-        if (ip ==null || ip.isEmpty() || port <= 0 || imageUrl == null || imageUrl.isEmpty())
+        if (imageUrl == null || imageUrl.isEmpty()) {
+            Log.d(TAG, "sendImageUrl null or empty imageUrl");
             return;
+        }
         this.targetImageUrl = imageUrl;
         try {
-            if (parameters.getUdpTransmit()){
+            if (parameters.getUdpTransmit()) {
                 sendUrlBroadcast(targetImageUrl);
             } else {
-                sendUrlToReceiver(ip, port, targetImageUrl);
+                //sendUrlToReceiver(ip, port, targetImageUrl);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -77,6 +79,8 @@ public class ImageSender {
 //    }
 
     private void sendUrlToReceiver(String ip, int port, String urlToSend) {
+        if (ip == null || ip.isEmpty() || port <= 0 || urlToSend == null || urlToSend.isEmpty())
+            return;
         // Construct the URL for our HTTPD server
         String fullUrl = "http://" + ip + ":" + port + "?imageUrl=" + urlToSend;
         // Creates a new client sharing the same connection pool but with custom timeouts
@@ -103,7 +107,7 @@ public class ImageSender {
         }).start();
     }
 
-    private void sendUrlBroadcast( String urlToSend) {
+    private void sendUrlBroadcast(String urlToSend) {
         // Construct the URL for our UDP transmitter
 
         Log.d(TAG, "sendUrlBroadcast: " + urlToSend);

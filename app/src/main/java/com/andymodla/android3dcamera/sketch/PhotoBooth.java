@@ -1111,17 +1111,17 @@ public class PhotoBooth extends PApplet {
         int y = mouseY;
         // upper right corner is shutter release invisible button
         if (x > MainActivity.HIDDEN_SHUTTER_BUTTON_X && y < MainActivity.HIDDEN_SHUTTER_BUTTON_Y) {
-            if (DEBUG) PApplet.println("mouseReleased shutter release");
+            //if (DEBUG) PApplet.println("mouseReleased shutter release");
             mainActivity.capturePhoto();
         // upper left corner is settings menu invisible button
         } else if (x < MainActivity.HIDDEN_SETTINGS_BUTTON_X && y < MainActivity.HIDDEN_SETTINGS_BUTTON_Y) {
-            if (DEBUG) PApplet.println("mouseReleased photo booth settings");
+            //if (DEBUG) PApplet.println("mouseReleased photo booth settings");
             mainActivity.launchSettings();
         } else if (x > (frameX+(XBP_DISPLAY_FRAME_WIDTH/2)-100) && x < (frameX +(XBP_DISPLAY_FRAME_WIDTH/2) +100) && y > (XBP_DISPLAY_FRAME_HEIGHT/2 - 100) && y < (XBP_DISPLAY_FRAME_HEIGHT/2 + 100)) {
-            if (DEBUG) PApplet.println("mouseReleased photo booth show grid");
+            //if (DEBUG) PApplet.println("mouseReleased photo booth show grid");
             processKeyCode(KeyEvent.KEYCODE_G, 'G');
         }
-        if (DEBUG) PApplet.println("mouseReleased photo booth x="+x+" y="+y);
+        //if (DEBUG) PApplet.println("mouseReleased photo booth x="+x+" y="+y);
     }
 //    void nextImage() {
 //        if (currentIndex < leftImageFiles.size() - 1) {

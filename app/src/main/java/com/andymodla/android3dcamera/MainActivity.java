@@ -822,7 +822,7 @@ public class MainActivity extends AppCompatActivity {
                     return true;
                 }
                 camera.closeCamera();
-                camera.setMeteringIndex();
+                camera.setExposureMeteringIndex();
                 camera.openCamera();
                 return true;
             case FOCUS_DISTANCE_KEY: // change focus distance, should be sub menu
@@ -1298,8 +1298,7 @@ public class MainActivity extends AppCompatActivity {
         // Since min SDK is 31, no need to check Build.VERSION.SDK_INT for older versions
         if (Environment.isExternalStorageManager()) {
             // Permission is already present; perform your file logic
-
-            Toast.makeText(this, "File Permission already granted", Toast.LENGTH_SHORT).show();
+            //Toast.makeText(this, "File Permission already granted", Toast.LENGTH_SHORT).show();
         } else {
             // Permission is missing; ask programmatically
             try {

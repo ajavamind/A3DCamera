@@ -53,10 +53,7 @@ public class Media {
     private volatile boolean crossEye = false;  // reverse SBS output to cross eye
 
     // Image Save File modes
-    // at least one of these booleans must be true;
-    private volatile boolean saveAnaglyph = true;
     private volatile boolean saveSBS = true;
-    private volatile boolean saveLR = true;
 
     // save jpg image quality
     private static final int JPEG_QUALITY = 100;
@@ -214,9 +211,11 @@ public class Media {
             Log.e(TAG, "Image decoding failed! " + (left ? "left" : "right"));
             return null;
         } else {
-            if (parameters.isBasicCameraMode() || parameters.isAnaglyphCameraMode()) {
-                Log.d(TAG, "SaveImageFile not saved " + filename);
-                return bitmap;
+            if (!parameters.getSaveLr()) {
+                if (!parameters.isPhotoBoothCameraMode()) {
+                    Log.d(TAG, "SaveImageFile not saved " + filename);
+                    return bitmap;
+                }
             }
         }
         Log.d(TAG, "SaveImageFile " + filename);
@@ -304,7 +303,7 @@ public class Media {
             if (((MainActivity) context).imageSender != null) {
                 String imageUrl = "http://"+((MainActivity) context).hostIpAddr+":"+((MainActivity) context).hostPort+File.separator+filename;
                 Log.d(TAG, "imageSender.sendImageUrl " + imageUrl);
-                //((MainActivity) context).imageSender.sendImageUrl(parameters.getReceiverIp(), parameters.getReceiverPort(), imageUrl );
+                ((MainActivity) context).imageSender.sendImageUrl(null, parameters.getReceiverPort(), imageUrl );
             }
 
         } catch (IOException e) {
@@ -329,9 +328,10 @@ public class Media {
         }
 
         // Save Anaglyph image and recycle Anaglyph bitmap
-        if (parameters.isPhotoBoothCameraMode() ) {
+        if (parameters.isPhotoBoothCameraMode() || parameters.getSaveAnaglyph()) {
             reviewAnaglyph = createAndSaveAnaglyph(PHOTO_PREFIX + timestamp, leftBitmap, rightBitmap);
         }
+
         if (saveSBS) {
             int counter = ((MainActivity) context).getContinuousCounter();
             Log.d(TAG, "ContinuousCounter=" + counter);

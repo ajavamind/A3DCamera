@@ -11,6 +11,21 @@ package com.andymodla.android3dcamera;
    For String default use "".
    For boolean default use false.
    For integer default use 0. Please update this file to  add these new parameters.
+
+ ok I updated files.
+ Update app/src/main/java/com/andymodla/android3dcamera/Parameters.java, add more parameters following the pattern
+ established
+ with similar data types.
+ For String default use "".
+ For boolean default use false.
+ For integer default use 0.
+ Please update this file to  add these new parameters:
+ boolean saveLR
+ boolean saveAnaglyph
+ Look in Media.java for saveLr and saveAnaglyph description and parameter values.
+ Note that these two parameters override the default usage of LR and anaglyph file saving set by the cameraMode.
+
+
  */
 
 import static java.util.Arrays.*;
@@ -75,8 +90,7 @@ class ParamStore {
             //public boolean isPhotoBooth = false;
             public boolean isMirror = true; // for photo booth only
 
-            //private String receiverIp = "";  // device IP address to receive URL link to saved photo
-            private int receiverPort = 8000;  // device port to receive URL link to saved photo
+            private int receiverPort = 8000;  // device port to receive broadcast messages
 
             private boolean isBlankScreen = false;  // for display covered
 
@@ -99,6 +113,9 @@ class ParamStore {
             //public static final float sbsCrop = 1.777777778f;  // aspect ratio for SBS crop to show SBS in 1080p or 2160p (4K) screen
             //public static final float sbsCrop = 2.0f; // aspect ratio for SBS crop to show SBS in square print
             private int focusDistanceIndex = 0;
+            private int exposureMeteringIndex = 0;
+            private boolean saveLR = false;
+            private boolean saveAnaglyph = false;
 
             // default constructor
             public Parameters(SharedPreferences prefs, Context context) {
@@ -162,6 +179,9 @@ class ParamStore {
                 readAutoReview();
                 readSbsCropPrint();
                 readFocusDistanceIndex();
+                readExposureMeteringIndex();
+                readSaveLr();
+                readSaveAnaglyph();
             }
 
             //------------------------------------------------------------------------------
@@ -201,27 +221,6 @@ class ParamStore {
             }
 
             //------------------------------------------------------------------------------
-//            public void readReceiverIp() {
-//                receiverIp = prefs.getString(receiverIpStore.name, receiverIpStore.defaultValue);
-//            }
-//
-//            public String getReceiverIp() {
-//                return receiverIp;
-//            }
-//
-//            public void setReceiverIp(String receiverIp) {
-//                this.receiverIp = receiverIp;
-//                // Save to SharedPreferences
-//                SharedPreferences.Editor editor = prefs.edit();
-//                editor.putString(receiverIpStore.name, receiverIp);
-//                editor.commit(); // asynchronous save
-//                ((MainActivity) this.context).updateParameters();
-//            }
-
-            //------------------------------------------------------------------------------
-//            public void readIsPhotoBooth() {
-//                isPhotoBooth = prefs.getBoolean(isPhotoBoothStore.name, Boolean.parseBoolean(isPhotoBoothStore.defaultValue));
-//            }
 
             public boolean isBasicCameraMode() {
                 return (getCameraMode() == BASIC_MODE);
@@ -234,18 +233,6 @@ class ParamStore {
             public boolean isPhotoBoothCameraMode() {
                 return (getCameraMode() == PHOTO_BOOTH_MODE);
             }
-
-//            public void setIsPhotoBooth(boolean isPhotoBooth) {
-//                boolean changed = (this.isPhotoBooth != isPhotoBooth);
-//                this.isPhotoBooth = isPhotoBooth;
-//                // Save to SharedPreferences
-//                SharedPreferences.Editor editor = prefs.edit();
-//                editor.putBoolean(isPhotoBoothStore.name, isPhotoBooth);
-//                editor.commit(); // synchronous save: do it now and return
-//                //editor.apply();   // asynchronous save
-//                // Needs restart to reinitialize the application (only if value actually changed)
-//                if (changed) ((MainActivity) context).restartApp();
-//            }
 
             //------------------------------------------------------------------------------
             public void readCameraMode() {
@@ -535,6 +522,60 @@ class ParamStore {
             }
 
             //------------------------------------------------------------------------------
+            // Exposure Metering Index Parameter
+            public void readExposureMeteringIndex() {
+                exposureMeteringIndex = prefs.getInt(exposureMeteringIndexStore.name, Integer.parseInt(exposureMeteringIndexStore.defaultValue));
+            }
+
+            public int getExposureMeteringIndex() {
+                return exposureMeteringIndex;
+            }
+
+            public void setExposureMeteringIndex(int exposureMeteringIndex) {
+                this.exposureMeteringIndex = exposureMeteringIndex;
+                SharedPreferences.Editor editor = prefs.edit();
+                editor.putInt(exposureMeteringIndexStore.name, exposureMeteringIndex);
+                editor.commit(); // synchronous save
+                ((MainActivity) this.context).updateParameters();
+            }
+
+            //------------------------------------------------------------------------------
+            // Save LR Parameter
+            public void readSaveLr() {
+                saveLR = prefs.getBoolean(saveLrStore.name, Boolean.parseBoolean(saveLrStore.defaultValue));
+            }
+
+            public boolean getSaveLr() {
+                return saveLR;
+            }
+
+            public void setSaveLr(boolean saveLR) {
+                this.saveLR = saveLR;
+                SharedPreferences.Editor editor = prefs.edit();
+                editor.putBoolean(saveLrStore.name, saveLR);
+                editor.commit(); // synchronous save
+                ((MainActivity) this.context).updateParameters();
+            }
+
+            //------------------------------------------------------------------------------
+            // Save Anaglyph Parameter
+            public void readSaveAnaglyph() {
+                saveAnaglyph = prefs.getBoolean(saveAnaglyphStore.name, Boolean.parseBoolean(saveAnaglyphStore.defaultValue));
+            }
+
+            public boolean getSaveAnaglyph() {
+                return saveAnaglyph;
+            }
+
+            public void setSaveAnaglyph(boolean saveAnaglyph) {
+                this.saveAnaglyph = saveAnaglyph;
+                SharedPreferences.Editor editor = prefs.edit();
+                editor.putBoolean(saveAnaglyphStore.name, saveAnaglyph);
+                editor.commit(); // synchronous save
+                ((MainActivity) this.context).updateParameters();
+            }
+
+            //------------------------------------------------------------------------------
             public int getReceiverPort() {
                 return receiverPort;
             }
@@ -551,12 +592,6 @@ class ParamStore {
                     "vt", "verticalOffset", "Vertical Offset",
                     "getVerticalOffset", "setVerticalOffset", int.class, "0",
                     "Camera left and right image vertical offset alignment for 3D camera correction"
-            );
-
-            ParamStore receiverIpStore = new ParamStore(
-                    "rip", "receiverIp", "Receiver IP",
-                    "getReceiverIp", "setReceiverIp", String.class, "",
-                    "The IP Address of the device to receive a URL Link for a saved photo."
             );
 
             ParamStore isPhotoBoothStore = new ParamStore(
@@ -661,11 +696,29 @@ class ParamStore {
                     "Set the focus distance index: 0 HyperFocal Focus Distance 1.7 m; 1 Photo Booth Focus Distance 550mm; 2 Macro Focus Distance 100mm; 3 Auto Focus Distance"
             );
 
-            ParamStore[] paramStores = {parallaxOffsetStore, verticalOffsetStore, receiverIpStore,
+            ParamStore exposureMeteringIndexStore = new ParamStore(
+                    "emi", "exposureMeteringIndex", "Exposure Metering Index",
+                    "getExposureMeteringIndex", "setExposureMeteringIndex", int.class, "0",
+                    "Set the exposure metering mode: 0 Frame Average (normal behavior); 1 Center Weighted; 2 Spot Metering"
+            );
+
+            ParamStore saveLrStore = new ParamStore(
+                    "slr", "saveLR", "Save LR",
+                    "getSaveLr", "setSaveLr", boolean.class, "false",
+                    "Override cameraMode to enable/disable saving Left and Right image files. When true saves LR images regardless of the camera mode; when false use camera mode to determine LR save."
+            );
+
+            ParamStore saveAnaglyphStore = new ParamStore(
+                    "san", "saveAnaglyph", "Save Anaglyph",
+                    "getSaveAnaglyph", "setSaveAnaglyph", boolean.class, "false",
+                    "Override cameraMode to enable/disable saving Anaglyph image files. When true saves anaglyph images regardless of mode; when false use camera mode to determine anaglyph save."
+            );
+
+            ParamStore[] paramStores = {parallaxOffsetStore, verticalOffsetStore,
                     isPhotoBoothStore, isBlankScreenStore, isSoundOnStore, isAiEditStore,
                     title1Store, title2Store, inst1Store, inst2Store, countdownTimerStore, isMirrorStore,
                     countDownEnabledStore, udpControlEnabledStore, udpTransmitStore, autoReviewStore, sbsCropPrintStore,
-                    focusDistanceIndexStore};
+                    focusDistanceIndexStore, exposureMeteringIndexStore, saveLrStore, saveAnaglyphStore};
 
             // look up parameter by abbreviation and return its current value
             public String findParam(String abbr, String value, boolean set) {

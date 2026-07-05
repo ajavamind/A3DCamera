@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.Android3DCamera" parent="Theme.AppCompat.DayNight.DarkActionBar" >
+    <style name="Theme.Android3DCamera" parent="Theme.MaterialComponents.DayNight.DarkActionBar" >
     <item name="android:windowBackground">@color/black</item>
         <item name="android:statusBarColor">@color/black</item>
 

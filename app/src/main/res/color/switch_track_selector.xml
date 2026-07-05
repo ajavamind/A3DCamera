@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Track color: bright blue when ON, muted gray when OFF -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:color="#4FC3F7" android:state_checked="true" />
+    <item android:color="#555555" />
+</selector>

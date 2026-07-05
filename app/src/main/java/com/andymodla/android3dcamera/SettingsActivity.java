@@ -15,6 +15,8 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.android.material.slider.Slider;
+
 /**
  * Settings Activity for A3DCamera
  * Provides a GUI to view and change all application parameters.
@@ -37,7 +39,7 @@ public class SettingsActivity extends AppCompatActivity {
     private TextView tvParallaxValue;
     private SeekBar seekVertical;
     private TextView tvVerticalValue;
-    private SeekBar seekCountdown;
+    private Slider sliderCountdown;
     private TextView tvCountdownValue;
 
     // --- RadioGroup for focus distance ---
@@ -134,7 +136,7 @@ public class SettingsActivity extends AppCompatActivity {
         tvParallaxValue = findViewById(R.id.tv_parallax_value);
         seekVertical = findViewById(R.id.seek_vertical);
         tvVerticalValue = findViewById(R.id.tv_vertical_value);
-        seekCountdown = findViewById(R.id.seek_countdown);
+        sliderCountdown = findViewById(R.id.slider_countdown);
         tvCountdownValue = findViewById(R.id.tv_countdown_value);
 
         // RadioGroup
@@ -191,10 +193,8 @@ public class SettingsActivity extends AppCompatActivity {
         seekVertical.setProgress(parameters.getVerticalOffset());
         tvVerticalValue.setText(String.valueOf(parameters.getVerticalOffset()));
 
-        seekCountdown.setMin(0);
-        seekCountdown.setMax(30);
-        seekCountdown.setProgress(parameters.getCountdownTimer());
-        tvCountdownValue.setText(parameters.getCountdownTimer() + "s");
+        sliderCountdown.setValue(parameters.getCountdownTimer());
+        tvCountdownValue.setText("Countdown Timer "+parameters.getCountdownTimer() + " (seconds)");
 
         // Focus distance index: 0=hyperFocal, 1=photoBooth, 2=macro, 3=auto
         int fdi = parameters.getFocusDistanceIndex();
@@ -259,14 +259,9 @@ public class SettingsActivity extends AppCompatActivity {
             @Override public void onStopTrackingTouch(SeekBar seekBar) { }
         });
 
-        // --- Countdown Timer SeekBar ---
-        seekCountdown.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                tvCountdownValue.setText(progress + "s");
-            }
-            @Override public void onStartTrackingTouch(SeekBar seekBar) { }
-            @Override public void onStopTrackingTouch(SeekBar seekBar) { }
+        // --- Countdown Timer Slider (Material, label shows value on thumb) ---
+        sliderCountdown.addOnChangeListener((slider, value, fromUser) -> {
+            tvCountdownValue.setText("Countdown Timer "+((int) value) + " (seconds)");
         });
 
         // --- EditText: save immediately when focus is lost (tab out or back press) ---
@@ -308,7 +303,7 @@ public class SettingsActivity extends AppCompatActivity {
         // --- Integers ---
         parameters.setParallaxOffset(seekParallax.getProgress());
         parameters.setVerticalOffset(seekVertical.getProgress());
-        parameters.setCountdownTimer(seekCountdown.getProgress());
+        parameters.setCountdownTimer(((int) sliderCountdown.getValue()));
 
         // Focus distance from RadioGroup
         int checkedId = rgFocusDistance.getCheckedRadioButtonId();
