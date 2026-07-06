@@ -19,16 +19,22 @@ It is a starting point for special purpose **_experimental_** 3D camera apps usi
 It's a software playground for experimenting. See Experiments section below.
 
 ## Design Goals
+The overriding goal is to have a 3D camera app that can be used in a stereoscope to take and review photos, and supports
+a live view 3D photo booth operation with a printer. These are use cases where the XBP cannot be accessed by touch.
+Captured photos can be automatically sent to local 3D display devices for review or editing.
+
 ### Use Cases
 The intended uses for the app are situations where the camera is not in your hands and the screen cannot or should not be touched or when the app display is not a touch screen. 
 The specific uses I would like to have with a 3D camera app are:
 
-* 3D Photo Booth
-* 3D live view, photo capture, or photo viewing using any stereoscope. This worked with London Stereoscopic Company OWL stereoscope using adapters to hold the BPO in place.
-* Live View Anaglyph 3D for finding the stereo window.
-* Remote control of the camera using Bluetooth or a local Wi-Fi network
+* 3D Photo Booth with a 6x4 photo printer.
+* 3D live view, photo capture, or photo viewing using any stereoscope. This worked with London Stereoscopic Company OWL stereoscope using adapters to hold the BPO in place. This includes the Mercury Works phone viewer stereoscope.
+* Live View and Review Anaglyph 3D for finding and demonstrating the stereo window. This would be usedful in a photo booth and live 3D demonstrations.
+* Remote control of the camera using Bluetooth or on a local Wi-Fi network
 * Simultaneous multiple 2D and 3D cameras remote control
-* Sharing photos via email, for direct printing SBS or Anaglyph, or for review and alignment using 3D apps like [3DSteroidPro](https://play.google.com/store/apps/details?id=jp.suto.stereoroidpro&hl=en_US) and for sharing with custom 3D apps and networked 3D tablets and devices.
+* Display and download captured 3D images on 3D display devices/tablets/monitors connected to the local Wi-Fi network used by XBP.
+* Trigger a twin XBP simultaneously connected to the local Wi-Fi network established by XBP Wi-Fi hotspot.
+* Sharing photos via email, for direct printing SBS or Anaglyph, or for review and alignment using 3D apps like [3DSteroidPro](https://play.google.com/store/apps/details?id=jp.suto.stereoroidpro&hl=en_US) and for sharing with custom 3D apps.
 * The default display mode shows the stereo image without GUI controls or other display information to allow free-viewing and stereoscopes or Anaglyph glasses. The display of the 3D parallel L/R image should be centered on the display and no larger than 130 cm wide for a stereoscope or for free-viewing the image to minimize eye strain. 
 * Turn off the display, while allowing the camera to continue functioning with remote control. Blanking the screen is for photographing wild life without disturing them. 
 Blanking the screen helps conserve battery power with long interval timer captures. (Only implemented with Photo Booth mode)
@@ -51,14 +57,19 @@ With keyboard input, a command line interface is present for debugging and camer
 ## Camera Functions
 ### Camera Mode
 Captures 3D photos only. A 3D video option is not implemented.
+There are three camera modes:
+1. Basic - Simple auto exposure, fixed focus, point and shoot camera for walk around use. SBS capture with full sensor size, manual preset parallax or vertical alignment adjustment supported for save SBS, but not during live view display. Option to save anaglyph and single Left and right photos.
+2. Stereoscope - Basic camera plus a subset of full Photo Booth mode with SBS, Anaglyph, Left and Right capture. Manual preset parallax and vertical alignment supported with save SBS and live view. Option to save anaglyph and single Left and right photos.
+3. Photo Booth - Stereoscope mode plus additional features for a photo booth. Default always save anaglyph and single Left and right photos.
 
 ### Focus
-The camera is set to fixed focus of approximately 166 cm, which is the hyper focal distance of the lens.
+The camera app is fixed focus with selected distances. The camera is set to fixed focus of approximately 166 cm, which is the hyper focal distance of the lens.
 Note the code uses 0.60356647 diopters to set the hyper focal distance.
 The hyper focal distance in cm is one divided by this value.
 It is considered sharp from 83 cm (half the hyperfocal distance) and beyond.
 The camera reports its LENS_FOCUS_DISTANCE_CALIBRATION as APPROXIMATE.
-The focus distance options are hyper focal 1.66 meters, Photo Booth 1 meter, and macro 100 cm. Macro may not be useful for 3D but shows how the lens can focus close.
+
+The focus distance options are hyper focal 1.66 meters, Photo Booth 5.50 centimeters, and macro 100 cm. Macro may not be useful for 3D but shows how the lens can focus close.
 
 ### Exposure
 Auto exposure sets the best subject lighting by automatically changing shutter speed and ISO. There is no manual exposure control implemented. 
@@ -71,12 +82,12 @@ The app stores 3D photos in several formats. Left and Right Camera images are st
 Side by Side (SBS) parallel left and right images are stored as "_2x1" suffix filename jpg files.
 Anaglyph 3D images are stored as "_ana" suffix filename jpg files.
 
-* The A3DCamera folder stores the SBS photos.
-* The A3DCamera/Anaglyph subfolder stores the Anaglyph photos.
-* The A3DCamera/LR subfolder stores the single left and right photos.
+* The A3DCamera folder stores SBS photos.
+* The A3DCamera/Anaglyph subfolder stores Anaglyph photos as a settings option.
+* The A3DCamera/LR subfolder stores single left and right photos as a settings option. 
 
 Left and right images contain limited EXIF capture information: for example- IMG20250904_r.jpg f2.2, 1/3 second, 2.16mm, ISO413
-Each camera photo captured is 4080 x 3072 pixels, the full maximum sensor size of each left and right camera. Note the aspect ratio is not exactly 4:3.
+Each left and right camera photo captured is 4080 x 3072 pixels, this is the full maximum sensor size of each left and right camera. Note the aspect ratio is not exactly 4:3. 
 
 ### Display
 The app display is a centered viewfinder sized to permit use of stereoscopic "free-viewing". This is a learned eye relaxing technique you can use to help see your subject in 3D with parallal SBS left and right eye images. 
@@ -87,17 +98,17 @@ When free-viewing I sometimes use a pair of +4.0 reading glasses to get closer t
 
 The SBS display is sized at 130 mm for viewing in a stereoscope.
 
-The app does not vertically align the left and right images nor adjust the stereo window in Live view mode. As a hobbyist app the user is encouraged to use [Stereo Photo Maker (English)](https://stereo.jpn.org/eng/stphmkr/) 
+The app does not vertically align the left and right images nor adjust the stereo window in Basic mode. As a hobbyist app the user is encouraged to use [Stereo Photo Maker (English)](https://stereo.jpn.org/eng/stphmkr/) 
 to align left and right images vertically, correct any horizontal perspective distortion, and set the most pleasing stereo window.
 
-The app implements a image review feature by launching a separate app like 3DSteroidPro.
+The Basic camera mode implements a image review feature by launching a separate app like 3DSteroidPro.
 
 When using the Command Line feature below you can set the vertical misalignment and the stereo window to your preference.
 These values persist after app restart and adjust the saved photos, except for single left and right photos.
 
 ### Camera Control
 #### On Camera
-Take photos with the camera key or volume up key upon key release. In photo booth mode the volume key changes function to review and the volume down key rotates live view, anaglyph, and left/right photos.
+Take photos with the camera key (when not set to launch the native 3D app) or volume up key upon key release. In photo booth mode the volume up key changes function to review and the volume down key rotates live view SBS, anaglyph, and left/right photos.
 
 There is an invisible button at the top right of the screen for touch photo capture during live view.
 
