@@ -30,6 +30,7 @@ import android.media.ImageReader;
 import android.media.ImageReader.OnImageAvailableListener;
 import android.media.ToneGenerator;
 import android.os.Build;
+import android.os.Debug;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
@@ -79,7 +80,7 @@ public class Camera3D {
     private CameraDevice mCameraDevice;
     private CameraCaptureSession mCameraCaptureSession;
     private CaptureRequest.Builder previewRequestBuilder;
-
+    private CaptureRequest.Builder captureBuilder;
     private HandlerThread mCameraThread;
     private Handler mCameraHandler;
     //private Executor cameraExecutor;
@@ -115,7 +116,6 @@ public class Camera3D {
     public static int XBP_CAMERA_WIDTH_6x4 = 1080; // small for performance - print aspect ratio
     public static int XBP_CAMERA_HEIGHT_6x4 = 720; // small for performance
 
-    //public volatile int focusDistanceIndex = 1;  // default for Photo Booth
     public volatile int focusDistanceIndex = 0;  // default HYPERFOCAL camera
     static final float MACRO_FOCUS_DISTANCE = 10.0f;  // 100mm
     static final float HYPERFOCAL_FOCUS_DISTANCE = 0.60356647f;  // 1.66 meters
@@ -159,12 +159,13 @@ public class Camera3D {
             0.8000f, 0.9063f, 0.8667f, 0.9389f, 0.9333f, 0.9701f, 1.0000f, 1.0000f};
 
     private int exposureCompensationIndex = 0;
+    private int minExposureIndex;
+    private int maxExposureIndex;
 
     private static final CaptureRequest.Key<Integer> EXPOSURE_METERING = new CaptureRequest.Key<>("org.codeaurora.qcamera3.exposure_metering.exposure_metering_mode", Integer.TYPE);
     private static final int FRAME_AVERAGE = 0; // normal behavior
     private static final int CENTER_WEIGHTED = 1;
     private static final int SPOT_METERING = 2;
-    //int meteringIndex = 1;  // default
     static final int[] METERING = {FRAME_AVERAGE, CENTER_WEIGHTED, SPOT_METERING};
     String[] METERING_NAMES = {"FRAME AVERAGE", "CENTER WEIGHTED", "SPOT METERING"};
 
@@ -567,8 +568,8 @@ public class Camera3D {
 
             // 2. Get the allowed index range (e.g., Min: -6, Max: 6)
             Range<Integer> compensationRange = characteristics.get(CameraCharacteristics.CONTROL_AE_COMPENSATION_RANGE);
-            int minIndex = compensationRange.getLower();
-            int maxIndex = compensationRange.getUpper();
+            minExposureIndex = compensationRange.getLower();
+            maxExposureIndex = compensationRange.getUpper();
 
             // 3. Get the step size / EV increment (e.g., 0.3333 means 1 step = 1/3 EV)
             Rational stepSize = characteristics.get(CameraCharacteristics.CONTROL_AE_COMPENSATION_STEP);
@@ -584,14 +585,53 @@ public class Camera3D {
             }
 
             // 5. Clamp the index to ensure it stays within hardware boundaries
-            if (exposureCompensationIndex < minIndex) exposureCompensationIndex = minIndex;
-            if (exposureCompensationIndex > maxIndex) exposureCompensationIndex = maxIndex;
+            if (exposureCompensationIndex < minExposureIndex) exposureCompensationIndex = minExposureIndex;
+            if (exposureCompensationIndex > maxExposureIndex) exposureCompensationIndex = maxExposureIndex;
 
+            Log.d(TAG, "Exposure compensation index: " + exposureCompensationIndex + " min: " + minExposureIndex + " max: " + maxExposureIndex + " step: " + stepFloat);
         } catch (CameraAccessException e) {
             Log.e(TAG, "Failed to read AE compensation range", e);
         }
     }
 
+    public void setExposureCompensation(int index) {
+        if (index < minExposureIndex || index > maxExposureIndex) {
+            Log.e(TAG, "Invalid exposure compensation index: " + index);
+            return;
+        }
+        previewRequestBuilder.set(CaptureRequest.CONTROL_AE_LOCK, false);
+        previewRequestBuilder.set(CaptureRequest.CONTROL_AE_EXPOSURE_COMPENSATION, index);
+        try {
+            mCameraCaptureSession.setRepeatingRequest(previewRequestBuilder.build(), null, mCameraHandler);
+        } catch (CameraAccessException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void incrementExposureCompensation(int delta) {
+        int newIndex = exposureCompensationIndex + delta;
+        if (newIndex > maxExposureIndex) {
+            newIndex = maxExposureIndex;
+        } else {
+            exposureCompensationIndex = newIndex;
+        }
+
+        //int newIndex = parameters.getExposureCompensationIndex() + delta;
+        setExposureCompensation(newIndex);
+        Log.d(TAG, "increment Exposure compensation: " + newIndex);
+    }
+
+    public void decrementExposureCompensation(int delta) {
+        int newIndex = exposureCompensationIndex - delta;
+        //int newIndex = exposureCompensationIndex - delta;
+        if (newIndex < minExposureIndex) {
+            newIndex = minExposureIndex;
+        } else {
+            exposureCompensationIndex = newIndex;
+        }
+        setExposureCompensation(newIndex);
+        Log.d(TAG, "decrement Exposure compensation: " + newIndex);
+    }
     private final CameraDevice.StateCallback mStateCallback = new CameraDevice.StateCallback() {
         @Override
         public void onOpened(@NonNull CameraDevice camera) { // Open camera
@@ -627,6 +667,7 @@ public class Camera3D {
 
     public void closeCamera() {
         Log.d(TAG, "closeCamera()");
+        parameters.setExposureCompensationIndex(exposureCompensationIndex); // save exposure compensation index in parameters
         if (mCameraCaptureSession != null) {
             try {
                 if (mCameraCaptureSession.isReprocessable()) {
@@ -928,7 +969,7 @@ public class Camera3D {
 
         try {
             // Create capture request for both cameras
-            CaptureRequest.Builder captureBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
+            captureBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
             captureBuilder.addTarget(mImageReader0.getSurface());
             captureBuilder.addTarget(mImageReader2.getSurface());
 
@@ -937,7 +978,10 @@ public class Camera3D {
             //captureBuilder.set(CaptureRequest.TONEMAP_CURVE, new TonemapCurve(curve_srgb, curve_srgb, curve_srgb));
             // Sync with preview brightness settings
             captureBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON);
+            captureBuilder.set(CaptureRequest.CONTROL_AE_LOCK, false);
             captureBuilder.set(CaptureRequest.CONTROL_AE_EXPOSURE_COMPENSATION, exposureCompensationIndex);
+            captureBuilder.set(CaptureRequest.CONTROL_AE_LOCK, true);
+
             captureBuilder.set(CaptureRequest.TONEMAP_MODE, CaptureRequest.TONEMAP_MODE_HIGH_QUALITY);
 
 

@@ -44,7 +44,7 @@ public class PhotoBooth extends PApplet {
     int gray = color(128);
 
     MainActivity mainActivity;
-    Camera3D camStereo;  // The stereo camera used with the device
+    Camera3D stereoCamera;  // The stereo camera used with the device
     Parameters parameters; // Application parameters
     Media media;
 
@@ -158,7 +158,7 @@ public class PhotoBooth extends PApplet {
     }
 
     public void setCamera(Camera3D camera) {
-        camStereo = camera;
+        stereoCamera = camera;
         this.parameters = camera.getParameters();
 
         this.media = camera.getMedia();
@@ -328,7 +328,7 @@ public class PhotoBooth extends PApplet {
             return;
         }
 
-        if (camStereo == null) {
+        if (stereoCamera == null) {
             return;
         }
 
@@ -444,10 +444,10 @@ public class PhotoBooth extends PApplet {
 
     private void drawLiveView() {
 
-        if (camStereo.available.get()) {
-            camStereo.available.set(false);
-            imgLeft = camStereo.leftImage;
-            imgRight = camStereo.rightImage;
+        if (stereoCamera.available.get()) {
+            stereoCamera.available.set(false);
+            imgLeft = stereoCamera.leftImage;
+            imgRight = stereoCamera.rightImage;
             AR = (float) imgLeft.width / (float) imgLeft.height;
 
         }
@@ -777,7 +777,10 @@ public class PhotoBooth extends PApplet {
                 update = true;
                 break;
             case KeyEvent.KEYCODE_PERIOD:
-                DEBUG = !DEBUG;
+                stereoCamera.incrementExposureCompensation(1);
+                break;
+            case KeyEvent.KEYCODE_COMMA:
+                stereoCamera.decrementExposureCompensation(1);
                 break;
             case KeyEvent.KEYCODE_MINUS:
                 iParallax = parameters.getParallaxOffset() - DELTA_PARALLAX;
@@ -1119,10 +1122,17 @@ public class PhotoBooth extends PApplet {
             mainActivity.launchSettings();
         } else if (x > (frameX+(XBP_DISPLAY_FRAME_WIDTH/2)-100) && x < (frameX +(XBP_DISPLAY_FRAME_WIDTH/2) +100) && y > (XBP_DISPLAY_FRAME_HEIGHT/2 - 100) && y < (XBP_DISPLAY_FRAME_HEIGHT/2 + 100)) {
             //if (DEBUG) PApplet.println("mouseReleased photo booth show grid");
-            processKeyCode(KeyEvent.KEYCODE_G, 'G');
+            if (!stereoCamera.captureInProgress.get()) {
+                processKeyCode(KeyEvent.KEYCODE_G, 'G');
+            }
         }
         //if (DEBUG) PApplet.println("mouseReleased photo booth x="+x+" y="+y);
     }
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////
+    // NOT used for reference
 //    void nextImage() {
 //        if (currentIndex < leftImageFiles.size() - 1) {
 //            currentIndex++;

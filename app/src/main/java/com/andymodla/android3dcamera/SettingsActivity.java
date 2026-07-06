@@ -62,7 +62,7 @@ public class SettingsActivity extends AppCompatActivity {
     // --- RadioGroup for camera mode ---
     private RadioGroup rgCameraMode;
     private RadioButton rbBasicCameraMode;
-    private RadioButton rbAnaglyphCameraMode;
+    private RadioButton rbStereoscopeCameraMode;
     private RadioButton rbPhotoBoothCameraMode;
 
     // --- Switch references (boolean parameters) ---
@@ -105,7 +105,7 @@ public class SettingsActivity extends AppCompatActivity {
     }
 
     public void setCameraModeVisibility() {
-        conditional1SettingsLayout = findViewById(R.id.layout_conditional_anaglyph);
+        conditional1SettingsLayout = findViewById(R.id.layout_conditional_stereoscope);
         conditional2SettingsLayout = findViewById(R.id.layout_conditional_photobooth);
 
         int mode = parameters.getCameraMode();
@@ -154,11 +154,11 @@ public class SettingsActivity extends AppCompatActivity {
         rbFocusHyperfocal = findViewById(R.id.rb_focus_hyperfocal);
         rbFocusPhotobooth = findViewById(R.id.rb_focus_photobooth);
         rbFocusMacro = findViewById(R.id.rb_focus_macro);
-        rbFocusAuto = findViewById(R.id.rb_focus_auto);
+        //rbFocusAuto = findViewById(R.id.rb_focus_auto);
 
         rgCameraMode = findViewById(R.id.rg_camera_mode);
         rbBasicCameraMode = findViewById(R.id.rb_basic_camera_mode);
-        rbAnaglyphCameraMode = findViewById(R.id.rb_anaglyph_camera_mode);
+        rbStereoscopeCameraMode = findViewById(R.id.rb_stereoscope_camera_mode);
         rbPhotoBoothCameraMode = findViewById(R.id.rb_photo_booth_camera_mode);
 
         // Exposure metering RadioGroup
@@ -222,7 +222,7 @@ public class SettingsActivity extends AppCompatActivity {
             case 0: rgFocusDistance.check(R.id.rb_focus_hyperfocal); break;
             case 1: rgFocusDistance.check(R.id.rb_focus_photobooth); break;
             case 2: rgFocusDistance.check(R.id.rb_focus_macro); break;
-            case 3: rgFocusDistance.check(R.id.rb_focus_auto); break;
+            //case 3: rgFocusDistance.check(R.id.rb_focus_auto); break;
             default: rgFocusDistance.check(R.id.rb_focus_hyperfocal); break;
         }
 
@@ -238,11 +238,11 @@ public class SettingsActivity extends AppCompatActivity {
         swSaveLr.setChecked(parameters.getSaveLr());
         swSaveAnaglyph.setChecked(parameters.getSaveAnaglyph());
 
-        // Camera mode index: 0=basic camera, 1=anaglyph camera, 2=photo booth camera
+        // Camera mode index: 0=basic camera, 1=stereoscope camera, 2=photo booth camera
         int cmi = parameters.getCameraMode();
         switch (cmi) {
             case 0: rgCameraMode.check(R.id.rb_basic_camera_mode); break;
-            case 1: rgCameraMode.check(R.id.rb_anaglyph_camera_mode); break;
+            case 1: rgCameraMode.check(R.id.rb_stereoscope_camera_mode); break;
             case 2: rgCameraMode.check(R.id.rb_photo_booth_camera_mode); break;
             default: rgCameraMode.check(R.id.rb_basic_camera_mode); break;
         }
@@ -400,7 +400,7 @@ public class SettingsActivity extends AppCompatActivity {
         int cameraMode;
         if (checkedId == R.id.rb_basic_camera_mode) {
             cameraMode = 0;
-        } else if (checkedId == R.id.rb_anaglyph_camera_mode) {
+        } else if (checkedId == R.id.rb_stereoscope_camera_mode) {
             cameraMode = 1;
         } else {
             cameraMode = 2;

@@ -66,10 +66,10 @@
                 android:layout_marginBottom="4dp" />
 
             <RadioButton
-                android:id="@+id/rb_anaglyph_camera_mode"
+                android:id="@+id/rb_stereoscope_camera_mode"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Anaglyph Camera Mode"
+                android:text="Stereoscope Camera Mode"
                 android:textColor="#FFFFFF"
                 android:textSize="13sp"
                 android:buttonTint="#4FC3F7"
@@ -258,7 +258,7 @@
                 android:textSize="13sp"
                 android:buttonTint="#4FC3F7"
                 android:layout_marginBottom="4dp" />
-
+            <!--
             <RadioButton
                 android:id="@+id/rb_focus_auto"
                 android:layout_width="wrap_content"
@@ -268,6 +268,7 @@
                 android:textSize="13sp"
                 android:buttonTint="#4FC3F7"
                 android:layout_marginBottom="4dp" />
+				-->
         </RadioGroup>
 
         <!-- Exposure Metering Index (RadioGroup) -->
@@ -641,7 +642,7 @@
         <!-- ============================================================ -->
 		
         <LinearLayout
-            android:id="@+id/layout_conditional_anaglyph"
+            android:id="@+id/layout_conditional_stereoscope"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">

@@ -853,23 +853,23 @@ public class MainActivity extends AppCompatActivity {
                     photoBooth.setDisplayMode(displayMode);
                 }
                 return true;
-            case MODE_KEY:
-                //case MODE_KB_KEY:
-                Toast.makeText(this, "Mode - not implemented", Toast.LENGTH_SHORT).show();
+//            case MODE_KEY:
+//                //case MODE_KB_KEY:
+//                Toast.makeText(this, "Mode - not implemented", Toast.LENGTH_SHORT).show();
 //                closeCamera();
 //                openCamera();
-                return true;
-            case SHUTTER_SPEED_KEY:
-                //case SHUTTER_SPEED_KB_KEY:
-                if (!isBasicCamera) {
-                    //photoBooth.keyPressedReview(keyCode, ch);
-                    return true;
-                }
-                Toast.makeText(this, "Shutter Speed - not implemented", Toast.LENGTH_SHORT).show();
+//                return true;
+//            case SHUTTER_SPEED_KEY:
+//                //case SHUTTER_SPEED_KB_KEY:
+//                if (!isBasicCamera) {
+//                    //photoBooth.keyPressedReview(keyCode, ch);
+//                    return true;
+//                }
+//                Toast.makeText(this, "Shutter Speed - not implemented", Toast.LENGTH_SHORT).show();
 //                closeCamera();
 //                openCamera();
-                return true;
-            case TIMER_KEY:
+//                return true;
+            case KeyEvent.KEYCODE_N:
                 //case TIMER_KB_KEY:
                 if (state != LIVE_VIEW_STATE) {
                     if (!isBasicCamera) {
@@ -895,13 +895,13 @@ public class MainActivity extends AppCompatActivity {
                 }
                 return true;
 
-            case ISO_KEY:
+//            case ISO_KEY:
                 //case ISO_KB_KEY:
-                Toast.makeText(this, "ISO - not implemented", Toast.LENGTH_SHORT).show();
+//                Toast.makeText(this, "ISO - not implemented", Toast.LENGTH_SHORT).show();
 //                closeCamera();
 //                openCamera();
-                return true;
-            case DISP_KEY:
+//                return true;
+            //case DISP_KEY:
             case KeyEvent.KEYCODE_A:
                 displayMode = displayMode.next();
                 if (!isBasicCamera) {
@@ -920,15 +920,10 @@ public class MainActivity extends AppCompatActivity {
 //                openCamera();
                 return true;
             case MENU_KEY:
-                //case MENU_KB_KEY:
-                Toast.makeText(this, "MENU - not implemented", Toast.LENGTH_SHORT).show();
-//                closeCamera();
-//                openCamera();
-                return true;
             case KeyEvent.KEYCODE_J:
                 // Launch Settings Activity
                 launchSettings();
-                 return true;
+                return true;
             case MIRROR_KB_KEY:
                 boolean amirror = parameters.getIsMirror();
                 amirror = !amirror;

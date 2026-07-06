@@ -116,6 +116,10 @@ class ParamStore {
             private int exposureMeteringIndex = 0;
             private boolean saveLR = false;
             private boolean saveAnaglyph = false;
+            private String saveFileType = "jpg";
+            private int saveFileQuality = 100;
+            private int aspectRatioIndex = 0;  // default
+            private int exposureCompensationIndex = 0;
 
             // default constructor
             public Parameters(SharedPreferences prefs, Context context) {
@@ -182,6 +186,10 @@ class ParamStore {
                 readExposureMeteringIndex();
                 readSaveLr();
                 readSaveAnaglyph();
+                readSaveFileType();
+                readSaveFileQuality();
+                readAspectRatioIndex();
+                readExposureCompensationIndex();
             }
 
             //------------------------------------------------------------------------------
@@ -575,6 +583,77 @@ class ParamStore {
                 ((MainActivity) this.context).updateParameters();
             }
 
+            // Save File Type Parameter
+            public void readSaveFileType() {
+                saveFileType = prefs.getString(saveFileTypeStore.name, saveFileTypeStore.defaultValue);
+            }
+
+            public String getSaveFileType() {
+                return saveFileType;
+            }
+
+            public void setSaveFileType(String saveFileType) {
+                this.saveFileType = saveFileType;
+                SharedPreferences.Editor editor = prefs.edit();
+                editor.putString(saveFileTypeStore.name, saveFileType);
+                editor.commit(); // synchronous save
+                ((MainActivity) this.context).updateParameters();
+            }
+
+            //------------------------------------------------------------------------------
+            // Save File Quality Parameter
+            public void readSaveFileQuality() {
+                saveFileQuality = prefs.getInt(saveFileQualityStore.name, Integer.parseInt(saveFileQualityStore.defaultValue));
+            }
+
+            public int getSaveFileQuality() {
+                return saveFileQuality;
+            }
+
+            public void setSaveFileQuality(int saveFileQuality) {
+                this.saveFileQuality = saveFileQuality;
+                SharedPreferences.Editor editor = prefs.edit();
+                editor.putInt(saveFileQualityStore.name, saveFileQuality);
+                editor.commit(); // synchronous save
+                ((MainActivity) this.context).updateParameters();
+            }
+
+            //------------------------------------------------------------------------------
+            // Aspect Ratio Index Parameter
+            public void readAspectRatioIndex() {
+                aspectRatioIndex = prefs.getInt(aspectRatioIndexStore.name, Integer.parseInt(aspectRatioIndexStore.defaultValue));
+            }
+
+            public int getAspectRatioIndex() {
+                return aspectRatioIndex;
+            }
+
+            public void setAspectRatioIndex(int aspectRatioIndex) {
+                this.aspectRatioIndex = aspectRatioIndex;
+                SharedPreferences.Editor editor = prefs.edit();
+                editor.putInt(aspectRatioIndexStore.name, aspectRatioIndex);
+                editor.commit(); // synchronous save
+                ((MainActivity) this.context).updateParameters();
+            }
+
+            //------------------------------------------------------------------------------
+            // Exposure Compensation Index Parameter
+            public void readExposureCompensationIndex() {
+                exposureCompensationIndex = prefs.getInt(exposureCompensationIndexStore.name, Integer.parseInt(exposureCompensationIndexStore.defaultValue));
+            }
+
+            public int getExposureCompensationIndex() {
+                return exposureCompensationIndex;
+            }
+
+            public void setExposureCompensationIndex(int exposureCompensationIndex) {
+                this.exposureCompensationIndex = exposureCompensationIndex;
+                SharedPreferences.Editor editor = prefs.edit();
+                editor.putInt(exposureCompensationIndexStore.name, exposureCompensationIndex);
+                editor.commit(); // synchronous save
+                ((MainActivity) this.context).updateParameters();
+            }
+
             //------------------------------------------------------------------------------
             public int getReceiverPort() {
                 return receiverPort;
@@ -714,11 +793,37 @@ class ParamStore {
                     "Override cameraMode to enable/disable saving Anaglyph image files. When true saves anaglyph images regardless of mode; when false use camera mode to determine anaglyph save."
             );
 
+            ParamStore saveFileTypeStore = new ParamStore(
+                    "sft", "saveFileType", "Save File Type",
+                    "getSaveFileType", "setSaveFileType", String.class, "jpg",
+                    "File type extension selected for saving all images: jpg or png"
+            );
+
+            ParamStore saveFileQualityStore = new ParamStore(
+                    "sfq", "saveFileQuality", "Save File Quality",
+                    "getSaveFileQuality", "setSaveFileQuality", int.class, "100",
+                    "JPG image quality percent (0-100)"
+            );
+
+            ParamStore aspectRatioIndexStore = new ParamStore(
+                    "ari", "aspectRatioIndex", "Aspect Ratio Index",
+                    "getAspectRatioIndex", "setAspectRatioIndex", int.class, "0",
+                    "Selected single lens camera sensor size for given aspect ratios. Indexes into array: 0 DEFAULT (4080x3072), 1 4:3 (4000x3000), 2 4K_16:9 (3840x2160), 3 HD_16:9 (1920x1080), 4 1:1 (3072x3072), 5 8:9 (2560x2880), 6 3:4 (1800x2400). Certain aspect ratios center crop the max default camera sensor size."
+            );
+
+            ParamStore exposureCompensationIndexStore = new ParamStore(
+                    "eci", "exposureCompensationIndex", "Exposure Compensation Index",
+                    "getExposureCompensationIndex", "setExposureCompensationIndex", int.class, "0",
+                    "Set the camera exposure compensation index value. Adjusts brightness relative to auto-exposure: negative values darken, positive values brighten the image."
+            );
+
             ParamStore[] paramStores = {parallaxOffsetStore, verticalOffsetStore,
                     isPhotoBoothStore, isBlankScreenStore, isSoundOnStore, isAiEditStore,
                     title1Store, title2Store, inst1Store, inst2Store, countdownTimerStore, isMirrorStore,
                     countDownEnabledStore, udpControlEnabledStore, udpTransmitStore, autoReviewStore, sbsCropPrintStore,
-                    focusDistanceIndexStore, exposureMeteringIndexStore, saveLrStore, saveAnaglyphStore};
+                    focusDistanceIndexStore, exposureMeteringIndexStore, saveLrStore, saveAnaglyphStore,
+                    saveFileTypeStore, saveFileQualityStore, aspectRatioIndexStore,
+                    exposureCompensationIndexStore};
 
             // look up parameter by abbreviation and return its current value
             public String findParam(String abbr, String value, boolean set) {
