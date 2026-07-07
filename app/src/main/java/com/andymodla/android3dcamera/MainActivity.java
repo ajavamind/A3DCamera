@@ -97,8 +97,7 @@ public class MainActivity extends AppCompatActivity {
     private boolean exitApp = false; // exit app flag with back or esc button
 
     // Photo booth variables
-    //public boolean !isBasicCamera = false;
-    public boolean isBasicCamera = true;
+    public boolean isBasicCamera = false;  // Force app to be either stereoscope or photo booth - no BASIC CAMERA
     public PhotoBooth photoBooth;  // photo booth sketch
     PFragment photoBoothFragment;  // processing library photo booth fragment
     View decorView; // screen window view for camera app
@@ -818,12 +817,13 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             case FN_KEY:
             case FN_KB_KEY:
+            case KeyEvent.KEYCODE_F:
                 if (state != LIVE_VIEW_STATE) {
                     return true;
                 }
-                camera.closeCamera();
-                camera.setExposureMeteringIndex();
-                camera.openCamera();
+                camera.changeFunction();
+                //camera.closeCamera();
+                //camera.openCamera();
                 return true;
             case FOCUS_DISTANCE_KEY: // change focus distance, should be sub menu
             case FOCUS_DISTANCE_KB_KEY: // change focus distance, should be sub menu
@@ -845,13 +845,6 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(this, "Not implemented", Toast.LENGTH_SHORT).show();
 //                closeCamera();
 //                openCamera();
-                return true;
-            case ANAGLYPH_KEY:
-                //case ANAGLYPH_KB_KEY:
-                if (!isBasicCamera) {
-                    displayMode = DisplayMode.ANAGLYPH;
-                    photoBooth.setDisplayMode(displayMode);
-                }
                 return true;
 //            case MODE_KEY:
 //                //case MODE_KB_KEY:
@@ -901,7 +894,7 @@ public class MainActivity extends AppCompatActivity {
 //                closeCamera();
 //                openCamera();
 //                return true;
-            //case DISP_KEY:
+            case ANAGLYPH_KEY:
             case KeyEvent.KEYCODE_A:
                 displayMode = displayMode.next();
                 if (!isBasicCamera) {

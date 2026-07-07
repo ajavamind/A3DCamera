@@ -54,7 +54,7 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:layout_marginBottom="12dp">
-
+<!--
             <RadioButton
                 android:id="@+id/rb_basic_camera_mode"
                 android:layout_width="wrap_content"
@@ -64,7 +64,7 @@
                 android:textSize="13sp"
                 android:buttonTint="#4FC3F7"
                 android:layout_marginBottom="4dp" />
-
+-->
             <RadioButton
                 android:id="@+id/rb_stereoscope_camera_mode"
                 android:layout_width="wrap_content"

@@ -61,7 +61,7 @@ public class SettingsActivity extends AppCompatActivity {
 
     // --- RadioGroup for camera mode ---
     private RadioGroup rgCameraMode;
-    private RadioButton rbBasicCameraMode;
+    //private RadioButton rbBasicCameraMode;
     private RadioButton rbStereoscopeCameraMode;
     private RadioButton rbPhotoBoothCameraMode;
 
@@ -109,20 +109,31 @@ public class SettingsActivity extends AppCompatActivity {
         conditional2SettingsLayout = findViewById(R.id.layout_conditional_photobooth);
 
         int mode = parameters.getCameraMode();
+
         if (mode == 0) {
-            conditional1SettingsLayout.setVisibility(View.GONE);
+            conditional1SettingsLayout.setVisibility(View.VISIBLE);
             conditional2SettingsLayout.setVisibility(View.GONE);
         }
 
         if (mode == 1) {
             conditional1SettingsLayout.setVisibility(View.VISIBLE);
-            conditional2SettingsLayout.setVisibility(View.GONE);
-        }
-
-        if (mode == 2) {
-            conditional1SettingsLayout.setVisibility(View.VISIBLE);
             conditional2SettingsLayout.setVisibility(View.VISIBLE);
         }
+
+//        if (mode == 0) {
+//            conditional1SettingsLayout.setVisibility(View.GONE);
+//            conditional2SettingsLayout.setVisibility(View.GONE);
+//        }
+//
+//        if (mode == 1) {
+//            conditional1SettingsLayout.setVisibility(View.VISIBLE);
+//            conditional2SettingsLayout.setVisibility(View.GONE);
+//        }
+//
+//        if (mode == 2) {
+//            conditional1SettingsLayout.setVisibility(View.VISIBLE);
+//            conditional2SettingsLayout.setVisibility(View.VISIBLE);
+//        }
     }
 
     @Override
@@ -157,7 +168,7 @@ public class SettingsActivity extends AppCompatActivity {
         //rbFocusAuto = findViewById(R.id.rb_focus_auto);
 
         rgCameraMode = findViewById(R.id.rg_camera_mode);
-        rbBasicCameraMode = findViewById(R.id.rb_basic_camera_mode);
+        //rbBasicCameraMode = findViewById(R.id.rb_basic_camera_mode);
         rbStereoscopeCameraMode = findViewById(R.id.rb_stereoscope_camera_mode);
         rbPhotoBoothCameraMode = findViewById(R.id.rb_photo_booth_camera_mode);
 
@@ -241,10 +252,14 @@ public class SettingsActivity extends AppCompatActivity {
         // Camera mode index: 0=basic camera, 1=stereoscope camera, 2=photo booth camera
         int cmi = parameters.getCameraMode();
         switch (cmi) {
-            case 0: rgCameraMode.check(R.id.rb_basic_camera_mode); break;
-            case 1: rgCameraMode.check(R.id.rb_stereoscope_camera_mode); break;
-            case 2: rgCameraMode.check(R.id.rb_photo_booth_camera_mode); break;
-            default: rgCameraMode.check(R.id.rb_basic_camera_mode); break;
+            case 0: rgCameraMode.check(R.id.rb_stereoscope_camera_mode); break;
+            case 1: rgCameraMode.check(R.id.rb_photo_booth_camera_mode); break;
+            default: rgCameraMode.check(R.id.rb_stereoscope_camera_mode); break;
+
+//            case 0: rgCameraMode.check(R.id.rb_basic_camera_mode); break;
+//            case 1: rgCameraMode.check(R.id.rb_stereoscope_camera_mode); break;
+//            case 2: rgCameraMode.check(R.id.rb_photo_booth_camera_mode); break;
+//            default: rgCameraMode.check(R.id.rb_basic_camera_mode); break;
         }
 
             swSoundOn.setChecked(parameters.getIsSoundOn());
@@ -398,13 +413,19 @@ public class SettingsActivity extends AppCompatActivity {
         // Camera Mode from RadioGroup
         checkedId = rgCameraMode.getCheckedRadioButtonId();
         int cameraMode;
-        if (checkedId == R.id.rb_basic_camera_mode) {
+        if (checkedId == R.id.rb_stereoscope_camera_mode) {
             cameraMode = 0;
-        } else if (checkedId == R.id.rb_stereoscope_camera_mode) {
-            cameraMode = 1;
         } else {
-            cameraMode = 2;
+            cameraMode = 1;
         }
+
+//        if (checkedId == R.id.rb_basic_camera_mode) {
+//            cameraMode = 0;
+//        } else if (checkedId == R.id.rb_stereoscope_camera_mode) {
+//            cameraMode = 1;
+//        } else {
+//            cameraMode = 2;
+//        }
         parameters.setCameraMode(cameraMode);
 
         // --- Booleans ---

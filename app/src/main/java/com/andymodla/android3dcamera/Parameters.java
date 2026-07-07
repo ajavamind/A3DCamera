@@ -72,10 +72,14 @@ class ParamStore {
             private final Context context;
 
             // Camera application modes
-            public static final int BASIC_MODE = 0;
-            public static final int ANAGLYPH_MODE = 1;
-            public static final int PHOTO_BOOTH_MODE = 2;
-            volatile int cameraMode = BASIC_MODE;
+            public static final int STEREOSCOPE_MODE = 0;
+            public static final int PHOTO_BOOTH_MODE = 1;
+            volatile int cameraMode = STEREOSCOPE_MODE;
+
+//            public static final int BASIC_MODE = 0;
+//            public static final int STEREOSCOPE_MODE = 1;
+//            public static final int PHOTO_BOOTH_MODE = 2;
+//            volatile int cameraMode = BASIC_MODE;
 
             // Stereo Image Alignment parameters
             // same values as StereoPhotoMaker displays after automatic alignment of a
@@ -231,11 +235,11 @@ class ParamStore {
             //------------------------------------------------------------------------------
 
             public boolean isBasicCameraMode() {
-                return (getCameraMode() == BASIC_MODE);
+                return false; //(getCameraMode() == BASIC_MODE);
             }
 
-            public boolean isAnaglyphCameraMode() {
-                return (getCameraMode() == ANAGLYPH_MODE);
+            public boolean isStereoscopeCameraMode() {
+                return (getCameraMode() == STEREOSCOPE_MODE);
             }
 
             public boolean isPhotoBoothCameraMode() {
@@ -673,16 +677,10 @@ class ParamStore {
                     "Camera left and right image vertical offset alignment for 3D camera correction"
             );
 
-            ParamStore isPhotoBoothStore = new ParamStore(
-                    "pb", "isPhotoBooth", "Photo Booth",
-                    "getIsPhotoBooth", "setIsPhotoBooth", boolean.class, "true",
-                    "Configures a photo booth camera operation and display."
-            );
-
             ParamStore cameraModeStore = new ParamStore(
                     "mode", "cameraMode", "Application Camera Mode",
                     "getCameraMode", "setCameraMode", int.class, "0",
-                    "Configures application camera mode: Basic, Anaglyph, Photo Booth."
+                    "Configures application camera mode: Stereoscope, Photo Booth."
             );
 
             ParamStore isBlankScreenStore = new ParamStore(
@@ -818,7 +816,7 @@ class ParamStore {
             );
 
             ParamStore[] paramStores = {parallaxOffsetStore, verticalOffsetStore,
-                    isPhotoBoothStore, isBlankScreenStore, isSoundOnStore, isAiEditStore,
+                    isBlankScreenStore, isSoundOnStore, isAiEditStore,
                     title1Store, title2Store, inst1Store, inst2Store, countdownTimerStore, isMirrorStore,
                     countDownEnabledStore, udpControlEnabledStore, udpTransmitStore, autoReviewStore, sbsCropPrintStore,
                     focusDistanceIndexStore, exposureMeteringIndexStore, saveLrStore, saveAnaglyphStore,

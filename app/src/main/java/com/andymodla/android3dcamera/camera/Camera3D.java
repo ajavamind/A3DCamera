@@ -161,6 +161,7 @@ public class Camera3D {
     private int exposureCompensationIndex = 0;
     private int minExposureIndex;
     private int maxExposureIndex;
+    private static final String[] EV_TABLE = {"0", "1/6", "1/3", "1/2", "2/3", "5/6", "1", "1 1/6", "1 1/3", "1 1/2", "1 2/3", "1 5/6", "2"};
 
     private static final CaptureRequest.Key<Integer> EXPOSURE_METERING = new CaptureRequest.Key<>("org.codeaurora.qcamera3.exposure_metering.exposure_metering_mode", Integer.TYPE);
     private static final int FRAME_AVERAGE = 0; // normal behavior
@@ -168,6 +169,14 @@ public class Camera3D {
     private static final int SPOT_METERING = 2;
     static final int[] METERING = {FRAME_AVERAGE, CENTER_WEIGHTED, SPOT_METERING};
     String[] METERING_NAMES = {"FRAME AVERAGE", "CENTER WEIGHTED", "SPOT METERING"};
+
+    // Function modes
+    public static final int FUNCTION_MODE_OFF = 0;
+    public static final int FUNCTION_MODE_EV = 1;
+    public static final int FUNCTION_MODE_METERING = 3;
+    public static final int FUNCTION_MODE_PARALLAX = 2;
+    private volatile int functionMode = FUNCTION_MODE_OFF;
+    private volatile int lastFunctionMode = FUNCTION_MODE_OFF;
 
     // Saturation 0 - 10, default 5
     private static final CaptureRequest.Key<Integer> SATURATION = new CaptureRequest.Key<>("org.codeaurora.qcamera3.saturation.use_saturation", Integer.class);
@@ -270,6 +279,7 @@ public class Camera3D {
     }
 
     public void init(boolean isBasicCamera) {
+        exposureCompensationIndex = parameters.getExposureCompensationIndex();
         if (!isBasicCamera) {
             useProcessingSketch = true;
         } else {
@@ -606,6 +616,18 @@ public class Camera3D {
         } catch (CameraAccessException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public String getEv() {
+        String sev;
+        if (exposureCompensationIndex < 0) {
+            sev = "EV -" + EV_TABLE[-exposureCompensationIndex];
+        } else if (exposureCompensationIndex > 0) {
+            sev = "EV +" + EV_TABLE[exposureCompensationIndex];
+        } else {
+            sev = "EV " + EV_TABLE[exposureCompensationIndex];
+        }
+        return sev;
     }
 
     public void incrementExposureCompensation(int delta) {
@@ -1158,4 +1180,39 @@ public class Camera3D {
     public String getTimestamp() {
         return timestamp;
     }
+
+    public void changeFunction() {
+        if (functionMode == FUNCTION_MODE_OFF) {
+            lastFunctionMode = functionMode;
+            functionMode = FUNCTION_MODE_EV;
+        } else {
+            lastFunctionMode = functionMode;
+            functionMode = FUNCTION_MODE_OFF;
+        }
+    }
+
+    public int getFunctionMode() {
+        return functionMode;
+    }
+
+    public void nextFunctionMode() {
+        if (functionMode == FUNCTION_MODE_OFF) {
+            functionMode = FUNCTION_MODE_EV;
+        } else if (functionMode == FUNCTION_MODE_EV) {
+            functionMode = FUNCTION_MODE_PARALLAX;
+        } else if (functionMode == FUNCTION_MODE_PARALLAX) {
+            functionMode = FUNCTION_MODE_EV;
+        }
+    }
+
+    public void previousFunctionMode() {
+        if (functionMode == FUNCTION_MODE_OFF) {
+            functionMode = FUNCTION_MODE_PARALLAX;
+        } else if (functionMode == FUNCTION_MODE_PARALLAX) {;
+            functionMode = FUNCTION_MODE_EV;
+        } else if (functionMode == FUNCTION_MODE_EV) {
+            functionMode = FUNCTION_MODE_PARALLAX;
+        }
+    }
+
 }

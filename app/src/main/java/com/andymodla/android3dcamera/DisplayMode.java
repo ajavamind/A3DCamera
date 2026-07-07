@@ -3,6 +3,14 @@ package com.andymodla.android3dcamera;
 public enum DisplayMode {
     SBS, ANAGLYPH, LEFT, RIGHT;
 
+    public DisplayMode get() {
+        // Get all constants in the order they are declared
+        DisplayMode[] values = DisplayMode.values();
+        // Calculate next index and wrap back to 0 using modulo
+        int index = (this.ordinal() ) % values.length;
+        return values[index];
+    }
+
     public DisplayMode next() {
         // Get all constants in the order they are declared
         DisplayMode[] values = DisplayMode.values();

@@ -434,6 +434,13 @@ public class PhotoBooth extends PApplet {
             default:
                 break;
         }
+        if (parameters.isStereoscopeCameraMode()) {
+            if (stereoCamera.getFunctionMode() == Camera3D.FUNCTION_MODE_EV) {
+                drawEV();
+            } else if (stereoCamera.getFunctionMode() == Camera3D.FUNCTION_MODE_PARALLAX) {
+                drawParallax();
+            }
+        }
 
         // last thing to check is screenshot
         if (screenshot) {
@@ -710,7 +717,6 @@ public class PhotoBooth extends PApplet {
     }
 
     void drawGrid(boolean full) {
-        //if (!testMode) return;
         fill(yellow);
         int s = 2;
         if (full) {
@@ -732,7 +738,46 @@ public class PhotoBooth extends PApplet {
         rect(0, 0, MainActivity.HIDDEN_SETTINGS_BUTTON_X, MainActivity.HIDDEN_SETTINGS_BUTTON_Y);
     }
 
-    // called by MainActivty onKeyUp to process key events for the photo booth exclusively
+    void drawEV() {
+        String ev =  stereoCamera.getEv();
+
+        DisplayMode position = displayMode.get();
+        if (position == DisplayMode.SBS) { // stereoscopic
+            showString(ev, LEFT, 0);
+            showString(ev, RIGHT, 10);
+        } else { //monoscopic
+            showString(ev, CENTER, 0);
+        }
+    }
+
+    void drawParallax() {
+        String px =  "Parallax " + parallax;
+
+        DisplayMode position = displayMode.get();
+        if (position == DisplayMode.SBS) { // stereoscopic
+            showString(px, LEFT, 0);
+            showString(px, RIGHT, 10);
+        } else { //monoscopic
+            showString(px, CENTER, 0);
+        }
+    }
+
+    void showString(String ev, int position, int offset) {
+        int x;
+        if (position == LEFT) {
+            x = frameX + XBP_DISPLAY_FRAME_WIDTH / 4 + offset;
+        } else if (position == RIGHT) {
+            x = frameX + 3 * XBP_DISPLAY_FRAME_WIDTH / 4 + offset;
+        } else {
+            x = width / 2; // CENTER
+        }
+        textSize(48);
+        fill(yellow);
+        textAlign(CENTER, CENTER);
+        text(ev, x, height -48);
+    }
+
+    // called by MainActivity onKeyUp to process key events for the photo booth exclusively
     public boolean processKeyCode(int lastKeyCode, int lastKey) {
         int iParallax;
         switch (lastKeyCode) {
@@ -776,11 +821,35 @@ public class PhotoBooth extends PApplet {
                 testMode = !testMode;
                 update = true;
                 break;
+            case KeyEvent.KEYCODE_DPAD_UP:
+                stereoCamera.previousFunctionMode();
+                break;
+            case KeyEvent.KEYCODE_DPAD_DOWN:
+                stereoCamera.nextFunctionMode();
+                break;
             case KeyEvent.KEYCODE_PERIOD:
-                stereoCamera.incrementExposureCompensation(1);
+            case KeyEvent.KEYCODE_DPAD_RIGHT:
+                if (stereoCamera.getFunctionMode() == Camera3D.FUNCTION_MODE_EV) {
+                    stereoCamera.incrementExposureCompensation(1);
+                } else if (stereoCamera.getFunctionMode() == Camera3D.FUNCTION_MODE_PARALLAX) {
+                    iParallax = parameters.getParallaxOffset() + DELTA_PARALLAX;
+                    parameters.setParallaxOffset(iParallax);
+                    parallax = toDisplayPixels(iParallax);
+                    if (DEBUG) PApplet.println("parallax = " + parallax);
+
+                }
                 break;
             case KeyEvent.KEYCODE_COMMA:
-                stereoCamera.decrementExposureCompensation(1);
+            case KeyEvent.KEYCODE_DPAD_LEFT:
+                if (stereoCamera.getFunctionMode() == Camera3D.FUNCTION_MODE_EV) {
+                    stereoCamera.decrementExposureCompensation(1);
+                } else if (stereoCamera.getFunctionMode() == Camera3D.FUNCTION_MODE_PARALLAX) {
+                    iParallax = parameters.getParallaxOffset() - DELTA_PARALLAX;
+                    parameters.setParallaxOffset(iParallax);
+                    parallax = toDisplayPixels(iParallax);
+                    if (DEBUG) PApplet.println("parallax = " + parallax);
+                }
+
                 break;
             case KeyEvent.KEYCODE_MINUS:
                 iParallax = parameters.getParallaxOffset() - DELTA_PARALLAX;
