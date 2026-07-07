@@ -59,7 +59,7 @@ With keyboard input, a command line interface is present for debugging and camer
 Captures 3D photos only. A 3D video option is not implemented.
 
 There are two camera modes:
-1. Stereoscope - Basic point and shoot auto exposure, fixed focus camera with live view stereoscope SBS, Anaglyph, Left and Right capture. Manual preset parallax and vertical alignment supported for SBS and Anaglyph. Option to save anaglyph. Option to save single Left and right photos (nt parallax or vertical alignment)
+1. Stereoscope - Basic point and shoot, auto exposure, fixed focus camera with live view stereoscope: SBS, Anaglyph, Left and Right and image capture. Manual preset parallax and vertical alignment supported for SBS and Anaglyph. Option to save anaglyph. Option to save single Left and right photos without parallax or vertical alignment.
 2. Photo Booth - Stereoscope mode plus additional features for a photo booth. This mode always saves anaglyph and single Left and right photos by default, unless turned off.
 
 ### Focus
