@@ -57,10 +57,10 @@ With keyboard input, a command line interface is present for debugging and camer
 ## Camera Functions
 ### Camera Mode
 Captures 3D photos only. A 3D video option is not implemented.
-There are three camera modes:
-1. Basic - Simple auto exposure, fixed focus, point and shoot camera for walk around use. SBS capture with full sensor size, manual preset parallax or vertical alignment adjustment supported for save SBS, but not during live view display. Option to save anaglyph and single Left and right photos.
-2. Stereoscope - Basic camera plus a subset of full Photo Booth mode with SBS, Anaglyph, Left and Right capture. Manual preset parallax and vertical alignment supported with save SBS and live view. Option to save anaglyph and single Left and right photos.
-3. Photo Booth - Stereoscope mode plus additional features for a photo booth. Default always save anaglyph and single Left and right photos.
+
+There are two camera modes:
+1. Stereoscope - Basic point and shoot auto exposure, fixed focus camera with live view stereoscope SBS, Anaglyph, Left and Right capture. Manual preset parallax and vertical alignment supported for SBS and Anaglyph. Option to save anaglyph. Option to save single Left and right photos (nt parallax or vertical alignment)
+2. Photo Booth - Stereoscope mode plus additional features for a photo booth. This mode always saves anaglyph and single Left and right photos by default, unless turned off.
 
 ### Focus
 The camera app is fixed focus with selected distances. The camera is set to fixed focus of approximately 166 cm, which is the hyper focal distance of the lens.
@@ -98,10 +98,8 @@ When free-viewing I sometimes use a pair of +4.0 reading glasses to get closer t
 
 The SBS display is sized at 130 mm for viewing in a stereoscope.
 
-The app does not vertically align the left and right images nor adjust the stereo window in Basic mode. As a hobbyist app the user is encouraged to use [Stereo Photo Maker (English)](https://stereo.jpn.org/eng/stphmkr/) 
+As a hobbyist app the user is encouraged to use [Stereo Photo Maker (English)](https://stereo.jpn.org/eng/stphmkr/) 
 to align left and right images vertically, correct any horizontal perspective distortion, and set the most pleasing stereo window.
-
-The Basic camera mode implements a image review feature by launching a separate app like 3DSteroidPro.
 
 When using the Command Line feature below you can set the vertical misalignment and the stereo window to your preference.
 These values persist after app restart and adjust the saved photos, except for single left and right photos.
