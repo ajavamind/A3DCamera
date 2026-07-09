@@ -547,12 +547,12 @@ public class MainActivity extends AppCompatActivity {
         if (delta > 0) {
             // Scrolled Up (away from user)
             if (!isBasicCamera) {
-                photoBooth.processKeyCode(KeyEvent.KEYCODE_RIGHT_BRACKET, 0);
+                photoBooth.setKeyCode(KeyEvent.KEYCODE_RIGHT_BRACKET, 0);
             }
         } else if (delta < 0) {
             // Scrolled Down (toward user)
             if (!isBasicCamera) {
-                photoBooth.processKeyCode(KeyEvent.KEYCODE_LEFT_BRACKET, 0);
+                photoBooth.setKeyCode(KeyEvent.KEYCODE_LEFT_BRACKET, 0);
             }
         }
     }
@@ -719,7 +719,8 @@ public class MainActivity extends AppCompatActivity {
             return true;
         }
         if (!isBasicCamera) {
-            boolean consumed = photoBooth.processKeyCode(keyCode, ch);
+            photoBooth.setKeyCode(keyCode, ch);
+            boolean consumed = photoBooth.processKeyCode();
             if (consumed) return true;
             switch (keyCode) {
                 case KeyEvent.KEYCODE_VOLUME_UP:

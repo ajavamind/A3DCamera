@@ -47,7 +47,7 @@ public class PhotoBooth extends PApplet {
     Camera3D stereoCamera;  // The stereo camera used with the device
     Parameters parameters; // Application parameters
     Media media;
-
+    Gui gui;
     private int state; // initialized from MainActivity, used in draw() to determine what to draw
 
     PImage imgLeft;
@@ -74,7 +74,10 @@ public class PhotoBooth extends PApplet {
     private volatile boolean mirror = false;
     private volatile boolean crossEye = false;
     private volatile boolean grid = false;
+    private volatile boolean showMenu = false;
     private volatile boolean showPhotoBoothTitle = false;
+    private volatile int lastKeyCode;
+    private volatile int lastKey;
 
     DisplayMode displayMode = DisplayMode.SBS;
     volatile boolean update = false;
@@ -98,10 +101,11 @@ public class PhotoBooth extends PApplet {
             "Zoom In: Right Bracket (])",
             "Zoom Out: Left Bracket ([)",
             "View Help/Parameters: H",
-            "Toggle Test Mode: Space",
-            "Toggle Debug Logging: Period (.)",
+            "Toggle Show Menu: U",
             "Toggle Focus Distance: Q",
-            "Toggle Exposure Metering: T"
+            "Toggle Exposure Metering: T",
+            "Increment Exposure Compensation: Period (.)",
+            "Decrement Exposure Compensation: Comma (,)"
     };
 
     private boolean loadPrevious = false;  // TODO implement load previous image before last application close
@@ -129,7 +133,12 @@ public class PhotoBooth extends PApplet {
         // draw canvas size and render using OpenGL
         //fullScreen(P2D);
         size(XBP_DISPLAY_WIDTH, XBP_DISPLAY_HEIGHT, P2D);
+        if (gui == null) {
+            gui = new Gui();
+            gui.setup(this);
+        }
         if (DEBUG) System.out.println("Photo Booth Sketch settings()");
+
     }
 
     public void setup() {
@@ -187,17 +196,23 @@ public class PhotoBooth extends PApplet {
         update = true;
     }
 
-    public void toggleMirror() {
-        mirror = !mirror;
-        update = true;
-    }
+//    public void toggleMirror() {
+//        mirror = !mirror;
+//        update = true;
+//    }
 
     public void toggleGrid() {
         grid = !grid;
+        if (DEBUG) PApplet.println("grid = " + grid);
         update = true;
     }
     public void toggleShowPhotoBoothTitle() {
         showPhotoBoothTitle = !showPhotoBoothTitle;
+        update = true;
+    }
+
+    public void toggleShowMenu() {
+        showMenu = !showMenu;
         update = true;
     }
 
@@ -308,6 +323,8 @@ public class PhotoBooth extends PApplet {
             loadPrevious = false;
             thread("restore");
         }
+        processKeyCode();
+
         background(black);
 
         mirror = parameters.getIsMirror();
@@ -418,8 +435,11 @@ public class PhotoBooth extends PApplet {
                 fill(255);
                 textAlign(LEFT);
                 textSize(48);
-                for (int i = 0; i < help.length; i++) {
+                for (int i = 0; i < 20; i++) {
                     text(help[i], 100, 36 + i * 50);
+                }
+                for (int i = 20; i < help.length; i++) {
+                    text(help[i], width/2 + 100, 36 + (i-20) * 50);
                 }
                 break;
             case 2:
@@ -434,14 +454,18 @@ public class PhotoBooth extends PApplet {
             default:
                 break;
         }
-        if (parameters.isStereoscopeCameraMode()) {
-            if (stereoCamera.getFunctionMode() == Camera3D.FUNCTION_MODE_EV) {
-                drawEV();
-            } else if (stereoCamera.getFunctionMode() == Camera3D.FUNCTION_MODE_PARALLAX) {
-                drawParallax();
-            }
+//        if (parameters.isStereoscopeCameraMode()) {
+//            if (stereoCamera.getFunctionMode() == Camera3D.FUNCTION_MODE_EV) {
+//                drawEv();
+//            } else if (stereoCamera.getFunctionMode() == Camera3D.FUNCTION_MODE_PARALLAX) {
+//                drawParallax();
+//            }
+//        }
+        if (showMenu) {
+            gui.displayMenuBar();
+            drawEv();
+            drawParallax();
         }
-
         // last thing to check is screenshot
         if (screenshot) {
             saveScreenshot();
@@ -718,51 +742,66 @@ public class PhotoBooth extends PApplet {
 
     void drawGrid(boolean full) {
         fill(yellow);
-        int s = 2;
+        int thickness = 2;
+        int top = MainActivity.HIDDEN_SHUTTER_BUTTON_Y+10;
+        int bottom = 96+top;
+        int leftMargin = frameX;
+        int rightMargin = frameX;
         if (full) {
             // Horizontal line (center of canvas)
-            rect(0, height / 2 - s / 2, width, s);
+            rect(leftMargin, height / 2 - thickness / 2, width-leftMargin-rightMargin, thickness);
             // Vertical line (center of canvas)
-            rect(width / 2 - s / 2, 0, s, height);
+            rect(width / 2 - thickness / 2, top, thickness, height-bottom);
         } else {
             // Horizontal line (center of frame)
-            rect(0, XBP_DISPLAY_FRAME_HEIGHT / 2 - s / 2, width, s);
+            rect(leftMargin, XBP_DISPLAY_FRAME_HEIGHT / 2 - thickness / 2, width-leftMargin-rightMargin, thickness);
             // First vertical line (1/4 of frame width)
-            rect(frameX + XBP_DISPLAY_FRAME_WIDTH / 4 - s / 2, 0, s, XBP_DISPLAY_FRAME_HEIGHT);
+            rect(frameX + XBP_DISPLAY_FRAME_WIDTH / 4 - thickness / 2, top, thickness, XBP_DISPLAY_FRAME_HEIGHT-bottom);
             // Second vertical line (3/4 of frame width)
-            rect(frameX + 3 * XBP_DISPLAY_FRAME_WIDTH / 4 - s / 2, 0, s, XBP_DISPLAY_FRAME_HEIGHT);
+            rect(frameX + 3 * XBP_DISPLAY_FRAME_WIDTH / 4 - thickness / 2, top, thickness, XBP_DISPLAY_FRAME_HEIGHT-bottom);
         }
         // draw hidden buttons
-        fill(gray);
-        rect(MainActivity.HIDDEN_SHUTTER_BUTTON_X, 0, width - MainActivity.HIDDEN_SETTINGS_BUTTON_X, MainActivity.HIDDEN_SETTINGS_BUTTON_Y);
-        rect(0, 0, MainActivity.HIDDEN_SETTINGS_BUTTON_X, MainActivity.HIDDEN_SETTINGS_BUTTON_Y);
+        //fill(gray);
+        //rect(MainActivity.HIDDEN_SHUTTER_BUTTON_X, 0, width - MainActivity.HIDDEN_SETTINGS_BUTTON_X, MainActivity.HIDDEN_SETTINGS_BUTTON_Y);
+        //rect(0, 0, MainActivity.HIDDEN_SETTINGS_BUTTON_X, MainActivity.HIDDEN_SETTINGS_BUTTON_Y);
+
+        //drawEv();
+        //drawParallax();
     }
 
-    void drawEV() {
+    void drawEv() {
         String ev =  stereoCamera.getEv();
+        if (stereoCamera.getFunctionMode() == Camera3D.FUNCTION_MODE_EV) {
+            ev = "="+Camera3D.METERING_NAMES[parameters.getExposureMeteringIndex()] + " "+ ev ;
+        }
 
+        int level = 78;
         DisplayMode position = displayMode.get();
         if (position == DisplayMode.SBS) { // stereoscopic
-            showString(ev, LEFT, 0);
-            showString(ev, RIGHT, 10);
+            showString(ev, LEFT, 0, level);
+            showString(ev, RIGHT, -10, level);
         } else { //monoscopic
-            showString(ev, CENTER, 0);
+            showString(ev, CENTER, 0, level);
         }
     }
 
     void drawParallax() {
-        String px =  "Parallax " + parallax;
+        String px =  "Parallax " + parameters.getParallaxOffset();
+        if (stereoCamera.getFunctionMode() == Camera3D.FUNCTION_MODE_PARALLAX) {
+            px = "= " + Camera3D.FOCUS_DISTANCE_NAMES[parameters.getFocusDistanceIndex()] + " " + px ;
+        }
 
+        int level = 32;
         DisplayMode position = displayMode.get();
         if (position == DisplayMode.SBS) { // stereoscopic
-            showString(px, LEFT, 0);
-            showString(px, RIGHT, 10);
+            showString(px, LEFT, 0, level);
+            showString(px, RIGHT, 0, level);
         } else { //monoscopic
-            showString(px, CENTER, 0);
+            showString(px, CENTER, 0, level);
         }
     }
 
-    void showString(String ev, int position, int offset) {
+    void showString(String ev, int position, int offset, int bottom) {
         int x;
         if (position == LEFT) {
             x = frameX + XBP_DISPLAY_FRAME_WIDTH / 4 + offset;
@@ -774,11 +813,11 @@ public class PhotoBooth extends PApplet {
         textSize(48);
         fill(yellow);
         textAlign(CENTER, CENTER);
-        text(ev, x, height -48);
+        text(ev, x, height -bottom);
     }
 
     // called by MainActivity onKeyUp to process key events for the photo booth exclusively
-    public boolean processKeyCode(int lastKeyCode, int lastKey) {
+    public boolean processKeyCode() {
         int iParallax;
         switch (lastKeyCode) {
             case KeyEvent.KEYCODE_A:
@@ -835,7 +874,7 @@ public class PhotoBooth extends PApplet {
                     iParallax = parameters.getParallaxOffset() + DELTA_PARALLAX;
                     parameters.setParallaxOffset(iParallax);
                     parallax = toDisplayPixels(iParallax);
-                    if (DEBUG) PApplet.println("parallax = " + parallax);
+                    if (DEBUG) PApplet.println("iParallax = " + iParallax);
 
                 }
                 break;
@@ -847,7 +886,7 @@ public class PhotoBooth extends PApplet {
                     iParallax = parameters.getParallaxOffset() - DELTA_PARALLAX;
                     parameters.setParallaxOffset(iParallax);
                     parallax = toDisplayPixels(iParallax);
-                    if (DEBUG) PApplet.println("parallax = " + parallax);
+                    if (DEBUG) PApplet.println("iParallax = " + iParallax);
                 }
 
                 break;
@@ -866,6 +905,9 @@ public class PhotoBooth extends PApplet {
                 break;
             case KeyEvent.KEYCODE_G:
                 toggleGrid();
+                break;
+            case KeyEvent.KEYCODE_U:
+                toggleShowMenu();
                 break;
             case KeyEvent.KEYCODE_P:
                 toggleShowPhotoBoothTitle();
@@ -887,9 +929,13 @@ public class PhotoBooth extends PApplet {
                 }
                 break;
             default:
+                lastKeyCode = 0;
+                lastKey = 0;
                 return false;
         }
         update = true;
+        lastKeyCode = 0;
+        lastKey = 0;
         return true;
     }
 
@@ -1192,13 +1238,26 @@ public class PhotoBooth extends PApplet {
         } else if (x > (frameX+(XBP_DISPLAY_FRAME_WIDTH/2)-100) && x < (frameX +(XBP_DISPLAY_FRAME_WIDTH/2) +100) && y > (XBP_DISPLAY_FRAME_HEIGHT/2 - 100) && y < (XBP_DISPLAY_FRAME_HEIGHT/2 + 100)) {
             //if (DEBUG) PApplet.println("mouseReleased photo booth show grid");
             if (!stereoCamera.captureInProgress.get()) {
-                processKeyCode(KeyEvent.KEYCODE_G, 'G');
+                toggleShowMenu();
+                //toggleGrid();
+                //setKeyCode(KeyEvent.KEYCODE_G, 'G');
             }
+        } else {
+            //if (DEBUG) PApplet.println("mouseReleased photo booth x="+x+" y="+y);
+            //}
+
+            //public void mouseReleased() {
+            //    int x = mouseX;
+            //    int y = mouseY;
+            int keyCode = gui.mousePressed(x, y);
+            setKeyCode(keyCode, 0);
         }
-        //if (DEBUG) PApplet.println("mouseReleased photo booth x="+x+" y="+y);
     }
 
-
+    public void setKeyCode(int lastKeyCode, int lastKey) {
+        this.lastKey = lastKey;
+        this.lastKeyCode = lastKeyCode;
+    }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
     // NOT used for reference

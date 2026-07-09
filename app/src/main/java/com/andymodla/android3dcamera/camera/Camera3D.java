@@ -126,7 +126,7 @@ public class Camera3D {
     //static final float PHOTO_BOOTH_FOCUS_DISTANCE = 2.0f;  // 500mm
     static final float AUTO_FOCUS_DISTANCE = 0.0f;
     static final float[] FOCUS_DISTANCE = {HYPERFOCAL_FOCUS_DISTANCE, PHOTO_BOOTH_FOCUS_DISTANCE, MACRO_FOCUS_DISTANCE, AUTO_FOCUS_DISTANCE};
-    static final String[] FOCUS_DISTANCE_NAMES = {"HYPERFOCAL FOCUS DISTANCE", "PHOTO BOOTH FOCUS DISTANCE", "MACRO FOCUS DISTANCE", "AUTO FOCUS"};
+    public static final String[] FOCUS_DISTANCE_NAMES = {"HYPERFOCAL ", "PHOTO BOOTH", "MACRO", "AUTO FOCUS"};
 
 
     private int cameraWidth = CAMERA_WIDTH_DEFAULT; // camera width lens pixels
@@ -168,14 +168,14 @@ public class Camera3D {
     private static final int CENTER_WEIGHTED = 1;
     private static final int SPOT_METERING = 2;
     static final int[] METERING = {FRAME_AVERAGE, CENTER_WEIGHTED, SPOT_METERING};
-    String[] METERING_NAMES = {"FRAME AVERAGE", "CENTER WEIGHTED", "SPOT METERING"};
+    public static String[] METERING_NAMES = {"FRAME AVERAGE", "CENTER WEIGHTED", "SPOT METERING"};
 
     // Function modes
     public static final int FUNCTION_MODE_OFF = 0;
     public static final int FUNCTION_MODE_EV = 1;
     public static final int FUNCTION_MODE_METERING = 3;
     public static final int FUNCTION_MODE_PARALLAX = 2;
-    private volatile int functionMode = FUNCTION_MODE_OFF;
+    private volatile int functionMode = FUNCTION_MODE_EV;
     private volatile int lastFunctionMode = FUNCTION_MODE_OFF;
 
     // Saturation 0 - 10, default 5
@@ -611,6 +611,7 @@ public class Camera3D {
         }
         previewRequestBuilder.set(CaptureRequest.CONTROL_AE_LOCK, false);
         previewRequestBuilder.set(CaptureRequest.CONTROL_AE_EXPOSURE_COMPENSATION, index);
+        previewRequestBuilder.set(CaptureRequest.CONTROL_AE_LOCK, true);
         try {
             mCameraCaptureSession.setRepeatingRequest(previewRequestBuilder.build(), null, mCameraHandler);
         } catch (CameraAccessException e) {
@@ -761,7 +762,7 @@ public class Camera3D {
                                 // Explicit AE mode & compensation
                                 previewRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON);
                                 previewRequestBuilder.set(CaptureRequest.CONTROL_AE_EXPOSURE_COMPENSATION, exposureCompensationIndex);
-
+                                previewRequestBuilder.set(CaptureRequest.CONTROL_AE_LOCK, true);
                                 //  Let system handle tonemapping (remove custom curve)
                                 previewRequestBuilder.set(CaptureRequest.TONEMAP_MODE, CaptureRequest.TONEMAP_MODE_FAST);
 
@@ -867,7 +868,7 @@ public class Camera3D {
                     // Explicit AE mode & compensation
                     previewRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON);
                     previewRequestBuilder.set(CaptureRequest.CONTROL_AE_EXPOSURE_COMPENSATION, exposureCompensationIndex);
-
+                    previewRequestBuilder.set(CaptureRequest.CONTROL_AE_LOCK, true);
                     //  Let system handle tonemapping (remove custom curve)
                     previewRequestBuilder.set(CaptureRequest.TONEMAP_MODE, CaptureRequest.TONEMAP_MODE_FAST);
 
