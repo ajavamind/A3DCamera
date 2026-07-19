@@ -75,7 +75,7 @@ public class Camera3D {
     Parameters parameters;
     PApplet pApplet; // Processing sketch base class
 
-    private boolean useProcessingSketch = false;
+    private boolean useProcessingSketch = true;
     private CameraManager mCameraManager;
     private CameraDevice mCameraDevice;
     private CameraCaptureSession mCameraCaptureSession;
@@ -130,7 +130,9 @@ public class Camera3D {
 
 
     private int cameraWidth = CAMERA_WIDTH_DEFAULT; // camera width lens pixels
-    private int cameraHeight = CAMERA_HEIGHT_DEFAULT;// camera height lens pixels
+    private int cameraHeight = CAMERA_HEIGHT_DEFAULT; // camera height lens pixels
+    private int captureCameraWidth = CAMERA_WIDTH_DEFAULT; // camera width lens pixels
+    private int captureCameraHeight = CAMERA_HEIGHT_DEFAULT; // camera height lens pixels
 
     // Display surfaces for preview
     private volatile SurfaceView mSurfaceView0;
@@ -188,6 +190,7 @@ public class Camera3D {
 
     //volatile boolean shutterSound = true;
     public final AtomicBoolean available = new AtomicBoolean(false); // PImage available to access
+    public final Object imageLock = new Object(); // synchronizes PImage pixel access between ImageReader and sketch threads
     public final AtomicBoolean captureInProgress = new AtomicBoolean(false);
 
     // Image processing got preview
@@ -222,7 +225,7 @@ public class Camera3D {
         String manufacturer = Build.MANUFACTURER;
         String deviceName = manufacturer + " " + modelName;
         Log.d(TAG, "Device Manufacturer and Model: " + deviceName);
-        if (modelName.equals("LPD-20W")) {
+        if (modelName.equals("LPD-20W")) {  // Leia Lumepad 2
             // back cameras
             //leftCameraId = "0";
             //rightCameraId = "2";
@@ -234,10 +237,10 @@ public class Camera3D {
             rightCameraId = "1";
             stereoCameraId = "5";  // logical (left "1" and right "3") back cameras
 
-            //cameraWidth = 4656; // 16Mp Back camera width lens pixels
-            //cameraHeight = 3496;// 16MP Back camera height lens pixels
-            cameraWidth = 3264; // 16Mp Front camera width lens pixels
-            cameraHeight = 2448;// 16MP Front camera height lens pixels
+            cameraWidth = 3264;//4656; // 16Mp Back camera width lens pixels
+            cameraHeight = 2448;//3496;// 16MP Back camera height lens pixels
+            //cameraWidth = 3264; // 16Mp Front camera width lens pixels
+            //cameraHeight = 2448;// 16MP Front camera height lens pixels
 /*
             cameraId=0 Set: [] back left camera
             cameraId=1 Set: [] back right camera
@@ -282,9 +285,10 @@ public class Camera3D {
         exposureCompensationIndex = parameters.getExposureCompensationIndex();
         if (!isBasicCamera) {
             useProcessingSketch = true;
+            Log.d(TAG, "Not using the basic camera");
         } else {
             useProcessingSketch = false;
-            Log.d(TAG, "setupSurfaces()");
+            Log.d(TAG, "setupSurfaces() for basic camera");
             // set up display surfaces
             mSurfaceView0 = ((MainActivity) context).findViewById(R.id.surfaceView);
             mSurfaceView2 = ((MainActivity) context).findViewById(R.id.surfaceView2);
@@ -527,6 +531,10 @@ public class Camera3D {
     }
 
     public void openCamera() {
+        if (isCameraOpen()) {
+            Log.d(TAG, "openCamera() already open cameraWidth=" + cameraWidth + " cameraHeight=" + cameraHeight);
+            return;
+        }
         Log.d(TAG, "openCamera() cameraWidth=" + cameraWidth + " cameraHeight=" + cameraHeight);
         startCameraThread();
 
@@ -536,17 +544,17 @@ public class Camera3D {
 //        }
 
         // Setup ImageReaders for image capture
-        cameraWidth = CAMERA_WIDTH_DEFAULT; // use default image camera width lens pixels
-        cameraHeight = CAMERA_HEIGHT_DEFAULT;
-        mImageReader0 = ImageReader.newInstance(cameraWidth, cameraHeight, ImageFormat.JPEG, 2);  // 2 maxImages
-        mImageReader2 = ImageReader.newInstance(cameraWidth, cameraHeight, ImageFormat.JPEG, 2);  // 2 maxImages
+        captureCameraWidth = CAMERA_WIDTH_DEFAULT; // use default image camera width lens pixels
+        captureCameraHeight = CAMERA_HEIGHT_DEFAULT;
+        mImageReader0 = ImageReader.newInstance(captureCameraWidth, captureCameraHeight, ImageFormat.JPEG, 2);  // 2 maxImages
+        mImageReader2 = ImageReader.newInstance(captureCameraWidth, captureCameraHeight, ImageFormat.JPEG, 2);  // 2 maxImages
 
         if (useProcessingSketch) {
             // Create ImageReaders for YUV preview with buffer count
-            // use the display size for preview
+            // use these display sizes for preview
             cameraWidth = XBP_CAMERA_DISPLAY_WIDTH;
             cameraHeight = XBP_CAMERA_DISPLAY_HEIGHT;
-
+            Log.d(TAG, "openCamera() useProcessingSketch cameraWidth=" + cameraWidth + " cameraHeight=" + cameraHeight);
             imageReader0 = ImageReader.newInstance(cameraWidth, cameraHeight, ImageFormat.YUV_420_888, 4);
             imageReader0.setOnImageAvailableListener(imageAvailableListener, mImageReaderHandler0);
             imageReader2 = ImageReader.newInstance(cameraWidth, cameraHeight, ImageFormat.YUV_420_888, 4);
@@ -569,6 +577,10 @@ public class Camera3D {
             }
         }
         initExposureCompensation();
+    }
+
+    public boolean isCameraOpen() {
+        return mCameraDevice != null;
     }
 
     private void initExposureCompensation() {
@@ -655,6 +667,8 @@ public class Camera3D {
         setExposureCompensation(newIndex);
         Log.d(TAG, "decrement Exposure compensation: " + newIndex);
     }
+
+
     private final CameraDevice.StateCallback mStateCallback = new CameraDevice.StateCallback() {
         @Override
         public void onOpened(@NonNull CameraDevice camera) { // Open camera

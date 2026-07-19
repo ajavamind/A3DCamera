@@ -88,7 +88,7 @@ public class StereoImage {
         //     shrank when offsets were applied, so getWidth/Height stayed too large.)
         if (sbsBitmap == null || sbsBitmap.getWidth() != finalW || sbsBitmap.getHeight() != finalH) {
             if (sbsBitmap != null) {
-                Log.d(TAG, "!!!!!!!!!!!!!!!!!!!!!!! sbsBitmap.recycle()");
+                Log.d(TAG, "!!! sbsBitmap.recycle() size change " + sbsBitmap.getWidth() + "x" + sbsBitmap.getHeight() + " -> " + finalW + "x" + finalH);
                 sbsBitmap.recycle();
                 sbsBitmap = null;
             }

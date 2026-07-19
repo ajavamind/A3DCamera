@@ -13,6 +13,7 @@ import android.content.pm.ResolveInfo;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
 import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.os.Build;
@@ -60,8 +61,12 @@ public class Media {
 
     volatile Bitmap leftBitmap;
     volatile Bitmap rightBitmap;
+    // Dedicated Bitmaps for review � preview thread can't corrupt review pixels
+    private Bitmap leftReviewBitmap;
+    private Bitmap rightReviewBitmap;
     public volatile PImage leftReview;
     public volatile PImage rightReview;
+    public final Object reviewLock = new Object(); // synchronizes review PImage pixel access
     private Bitmap sbsBitmap;
     private Bitmap anaglyphBitmap;
 
@@ -350,18 +355,27 @@ public class Media {
         }
 
         if (pApplet != null) {  // Processing sketch is present
+            // Create dedicated Bitmaps for review so the preview thread can't corrupt them
+            leftReviewBitmap = Bitmap.createBitmap(leftBitmap.getWidth(), leftBitmap.getHeight(), Bitmap.Config.ARGB_8888);
+            rightReviewBitmap = Bitmap.createBitmap(rightBitmap.getWidth(), rightBitmap.getHeight(), Bitmap.Config.ARGB_8888);
+            new Canvas(leftReviewBitmap).drawBitmap(leftBitmap, 0, 0, null);
+            new Canvas(rightReviewBitmap).drawBitmap(rightBitmap, 0, 0, null);
+
             if (leftReview == null || rightReview == null) {
                 leftReview = pApplet.createImage(leftBitmap.getWidth(), leftBitmap.getHeight(), PImage.ARGB);
                 rightReview = pApplet.createImage(rightBitmap.getWidth(), rightBitmap.getHeight(), PImage.ARGB);
             }
-            leftReview.setNative(leftBitmap);
-            rightReview.setNative(rightBitmap);
-            leftReview.loadPixels();
-            leftReview.updatePixels();
-            rightReview.loadPixels();
-            rightReview.updatePixels();
+            // Synchronize: sketch thread must not read review pixels while we mutate them
+            synchronized (reviewLock) {
+                leftReview.setNative(leftReviewBitmap);
+                leftReview.loadPixels();
+                leftReview.updatePixels();
+                rightReview.setNative(rightReviewBitmap);
+                rightReview.loadPixels();
+                rightReview.updatePixels();
+                ((PhotoBooth) pApplet).setReviewImages(leftReview, rightReview);
+            }
 
-            ((PhotoBooth) pApplet).setReviewImages(leftReview, rightReview);
             if (parameters.getAutoReview()) {
                 ((MainActivity) context).setReview();
             } else {

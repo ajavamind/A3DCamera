@@ -1,18 +1,126 @@
 package com.andymodla.android3dcamera.camera;
 
+import static androidx.core.content.ContextCompat.getSystemService;
+
 import android.content.Context;
+import android.graphics.ImageFormat;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraManager;
+import android.hardware.camera2.params.StreamConfigurationMap;
 import android.util.Log;
+import android.util.Size;
 
 import java.util.Arrays;
 import java.util.List;
+
 
 public class CameraInfoUtil {
 
     //private static final String TAG = "CameraSyncChecker";
     private static final String TAG = "A3DCamera";
+
+
+    public static void displayCameraInfo(Context context) {
+
+        CameraManager cameraManager = (CameraManager) context.getSystemService(Context.CAMERA_SERVICE);
+        String[] cameraIdList = new String[4];
+        if (cameraManager != null) {
+            try {
+                // 2. Get the list of available camera IDs
+                cameraIdList = cameraManager.getCameraIdList();
+                // overridden for testing only
+                cameraIdList = new String[4];
+                cameraIdList[0] = "0";
+                cameraIdList[1] = "1";
+                cameraIdList[2] = "2";
+                cameraIdList[3] = "3";
+
+                // 3. Loop through each camera ID to get its characteristics
+                for (String cameraId : cameraIdList) {
+                    CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(cameraId);
+
+                    // --- Extract Full Information ---
+
+                    // Lens Facing (Front or Back)
+                    Integer lensFacing = characteristics.get(CameraCharacteristics.LENS_FACING);
+                    String facingStr = (lensFacing != null && lensFacing == CameraCharacteristics.LENS_FACING_FRONT) ? "Front" : "Back";
+
+                    // Hardware Level (e.g., LEGACY, LIMITED, FULL, LEVEL_3)
+                    Integer hardwareLevel = characteristics.get(CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL);
+
+                    // Flash Unit Presence
+                    Boolean hasFlash = characteristics.get(CameraCharacteristics.FLASH_INFO_AVAILABLE);
+
+                    // Stream Configuration Map (supported preview/recording resolutions)
+                    StreamConfigurationMap streamMap = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+
+                    Log.d(TAG, "Camera ID: " + cameraId +
+                            ", Lens: " + facingStr +
+                            ", Hardware Level: " + hardwareLevel +
+                            ", Has Flash: " + hasFlash);
+
+                    // Example: Log supported output sizes for ImageFormat.JPEG
+                    if (streamMap != null) {
+                        Size[] sizes = streamMap.getOutputSizes(ImageFormat.JPEG);
+                        if (sizes != null) {
+                            Log.d(TAG, "JPEG Resolutions count: " + sizes.length);
+                        }
+                    }
+
+                    try {
+                        characteristics = cameraManager.getCameraCharacteristics(cameraId);
+
+                        // Retrieve the stream configuration map
+                        StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+
+                        if (map != null) {
+                            // Fetch all supported sizes for the JPEG format
+                            Size[] jpegSizes = map.getOutputSizes(ImageFormat.JPEG);
+
+                            if (jpegSizes != null) {
+                                Log.d("CameraResolutions", "--- Camera ID " + cameraId + " JPEG Sizes ---");
+                                for (Size size : jpegSizes) {
+                                    Log.d("CameraResolutions", size.getWidth() + " x " + size.getHeight());
+                                }
+                            } else {
+                                Log.d("CameraResolutions", "Camera ID " + cameraId + " does not support JPEG output.");
+                            }
+                        }
+
+                    } catch (CameraAccessException e) {
+                        Log.e("CameraResolutions", "Error accessing camera characteristics", e);
+                    }
+                }
+            } catch (CameraAccessException e) {
+                Log.e(TAG, "Camera access exception: ", e);
+            }
+
+            // Check if Camera 3 is a logical multi-camera
+            try {
+                CameraCharacteristics chars = cameraManager.getCameraCharacteristics(cameraIdList[3]);
+                int[] capabilities = chars.get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES);
+                boolean isLogical = false;
+                for (int cap : capabilities) {
+                    if (cap == CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_LOGICAL_MULTI_CAMERA) {
+                        isLogical = true;
+                        break;
+                    }
+                }
+
+                if (isLogical) {
+                    // Standard template creation failed, try using physical IDs explicitly
+                    // or fallback to opening physical camera ID 3 or ID 1 directly.
+                    Log.d(TAG, "Camera "+cameraIdList[3]+" is a logical multi-camera.");
+                } else {
+                    Log.d(TAG, "Camera "+ cameraIdList[3]+ " is not a logical multi-camera.");
+                }
+            } catch (CameraAccessException e) {
+                Log.e(TAG, "Error accessing camera characteristics", e);
+            }
+
+        }
+    }
 
     //@RequiresApi(api = Build.VERSION_CODES.P)
     public static void checkCameraSyncType(Context context, String[] cameraIds) {

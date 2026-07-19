@@ -129,6 +129,7 @@ public class PhotoBooth extends PApplet {
     }
 
     public void settings() {
+        if (DEBUG) System.out.println("Photo Booth Sketch settings()");
         // set processing sketch size for XReal Beam Pro full display
         // draw canvas size and render using OpenGL
         //fullScreen(P2D);
@@ -137,7 +138,7 @@ public class PhotoBooth extends PApplet {
             gui = new Gui();
             gui.setup(this);
         }
-        if (DEBUG) System.out.println("Photo Booth Sketch settings()");
+        if (DEBUG) System.out.println("Photo Booth Sketch settings() done");
 
     }
 
@@ -475,12 +476,15 @@ public class PhotoBooth extends PApplet {
 
     private void drawLiveView() {
 
+        // Synchronize with ImageReader thread: grab reference only when pixels are stable
         if (stereoCamera.available.get()) {
-            stereoCamera.available.set(false);
-            imgLeft = stereoCamera.leftImage;
-            imgRight = stereoCamera.rightImage;
-            AR = (float) imgLeft.width / (float) imgLeft.height;
-
+            synchronized (stereoCamera.imageLock) {
+                if (stereoCamera.available.compareAndSet(true, false)) {
+                    imgLeft = stereoCamera.leftImage;
+                    imgRight = stereoCamera.rightImage;
+                    AR = (float) imgLeft.width / (float) imgLeft.height;
+                }
+            }
         }
         if (imgLeft != null && imgRight != null) {
             if (displayMode == DisplayMode.ANAGLYPH) {
@@ -997,6 +1001,7 @@ public class PhotoBooth extends PApplet {
 
     void drawReview() {
         // PApplet.println("drawReview()");
+        // Review PImages use dedicated Bitmaps (not shared with preview), so no sync needed
         if (currentLeft != null && currentRight != null && currentLeft.width>0 && currentLeft.height>0 && currentRight.width>0 && currentRight.height>0 ) {
             boolean saveMirror = mirror;  // review does not display mirror image
             mirror = false;

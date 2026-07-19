@@ -36,6 +36,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
 import com.andymodla.android3dcamera.camera.Camera3D;
+import com.andymodla.android3dcamera.camera.CameraInfoUtil;
 import com.andymodla.android3dcamera.sketch.PhotoBooth;
 
 import java.io.File;
@@ -389,7 +390,7 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             }
         });
-
+        CameraInfoUtil.displayCameraInfo(this); // for debug
     }
 
     @Override
@@ -425,21 +426,18 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         Log.d(TAG, "onResume()");
         super.onResume();
-        camera.shutterSound();
 
         // for debugging and test
         if (allPermissionsGranted) {
-            // String[] list = camera.getCameraIdList();  // debug what cameras are available
-            // for (String id : list) {
-            // Log.d(TAG, "Available CameraId: |" + id + "|");
-            //  }
+            if (camera == null) {
+                Log.e(TAG, "Internal error - camera is null");
+                return;
+            }
 
-            // Debug information
-            //CameraInfoUtil.checkCameraSyncType(this, list);
-            //CameraInfoUtil.logFocusDistanceCalibration(this);  // for debug
-
-            //camera.startCameraThread();
-            camera.openCamera();
+            camera.shutterSound();
+            if (!camera.isCameraOpen()) {
+                camera.openCamera();
+            }
         }
     }
 
