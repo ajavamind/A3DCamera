@@ -261,6 +261,7 @@ public class MainActivity extends AppCompatActivity {
                     ViewGroup.LayoutParams.MATCH_PARENT));
 
             photoBooth = new PhotoBooth();
+            photoBooth.setMedia(media);
             photoBoothFragment = new PFragment(photoBooth);
             photoBoothFragment.setView(frame, this);
             media.setupApplet(photoBooth);
@@ -284,7 +285,7 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         imageSender = new ImageSender(this, parameters, udpRemoteControl);
-        if (photoBooth != null) { // we are in photo booth mode
+        if (photoBooth != null) { // we are using processing in stereoscope or photo booth mode
             // set photo booth countdown
             countdownDigit = -1;
             if (parameters.getCountDownEnabled()) {
@@ -373,13 +374,14 @@ public class MainActivity extends AppCompatActivity {
 
                     case MotionEvent.ACTION_UP:
                         // upper right corner is hidden shutter release button
-                        if (x > HIDDEN_SHUTTER_BUTTON_X && y < HIDDEN_SHUTTER_BUTTON_Y) {
-                            capturePhoto();
-                        // upper left corner is hidden launch settings button
-                        } else if (x < HIDDEN_SETTINGS_BUTTON_X && y < HIDDEN_SETTINGS_BUTTON_Y) {
-                            launchSettings();
+                        if (parameters.isBasicCameraMode()) {
+                            if (x > HIDDEN_SHUTTER_BUTTON_X && y < HIDDEN_SHUTTER_BUTTON_Y) {
+                                capturePhoto();
+                                // upper left corner is hidden launch settings button
+                            } else if (x < HIDDEN_SETTINGS_BUTTON_X && y < HIDDEN_SETTINGS_BUTTON_Y) {
+                                launchSettings();
+                            }
                         }
-
                         // Log when the finger/mouse is lifted
                         Log.d(TAG, "ACTION_UP detected at -> X: " + x + " | Y: " + y);
                         break;

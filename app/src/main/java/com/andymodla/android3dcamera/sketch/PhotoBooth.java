@@ -52,8 +52,21 @@ public class PhotoBooth extends PApplet {
 
     PImage imgLeft;
     PImage imgRight;
+
     //PImage splashLeft;
     //PImage splashRight;
+
+    // Constants
+    final int SLIDESHOW_DELAY = 2500; // 2 seconds
+
+    // Review Global variables
+    ArrayList<String> leftImageFiles;
+    ArrayList<String> rightImageFiles;
+    int currentIndex = 0;
+
+    // Review photos for display;
+    volatile PImage currentLeft;
+    volatile PImage currentRight;
 
     int XBP_CAMERA_DISPLAY_WIDTH = 1280;
     int XBP_CAMERA_DISPLAY_HEIGHT = 960;
@@ -128,6 +141,10 @@ public class PhotoBooth extends PApplet {
         this.mainActivity = mainActivity;
     }
 
+    public void setMedia(Media media) {
+        this.media = media;
+    }
+
     public void settings() {
         if (DEBUG) System.out.println("Photo Booth Sketch settings()");
         // set processing sketch size for XReal Beam Pro full display
@@ -148,6 +165,18 @@ public class PhotoBooth extends PApplet {
         background(black);
         smooth();
         frameRate(displayFPS);
+
+        // Pre-allocate review PImages on UI thread (not camera thread) to avoid 8s block at capture time
+//        media.leftReview = createImage(Camera3D.CAMERA_WIDTH_DEFAULT, Camera3D.CAMERA_HEIGHT_DEFAULT, PImage.ARGB);
+//        media.rightReview = createImage(Camera3D.CAMERA_WIDTH_DEFAULT, Camera3D.CAMERA_HEIGHT_DEFAULT, PImage.ARGB);
+//        currentLeft = media.leftReview;
+//        currentRight = media.rightReview;
+            // Initialize pixel buffers so updatePixels() on camera thread doesn't block
+//            leftReview.loadPixels();
+//            leftReview.updatePixels();
+//            rightReview.loadPixels();
+//            rightReview.updatePixels();
+
 
         textSize(72);
         textAlign(CENTER, CENTER);
@@ -170,8 +199,7 @@ public class PhotoBooth extends PApplet {
     public void setCamera(Camera3D camera) {
         stereoCamera = camera;
         this.parameters = camera.getParameters();
-
-        this.media = camera.getMedia();
+        //this.media = camera.getMedia();
     }
 
     public void update() {
@@ -970,17 +998,6 @@ public class PhotoBooth extends PApplet {
      * =================================================================================================
      * Review Code
      */
-    // Constants
-    final int SLIDESHOW_DELAY = 2500; // 2 seconds
-
-    // Review Global variables
-    ArrayList<String> leftImageFiles;
-    ArrayList<String> rightImageFiles;
-    int currentIndex = 0;
-
-    // Review photos for display;
-    volatile PImage currentLeft;
-    volatile PImage currentRight;
 
     // TODO exit and restore take care of last image on application start up
 //    public void exit() {
@@ -1240,22 +1257,14 @@ public class PhotoBooth extends PApplet {
         } else if (x < MainActivity.HIDDEN_SETTINGS_BUTTON_X && y < MainActivity.HIDDEN_SETTINGS_BUTTON_Y) {
             //if (DEBUG) PApplet.println("mouseReleased photo booth settings");
             mainActivity.launchSettings();
-        } else if (x > (frameX+(XBP_DISPLAY_FRAME_WIDTH/2)-100) && x < (frameX +(XBP_DISPLAY_FRAME_WIDTH/2) +100) && y > (XBP_DISPLAY_FRAME_HEIGHT/2 - 100) && y < (XBP_DISPLAY_FRAME_HEIGHT/2 + 100)) {
-            //if (DEBUG) PApplet.println("mouseReleased photo booth show grid");
-            if (!stereoCamera.captureInProgress.get()) {
-                toggleShowMenu();
-                //toggleGrid();
-                //setKeyCode(KeyEvent.KEYCODE_G, 'G');
-            }
+        } else if (y > (XBP_DISPLAY_FRAME_HEIGHT - 144)) {
+            //if (DEBUG) PApplet.println("mouseReleased photo booth show menu");
+            setKeyCode(KeyEvent.KEYCODE_U, 'U'); // toggleShowMenu()
         } else {
-            //if (DEBUG) PApplet.println("mouseReleased photo booth x="+x+" y="+y);
-            //}
-
-            //public void mouseReleased() {
-            //    int x = mouseX;
-            //    int y = mouseY;
-            int keyCode = gui.mousePressed(x, y);
-            setKeyCode(keyCode, 0);
+            if (showMenu) {
+                int keyCode = gui.mousePressed(x, y);
+                setKeyCode(keyCode, 0);
+            }
         }
     }
 
