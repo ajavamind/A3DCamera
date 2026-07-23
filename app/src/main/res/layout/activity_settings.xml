@@ -87,7 +87,7 @@
         </RadioGroup>
 
         <!-- ============================================================ -->
-        <!-- SECTION 5: Camera                                            -->
+        <!-- SECTION 2: Camera                                            -->
         <!-- ============================================================ -->
         <TextView
             android:layout_width="wrap_content"
@@ -401,7 +401,7 @@
         </LinearLayout>
 
         <!-- ============================================================ -->
-        <!-- SECTION 6: Network                                           -->
+        <!-- SECTION 3: Network                                           -->
         <!-- ============================================================ -->
         <TextView
             android:layout_width="wrap_content"
@@ -529,7 +529,7 @@
 		
 		
         <!-- ============================================================ -->
-        <!-- SECTION 2: Stereo Alignment                                  -->
+        <!-- SECTION 4: Stereo Alignment                                  -->
         <!-- ============================================================ -->
         <TextView
             android:layout_width="wrap_content"
@@ -638,7 +638,7 @@
         </LinearLayout>
 		
 		<!-- ============================================================ -->
-        <!-- SECTION 2: Anaglyph Options                                   -->
+        <!-- SECTION 5: Anaglyph Options                                   -->
         <!-- ============================================================ -->
 		
         <LinearLayout
@@ -687,7 +687,7 @@
 
         </LinearLayout>
         <!-- ============================================================ -->
-        <!-- SECTION 3: Photo Booth Options                                   -->
+        <!-- SECTION 6: Photo Booth Options                                   -->
         <!-- ============================================================ -->
 		
         <LinearLayout
@@ -819,7 +819,7 @@
         </LinearLayout>
 
         <!-- ============================================================ -->
-        <!-- SECTION 4: Photo Booth Labels                                -->
+        <!-- SECTION 7: Photo Booth Labels                                -->
         <!-- ============================================================ -->
         <TextView
             android:layout_width="wrap_content"

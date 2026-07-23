@@ -1131,6 +1131,10 @@ public class Camera3D {
             }
             captureInProgress.set(false);  //  done capturing images
             Log.d(TAG, "saveImageFiles() done captureInProgress=" + captureInProgress.get());
+
+            if (((MainActivity) context).getContinuousMode() && ((MainActivity) context).getContinuousCounter() > 0) {
+                    ((MainActivity) context).nextContinuousCapturePhoto();
+            }
         }
     }
 

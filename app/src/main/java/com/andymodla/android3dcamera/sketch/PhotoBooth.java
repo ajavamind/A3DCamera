@@ -48,7 +48,8 @@ public class PhotoBooth extends PApplet {
     Parameters parameters; // Application parameters
     Media media;
     Gui gui;
-    private int state; // initialized from MainActivity, used in draw() to determine what to draw
+
+    private volatile int state; // updated from MainActivity
 
     PImage imgLeft;
     PImage imgRight;
@@ -77,8 +78,9 @@ public class PhotoBooth extends PApplet {
     int XBP_DISPLAY_HEIGHT = 1080;
 
     int displayFPS = 30; // display frames per second
-    int reviewTimeout = 0;
-    int MAX_REVIEW_TIMEOUT_SECONDS = 120;
+    int reviewTimeout = 0;  // frame count for review timeout
+    int MAX_REVIEW_TIMEOUT_SECONDS = 120;  // for photo booth camera mode
+    int REVIEW_TIMEOUT_SECONDS = 3;  // for stereoscopic camera mode
 
     // Parallax and vertical alignment adjustments in pixels for XBP photo booth display
     private volatile int parallax = 0;  // display parallax - converted from camera sensor parallax
@@ -91,6 +93,10 @@ public class PhotoBooth extends PApplet {
     private volatile boolean showPhotoBoothTitle = false;
     private volatile int lastKeyCode;
     private volatile int lastKey;
+
+    private static final int STEREO_OFFSET = -10; // right image shift for stereo depth
+    private String imageLabel;
+    private int labelFrameCount = 0;
 
     DisplayMode displayMode = DisplayMode.SBS;
     volatile boolean update = false;
@@ -166,23 +172,45 @@ public class PhotoBooth extends PApplet {
         smooth();
         frameRate(displayFPS);
 
-        // Pre-allocate review PImages on UI thread (not camera thread) to avoid 8s block at capture time
-//        media.leftReview = createImage(Camera3D.CAMERA_WIDTH_DEFAULT, Camera3D.CAMERA_HEIGHT_DEFAULT, PImage.ARGB);
-//        media.rightReview = createImage(Camera3D.CAMERA_WIDTH_DEFAULT, Camera3D.CAMERA_HEIGHT_DEFAULT, PImage.ARGB);
-//        currentLeft = media.leftReview;
-//        currentRight = media.rightReview;
-            // Initialize pixel buffers so updatePixels() on camera thread doesn't block
-//            leftReview.loadPixels();
-//            leftReview.updatePixels();
-//            rightReview.loadPixels();
-//            rightReview.updatePixels();
+        // set up media for review PImages
+        // Pre-allocate review PImages on sketch draw thread (not camera thread) to avoid 8s pause after the first camera capture
+//        if (media.leftReview == null && media.rightReview == null) {
+//           media.leftReview = createImage(Camera3D.CAMERA_WIDTH_DEFAULT, Camera3D.CAMERA_HEIGHT_DEFAULT, PImage.ARGB);
+//           media.rightReview = createImage(Camera3D.CAMERA_WIDTH_DEFAULT, Camera3D.CAMERA_HEIGHT_DEFAULT, PImage.ARGB);
+//           // blank screen
+//            media.leftReview.loadPixels();
+//            media.leftReview.updatePixels();
+//           // blank screen
+//            media.rightReview.loadPixels();
+//            media.rightReview.updatePixels();
+//    }
 
+        // test code
+        if (media.leftReview == null && media.rightReview == null) {
+            media.leftReview = loadImage("Image_l.JPG");
+            media.rightReview = loadImage("Image_r.JPG");
+            currentLeft = media.leftReview;
+            currentRight = media.rightReview;
+            int done = 8;
+            while  (!(currentLeft != null && currentRight != null && currentLeft.width > 0 && currentLeft.height > 0 && currentRight.width > 0 && currentRight.height > 0)) {
+                delay(1000);
+                done--;
+                if (done == 0) {
+                    break;
+                }
+            }
+        }
 
         textSize(72);
         textAlign(CENTER, CENTER);
         fill(yellow);
-        text("3D Photo Booth", (float) width / 4, (float) height - 200);
-        text("3D Photo Booth", (float) 3 * width / 4, (float) height - 200);
+        if (parameters.isPhotoBoothCameraMode()) {
+            text("3D Photo Booth", (float) width / 4, (float) height/2); // left
+            text("3D Photo Booth", ((float) 3 * width / 4)+STEREO_OFFSET, (float) height/2); // right
+        } else {
+            text("3D Stereoscope", (float) width / 4, (float) height/2);  // left
+            text("3D Stereoscope", ((float) 3 * width / 4) + STEREO_OFFSET, (float) height/2); // right
+        }
         if (DEBUG) PApplet.println("PhotoBooth setup done");
         update = true;
     }
@@ -198,8 +226,10 @@ public class PhotoBooth extends PApplet {
 
     public void setCamera(Camera3D camera) {
         stereoCamera = camera;
-        this.parameters = camera.getParameters();
-        //this.media = camera.getMedia();
+    }
+
+    public void setParameters(Parameters parameters) {
+        this.parameters = parameters;
     }
 
     public void update() {
@@ -323,10 +353,12 @@ public class PhotoBooth extends PApplet {
     }
 
     public void setReviewTimeout(int reviewTimeout) {
-        if (parameters.getAutoReview()) {
-            this.reviewTimeout = MAX_REVIEW_TIMEOUT_SECONDS*displayFPS;
+        if (parameters.getAutoReview() && parameters.isBasicCameraMode()) {
+            this.reviewTimeout = MAX_REVIEW_TIMEOUT_SECONDS * displayFPS;
+        } else if (reviewTimeout == 0) {
+            this.reviewTimeout = 2;  // review timeout in frames
         } else {
-            this.reviewTimeout = reviewTimeout;
+            this.reviewTimeout = (REVIEW_TIMEOUT_SECONDS+1) * displayFPS;
         }
     }
 
@@ -347,6 +379,11 @@ public class PhotoBooth extends PApplet {
     }
 
     public void draw() {
+        // hold setup() display for about 2 seconds
+        // frameCount is not accurate
+        if (frameCount < 20) {
+            return;
+        }
         state = mainActivity.state ;
         if (loadPrevious) {
             loadPrevious = false;
@@ -359,10 +396,15 @@ public class PhotoBooth extends PApplet {
         mirror = parameters.getIsMirror();
 
         if (reviewTimeout > 0) {
+            //if (DEBUG) println("reviewTimeout = " + reviewTimeout + "  ");
             reviewTimeout--;
             if (reviewTimeout == 0) {
                 //mainActivity.state = MainActivity.LIVE_VIEW_STATE;
                 mainActivity.state = MainActivity.LIVE_VIEW_STATE;
+                state = mainActivity.state;
+                update = true;
+            } else {
+                mainActivity.state = MainActivity.REVIEW_PHOTO_STATE;
                 state = mainActivity.state;
                 update = true;
             }
@@ -495,6 +537,12 @@ public class PhotoBooth extends PApplet {
             drawEv();
             drawParallax();
         }
+
+        if (labelFrameCount > 0) {
+            labelFrameCount--;
+            drawImageLabel();
+        }
+
         // last thing to check is screenshot
         if (screenshot) {
             saveScreenshot();
@@ -811,7 +859,7 @@ public class PhotoBooth extends PApplet {
         DisplayMode position = displayMode.get();
         if (position == DisplayMode.SBS) { // stereoscopic
             showString(ev, LEFT, 0, level);
-            showString(ev, RIGHT, -10, level);
+            showString(ev, RIGHT, STEREO_OFFSET, level);
         } else { //monoscopic
             showString(ev, CENTER, 0, level);
         }
@@ -827,11 +875,33 @@ public class PhotoBooth extends PApplet {
         DisplayMode position = displayMode.get();
         if (position == DisplayMode.SBS) { // stereoscopic
             showString(px, LEFT, 0, level);
-            showString(px, RIGHT, 0, level);
+            showString(px, RIGHT, STEREO_OFFSET, level);
         } else { //monoscopic
             showString(px, CENTER, 0, level);
         }
     }
+
+    public void setImageLabel(String imageLabel) {
+        this.imageLabel = imageLabel;
+        labelFrameCount = 60;
+        update = true;
+    }
+
+    void drawImageLabel() {
+        if (imageLabel == null) return;
+        String label =  imageLabel;
+        if (label.isEmpty()) return;
+
+        int level = 120;
+        DisplayMode position = displayMode.get();
+        if (position == DisplayMode.SBS) { // stereoscopic
+            showString(label, LEFT, 0, level);
+            showString(label, RIGHT, STEREO_OFFSET, level);
+        } else { //monoscopic
+            showString(label, CENTER, 0, level);
+        }
+    }
+
 
     void showString(String ev, int position, int offset, int bottom) {
         int x;
@@ -1011,33 +1081,40 @@ public class PhotoBooth extends PApplet {
 //    }
 
     public void setReviewImages(PImage left, PImage right) {
+        update = false;
+        if (DEBUG) PApplet.println("setReviewImages() left=" + left + " right=" + right);
         currentLeft = left;
         currentRight = right;
-        update = true;
+        if (currentLeft != null && currentRight != null) {
+            update = true;
+        }
+        if (DEBUG) PApplet.println("setReviewImages() update=" + update);
     }
 
     void drawReview() {
         // PApplet.println("drawReview()");
-        // Review PImages use dedicated Bitmaps (not shared with preview), so no sync needed
-        if (currentLeft != null && currentRight != null && currentLeft.width>0 && currentLeft.height>0 && currentRight.width>0 && currentRight.height>0 ) {
-            boolean saveMirror = mirror;  // review does not display mirror image
-            mirror = false;
-            if (displayMode == DisplayMode.SBS) {
-                drawSBS(currentLeft, currentRight);
-            } else if (displayMode == DisplayMode.ANAGLYPH) {
-                drawAnaglyph(currentLeft, currentRight);
-            } else if (displayMode == DisplayMode.LEFT) {
-                drawPhoto(currentLeft);
-            } else if (displayMode == DisplayMode.RIGHT) {
-                drawPhoto(currentRight);
+        synchronized (media.reviewLock) {
+            if (currentLeft != null && currentRight != null && currentLeft.width > 0 && currentLeft.height > 0 && currentRight.width > 0 && currentRight.height > 0) {
+                boolean saveMirror = mirror;  // review does not display mirror image
+                mirror = false;
+
+                if (displayMode == DisplayMode.SBS) {
+                    drawSBS(currentLeft, currentRight);
+                } else if (displayMode == DisplayMode.ANAGLYPH) {
+                    drawAnaglyph(currentLeft, currentRight);
+                } else if (displayMode == DisplayMode.LEFT) {
+                    drawPhoto(currentLeft);
+                } else if (displayMode == DisplayMode.RIGHT) {
+                    drawPhoto(currentRight);
+                }
+                mirror = saveMirror;
+            } else {
+                // Display message if no images
+                fill(255);
+                textAlign(CENTER, CENTER);
+                textSize(48);
+                text("Waiting for Photo", width / 2, height / 2);
             }
-            mirror = saveMirror;
-        } else {
-            // Display message if no images
-            fill(255);
-            textAlign(CENTER, CENTER);
-            textSize(48);
-            text("Waiting for Photo", width / 2, height / 2);
         }
     }
 

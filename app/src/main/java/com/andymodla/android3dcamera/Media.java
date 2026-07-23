@@ -62,10 +62,10 @@ public class Media {
     volatile Bitmap leftBitmap;
     volatile Bitmap rightBitmap;
     // Dedicated Bitmaps for review � preview thread can't corrupt review pixels
-    private Bitmap leftReviewBitmap;
-    private Bitmap rightReviewBitmap;
-    public volatile PImage leftReview;
-    public volatile PImage rightReview;
+    //private volatile Bitmap leftReviewBitmap;
+    //private volatile Bitmap rightReviewBitmap;
+    public volatile PImage leftReview;  // instance created in sketch
+    public volatile PImage rightReview; // instance created in sketch
     public final Object reviewLock = new Object(); // synchronizes review PImage pixel access
     private Bitmap sbsBitmap;
     private Bitmap anaglyphBitmap;
@@ -187,15 +187,16 @@ public class Media {
 
     }
 
+    // converts bytes to bitmap and optionally saves to file
     public Bitmap saveImageFile(byte[] bytes, String filename, boolean left) {
         Bitmap bitmap = null;
 
         if (left) {
             filename += "_l.jpg";
-            bitmap = leftBitmap;
+            bitmap = leftBitmap;  // reusing bitmap buffer
         } else {
             filename += "_r.jpg";
-            bitmap = rightBitmap;
+            bitmap = rightBitmap;  // reusing bitmap buffer
         }
 
         BitmapFactory.Options options = new BitmapFactory.Options();
@@ -209,6 +210,7 @@ public class Media {
         options.inMutable = true;
         options.inSampleSize = 1;
 
+        // create bitmap from bytes overwriting buffer of bitmap
         bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length, options);
         if (bitmap == null) {
             Log.e(TAG, "Image decoding failed! " + (left ? "left" : "right"));
@@ -220,6 +222,7 @@ public class Media {
                     return bitmap;
                 }
             }
+            // file always saved in photo booth mode
         }
         Log.d(TAG, "SaveImageFile " + filename);
 
@@ -339,7 +342,7 @@ public class Media {
             int counter = ((MainActivity) context).getContinuousCounter();
             Log.d(TAG, "ContinuousCounter=" + counter);
             if (((MainActivity) context).getContinuousMode()) {
-                timestamp += "_" + (((MainActivity) context).CONTINUOUS_COUNT - counter + 1);
+                timestamp += "_" + (((MainActivity) context).getContinuousCounter()-((MainActivity) context).CONTINUOUS_COUNT) + 1;
             }
             // Save SBS image and keep file
             if (crossEye) {
@@ -347,41 +350,32 @@ public class Media {
             } else {
                 reviewSBS = createAndSaveSBS(PHOTO_PREFIX + timestamp, leftBitmap, rightBitmap);
             }
-            if (((MainActivity) context).getContinuousMode() && counter > 0) {
-                ((MainActivity) context).nextContinuousCapturePhoto();
-            }
         }
 
         if (pApplet != null) {  // Processing sketch is present
-            // Create dedicated Bitmaps for review so the preview thread can't corrupt them
-            leftReviewBitmap = Bitmap.createBitmap(leftBitmap.getWidth(), leftBitmap.getHeight(), Bitmap.Config.ARGB_8888);
-            rightReviewBitmap = Bitmap.createBitmap(rightBitmap.getWidth(), rightBitmap.getHeight(), Bitmap.Config.ARGB_8888);
-            new Canvas(leftReviewBitmap).drawBitmap(leftBitmap, 0, 0, null);
-            new Canvas(rightReviewBitmap).drawBitmap(rightBitmap, 0, 0, null);
-
-            if (leftReview == null || rightReview == null) {
-                leftReview = pApplet.createImage(leftBitmap.getWidth(), leftBitmap.getHeight(), PImage.ARGB);
-                rightReview = pApplet.createImage(rightBitmap.getWidth(), rightBitmap.getHeight(), PImage.ARGB);
-            }
-            // Synchronize: sketch thread must not read review pixels while we mutate them
-            synchronized (reviewLock) {
-                leftReview.setNative(leftReviewBitmap);
-                leftReview.loadPixels();
-                leftReview.updatePixels();
-                rightReview.setNative(rightReviewBitmap);
-                rightReview.loadPixels();
-                rightReview.updatePixels();
-                ((PhotoBooth) pApplet).setReviewImages(leftReview, rightReview);
-            }
-
-            if (parameters.getAutoReview()) {
-                ((MainActivity) context).setReview();
-            } else {
-                //((MainActivity) context).setLiveView();
+            if (leftReview != null && rightReview != null) {
+                // Synchronize: sketch thread must not read review pixels while we mutate them
+                synchronized (reviewLock) {
+                    leftReview.setNative(leftBitmap);
+                    leftReview.loadPixels();
+                    leftReview.updatePixels();
+                    rightReview.setNative(rightBitmap);
+                    rightReview.loadPixels();
+                    rightReview.updatePixels();
+                    ((PhotoBooth) pApplet).setReviewImages(leftReview, rightReview);
+                    ((PhotoBooth) pApplet).setReviewTimeout(0);  // Set review timeout default
+                }
+//                if (!parameters.isBasicCameraMode()) {
+//                    ((MainActivity) context).photoBooth.loop();
+//                }
+                if (parameters.getAutoReview() && parameters.isPhotoBoothCameraMode()) {
+                    ((MainActivity) context).setReview();
+                }
             }
         }
         if (!parameters.getIsBlankScreen()) {
-            Toast.makeText(context, "Saved " + timestamp, Toast.LENGTH_SHORT).show();
+            //Toast.makeText(context, "Saved " + timestamp, Toast.LENGTH_SHORT).show();
+            if (pApplet != null) ((PhotoBooth)pApplet).setImageLabel(timestamp);
         }
     }
 

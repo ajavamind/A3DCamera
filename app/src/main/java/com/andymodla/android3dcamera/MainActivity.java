@@ -114,8 +114,8 @@ public class MainActivity extends AppCompatActivity {
     volatile boolean continuousModeFeature = true;
     volatile boolean continuousMode = false;  // continuous capture is active
     public volatile int continuousCounter = 0;
-    public static int CONTINUOUS_COUNT_DEFAULT = 59; //(one less 60)
-    //public static int CONTINUOUS_COUNT_PHOTO_BOOTH = 3; //(one less 4)
+    public static int CONTINUOUS_COUNT_PHOTO_BOOTH = 3; //(one less 4 photos captured for a strip collection)
+    public static int CONTINUOUS_COUNT_DEFAULT = 24*60*60/2; // second count is one less - one day
     public int CONTINUOUS_COUNT = 0;
 
     // Key codes for Photo Booth Buzzer Box, Beam Pro device: Camera, Volume up and down functionality
@@ -262,6 +262,7 @@ public class MainActivity extends AppCompatActivity {
 
             photoBooth = new PhotoBooth();
             photoBooth.setMedia(media);
+            photoBooth.setParameters(parameters);
             photoBoothFragment = new PFragment(photoBooth);
             photoBoothFragment.setView(frame, this);
             media.setupApplet(photoBooth);
@@ -669,7 +670,6 @@ public class MainActivity extends AppCompatActivity {
             camera.resumeCameraPreviewSession();
         }
 
-        camera.available.set(true);
         photoBooth.loop();
         Log.d(TAG, "wakeUpSketch isLooping="+photoBooth.isLooping());
 
@@ -760,7 +760,6 @@ public class MainActivity extends AppCompatActivity {
 
             case KeyEvent.KEYCODE_VOLUME_DOWN:
             case REVIEW_KEY:
-                //case REVIEW_KB_KEY:
                 media.reviewPhotos(displayMode);
                 return true;
 
@@ -768,7 +767,7 @@ public class MainActivity extends AppCompatActivity {
             case CONTINUOUS_KB_KEY: // start continuous capture mode
                 if (continuousModeFeature) {
                     if (continuousMode) {
-                        return true;  // ignore key
+                        return true;  // ignore key when already in continuous mode
                     } else {
                         continuousMode = true;
                         startContinuousCapturePhoto();
@@ -874,7 +873,7 @@ public class MainActivity extends AppCompatActivity {
                     if (CONTINUOUS_COUNT > 0) {
                         CONTINUOUS_COUNT = 0;
                     } else {
-                        if (!isBasicCamera) {
+                        if (parameters.isPhotoBoothCameraMode()) {
                             if (parameters.getCountDownEnabled())
                                 CONTINUOUS_COUNT = parameters.getCountdownTimer(); //CONTINUOUS_COUNT_PHOTO_BOOTH;
                             else
@@ -1018,11 +1017,13 @@ public class MainActivity extends AppCompatActivity {
         if (continuousModeFeature) {
             if (continuousMode) {
                 Toast.makeText(this, "Start Continuous Mode ", Toast.LENGTH_SHORT).show();
-                if ((countdownDigit < 0)) {
+                if ((countdownDigit < 0) && parameters.getCountDownEnabled()) {
+                    Log.d(TAG, "startContinuousCapturePhoto countdownDigit=" + countdownDigit);
                     startCountdownSequence(countdownStart);  // calls createCameraCaptureSession() after count down finished
-                    continuousCounter = parameters.getCountdownTimer(); //CONTINUOUS_COUNT_PHOTO_BOOTH;
+                    continuousCounter = parameters.getCountdownTimer();
                 } else {
-                    continuousCounter = CONTINUOUS_COUNT;
+                    continuousCounter = CONTINUOUS_COUNT_DEFAULT;
+                    CONTINUOUS_COUNT = 0;
                     camera.createCameraCaptureSession();
                 }
             }
@@ -1036,9 +1037,9 @@ public class MainActivity extends AppCompatActivity {
         if (continuousModeFeature && continuousMode) {
             if (continuousCounter > 0) {
                 continuousCounter--;
-                Log.d(TAG, "continuousCounter=" + continuousCounter);
+                Log.d(TAG, "nextContinuousCapturePhoto continuousCounter=" + continuousCounter);
                 camera.createCameraCaptureSession();
-                if (continuousCounter == 0) {
+                if (continuousCounter <= 0) {
                     continuousMode = false;
                     Toast.makeText(this, "Continuous Mode Completed ", Toast.LENGTH_SHORT).show();
                 }
