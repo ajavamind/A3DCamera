@@ -62,8 +62,6 @@ public class Media {
     volatile Bitmap leftBitmap;
     volatile Bitmap rightBitmap;
     // Dedicated Bitmaps for review � preview thread can't corrupt review pixels
-    //private volatile Bitmap leftReviewBitmap;
-    //private volatile Bitmap rightReviewBitmap;
     public volatile PImage leftReview;  // instance created in sketch
     public volatile PImage rightReview; // instance created in sketch
     public final Object reviewLock = new Object(); // synchronizes review PImage pixel access
@@ -342,7 +340,7 @@ public class Media {
             int counter = ((MainActivity) context).getContinuousCounter();
             Log.d(TAG, "ContinuousCounter=" + counter);
             if (((MainActivity) context).getContinuousMode()) {
-                timestamp += "_" + (((MainActivity) context).getContinuousCounter()-((MainActivity) context).CONTINUOUS_COUNT) + 1;
+                timestamp += "_" + ((MainActivity) context).nextLabelContinuousCounter();
             }
             // Save SBS image and keep file
             if (crossEye) {

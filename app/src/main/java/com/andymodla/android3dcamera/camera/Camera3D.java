@@ -993,7 +993,7 @@ public class Camera3D {
      * Create a camera capture session to take a picture
      */
     public void createCameraCaptureSession() {
-        Log.d(TAG, "createCameraCaptureSession() captureInProgress=" + captureInProgress);
+        Log.d(TAG, "createCameraCaptureSession() captureInProgress=" + captureInProgress.get());
         if (captureInProgress.get()) return;
         captureInProgress.set(true);
 

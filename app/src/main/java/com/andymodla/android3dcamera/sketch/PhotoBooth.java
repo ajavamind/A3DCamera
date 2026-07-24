@@ -98,6 +98,10 @@ public class PhotoBooth extends PApplet {
     private String imageLabel;
     private int labelFrameCount = 0;
 
+    private String[] rotatingText = {"-", "\\", "|", "/"};
+    private int rotatingIndex = 0;
+    private volatile boolean rotating = true;
+
     DisplayMode displayMode = DisplayMode.SBS;
     volatile boolean update = false;
     volatile boolean zoom = false;
@@ -121,8 +125,10 @@ public class PhotoBooth extends PApplet {
             "Zoom Out: Left Bracket ([)",
             "View Help/Parameters: H",
             "Toggle Show Menu: U",
+            "Settings: J",
             "Toggle Focus Distance: Q",
-            "Toggle Exposure Metering: T",
+            "Toggle Auto Exposure: F",
+            "Continuous Shutter: K",
             "Increment Exposure Compensation: Period (.)",
             "Decrement Exposure Compensation: Comma (,)"
     };
@@ -221,7 +227,6 @@ public class PhotoBooth extends PApplet {
 
     public void backPressed() {
         if (DEBUG) println("backPressed()");
-        return;
     }
 
     public void setCamera(Camera3D camera) {
@@ -541,6 +546,8 @@ public class PhotoBooth extends PApplet {
         if (labelFrameCount > 0) {
             labelFrameCount--;
             drawImageLabel();
+        } else if (state == MainActivity.REVIEW_PHOTO_STATE) {
+            drawImageLabel();
         }
 
         // last thing to check is screenshot
@@ -645,6 +652,13 @@ public class PhotoBooth extends PApplet {
 
         if (grid) {
             drawGrid(false);
+        }
+        if (rotating) {
+            textSize(48);
+            fill(IGui.dimyellow);
+            textAlign(CENTER);
+            rotatingIndex = (rotatingIndex + 1) % rotatingText.length;
+            text(rotatingText[rotatingIndex], width / 2, height / 2);
         }
     }
 
@@ -958,10 +972,10 @@ public class PhotoBooth extends PApplet {
             case KeyEvent.KEYCODE_Z:
                 zoomToggle();
                 break;
-            case KeyEvent.KEYCODE_SPACE:
-                testMode = !testMode;
-                update = true;
-                break;
+//            case KeyEvent.KEYCODE_SPACE:
+//                testMode = !testMode;
+//                update = true;
+//                break;
             case KeyEvent.KEYCODE_DPAD_UP:
                 stereoCamera.previousFunctionMode();
                 break;
@@ -1008,7 +1022,9 @@ public class PhotoBooth extends PApplet {
             case KeyEvent.KEYCODE_G:
                 toggleGrid();
                 break;
+
             case KeyEvent.KEYCODE_U:
+            case KeyEvent.KEYCODE_SPACE:
                 toggleShowMenu();
                 break;
             case KeyEvent.KEYCODE_P:

@@ -114,6 +114,7 @@ public class MainActivity extends AppCompatActivity {
     volatile boolean continuousModeFeature = true;
     volatile boolean continuousMode = false;  // continuous capture is active
     public volatile int continuousCounter = 0;
+    public volatile int labelContinuousCounter = 0;
     public static int CONTINUOUS_COUNT_PHOTO_BOOTH = 3; //(one less 4 photos captured for a strip collection)
     public static int CONTINUOUS_COUNT_DEFAULT = 24*60*60/2; // second count is one less - one day
     public int CONTINUOUS_COUNT = 0;
@@ -137,7 +138,7 @@ public class MainActivity extends AppCompatActivity {
     static final int PRINT_KEY = KeyEvent.KEYCODE_BUTTON_SELECT; // 109-82 KeyEvent.KEYCODE_MENU;
     static final int ANAGLYPH_KEY = KeyEvent.KEYCODE_BUTTON_START; // 108 "+" button
     static final int FN_KEY = KeyEvent.KEYCODE_BUTTON_X; //  99 KeyEvent.KEYCODE_DEL = 67
-    static final int MENU_KEY = KeyEvent.KEYCODE_BUTTON_Y;  // 100  KeyEvent.KEYCODE_SPACE = 62
+    static final int MENU_KEY = KeyEvent.KEYCODE_BUTTON_Y;  // 100
     static final int REVIEW_KEY = KeyEvent.KEYCODE_BUTTON_A;  // 96 KEYCODE_DPAD_CENTER = 23
     static final int OK_KEY = KeyEvent.KEYCODE_BUTTON_A;  // 96 KEYCODE_DPAD_CENTER = 23
     static final int BACK_KEY = KeyEvent.KEYCODE_BACK;  // KeyEvent.KEYCODE_BUTTON_B = 97 KEYCODE_BACK = 04
@@ -164,7 +165,7 @@ public class MainActivity extends AppCompatActivity {
 
     // Key codes for ASCII Bluetooth Keyboard controller
     static final int FOCUS_DISTANCE_KB_KEY = KeyEvent.KEYCODE_Q;
-    static final int FN_KB_KEY = KeyEvent.KEYCODE_T;
+    //static final int FN_KB_KEY = KeyEvent.KEYCODE_T;
     static final int CONTINUOUS_KB_KEY = KeyEvent.KEYCODE_K;
     static final int MIRROR_KB_KEY = KeyEvent.KEYCODE_M;
 
@@ -777,12 +778,14 @@ public class MainActivity extends AppCompatActivity {
 
             case KeyEvent.KEYCODE_BACK:
             case KeyEvent.KEYCODE_ESCAPE:
-                //moveTaskToBack(true);
-                return true;
             case KeyEvent.KEYCODE_BUTTON_B:
                 if (continuousMode) {
-                    setContinuousMode(false);
+                    continuousMode = false;
+                    countdownDigit = -1;
                     Toast.makeText(this, "Continuous Mode Canceled ", Toast.LENGTH_SHORT).show();
+                    camera.closeCamera();
+                    camera.captureInProgress.set(false);
+                    camera.openCamera();
                     return true;
                 }
                 if (state == REVIEW_PHOTO_STATE) {
@@ -816,7 +819,7 @@ public class MainActivity extends AppCompatActivity {
                 }
                 return true;
             case FN_KEY:
-            case FN_KB_KEY:
+            //case FN_KB_KEY:
             case KeyEvent.KEYCODE_F:
                 if (state != LIVE_VIEW_STATE) {
                     return true;
@@ -981,6 +984,10 @@ public class MainActivity extends AppCompatActivity {
         return continuousCounter;
     }
 
+    public int nextLabelContinuousCounter() {
+        return ++labelContinuousCounter;
+    }
+
     public void setContinuousCounter(int continuousCounter) {
         this.continuousCounter = continuousCounter;
     }
@@ -1023,6 +1030,7 @@ public class MainActivity extends AppCompatActivity {
                     continuousCounter = parameters.getCountdownTimer();
                 } else {
                     continuousCounter = CONTINUOUS_COUNT_DEFAULT;
+                    labelContinuousCounter = 0;
                     CONTINUOUS_COUNT = 0;
                     camera.createCameraCaptureSession();
                 }
