@@ -643,7 +643,7 @@ public class Camera3D {
         return sev;
     }
 
-    public void incrementExposureCompensation(int delta) {
+    public int incrementExposureCompensation(int delta) {
         int newIndex = exposureCompensationIndex + delta;
         if (newIndex > maxExposureIndex) {
             newIndex = maxExposureIndex;
@@ -654,9 +654,10 @@ public class Camera3D {
         //int newIndex = parameters.getExposureCompensationIndex() + delta;
         setExposureCompensation(newIndex);
         Log.d(TAG, "increment Exposure compensation: " + newIndex);
+        return newIndex;
     }
 
-    public void decrementExposureCompensation(int delta) {
+    public int decrementExposureCompensation(int delta) {
         int newIndex = exposureCompensationIndex - delta;
         //int newIndex = exposureCompensationIndex - delta;
         if (newIndex < minExposureIndex) {
@@ -666,6 +667,7 @@ public class Camera3D {
         }
         setExposureCompensation(newIndex);
         Log.d(TAG, "decrement Exposure compensation: " + newIndex);
+        return newIndex;
     }
 
 

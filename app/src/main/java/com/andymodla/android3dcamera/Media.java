@@ -355,17 +355,15 @@ public class Media {
                 // Synchronize: sketch thread must not read review pixels while we mutate them
                 synchronized (reviewLock) {
                     leftReview.setNative(leftBitmap);
-                    leftReview.loadPixels();
-                    leftReview.updatePixels();
                     rightReview.setNative(rightBitmap);
+                    leftReview.loadPixels();
                     rightReview.loadPixels();
+                    leftReview.updatePixels();
                     rightReview.updatePixels();
                     ((PhotoBooth) pApplet).setReviewImages(leftReview, rightReview);
                     ((PhotoBooth) pApplet).setReviewTimeout(0);  // Set review timeout default
                 }
-//                if (!parameters.isBasicCameraMode()) {
-//                    ((MainActivity) context).photoBooth.loop();
-//                }
+
                 if (parameters.getAutoReview() && parameters.isPhotoBoothCameraMode()) {
                     ((MainActivity) context).setReview();
                 }

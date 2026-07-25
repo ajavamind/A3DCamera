@@ -5,6 +5,8 @@ package com.andymodla.android3dcamera.sketch;
  *
  */
 
+import static android.graphics.BitmapFactory.decodeStream;
+
 import android.graphics.BitmapFactory;
 import android.media.MediaScannerConnection;
 import android.view.KeyEvent;
@@ -50,6 +52,7 @@ public class PhotoBooth extends PApplet {
     Gui gui;
 
     private volatile int state; // updated from MainActivity
+    private boolean initial = true;
 
     PImage imgLeft;
     PImage imgRight;
@@ -178,33 +181,23 @@ public class PhotoBooth extends PApplet {
         smooth();
         frameRate(displayFPS);
 
-        // set up media for review PImages
-        // Pre-allocate review PImages on sketch draw thread (not camera thread) to avoid 8s pause after the first camera capture
-//        if (media.leftReview == null && media.rightReview == null) {
-//           media.leftReview = createImage(Camera3D.CAMERA_WIDTH_DEFAULT, Camera3D.CAMERA_HEIGHT_DEFAULT, PImage.ARGB);
-//           media.rightReview = createImage(Camera3D.CAMERA_WIDTH_DEFAULT, Camera3D.CAMERA_HEIGHT_DEFAULT, PImage.ARGB);
-//           // blank screen
-//            media.leftReview.loadPixels();
-//            media.leftReview.updatePixels();
-//           // blank screen
-//            media.rightReview.loadPixels();
-//            media.rightReview.updatePixels();
-//    }
-
-        // test code
         if (media.leftReview == null && media.rightReview == null) {
-            media.leftReview = loadImage("Image_l.JPG");
-            media.rightReview = loadImage("Image_r.JPG");
+            //media.leftReview = loadImage("Image_l.JPG");
+            //media.rightReview = loadImage("Image_r.JPG");
+            media.leftReview = loadImage("FlowerPot_l.JPG");
+            media.rightReview = loadImage("FlowerPot_r.JPG");
+
+            if (DEBUG) PApplet.println("Loading default review images");
+
+//            // Force texture creation/upload now, on the GL thread, off the hot path:
+//            if (g instanceof processing.opengl.PGraphicsOpenGL) {
+//                ((processing.opengl.PGraphicsOpenGL)g).getTexture(media.leftReview);
+//                ((processing.opengl.PGraphicsOpenGL)g).getTexture(media.rightReview);
+//            }
+
             currentLeft = media.leftReview;
             currentRight = media.rightReview;
-            int done = 8;
-            while  (!(currentLeft != null && currentRight != null && currentLeft.width > 0 && currentLeft.height > 0 && currentRight.width > 0 && currentRight.height > 0)) {
-                delay(1000);
-                done--;
-                if (done == 0) {
-                    break;
-                }
-            }
+
         }
 
         textSize(72);
@@ -219,6 +212,10 @@ public class PhotoBooth extends PApplet {
         }
         if (DEBUG) PApplet.println("PhotoBooth setup done");
         update = true;
+    }
+
+    public boolean isReady() {
+        return !initial;
     }
 
     public void onBackPressed() {
@@ -384,11 +381,24 @@ public class PhotoBooth extends PApplet {
     }
 
     public void draw() {
+        if (initial) {
+            // Force texture creation/upload now, on the GL thread, off the hot path:
+            if (g instanceof processing.opengl.PGraphicsOpenGL) {
+                ((processing.opengl.PGraphicsOpenGL)g).getTexture(media.leftReview);
+                ((processing.opengl.PGraphicsOpenGL)g).getTexture(media.rightReview);
+            }
+            media.leftReview.resize(Camera3D.CAMERA_WIDTH_DEFAULT, Camera3D.CAMERA_HEIGHT_DEFAULT);
+            media.rightReview.resize(Camera3D.CAMERA_WIDTH_DEFAULT, Camera3D.CAMERA_HEIGHT_DEFAULT);
+            initial = false;
+            if (DEBUG) PApplet.println("PhotoBooth Force texture done");
+        }
+
         // hold setup() display for about 2 seconds
         // frameCount is not accurate
-        if (frameCount < 20) {
-            return;
-        }
+//        if (frameCount < 20) {
+//            return;
+//        }
+
         state = mainActivity.state ;
         if (loadPrevious) {
             loadPrevious = false;
@@ -985,7 +995,8 @@ public class PhotoBooth extends PApplet {
             case KeyEvent.KEYCODE_PERIOD:
             case KeyEvent.KEYCODE_DPAD_RIGHT:
                 if (stereoCamera.getFunctionMode() == Camera3D.FUNCTION_MODE_EV) {
-                    stereoCamera.incrementExposureCompensation(1);
+                    int index = stereoCamera.incrementExposureCompensation(1);
+                    parameters.setExposureCompensationIndex(index);
                 } else if (stereoCamera.getFunctionMode() == Camera3D.FUNCTION_MODE_PARALLAX) {
                     iParallax = parameters.getParallaxOffset() + DELTA_PARALLAX;
                     parameters.setParallaxOffset(iParallax);
@@ -997,7 +1008,8 @@ public class PhotoBooth extends PApplet {
             case KeyEvent.KEYCODE_COMMA:
             case KeyEvent.KEYCODE_DPAD_LEFT:
                 if (stereoCamera.getFunctionMode() == Camera3D.FUNCTION_MODE_EV) {
-                    stereoCamera.decrementExposureCompensation(1);
+                    int index = stereoCamera.decrementExposureCompensation(1);
+                    parameters.setExposureCompensationIndex(index);
                 } else if (stereoCamera.getFunctionMode() == Camera3D.FUNCTION_MODE_PARALLAX) {
                     iParallax = parameters.getParallaxOffset() - DELTA_PARALLAX;
                     parameters.setParallaxOffset(iParallax);
@@ -1269,7 +1281,16 @@ public class PhotoBooth extends PApplet {
             Bitmap bitmap = null;
 
             try {
-                bitmap = BitmapFactory.decodeStream(stream);
+                BitmapFactory.Options options = new BitmapFactory.Options();
+                options.inPreferredConfig = Bitmap.Config.ARGB_8888; // specify a config
+
+                // 1. Crucial: Tell the decoder to reuse our existing memory allocation buffer
+                options.inBitmap = bitmap;
+                // 2. Ensure mutable status so it can be safely written over
+                options.inMutable = true;
+                options.inSampleSize = 1;
+
+                bitmap = decodeStream(stream, null, options);
             } finally {
                 try {
                     stream.close();

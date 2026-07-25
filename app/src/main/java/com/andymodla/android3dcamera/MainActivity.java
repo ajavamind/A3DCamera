@@ -720,6 +720,7 @@ public class MainActivity extends AppCompatActivity {
             return true;
         }
         if (!isBasicCamera) {
+            if (!photoBooth.isReady()) return true;  // ignore keystrokes until sketch is ready
             photoBooth.setKeyCode(keyCode, ch);
             boolean consumed = photoBooth.processKeyCode();
             if (consumed) return true;
@@ -747,10 +748,6 @@ public class MainActivity extends AppCompatActivity {
             case KeyEvent.KEYCODE_VOLUME_UP:
             case KeyEvent.KEYCODE_3D_MODE: // camera key - first turn off auto launch of native camera app
             case SHUTTER_KEY:
-                //case SHUTTER_KB_KEY:
-//                if (state != LIVE_VIEW_STATE) { // ignore shutter in review state
-//                    return true;
-//                }
                 if (continuousMode) {
                     //Log.d(TAG, "onKeyUp - ignore shutter key in continuous mode");
                     return true; // ignore shutter key in continuous shutter
