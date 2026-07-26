@@ -1,10 +1,12 @@
 package com.andymodla.android3dcamera;
 
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import com.google.android.material.snackbar.Snackbar;
 
 public class CommandLine {
+    public static final String TAG = "CommandLine";
     private final StringBuilder cmdBuffer;
     private final Snackbar mSnackbar;
     View rootView;
@@ -122,6 +124,20 @@ public class CommandLine {
         }
 
         return false;
+    }
+
+    // process command line from UDP input message
+    public void processCommandLine(String text) {
+        Log.d(TAG, "processCommandLine: " + text);
+        String result;
+        String cmd = text.trim();
+
+        if (cmd.isEmpty()) {
+            result = text+"--> Error: No command specified";
+        } else {
+            result = parseAndExecute(cmd);
+        }
+        Log.d(TAG, "processCommandLine: " + result);
     }
 
     /**

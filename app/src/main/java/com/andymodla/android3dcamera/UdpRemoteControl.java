@@ -184,7 +184,16 @@ public class UdpRemoteControl {
                         httpUrl = getHostnameUrl();
                         if (MyDebug.LOG) Log.d(TAG, "Reset information request " + httpUrl);
                         ToastHelper.showToast(context, httpUrl);
+                    } else if (command.startsWith("/")) { // slash command
+                        sParam = getParam(data);
+                        CommandLine commandLine = ((MainActivity) context).getCommandLine();
+                        commandLine.processCommandLine(sParam);
+                    } else if (command.startsWith("K")) {  // keyboard command
+                        sParam = getParam(data);
+                        boolean result = ((MainActivity) context).onKeyUp(Integer.parseInt(sParam),null);
+                        Log.d(TAG, "remote keyboard command " + sParam + " result=" + result);
                     }
+
                 }
 
                 public void netStatus(NetStatus s) {

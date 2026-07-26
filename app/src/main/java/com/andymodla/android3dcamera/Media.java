@@ -270,7 +270,7 @@ public class Media {
             Log.e(TAG, "Error saving anaglyph image", e);
             return null;
         }
-        anaglyphBitmap.recycle();
+        if (anaglyphBitmap != null) anaglyphBitmap.recycle();
         return file;
     }
 
@@ -666,7 +666,7 @@ public class Media {
                 context.getContentResolver().update(destUri, values, null, null);
             }
 
-            bitmap.recycle();
+            if (!bitmap.isRecycled()) bitmap.recycle();
             bitmap = null;
             return true;
         } catch (IOException e) {

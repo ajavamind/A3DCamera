@@ -773,14 +773,16 @@ public class Camera3D {
                                 previewRequestBuilder.addTarget(mSurfaceHolder0.getSurface());
                                 previewRequestBuilder.addTarget(mSurfaceHolder2.getSurface());
 
-                                //previewRequestBuilder.set(CaptureRequest.TONEMAP_MODE, CaptureRequest.TONEMAP_MODE_CONTRAST_CURVE);
-                                //previewRequestBuilder.set(CaptureRequest.TONEMAP_CURVE, new TonemapCurve(curve_srgb, curve_srgb, curve_srgb));
                                 // Explicit AE mode & compensation
+                                previewRequestBuilder.set(CaptureRequest.CONTROL_AE_LOCK, false);
+                                previewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_OFF);
                                 previewRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON);
                                 previewRequestBuilder.set(CaptureRequest.CONTROL_AE_EXPOSURE_COMPENSATION, exposureCompensationIndex);
                                 previewRequestBuilder.set(CaptureRequest.CONTROL_AE_LOCK, true);
                                 //  Let system handle tonemapping (remove custom curve)
                                 previewRequestBuilder.set(CaptureRequest.TONEMAP_MODE, CaptureRequest.TONEMAP_MODE_FAST);
+                                //previewRequestBuilder.set(CaptureRequest.TONEMAP_MODE, CaptureRequest.TONEMAP_MODE_CONTRAST_CURVE);
+                                //previewRequestBuilder.set(CaptureRequest.TONEMAP_CURVE, new TonemapCurve(curve_srgb, curve_srgb, curve_srgb));
 
                                 if (FOCUS_DISTANCE[parameters.getFocusDistanceIndex()] == AUTO_FOCUS_DISTANCE) {
                                     previewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
@@ -791,8 +793,8 @@ public class Camera3D {
                                 previewRequestBuilder.set(EXPOSURE_METERING, METERING[parameters.getExposureMeteringIndex()]);
                                 previewRequestBuilder.set(CaptureRequest.LENS_FOCUS_DISTANCE, FOCUS_DISTANCE[parameters.getFocusDistanceIndex()]);
 
-                                previewRequestBuilder.set(CaptureRequest.NOISE_REDUCTION_MODE, 1); // NOISE_REDUCTION_MODE
-                                previewRequestBuilder.set(CaptureRequest.EDGE_MODE, 1); // EDGE_MODE
+                                previewRequestBuilder.set(CaptureRequest.NOISE_REDUCTION_MODE, CaptureRequest.NOISE_REDUCTION_MODE_FAST); // NOISE_REDUCTION_MODE
+                                previewRequestBuilder.set(CaptureRequest.EDGE_MODE, CaptureRequest.EDGE_MODE_FAST); // EDGE_MODE
                                 previewRequestBuilder.set(CaptureRequest.CONTROL_EXTENDED_SCENE_MODE, 1);  // sync left and right cameras
                                 mCameraCaptureSession.setRepeatingRequest(previewRequestBuilder.build(), null, mCameraHandler);
                             } catch (CameraAccessException e) {
@@ -869,19 +871,12 @@ public class Camera3D {
                 mCameraCaptureSession = session;
                 try {
                     previewRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
-
                     previewRequestBuilder.addTarget(imageReader0.getSurface());
                     previewRequestBuilder.addTarget(imageReader2.getSurface());
 
-                    // Set auto focus
-                    //previewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
-                    previewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_OFF);
-                    previewRequestBuilder.set(CaptureRequest.LENS_FOCUS_DISTANCE, FOCUS_DISTANCE[parameters.getFocusDistanceIndex()]);
-
-                    // Set auto exposure
-                    //previewRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON);
-
                     // Explicit AE mode & compensation
+                    previewRequestBuilder.set(CaptureRequest.CONTROL_AE_LOCK, false);
+                    previewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_OFF);
                     previewRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON);
                     previewRequestBuilder.set(CaptureRequest.CONTROL_AE_EXPOSURE_COMPENSATION, exposureCompensationIndex);
                     previewRequestBuilder.set(CaptureRequest.CONTROL_AE_LOCK, true);
@@ -890,6 +885,14 @@ public class Camera3D {
 
                     //previewRequestBuilder.set(CaptureRequest.TONEMAP_MODE, CaptureRequest.TONEMAP_MODE_CONTRAST_CURVE);
                     //previewRequestBuilder.set(CaptureRequest.TONEMAP_CURVE, new TonemapCurve(curve_srgb, curve_srgb, curve_srgb));
+                    if (FOCUS_DISTANCE[parameters.getFocusDistanceIndex()] == AUTO_FOCUS_DISTANCE) {
+                        previewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
+                    } else {
+                        previewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_OFF);
+                    }
+
+                    previewRequestBuilder.set(EXPOSURE_METERING, METERING[parameters.getExposureMeteringIndex()]);
+                    previewRequestBuilder.set(CaptureRequest.LENS_FOCUS_DISTANCE, FOCUS_DISTANCE[parameters.getFocusDistanceIndex()]);
 
                     previewRequestBuilder.set(CaptureRequest.NOISE_REDUCTION_MODE, CaptureRequest.NOISE_REDUCTION_MODE_FAST); // NOISE_REDUCTION_MODE 1
                     previewRequestBuilder.set(CaptureRequest.EDGE_MODE, CaptureRequest.EDGE_MODE_FAST); // EDGE_MODE 1
@@ -1016,12 +1019,14 @@ public class Camera3D {
             //captureBuilder.set(CaptureRequest.TONEMAP_MODE, CaptureRequest.TONEMAP_MODE_CONTRAST_CURVE);
             //captureBuilder.set(CaptureRequest.TONEMAP_CURVE, new TonemapCurve(curve_srgb, curve_srgb, curve_srgb));
             // Sync with preview brightness settings
-            captureBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON);
             captureBuilder.set(CaptureRequest.CONTROL_AE_LOCK, false);
+            captureBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_OFF);
+            captureBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON);
             captureBuilder.set(CaptureRequest.CONTROL_AE_EXPOSURE_COMPENSATION, exposureCompensationIndex);
             captureBuilder.set(CaptureRequest.CONTROL_AE_LOCK, true);
 
-            captureBuilder.set(CaptureRequest.TONEMAP_MODE, CaptureRequest.TONEMAP_MODE_HIGH_QUALITY);
+            //captureBuilder.set(CaptureRequest.TONEMAP_MODE, CaptureRequest.TONEMAP_MODE_HIGH_QUALITY);
+            captureBuilder.set(CaptureRequest.TONEMAP_MODE, CaptureRequest.TONEMAP_MODE_FAST);
 
 
             if (FOCUS_DISTANCE[parameters.getFocusDistanceIndex()] == AUTO_FOCUS_DISTANCE) {
@@ -1033,8 +1038,8 @@ public class Camera3D {
             captureBuilder.set(EXPOSURE_METERING, METERING[parameters.getExposureMeteringIndex()]);
             captureBuilder.set(CaptureRequest.LENS_FOCUS_DISTANCE, FOCUS_DISTANCE[parameters.getFocusDistanceIndex()]);
 
-            captureBuilder.set(CaptureRequest.NOISE_REDUCTION_MODE, 1); // NOISE_REDUCTION_MODE
-            captureBuilder.set(CaptureRequest.EDGE_MODE, 1); // EDGE_MODE
+            captureBuilder.set(CaptureRequest.NOISE_REDUCTION_MODE, CaptureRequest.NOISE_REDUCTION_MODE_FAST); // NOISE_REDUCTION_MODE
+            captureBuilder.set(CaptureRequest.EDGE_MODE, CaptureRequest.EDGE_MODE_FAST); // EDGE_MODE
             captureBuilder.set(CaptureRequest.CONTROL_EXTENDED_SCENE_MODE, 1);  // sync left and right cameras
             imageL = null;
             imageR = null;

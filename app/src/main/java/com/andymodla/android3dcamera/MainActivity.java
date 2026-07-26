@@ -710,13 +710,16 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onKeyUp(int keyCode, KeyEvent event) {
-        char ch = (char) event.getUnicodeChar();
-        if (ch == 65535 && keyCode == 0) { // special case all other keys
-            // ignore key
-            return true;
+        char ch = 0;
+        if (event != null) {
+            ch = (char) event.getUnicodeChar();
+            if (ch == 65535 && keyCode == 0) { // special case all other keys
+                // ignore key
+                return true;
+            }
         }
         Log.d(TAG, "onKeyUp " + keyCode + " " + ch);
-        if (commandLine != null && commandLine.processCommandLineKey(keyCode, ch)) {
+        if (commandLine != null && ch != 0 && commandLine.processCommandLineKey(keyCode, ch)) {
             return true;
         }
         if (!isBasicCamera) {
@@ -963,6 +966,10 @@ public class MainActivity extends AppCompatActivity {
             default:
                 return super.onKeyDown(keyCode, event);
         }
+    }
+
+    public CommandLine getCommandLine() {
+        return commandLine;
     }
 
     public void setContinuousModeFeature(boolean continuousModeFeature) {

@@ -733,8 +733,8 @@ class ParamStore {
 
             ParamStore isMirrorStore = new ParamStore(
                     "mr", "isMirror", "Mirror",
-                    "getIsMirror", "setIsMirror", boolean.class, "true",
-                    "In photo booth mode it sets the display to a mirror image."
+                    "getIsMirror", "setIsMirror", boolean.class, "false",
+                    "In photo booth mode show the display as a mirror image."
             );
 
             ParamStore countDownEnabledStore = new ParamStore(
