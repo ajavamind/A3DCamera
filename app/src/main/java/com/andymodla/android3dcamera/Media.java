@@ -42,13 +42,16 @@ import processing.core.PImage;
 public class Media {
     private static String TAG = "Media";
     Context context;
-    private String BASE_FOLDER = Environment.DIRECTORY_DCIM;
+    public static final String BASE_FOLDER = Environment.DIRECTORY_DCIM;
     //private String BASE_FOLDER = Environment.DIRECTORY_PICTURES;
     //private String DOWNLOAD_FOLDER_NAME = Environment.DIRECTORY_DOWNLOADS;
-    private String SAVE_FOLDER = "A3DCamera";
-    private String SAVE_ANA_FOLDER = "Anaglyph";
-    private String SAVE_LR_FOLDER = "LR";
-    private String SAVE_AI_EDIT_FOLDER = "AiEdit";
+    public static final String SAVE_FOLDER = "A3DCamera";
+    public static final  String SAVE_ANA_FOLDER = "Anaglyph";
+    public static final  String SAVE_LR_FOLDER = "LR";
+    public static final  String SAVE_AI_EDIT_FOLDER = "AiEdit";
+    public static final  String SAVE_SCREENSHOT_FOLDER = "Screenshots";
+    public static final String SCREENSHOT_PREFIX = "Screenshot_";
+    public static final String SCREENSHOT_FILETYPE = ".png";
 
     public static String lastSavedFilePath = null;
     private volatile boolean crossEye = false;  // reverse SBS output to cross eye
@@ -147,6 +150,11 @@ public class Media {
         }
     }
 
+    /**
+     *
+     * Create the camera storage directories that do not exist
+     */
+
     public void createMediaFolder() {
         File mediaStorageDir = new File(
                 Environment.getExternalStoragePublicDirectory(BASE_FOLDER), SAVE_FOLDER);
@@ -182,6 +190,19 @@ public class Media {
                 exit(1); // System exit
             }
         }
+
+        mediaStorageDir = new File(
+                Environment.getExternalStoragePublicDirectory(BASE_FOLDER), SAVE_FOLDER + File.separator + SAVE_SCREENSHOT_FOLDER);
+
+        // Create the Screenshot storage directory if it does not exist
+        if (!mediaStorageDir.exists()) {
+            if (!mediaStorageDir.mkdirs()) {
+                Log.e(TAG, "Failed to create directory to save photo: " + mediaStorageDir.getAbsolutePath());
+                Toast.makeText(context, "Error creating folder " + SAVE_SCREENSHOT_FOLDER, Toast.LENGTH_SHORT).show();
+                exit(1); // System exit
+            }
+        }
+
 
     }
 
@@ -360,7 +381,7 @@ public class Media {
                     rightReview.loadPixels();
                     leftReview.updatePixels();
                     rightReview.updatePixels();
-                    ((PhotoBooth) pApplet).setReviewImages(leftReview, rightReview);
+                    ((PhotoBooth) pApplet).setReviewImages(leftReview, rightReview, reviewSBS);
                     ((PhotoBooth) pApplet).setReviewTimeout(0);  // Set review timeout default
                 }
 

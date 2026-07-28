@@ -65,18 +65,6 @@ public class MainActivity extends AppCompatActivity {
 
     // aspect ratio
     int aspectRatioIndex = 0;  // default
-    final String[] ASPECT_RATIO_NAMES = {"DEFAULT", "4:3", "16:9", "1:1"};
-
-    // Maximum camera sensor image dimensions
-    //private int cameraWidth = 1024;
-    //private int cameraHeight = 768;
-    //private int cameraWidth = 1920;
-    //private int cameraHeight = 1080;
-    //private int cameraWidth = 1440;
-    //private int cameraHeight = 1080;
-    //private int cameraWidth = 4080;  // results in 1920x1440 images
-    //private int cameraHeight = 3060; // results in 1920x1440 images
-
 
     private AIvision aiVision;  // local network small multimodal vision AI model server (Google Gemma 3 8B 4_K_M GGUF)
     private Media media;
@@ -725,8 +713,8 @@ public class MainActivity extends AppCompatActivity {
         if (!isBasicCamera) {
             if (!photoBooth.isReady()) return true;  // ignore keystrokes until sketch is ready
             photoBooth.setKeyCode(keyCode, ch);
-            boolean consumed = photoBooth.processKeyCode();
-            if (consumed) return true;
+            //boolean consumed = photoBooth.processKeyCode();
+            //if (consumed) return true;
             switch (keyCode) {
                 case KeyEvent.KEYCODE_VOLUME_UP:
                     if (isAiEdit) {
@@ -964,7 +952,7 @@ public class MainActivity extends AppCompatActivity {
 
             //    return true;
             default:
-                return super.onKeyDown(keyCode, event);
+                return super.onKeyUp(keyCode, event);
         }
     }
 

@@ -64,8 +64,7 @@ public class PhotoBooth extends PApplet {
     final int SLIDESHOW_DELAY = 2500; // 2 seconds
 
     // Review Global variables
-    ArrayList<String> leftImageFiles;
-    ArrayList<String> rightImageFiles;
+    ArrayList<String> sbsImageFiles;
     int currentIndex = 0;
 
     // Review photos for display;
@@ -174,6 +173,25 @@ public class PhotoBooth extends PApplet {
 
     }
 
+    private void reloadReviewImage(int index) {
+        if (DEBUG) PApplet.println("PhotoBooth reloadImage() index="+index);
+        //((Bitmap)media.leftReview.getNative()).recycle();
+        //((Bitmap)media.rightReview.getNative()).recycle();
+        PImage sbsImage = loadImage(sbsImageFiles.get(index));
+        if (sbsImage != null) {
+            PImage[] split = splitImageLR(sbsImage, Camera3D.CAMERA_WIDTH_DEFAULT, Camera3D.CAMERA_HEIGHT_DEFAULT);
+            media.leftReview = split[0];
+            media.rightReview = split[1];
+        } else {
+            media.leftReview = loadImage("Image_l.JPG");
+            media.rightReview = loadImage("Image_r.JPG");
+        }
+
+        currentLeft = media.leftReview;
+        currentRight = media.rightReview;
+        setReviewLabel();
+    }
+
     public void setup() {
         if (DEBUG) System.out.println("Photo Booth Sketch setup()");
         orientation(LANDSCAPE);
@@ -182,19 +200,28 @@ public class PhotoBooth extends PApplet {
         frameRate(displayFPS);
 
         if (media.leftReview == null && media.rightReview == null) {
-            //media.leftReview = loadImage("Image_l.JPG");
-            //media.rightReview = loadImage("Image_r.JPG");
-            media.leftReview = loadImage("FlowerPot_l.JPG");
-            media.rightReview = loadImage("FlowerPot_r.JPG");
+            long t0 = System.nanoTime();
+//            media.leftReview = loadImage("Image_l.JPG");
+//            media.rightReview = loadImage("Image_r.JPG");
+//            //media.leftReview = loadImage("FlowerPot_l.JPG");  // test only
+//            //media.rightReview = loadImage("FlowerPot_r.JPG");
 
-            if (DEBUG) PApplet.println("Loading default review images");
+            if (DEBUG)
+                PApplet.println("Loaded default review images in " + n2s(System.nanoTime() - t0) + " seconds");
 
-//            // Force texture creation/upload now, on the GL thread, off the hot path:
-//            if (g instanceof processing.opengl.PGraphicsOpenGL) {
-//                ((processing.opengl.PGraphicsOpenGL)g).getTexture(media.leftReview);
-//                ((processing.opengl.PGraphicsOpenGL)g).getTexture(media.rightReview);
-//            }
-
+            boolean success = loadImageFileList();
+            if (DEBUG) PApplet.println("PhotoBooth loadImageFileList() = " + success);
+            if (success) {
+                PImage sbsImage = loadImage(sbsImageFiles.get(currentIndex));
+                if (sbsImage != null) {
+                    PImage[] split = splitImageLR(sbsImage, Camera3D.CAMERA_WIDTH_DEFAULT, Camera3D.CAMERA_HEIGHT_DEFAULT);
+                    media.leftReview = split[0];
+                    media.rightReview = split[1];
+                }
+            } else {
+                media.leftReview = loadImage("Image_l.JPG");
+                media.rightReview = loadImage("Image_r.JPG");
+            }
             currentLeft = media.leftReview;
             currentRight = media.rightReview;
 
@@ -204,11 +231,11 @@ public class PhotoBooth extends PApplet {
         textAlign(CENTER, CENTER);
         fill(yellow);
         if (parameters.isPhotoBoothCameraMode()) {
-            text("3D Photo Booth", (float) width / 4, (float) height/2); // left
-            text("3D Photo Booth", ((float) 3 * width / 4)+STEREO_OFFSET, (float) height/2); // right
+            text("3D Photo Booth", (float) width / 4, (float) height / 2); // left
+            text("3D Photo Booth", ((float) 3 * width / 4) + STEREO_OFFSET, (float) height / 2); // right
         } else {
-            text("3D Stereoscope", (float) width / 4, (float) height/2);  // left
-            text("3D Stereoscope", ((float) 3 * width / 4) + STEREO_OFFSET, (float) height/2); // right
+            text("3D Stereoscope", (float) width / 4, (float) height / 2);  // left
+            text("3D Stereoscope", ((float) 3 * width / 4) + STEREO_OFFSET, (float) height / 2); // right
         }
         if (DEBUG) PApplet.println("PhotoBooth setup done");
         update = true;
@@ -257,16 +284,12 @@ public class PhotoBooth extends PApplet {
         update = true;
     }
 
-//    public void toggleMirror() {
-//        mirror = !mirror;
-//        update = true;
-//    }
-
     public void toggleGrid() {
         grid = !grid;
         if (DEBUG) PApplet.println("grid = " + grid);
         update = true;
     }
+
     public void toggleShowPhotoBoothTitle() {
         showPhotoBoothTitle = !showPhotoBoothTitle;
         update = true;
@@ -318,7 +341,7 @@ public class PhotoBooth extends PApplet {
     public int toDisplayPixels(int cameraPixels) {
         float dispImgWidth = (float) XBP_DISPLAY_FRAME_WIDTH / 2;
         int displayPixels = (int) Math.round(cameraPixels * dispImgWidth / (float) Camera3D.CAMERA_WIDTH_DEFAULT);
-        if (DEBUG) println( "toDisplayPixels(" + cameraPixels + ") = " + displayPixels);
+        if (DEBUG) println("toDisplayPixels(" + cameraPixels + ") = " + displayPixels);
         return displayPixels;
     }
 
@@ -337,7 +360,7 @@ public class PhotoBooth extends PApplet {
     /**
      * Convert a camera-pixel offset to display-pixel offset (inverse of toCameraPixels).
      */
-     //reference not used:
+    //reference not used:
     public int REFtoDisplayPixels(int cameraPixels) {
         int camWidth;
         if (imgLeft != null && imgLeft.width > 0) {
@@ -360,7 +383,7 @@ public class PhotoBooth extends PApplet {
         } else if (reviewTimeout == 0) {
             this.reviewTimeout = 2;  // review timeout in frames
         } else {
-            this.reviewTimeout = (REVIEW_TIMEOUT_SECONDS+1) * displayFPS;
+            this.reviewTimeout = (REVIEW_TIMEOUT_SECONDS + 1) * displayFPS;
         }
     }
 
@@ -380,41 +403,67 @@ public class PhotoBooth extends PApplet {
         }
     }
 
+    // Convert nanoseconds to seconds
+    static String n2s(long nanoseconds) {
+        double seconds = nanoseconds / 1000000000.0;
+        return String.format("%.3f", seconds);
+    }
+
+//    public void createTextures() {
+//        if (DEBUG) PApplet.println("PhotoBooth createTextures()");
+//        long t0 = System.nanoTime();
+//        if (g instanceof processing.opengl.PGraphicsOpenGL) {
+//            ((processing.opengl.PGraphicsOpenGL)g).getTexture(media.leftReview);
+//            ((processing.opengl.PGraphicsOpenGL)g).getTexture(media.rightReview);
+//        }
+//        initial = false;
+//        if (DEBUG) PApplet.println("PhotoBooth draw() initial done in " + n2s(System.nanoTime() - t0)  + " seconds");
+//
+//    }
+
+    private void setReviewLabel() {
+        if (DEBUG) PApplet.println("PhotoBooth reloadImage()");
+        if (currentIndex >= 0) {
+            String fullPath = sbsImageFiles.get(currentIndex);
+            String name = fullPath.substring(0, fullPath.lastIndexOf("_2x1."));
+            String nameWithoutExt = name.substring(name.lastIndexOf("/") + 5);
+            println("nameWithoutExt: " + nameWithoutExt);
+            setImageLabel(nameWithoutExt);
+        }
+    }
+
     public void draw() {
         if (initial) {
-            // Force texture creation/upload now, on the GL thread, off the hot path:
-            if (g instanceof processing.opengl.PGraphicsOpenGL) {
-                ((processing.opengl.PGraphicsOpenGL)g).getTexture(media.leftReview);
-                ((processing.opengl.PGraphicsOpenGL)g).getTexture(media.rightReview);
-            }
+            long t0 = System.nanoTime();
+            // Force OpenGL texture creation/upload now, on the GL thread
+            // assumes review images are the default size
+
             media.leftReview.resize(Camera3D.CAMERA_WIDTH_DEFAULT, Camera3D.CAMERA_HEIGHT_DEFAULT);
             media.rightReview.resize(Camera3D.CAMERA_WIDTH_DEFAULT, Camera3D.CAMERA_HEIGHT_DEFAULT);
+
+            // this code has to run here on the processing draw() GL thread to create the textures
+            if (g instanceof processing.opengl.PGraphicsOpenGL) {
+                ((processing.opengl.PGraphicsOpenGL) g).getTexture(media.leftReview);
+                ((processing.opengl.PGraphicsOpenGL) g).getTexture(media.rightReview);
+            }
             initial = false;
-            if (DEBUG) PApplet.println("PhotoBooth Force texture done");
+            if (DEBUG)
+                PApplet.println("PhotoBooth draw() initial done in " + n2s(System.nanoTime() - t0) + " seconds");
+            setReviewLabel();
+
+
         }
 
-        // hold setup() display for about 2 seconds
-        // frameCount is not accurate
-//        if (frameCount < 20) {
-//            return;
-//        }
-
-        state = mainActivity.state ;
-        if (loadPrevious) {
-            loadPrevious = false;
-            thread("restore");
-        }
+        state = mainActivity.state;
+        mirror = parameters.getIsMirror();
         processKeyCode();
 
         background(black);
-
-        mirror = parameters.getIsMirror();
 
         if (reviewTimeout > 0) {
             //if (DEBUG) println("reviewTimeout = " + reviewTimeout + "  ");
             reviewTimeout--;
             if (reviewTimeout == 0) {
-                //mainActivity.state = MainActivity.LIVE_VIEW_STATE;
                 mainActivity.state = MainActivity.LIVE_VIEW_STATE;
                 state = mainActivity.state;
                 update = true;
@@ -525,7 +574,7 @@ public class PhotoBooth extends PApplet {
                     text(help[i], 100, 36 + i * 50);
                 }
                 for (int i = 20; i < help.length; i++) {
-                    text(help[i], width/2 + 100, 36 + (i-20) * 50);
+                    text(help[i], width / 2 + 100, 36 + (i - 20) * 50);
                 }
                 break;
             case 2:
@@ -827,7 +876,7 @@ public class PhotoBooth extends PApplet {
             // Calculate crop boundaries relative to the source image size
             float scaleFactor = magnifyScale[magnifyIndex];
             int srcW = (int) (((float) img.width) / scaleFactor);
-            int srcH = (int)(((float) img.height) / scaleFactor);
+            int srcH = (int) (((float) img.height) / scaleFactor);
             int srcX = (img.width - srcW) / 2;
             int srcY = (img.height - srcH) / 2;
 
@@ -847,22 +896,22 @@ public class PhotoBooth extends PApplet {
     void drawGrid(boolean full) {
         fill(yellow);
         int thickness = 2;
-        int top = MainActivity.HIDDEN_SHUTTER_BUTTON_Y+10;
-        int bottom = 96+top;
+        int top = MainActivity.HIDDEN_SHUTTER_BUTTON_Y + 10;
+        int bottom = 96 + top;
         int leftMargin = frameX;
         int rightMargin = frameX;
         if (full) {
             // Horizontal line (center of canvas)
-            rect(leftMargin, height / 2 - thickness / 2, width-leftMargin-rightMargin, thickness);
+            rect(leftMargin, height / 2 - thickness / 2, width - leftMargin - rightMargin, thickness);
             // Vertical line (center of canvas)
-            rect(width / 2 - thickness / 2, top, thickness, height-bottom);
+            rect(width / 2 - thickness / 2, top, thickness, height - bottom);
         } else {
             // Horizontal line (center of frame)
-            rect(leftMargin, XBP_DISPLAY_FRAME_HEIGHT / 2 - thickness / 2, width-leftMargin-rightMargin, thickness);
+            rect(leftMargin, XBP_DISPLAY_FRAME_HEIGHT / 2 - thickness / 2, width - leftMargin - rightMargin, thickness);
             // First vertical line (1/4 of frame width)
-            rect(frameX + XBP_DISPLAY_FRAME_WIDTH / 4 - thickness / 2, top, thickness, XBP_DISPLAY_FRAME_HEIGHT-bottom);
+            rect(frameX + XBP_DISPLAY_FRAME_WIDTH / 4 - thickness / 2, top, thickness, XBP_DISPLAY_FRAME_HEIGHT - bottom);
             // Second vertical line (3/4 of frame width)
-            rect(frameX + 3 * XBP_DISPLAY_FRAME_WIDTH / 4 - thickness / 2, top, thickness, XBP_DISPLAY_FRAME_HEIGHT-bottom);
+            rect(frameX + 3 * XBP_DISPLAY_FRAME_WIDTH / 4 - thickness / 2, top, thickness, XBP_DISPLAY_FRAME_HEIGHT - bottom);
         }
         // draw hidden buttons
         //fill(gray);
@@ -874,9 +923,9 @@ public class PhotoBooth extends PApplet {
     }
 
     void drawEv() {
-        String ev =  stereoCamera.getEv();
+        String ev = stereoCamera.getEv();
         if (stereoCamera.getFunctionMode() == Camera3D.FUNCTION_MODE_EV) {
-            ev = "="+Camera3D.METERING_NAMES[parameters.getExposureMeteringIndex()] + " "+ ev ;
+            ev = "=" + Camera3D.METERING_NAMES[parameters.getExposureMeteringIndex()] + " " + ev;
         }
 
         int level = 78;
@@ -890,9 +939,9 @@ public class PhotoBooth extends PApplet {
     }
 
     void drawParallax() {
-        String px =  "Parallax " + parameters.getParallaxOffset();
+        String px = "Parallax " + parameters.getParallaxOffset();
         if (stereoCamera.getFunctionMode() == Camera3D.FUNCTION_MODE_PARALLAX) {
-            px = "= " + Camera3D.FOCUS_DISTANCE_NAMES[parameters.getFocusDistanceIndex()] + " " + px ;
+            px = "= " + Camera3D.FOCUS_DISTANCE_NAMES[parameters.getFocusDistanceIndex()] + " " + px;
         }
 
         int level = 32;
@@ -913,7 +962,7 @@ public class PhotoBooth extends PApplet {
 
     void drawImageLabel() {
         if (imageLabel == null) return;
-        String label =  imageLabel;
+        String label = imageLabel;
         if (label.isEmpty()) return;
 
         int level = 120;
@@ -939,11 +988,13 @@ public class PhotoBooth extends PApplet {
         textSize(48);
         fill(yellow);
         textAlign(CENTER, CENTER);
-        text(ev, x, height -bottom);
+        text(ev, x, height - bottom);
     }
 
     // called by MainActivity onKeyUp to process key events for the photo booth exclusively
     public boolean processKeyCode() {
+        //if (DEBUG) println("processKeyCode() lastKeyCode=" + lastKeyCode);
+
         int iParallax;
         switch (lastKeyCode) {
             case KeyEvent.KEYCODE_A:
@@ -987,36 +1038,61 @@ public class PhotoBooth extends PApplet {
 //                update = true;
 //                break;
             case KeyEvent.KEYCODE_DPAD_UP:
-                stereoCamera.previousFunctionMode();
+                if (showMenu) {
+                    stereoCamera.previousFunctionMode();
+                }
                 break;
             case KeyEvent.KEYCODE_DPAD_DOWN:
-                stereoCamera.nextFunctionMode();
+                if (showMenu) {
+                    stereoCamera.nextFunctionMode();
+                }
                 break;
             case KeyEvent.KEYCODE_PERIOD:
             case KeyEvent.KEYCODE_DPAD_RIGHT:
-                if (stereoCamera.getFunctionMode() == Camera3D.FUNCTION_MODE_EV) {
-                    int index = stereoCamera.incrementExposureCompensation(1);
-                    parameters.setExposureCompensationIndex(index);
-                } else if (stereoCamera.getFunctionMode() == Camera3D.FUNCTION_MODE_PARALLAX) {
-                    iParallax = parameters.getParallaxOffset() + DELTA_PARALLAX;
-                    parameters.setParallaxOffset(iParallax);
-                    parallax = toDisplayPixels(iParallax);
-                    if (DEBUG) PApplet.println("iParallax = " + iParallax);
+                if (showMenu) {
+                    if (stereoCamera.getFunctionMode() == Camera3D.FUNCTION_MODE_EV) {
+                        int index = stereoCamera.incrementExposureCompensation(1);
+                        parameters.setExposureCompensationIndex(index);
+                    } else if (stereoCamera.getFunctionMode() == Camera3D.FUNCTION_MODE_PARALLAX) {
+                        iParallax = parameters.getParallaxOffset() + DELTA_PARALLAX;
+                        parameters.setParallaxOffset(iParallax);
+                        parallax = toDisplayPixels(iParallax);
+                        if (DEBUG) PApplet.println("iParallax = " + iParallax);
 
+                    }
+                } else {
+                    if (state == MainActivity.REVIEW_PHOTO_STATE) {
+                        currentIndex++;
+                        if (currentIndex >= sbsImageFiles.size()) {
+                            currentIndex--;
+                        } else {
+                            reloadReviewImage(currentIndex);
+                        }
+                    }
                 }
                 break;
             case KeyEvent.KEYCODE_COMMA:
             case KeyEvent.KEYCODE_DPAD_LEFT:
-                if (stereoCamera.getFunctionMode() == Camera3D.FUNCTION_MODE_EV) {
-                    int index = stereoCamera.decrementExposureCompensation(1);
-                    parameters.setExposureCompensationIndex(index);
-                } else if (stereoCamera.getFunctionMode() == Camera3D.FUNCTION_MODE_PARALLAX) {
-                    iParallax = parameters.getParallaxOffset() - DELTA_PARALLAX;
-                    parameters.setParallaxOffset(iParallax);
-                    parallax = toDisplayPixels(iParallax);
-                    if (DEBUG) PApplet.println("iParallax = " + iParallax);
+                if (showMenu) {
+                    if (stereoCamera.getFunctionMode() == Camera3D.FUNCTION_MODE_EV) {
+                        int index = stereoCamera.decrementExposureCompensation(1);
+                        parameters.setExposureCompensationIndex(index);
+                    } else if (stereoCamera.getFunctionMode() == Camera3D.FUNCTION_MODE_PARALLAX) {
+                        iParallax = parameters.getParallaxOffset() - DELTA_PARALLAX;
+                        parameters.setParallaxOffset(iParallax);
+                        parallax = toDisplayPixels(iParallax);
+                        if (DEBUG) PApplet.println("iParallax = " + iParallax);
+                    }
+                } else {
+                    if (state == MainActivity.REVIEW_PHOTO_STATE) {
+                        currentIndex--;
+                        if (currentIndex < 0) {
+                            currentIndex = 0;
+                        } else {
+                            reloadReviewImage(currentIndex);
+                        }
+                    }
                 }
-
                 break;
             case KeyEvent.KEYCODE_MINUS:
                 iParallax = parameters.getParallaxOffset() - DELTA_PARALLAX;
@@ -1070,9 +1146,11 @@ public class PhotoBooth extends PApplet {
     }
 
     void saveScreenshot() {
-        String dateTime = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-        String filename = "Screenshot_" + dateTime + ".png";
-        String filePath = Environment.getExternalStorageDirectory().getAbsolutePath() + "/Pictures/Screenshots/" + filename;
+        String dateTime = new SimpleDateFormat("yyyyMMdd-HHmmss").format(new Date());
+        String filename = Media.SCREENSHOT_PREFIX + dateTime + Media.SCREENSHOT_FILETYPE;
+        //Environment.getExternalStorageDirectory().getAbsolutePath() + "/Pictures/Screenshots/" + filename;
+        String filePath = Environment.getExternalStorageDirectory() + File.separator + Media.BASE_FOLDER
+                + File.separator + Media.SAVE_FOLDER + File.separator + Media.SAVE_SCREENSHOT_FOLDER + File.separator + filename;
         saveFrame(filePath);
         MediaScannerConnection.scanFile(getContext(), new String[]{filePath},
                 new String[]{"image/*"}, null);
@@ -1098,17 +1176,12 @@ public class PhotoBooth extends PApplet {
      */
 
     // TODO exit and restore take care of last image on application start up
-//    public void exit() {
-//        if (DEBUG) println("exit PhotoBooth .........");
-//        media.savePaths();
-//    }
+    public void exit() {
+        if (DEBUG) println("exit PhotoBooth .........");
 
-//    public void restore() {
-//        if (DEBUG) println("restore .........");
-//        media.restorePaths();
-//    }
+    }
 
-    public void setReviewImages(PImage left, PImage right) {
+    public void setReviewImages(PImage left, PImage right, File reviewSBS) {
         update = false;
         if (DEBUG) PApplet.println("setReviewImages() left=" + left + " right=" + right);
         currentLeft = left;
@@ -1116,7 +1189,11 @@ public class PhotoBooth extends PApplet {
         if (currentLeft != null && currentRight != null) {
             update = true;
         }
-        if (DEBUG) PApplet.println("setReviewImages() update=" + update);
+        if (reviewSBS != null) {
+            sbsImageFiles.add(reviewSBS.getAbsolutePath());
+            currentIndex = sbsImageFiles.size() - 1;
+        }
+        if (DEBUG) PApplet.println("setReviewImages() added: " + sbsImageFiles.get(currentIndex));
     }
 
     void drawReview() {
@@ -1151,123 +1228,90 @@ public class PhotoBooth extends PApplet {
      *
      * @return true if images loaded, false if failed to load any image
      */
-//    public boolean loadImageFileList() {
-//        leftImageFiles = new ArrayList<String>();
-//        rightImageFiles = new ArrayList<String>();
-//
-//        // Get the external storage directory
-//        File externalStorage = Environment.getExternalStorageDirectory();
-//        File lrFolder = new File(externalStorage, FOLDER_PATH);
-//
-//        if (!lrFolder.exists() || !lrFolder.isDirectory()) {
-//            if (DEBUG) PApplet.println("Folder not found: " + lrFolder.getAbsolutePath());
-//            return false;
-//        }
-//
-//        // Temporary lists to collect all left and right files
-//        ArrayList<String> tempLeftFiles = new ArrayList<String>();
-//        ArrayList<String> tempRightFiles = new ArrayList<String>();
-//
-//        // Get all JPG/JPEG files
-//        File[] files = lrFolder.listFiles();
-//        if (files != null) {
-//            for (File file : files) {
-//                if (file.isFile()) {
-//                    String name = file.getName().toLowerCase();
-//                    String fullPath = file.getAbsolutePath();
-//
-//                    if (name.toLowerCase().endsWith(".jpg") || name.toLowerCase().endsWith(".jpeg")) {
-//                        // Check if it's a left or right image
-//                        String nameWithoutExt = name.substring(0, name.lastIndexOf('.'));
-//
-//                        if (nameWithoutExt.toLowerCase().endsWith("_l")) {
-//                            tempLeftFiles.add(fullPath);
-//                        } else if (nameWithoutExt.toLowerCase().endsWith("_r")) {
-//                            tempRightFiles.add(fullPath);
-//                        }
-//                    }
-//                }
-//            }
-//        }
-//
-//        // Sort both lists in ascending order
-//        Collections.sort(tempLeftFiles);
-//        Collections.sort(tempRightFiles);
-//
-//        // Match pairs: for each left file, find corresponding right file
-//        for (String leftPath : tempLeftFiles) {
-//            String leftFilename = new File(leftPath).getName();
-//            String leftBase = getBaseName(leftFilename);
-//
-//            // Look for matching right file
-//            for (String rightPath : tempRightFiles) {
-//                String rightFilename = new File(rightPath).getName();
-//                String rightBase = getBaseName(rightFilename);
-//
-//                if (leftBase.equals(rightBase)) {
-//                    // Found a matching pair
-//                    leftImageFiles.add(leftPath);
-//                    rightImageFiles.add(rightPath);
-//                    //if (DEBUG) PApplet.println("Pairs: " + leftPath + " " + rightPath);
-//                    break;
-//                }
-//            }
-//        }
-//        currentIndex = leftImageFiles.size() - 1;
-//        //if (DEBUG) PApplet.println("Found " + leftImageFiles.size() + " matching image pairs");
-//        //if (DEBUG) PApplet.println("First pair: " + leftImageFiles.get(0) + " " + rightImageFiles.get(0));
-//        //if (DEBUG) PApplet.println("Last pair: " + leftImageFiles.get(leftImageFiles.size() - 1) + " " + rightImageFiles.get(rightImageFiles.size() - 1));
-//        return true;
-//    }
-//
-//    // Helper function to get base filename without _l/_r suffix and extension
-//    String getBaseName(String filename) {
-//        // Remove extension
-//        String nameWithoutExt = filename.substring(0, filename.lastIndexOf('.'));
-//
-//        // Remove _l or _r suffix
-//        if (nameWithoutExt.endsWith("_l")) {
-//            return nameWithoutExt.substring(0, nameWithoutExt.length() - 2);
-//        } else if (nameWithoutExt.endsWith("_r")) {
-//            return nameWithoutExt.substring(0, nameWithoutExt.length() - 2);
-//        }
-//
-//        return nameWithoutExt;
-//    }
+    public boolean loadImageFileList() {
+        sbsImageFiles = new ArrayList<String>();
 
-//    void loadCurrentImage() {
-//        if (DEBUG) PApplet.println("loadCurrentImage() state=" + MainActivity.stateName[mainActivity.state]);
-//        if (leftImageFiles.isEmpty() || currentIndex < 0 || currentIndex >= leftImageFiles.size()) {
-//            imagesLoaded = false;
+        // Get the external storage directory
+        File externalStorage = Environment.getExternalStorageDirectory();
+        File saveFolder = new File(externalStorage, Media.BASE_FOLDER + File.separator + Media.SAVE_FOLDER);
+        if (DEBUG) println("saveFolder=" + saveFolder.getAbsolutePath());
+        if (!saveFolder.exists() || !saveFolder.isDirectory()) {
+            if (DEBUG) PApplet.println("Folder not found: " + saveFolder.getAbsolutePath());
+            return false;
+        }
+
+        // Get all JPG/JPEG files
+        File[] files = saveFolder.listFiles();
+        if (files != null) {
+            for (File file : files) {
+                if (file.isFile()) {
+                    String name = file.getName().toLowerCase();
+                    println("sbs file name: " + name);
+                    String fullPath = file.getAbsolutePath();
+                    println("sbs file path: " + fullPath);
+                    if (fullPath.toLowerCase().endsWith(".jpg") || fullPath.toLowerCase().endsWith(".jpeg")) {
+                        String nameWithoutExt = fullPath.substring(0, fullPath.lastIndexOf('.'));
+                        println("nameWithoutExt: " + nameWithoutExt);
+                        if (nameWithoutExt.toLowerCase().endsWith("_2x1")) {
+                            boolean sbsFilesAdded = sbsImageFiles.add(fullPath);
+                            if (sbsFilesAdded) println("sbs file added: " + fullPath);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Sort list in ascending order
+        Collections.sort(sbsImageFiles);
+
+        currentIndex = sbsImageFiles.size() - 1;
+        if (DEBUG) PApplet.println("Found " + sbsImageFiles.size());
+        if (currentIndex < 0) {
+            return false;
+        }
+        if (DEBUG) PApplet.println("Last: " + sbsImageFiles.get(currentIndex));
+
+        return true;
+    }
+
+    // Helper function to get base filename without _l/_r suffix and extension
+    String getBaseName(String filename) {
+        // Remove extension
+        String nameWithoutExt = filename.substring(0, filename.lastIndexOf('.'));
+
+        // Remove _l or _r suffix
+        if (nameWithoutExt.endsWith("_l")) {
+            return nameWithoutExt.substring(0, nameWithoutExt.length() - 2);
+        } else if (nameWithoutExt.endsWith("_r")) {
+            return nameWithoutExt.substring(0, nameWithoutExt.length() - 2);
+        }
+
+        return nameWithoutExt;
+    }
+
+//    private boolean loadCurrentImage() {
+//        boolean imagesLoaded = false;
+//        if (DEBUG)
+//            PApplet.println("loadCurrentImage() state=" + MainActivity.stateName[mainActivity.state]);
+//        if (sbsImageFiles.isEmpty() || currentIndex < 0 || currentIndex >= sbsImageFiles.size()) {
 //            if (DEBUG) PApplet.println("loadCurrentImage failed");
-//            return;
+//            return imagesLoaded;
 //        }
 //
-//        String leftPath = leftImageFiles.get(currentIndex);
-//        String rightPath = rightImageFiles.get(currentIndex);
+//        String sbsPath = sbsImageFiles.get(currentIndex);
+//        if (DEBUG) PApplet.println("Loading pair " + (currentIndex) + "/" + sbsImageFiles.size());
 //
-//        if (DEBUG) PApplet.println("Loading pair " + (currentIndex) + "/" + leftImageFiles.size());
-//        if (DEBUG) PApplet.println("  Left: " + leftPath);
-//        if (DEBUG) PApplet.println("  Right: " + rightPath);
-//
-//        // Load left image
-//        currentLeft = loadImage(leftPath);
+//        // Load sbs image
+//        currentLeft = loadImage(sbsPath);
 //        if (currentLeft == null) {
 //            if (DEBUG) PApplet.println("Failed to load left image");
-//            imagesLoaded = false;
-//            return;
+//            return imagesLoaded;
 //        }
 //
-//        // Load right image
-//        currentRight = loadImage(rightPath);
-//        if (currentRight == null) {
-//            if (DEBUG) PApplet.println("Failed to load right image");
-//            imagesLoaded = false;
-//            return;
-//        }
 //        update = true;
 //        imagesLoaded = true;
 //        if (DEBUG) PApplet.println("loadCurrentImage success.");
+//        return imagesLoaded;
 //    }
 
     // copied from PApplet.java Processing-Android
@@ -1294,7 +1338,6 @@ public class PhotoBooth extends PApplet {
             } finally {
                 try {
                     stream.close();
-                    //InputStream var12 = null;
                 } catch (IOException var10) {
                 }
 
@@ -1313,6 +1356,34 @@ public class PhotoBooth extends PApplet {
         }
     }
 
+    private PImage[] splitImageLR(PImage original, int imageWidth, int imageHeight) {
+        if (DEBUG) println("splitImageLR");
+        // Create an array to hold the two resulting images
+        PImage[] result = new PImage[2];
+
+        // Calculate the width of each half, using integer division
+        int halfWidth = original.width / 2;
+
+        // Create the left half image
+        if (media.leftReview == null) {
+            result[0] = createImage(imageWidth, imageHeight, ARGB);
+            result[0].copy(original, 0, 0, halfWidth, original.height, 0, 0, halfWidth, original.height);
+        } else {
+            media.leftReview.copy(original, 0, 0, halfWidth, original.height, 0, 0, halfWidth, original.height);
+            result[0] = media.leftReview;
+        }
+        // Create the right half image
+        if (media.rightReview == null) {
+            result[1] = createImage(imageWidth, imageHeight, ARGB);
+            result[1].copy(original, halfWidth, 0, halfWidth, original.height, 0, 0, halfWidth, original.height);
+        } else {
+            media.rightReview.copy(original, halfWidth, 0, halfWidth, original.height, 0, 0, halfWidth, original.height);
+            result[1] = media.rightReview;
+        }
+        ((Bitmap) original.getNative()).recycle();
+        return result;
+    }
+
     public File make6x4ImageFile(String filename) {
         return null;
     }
@@ -1324,10 +1395,11 @@ public class PhotoBooth extends PApplet {
      * returns resized image padded to 1620x1080 with white borders
      */
     public PImage resizeToPrint6x4(PImage img) {
-        if (DEBUG) println("resizeToPrint6x4() convert image to 6x4 aspect ratio img.width="+img.width+" img.height="+img.height);
+        if (DEBUG)
+            println("resizeToPrint6x4() convert image to 6x4 aspect ratio img.width=" + img.width + " img.height=" + img.height);
         float printWidth = 1800;//1620;//1680;
         float printHeight = 1200;//1080;//1120;
-        PImage resizeImage = createImage((int)printWidth, (int)printHeight, ARGB);
+        PImage resizeImage = createImage((int) printWidth, (int) printHeight, ARGB);
 
         // Fill background white
         resizeImage.loadPixels();
@@ -1337,18 +1409,19 @@ public class PhotoBooth extends PApplet {
         resizeImage.updatePixels();
 
         // Calculate scale factor to fit img inside 1800x1200 preserving aspect ratio
-        float scaleX = printWidth / (float)img.width;
-        float scaleY = printHeight / (float)img.height;
-        float scale  = min(scaleX, scaleY);
+        float scaleX = printWidth / (float) img.width;
+        float scaleY = printHeight / (float) img.height;
+        float scale = min(scaleX, scaleY);
 
         int scaledW = (int) printWidth;
-        int scaledH = (int)(img.height * scale);
+        int scaledH = (int) (img.height * scale);
 
         // Center the scaled image
         int offsetX = ((int) printWidth - scaledW) / 2;
         int offsetY = ((int) printHeight - scaledH) / 2;
 
-        if (DEBUG) println("resize6x4() scale="+scale+" scaledW="+scaledW+" scaledH="+scaledH+" offsetX="+offsetX+" offsetY="+offsetY);
+        if (DEBUG)
+            println("resize6x4() scale=" + scale + " scaledW=" + scaledW + " scaledH=" + scaledH + " offsetX=" + offsetX + " offsetY=" + offsetY);
 
         resizeImage.copy(img, 0, 0, img.width, img.height, offsetX, offsetY, scaledW, scaledH);
 
@@ -1367,7 +1440,7 @@ public class PhotoBooth extends PApplet {
         if (x > MainActivity.HIDDEN_SHUTTER_BUTTON_X && y < MainActivity.HIDDEN_SHUTTER_BUTTON_Y) {
             //if (DEBUG) PApplet.println("mouseReleased shutter release");
             mainActivity.capturePhoto();
-        // upper left corner is settings menu invisible button
+            // upper left corner is settings menu invisible button
         } else if (x < MainActivity.HIDDEN_SETTINGS_BUTTON_X && y < MainActivity.HIDDEN_SETTINGS_BUTTON_Y) {
             //if (DEBUG) PApplet.println("mouseReleased photo booth settings");
             mainActivity.launchSettings();

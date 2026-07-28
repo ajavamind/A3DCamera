@@ -38,11 +38,11 @@ class MainHorzMenuBar implements IGui {
     menuTextSize = FONT_SIZE;
 
     settingsKey = new MenuKey(base, KeyEvent.KEYCODE_J, "\u2699", LARGE_FONT_SIZE, yellow, backTransparent);
-    leftArrowKey = new MenuKey(base, KeyEvent.KEYCODE_DPAD_LEFT, LEFT_ARROW, LARGE_FONT_SIZE, yellow, backTransparent);
+    leftArrowKey = new MenuKey(base, KeyEvent.KEYCODE_COMMA, LEFT_ARROW, LARGE_FONT_SIZE, yellow, backTransparent);
     downArrowKey = new MenuKey(base, KeyEvent.KEYCODE_DPAD_DOWN, DOWN_ARROW, LARGE_FONT_SIZE, yellow, backTransparent);
     gridKey = new MenuKey(base, KeyEvent.KEYCODE_G, "Grid", menuTextSize, yellow, backTransparent);
     upArrowKey = new MenuKey(base, KeyEvent.KEYCODE_DPAD_UP, UP_ARROW, LARGE_FONT_SIZE, yellow, backTransparent);
-    rightArrowKey = new MenuKey(base, KeyEvent.KEYCODE_DPAD_RIGHT, RIGHT_ARROW, LARGE_FONT_SIZE, yellow, backTransparent);
+    rightArrowKey = new MenuKey(base, KeyEvent.KEYCODE_PERIOD, RIGHT_ARROW, LARGE_FONT_SIZE, yellow, backTransparent);
     shutterKey = new MenuKey(base, KeyEvent.KEYCODE_BUTTON_R1, "\u25C9", GIANT_FONT_SIZE, yellow, backTransparent);
 
     menuKey = new MenuKey[numKeys];

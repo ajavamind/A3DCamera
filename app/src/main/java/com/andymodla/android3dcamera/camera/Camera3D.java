@@ -98,21 +98,21 @@ public class Camera3D {
     private String rightCameraId = "2";
     private String stereoCameraId = "3";
 
+    // Xreal Beam Pro camera sensor sizes this app supports
     public static int CAMERA_WIDTH_DEFAULT = 4080;
     public static int CAMERA_HEIGHT_DEFAULT = 3072;
     // todo
-    int CAMERA_WIDTH_AR_4_3 = 4000;
-    int CAMERA_HEIGHT_AR_4_3 = 3000;
-    int CAMERA_WIDTH_AR_16_9 = 3840;
-    int CAMERA_HEIGHT_AR_16_9 = 2160;
-    int CAMERA_WIDTH_AR_1_1 = 3072;
-    int CAMERA_HEIGHT_AR_1_1 = 3072;
-    int CAMERA_WIDTH_AR_SMALL = 1080;
-    int CAMERA_HEIGHT_AR_SMALL = 1080;
-    public static int XBP_CAMERA_DISPLAY_WIDTH = 1280; // small for performance - camera aspect ratio
-    public static int XBP_CAMERA_DISPLAY_HEIGHT = 960; // small for performance
-    //public static int XBP_CAMERA_WIDTH = 1920; // small for performance - camera aspect ratio
-    //public static int XBP_CAMERA_HEIGHT = 1080; // small for performance
+    public static int CAMERA_WIDTH_AR_4_3 = 4000;
+    public static int CAMERA_HEIGHT_AR_4_3 = 3000;
+    public static int CAMERA_WIDTH_AR_16_9 = 3840;
+    public static int CAMERA_HEIGHT_AR_16_9 = 2160;
+    public static int CAMERA_WIDTH_AR_1_1 = 3072;
+    public static int CAMERA_HEIGHT_AR_1_1 = 3072;
+
+    public static int XBP_CAMERA_REVIEW_WIDTH = 1280; // small for performance - camera aspect ratio
+    public static int XBP_CAMERA_REVIEW_HEIGHT = 960; // small for performance
+    //public static int XBP_CAMERA_VIDEO_WIDTH = 1920; // small for performance - camera aspect ratio
+    //public static int XBP_CAMERA_VIDEO_HEIGHT = 1080; // small for performance
     public static int XBP_CAMERA_WIDTH_6x4 = 1080; // small for performance - print aspect ratio
     public static int XBP_CAMERA_HEIGHT_6x4 = 720; // small for performance
 
@@ -538,11 +538,6 @@ public class Camera3D {
         Log.d(TAG, "openCamera() cameraWidth=" + cameraWidth + " cameraHeight=" + cameraHeight);
         startCameraThread();
 
-//        if (mImageReader0 != null) {
-//            Log.d(TAG, "Camera reader already open");
-//            return;
-//        }
-
         // Setup ImageReaders for image capture
         captureCameraWidth = CAMERA_WIDTH_DEFAULT; // use default image camera width lens pixels
         captureCameraHeight = CAMERA_HEIGHT_DEFAULT;
@@ -552,8 +547,8 @@ public class Camera3D {
         if (useProcessingSketch) {
             // Create ImageReaders for YUV preview with buffer count
             // use these display sizes for preview
-            cameraWidth = XBP_CAMERA_DISPLAY_WIDTH;
-            cameraHeight = XBP_CAMERA_DISPLAY_HEIGHT;
+            cameraWidth = XBP_CAMERA_REVIEW_WIDTH;
+            cameraHeight = XBP_CAMERA_REVIEW_HEIGHT;
             Log.d(TAG, "openCamera() useProcessingSketch cameraWidth=" + cameraWidth + " cameraHeight=" + cameraHeight);
             imageReader0 = ImageReader.newInstance(cameraWidth, cameraHeight, ImageFormat.YUV_420_888, 4);
             imageReader0.setOnImageAvailableListener(imageAvailableListener, mImageReaderHandler0);

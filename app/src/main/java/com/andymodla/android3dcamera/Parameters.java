@@ -806,8 +806,9 @@ class ParamStore {
             ParamStore aspectRatioIndexStore = new ParamStore(
                     "ari", "aspectRatioIndex", "Aspect Ratio Index",
                     "getAspectRatioIndex", "setAspectRatioIndex", int.class, "0",
-                    "Selected single lens camera sensor size for given aspect ratios. Indexes into array: 0 DEFAULT (4080x3072), 1 4:3 (4000x3000), 2 4K_16:9 (3840x2160), 3 HD_16:9 (1920x1080), 4 1:1 (3072x3072), 5 8:9 (2560x2880), 6 3:4 (1800x2400). Certain aspect ratios center crop the max default camera sensor size."
+                    "Selected single lens camera sensor size for given aspect ratios. Indexes into array: 0 DEFAULT (4080x3072), 1 4:3 (4000x3000), 2 4K_16:9 (3840x2160), 3 HD_16:9 (1920x1080), 4 1:1 (3072x3072) . Image capture aspect ratios center crop camera sensor size."
             );
+            // 4080x2296 5 8:9 (2560x2880), 6 3:4 (1800x2400)
 
             ParamStore exposureCompensationIndexStore = new ParamStore(
                     "eci", "exposureCompensationIndex", "Exposure Compensation Index",
