@@ -37,7 +37,7 @@ import java.util.Collections;
 
 class ImageProcessor {
     private static final int FONT_SIZE = 24;
-    private static final boolean DEBUG = true;
+    private static final boolean DEBUG = false;
     PApplet pApplet;
 
     // 6x4 paper used with Canon CP1300

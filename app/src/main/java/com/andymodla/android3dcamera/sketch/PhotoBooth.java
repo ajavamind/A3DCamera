@@ -57,15 +57,12 @@ public class PhotoBooth extends PApplet {
     PImage imgLeft;
     PImage imgRight;
 
-    //PImage splashLeft;
-    //PImage splashRight;
-
     // Constants
     final int SLIDESHOW_DELAY = 2500; // 2 seconds
 
     // Review Global variables
-    ArrayList<String> sbsImageFiles;
-    int currentIndex = 0;
+    ArrayList<String> sbsImageFiles; // List of links to image files stored in folder /DCIM/A3DCamera
+    int currentIndex = 0;  // current index into sbsImageFiles for review
 
     // Review photos for display;
     volatile PImage currentLeft;
@@ -82,7 +79,7 @@ public class PhotoBooth extends PApplet {
     int displayFPS = 30; // display frames per second
     int reviewTimeout = 0;  // frame count for review timeout
     int MAX_REVIEW_TIMEOUT_SECONDS = 120;  // for photo booth camera mode
-    int REVIEW_TIMEOUT_SECONDS = 3;  // for stereoscopic camera mode
+    int REVIEW_TIMEOUT_SECONDS = 3;  // for stereoscope camera mode
 
     // Parallax and vertical alignment adjustments in pixels for XBP photo booth display
     private volatile int parallax = 0;  // display parallax - converted from camera sensor parallax
@@ -93,21 +90,25 @@ public class PhotoBooth extends PApplet {
     private volatile boolean grid = false;
     private volatile boolean showMenu = false;
     private volatile boolean showPhotoBoothTitle = false;
-    private volatile int lastKeyCode;
-    private volatile int lastKey;
+    volatile boolean update = false;
+    boolean screenshot = false;
 
-    private static final int STEREO_OFFSET = -10; // right image shift for stereo depth
+    private float shiftOffsetX = 0;
+    private float shiftOffsetY = 0;
+
+    private volatile int lastKeyCode; // for processKeyCode()
+    private volatile int lastKey; // for processKeyCode()
+
+    private static final int STEREO_OFFSET = -10; // right image shift used for stereo depth
     private String imageLabel;
     private int labelFrameCount = 0;
+    private static final int IMAGE_LABEL_TIMEOUT_FRAMES = 90;
 
     private String[] rotatingText = {"-", "\\", "|", "/"};
     private int rotatingIndex = 0;
     private volatile boolean rotating = true;
 
     DisplayMode displayMode = DisplayMode.SBS;
-    volatile boolean update = false;
-    volatile boolean zoom = false;
-    boolean screenshot = false;
     int debugHelp = 0;
     String[] help;
 
@@ -116,9 +117,9 @@ public class PhotoBooth extends PApplet {
             "Cycle Display Mode: A",
             "Decrease Parallax: Minus (-)",
             "Increase Parallax: Plus (+) or Equals (=)",
-            "Screenshot: C",
+            "Screenshot: P",
             "Toggle Blank Screen: B",
-            "Toggle Photo Booth Title: P",
+            "Toggle Photo Booth Title: T",
             "Toggle Grid: G",
             "Toggle Cross-Eye: X",
             "Toggle Mirror: M",
@@ -130,26 +131,38 @@ public class PhotoBooth extends PApplet {
             "Settings: J",
             "Toggle Focus Distance: Q",
             "Toggle Auto Exposure: F",
-            "Continuous Shutter: K",
+            "Continuous Shutter: C",
             "Increment Exposure Compensation: Period (.)",
             "Decrement Exposure Compensation: Comma (,)"
     };
 
-    private boolean loadPrevious = false;  // TODO implement load previous image before last application close
-    private int captureFrameCount = 0;
     String countdown = "";  // default ignore null string
 
-    float[] magnifyScale = {1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.5f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f};
-    int magnifyIndex = 0;
+    private int magnifyIndex = 0;
+    volatile boolean zoom = false;
+    private static final float[] magnifyScale =     {1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.5f, 3.0f, 4.0f, 6.0f, 8.0f};
+    private static final float[] shiftOffsetDelta = {0.0f, 10.0f, 9.0f, 8.0f, 7.0f, 6.0f, 5.0f, 4.0f, 3.0f, 2.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f};
+    //private static final float[] magnifyScale =     {1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.5f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f};
+    //private static final float[] shiftOffsetDelta = {0.0f, 10.0f, 9.0f, 8.0f, 7.0f, 6.0f, 5.0f, 4.0f, 3.0f, 2.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f};
 
     float AR = 1.33333333f;  // aspect ratio for XReal Beam Pro camera image sensor
 
     // Display frame inside full screen AR 4:3
     private static final int XBP_DISPLAY_FRAME_WIDTH = 2048;
     private static final int XBP_DISPLAY_FRAME_HEIGHT = 1080;
+    private static final int XBP_DISPLAY_BOTTOM_H = XBP_DISPLAY_FRAME_HEIGHT - 144;
     // calculate position of frame in full screen
-    int frameX = (XBP_DISPLAY_WIDTH - XBP_DISPLAY_FRAME_WIDTH) / 2;  // 2400 pixel screen minus XBP_DISPLAY_FRAME_WIDTH/2
+    int frameX = (XBP_DISPLAY_WIDTH - XBP_DISPLAY_FRAME_WIDTH) / 2;
     int frameY = (XBP_DISPLAY_HEIGHT - XBP_DISPLAY_FRAME_HEIGHT) / 2;
+
+    private static final int HIDDEN_LEFT_ARROW_BUTTON_X = 0;
+    private static final int HIDDEN_LEFT_ARROW_BUTTON_Y = 141;
+    private static final int HIDDEN_LEFT_ARROW_BUTTON_W = 360;
+    private static final int HIDDEN_LEFT_ARROW_BUTTON_H = XBP_DISPLAY_FRAME_HEIGHT - 140;
+    private static final int HIDDEN_RIGHT_ARROW_BUTTON_X = 360;
+    private static final int HIDDEN_RIGHT_ARROW_BUTTON_Y = 140;
+    private static final int HIDDEN_RIGHT_ARROW_BUTTON_W = 360;
+    private static final int HIDDEN_RIGHT_ARROW_BUTTON_H = 140;
 
     public void setMainActivity(MainActivity mainActivity) {
         this.mainActivity = mainActivity;
@@ -175,10 +188,10 @@ public class PhotoBooth extends PApplet {
 
     private void reloadReviewImage(int index) {
         if (DEBUG) PApplet.println("PhotoBooth reloadImage() index="+index);
-        //((Bitmap)media.leftReview.getNative()).recycle();
-        //((Bitmap)media.rightReview.getNative()).recycle();
         PImage sbsImage = loadImage(sbsImageFiles.get(index));
         if (sbsImage != null) {
+            //((Bitmap)media.leftReview.getNative()).recycle();
+            //((Bitmap)media.rightReview.getNative()).recycle();
             PImage[] split = splitImageLR(sbsImage, Camera3D.CAMERA_WIDTH_DEFAULT, Camera3D.CAMERA_HEIGHT_DEFAULT);
             media.leftReview = split[0];
             media.rightReview = split[1];
@@ -194,21 +207,13 @@ public class PhotoBooth extends PApplet {
 
     public void setup() {
         if (DEBUG) System.out.println("Photo Booth Sketch setup()");
+        long t0 = System.nanoTime();
         orientation(LANDSCAPE);
         background(black);
         smooth();
         frameRate(displayFPS);
 
         if (media.leftReview == null && media.rightReview == null) {
-            long t0 = System.nanoTime();
-//            media.leftReview = loadImage("Image_l.JPG");
-//            media.rightReview = loadImage("Image_r.JPG");
-//            //media.leftReview = loadImage("FlowerPot_l.JPG");  // test only
-//            //media.rightReview = loadImage("FlowerPot_r.JPG");
-
-            if (DEBUG)
-                PApplet.println("Loaded default review images in " + n2s(System.nanoTime() - t0) + " seconds");
-
             boolean success = loadImageFileList();
             if (DEBUG) PApplet.println("PhotoBooth loadImageFileList() = " + success);
             if (success) {
@@ -236,8 +241,11 @@ public class PhotoBooth extends PApplet {
         } else {
             text("3D Stereoscope", (float) width / 4, (float) height / 2);  // left
             text("3D Stereoscope", ((float) 3 * width / 4) + STEREO_OFFSET, (float) height / 2); // right
+            text("Camera", (float) width / 4, (float) (height / 2)+ 72);  // left
+            text("Camera", ((float) 3 * width / 4) + STEREO_OFFSET, (float) (height / 2) + 72); // right
         }
-        if (DEBUG) PApplet.println("PhotoBooth setup done");
+        if (DEBUG) PApplet.println("PhotoBooth setup done in " + n2s(System.nanoTime() - t0) + " seconds");
+
         update = true;
     }
 
@@ -427,7 +435,7 @@ public class PhotoBooth extends PApplet {
             String fullPath = sbsImageFiles.get(currentIndex);
             String name = fullPath.substring(0, fullPath.lastIndexOf("_2x1."));
             String nameWithoutExt = name.substring(name.lastIndexOf("/") + 5);
-            println("nameWithoutExt: " + nameWithoutExt);
+            if (DEBUG) println("nameWithoutExt: " + nameWithoutExt);
             setImageLabel(nameWithoutExt);
         }
     }
@@ -448,7 +456,7 @@ public class PhotoBooth extends PApplet {
             }
             initial = false;
             if (DEBUG)
-                PApplet.println("PhotoBooth draw() initial done in " + n2s(System.nanoTime() - t0) + " seconds");
+                PApplet.println("PhotoBooth draw() initialization done in " + n2s(System.nanoTime() - t0) + " seconds");
             setReviewLabel();
 
 
@@ -491,13 +499,23 @@ public class PhotoBooth extends PApplet {
         } else if (state == MainActivity.REVIEW_AI_EDIT_STATE) {
             drawReview();
         }
+        if (parameters.isStereoscopeCameraMode()) {
+            if (zoom) {
+                textSize(48);
+                fill(yellow);
+                textAlign(LEFT);
+                text("zoom +" + magnifyScale[magnifyIndex] + "    ", width - 400, height - 4);
+            }
+        }
+
         if (parameters.isPhotoBoothCameraMode()) {
-            if (magnifyScale[magnifyIndex] > 1.0f) {
+            if (zoom && magnifyScale[magnifyIndex] > 1.0f) {
                 textSize(48);
                 fill(yellow);
                 textAlign(LEFT);
                 text("+" + magnifyScale[magnifyIndex] + "    ", width - 200, height - 4);
             }
+
             // camera and review mode display test mode for debug
             if (DEBUG && testMode) {
                 textSize(48);
@@ -605,9 +623,10 @@ public class PhotoBooth extends PApplet {
         if (labelFrameCount > 0) {
             labelFrameCount--;
             drawImageLabel();
-        } else if (state == MainActivity.REVIEW_PHOTO_STATE) {
-            drawImageLabel();
         }
+//        else if (state == MainActivity.REVIEW_PHOTO_STATE) {
+//            drawImageLabel();
+//        }
 
         // last thing to check is screenshot
         if (screenshot) {
@@ -655,8 +674,8 @@ public class PhotoBooth extends PApplet {
 
         // Calculate zoom offsets - these keep the zoomed image centered in its half-frame
         if (zoom) {
-            offsetX = (imgWidth * (1 - 1 / magnifyScale[magnifyIndex])) / 2;
-            offsetY = (imgHeight * (1 - 1 / magnifyScale[magnifyIndex])) / 2;
+            offsetX = ((imgWidth * (1 - 1 / magnifyScale[magnifyIndex])) / 2) + shiftOffsetX;
+            offsetY = ((imgHeight * (1 - 1 / magnifyScale[magnifyIndex])) / 2) + shiftOffsetY;
         }
 
         // LEFT IMAGE (left half of frame)
@@ -712,10 +731,11 @@ public class PhotoBooth extends PApplet {
         if (grid) {
             drawGrid(false);
         }
+        // show any display pause with rotating text
         if (rotating) {
             textSize(48);
             fill(IGui.dimyellow);
-            textAlign(CENTER);
+            textAlign(CENTER, CENTER);
             rotatingIndex = (rotatingIndex + 1) % rotatingText.length;
             text(rotatingText[rotatingIndex], width / 2, height / 2);
         }
@@ -732,8 +752,8 @@ public class PhotoBooth extends PApplet {
 
         // Calculate zoom offsets
         if (zoom) {
-            offsetX = (anaglyphW * (1 - 1 / magnifyScale[magnifyIndex])) / 2;
-            offsetY = (height * (1 - 1 / magnifyScale[magnifyIndex])) / 2;
+            offsetX = ((anaglyphW * (1 - 1 / magnifyScale[magnifyIndex])) / 2) + shiftOffsetX;
+            offsetY = ((height * (1 - 1 / magnifyScale[magnifyIndex])) / 2) + shiftOffsetY;
         }
 
         PGL pgl;  // Processing Open GL library
@@ -826,8 +846,8 @@ public class PhotoBooth extends PApplet {
 
         // Calculate zoom offsets
         if (zoom) {
-            offsetX = (anaglyphW * (1 - 1 / magnifyScale[magnifyIndex])) / 2;
-            offsetY = (height * (1 - 1 / magnifyScale[magnifyIndex])) / 2;
+            offsetX = ((anaglyphW * (1 - 1 / magnifyScale[magnifyIndex])) / 2) + shiftOffsetX;
+            offsetY = ((height * (1 - 1 / magnifyScale[magnifyIndex])) / 2) + shiftOffsetY;
         }
 
         // Add clipping to constrain the image to the display area
@@ -930,7 +950,7 @@ public class PhotoBooth extends PApplet {
 
         int level = 78;
         DisplayMode position = displayMode.get();
-        if (position == DisplayMode.SBS) { // stereoscopic
+        if (position == DisplayMode.SBS) { // for stereoscope
             showString(ev, LEFT, 0, level);
             showString(ev, RIGHT, STEREO_OFFSET, level);
         } else { //monoscopic
@@ -946,7 +966,7 @@ public class PhotoBooth extends PApplet {
 
         int level = 32;
         DisplayMode position = displayMode.get();
-        if (position == DisplayMode.SBS) { // stereoscopic
+        if (position == DisplayMode.SBS) { // for stereoscope
             showString(px, LEFT, 0, level);
             showString(px, RIGHT, STEREO_OFFSET, level);
         } else { //monoscopic
@@ -956,8 +976,12 @@ public class PhotoBooth extends PApplet {
 
     public void setImageLabel(String imageLabel) {
         this.imageLabel = imageLabel;
-        labelFrameCount = 60;
+        setImageLabelTimeout();
         update = true;
+    }
+
+    public void setImageLabelTimeout() {
+        this.labelFrameCount = IMAGE_LABEL_TIMEOUT_FRAMES;
     }
 
     void drawImageLabel() {
@@ -967,7 +991,7 @@ public class PhotoBooth extends PApplet {
 
         int level = 120;
         DisplayMode position = displayMode.get();
-        if (position == DisplayMode.SBS) { // stereoscopic
+        if (position == DisplayMode.SBS) { // stereoscope
             showString(label, LEFT, 0, level);
             showString(label, RIGHT, STEREO_OFFSET, level);
         } else { //monoscopic
@@ -1003,7 +1027,15 @@ public class PhotoBooth extends PApplet {
             case KeyEvent.KEYCODE_B:
                 toggleBlankScreen();
                 break;
-            case KeyEvent.KEYCODE_C:
+            case KeyEvent.KEYCODE_C: // continuous capture (handled in MainActivity)
+                lastKeyCode = 0;
+                lastKey = 0;
+                return false;
+            case KeyEvent.KEYCODE_M:  // toggle mirror display (handled in MainActivity)
+                lastKeyCode = 0;
+                lastKey = 0;
+                return false;
+            case KeyEvent.KEYCODE_P:
                 screenshot = true;
                 break;
             case KeyEvent.KEYCODE_LEFT_BRACKET:
@@ -1040,11 +1072,15 @@ public class PhotoBooth extends PApplet {
             case KeyEvent.KEYCODE_DPAD_UP:
                 if (showMenu) {
                     stereoCamera.previousFunctionMode();
+                } else if (zoom) {
+                    shiftOffsetY -= shiftOffsetDelta[magnifyIndex];
                 }
                 break;
             case KeyEvent.KEYCODE_DPAD_DOWN:
                 if (showMenu) {
                     stereoCamera.nextFunctionMode();
+                } else if (zoom) {
+                    shiftOffsetY += shiftOffsetDelta[magnifyIndex];
                 }
                 break;
             case KeyEvent.KEYCODE_PERIOD:
@@ -1060,6 +1096,8 @@ public class PhotoBooth extends PApplet {
                         if (DEBUG) PApplet.println("iParallax = " + iParallax);
 
                     }
+                } else if (zoom) {
+                    shiftOffsetX += shiftOffsetDelta[magnifyIndex];
                 } else {
                     if (state == MainActivity.REVIEW_PHOTO_STATE) {
                         currentIndex++;
@@ -1083,6 +1121,8 @@ public class PhotoBooth extends PApplet {
                         parallax = toDisplayPixels(iParallax);
                         if (DEBUG) PApplet.println("iParallax = " + iParallax);
                     }
+                } else if (zoom) {
+                    shiftOffsetX -= shiftOffsetDelta[magnifyIndex];
                 } else {
                     if (state == MainActivity.REVIEW_PHOTO_STATE) {
                         currentIndex--;
@@ -1115,10 +1155,11 @@ public class PhotoBooth extends PApplet {
             case KeyEvent.KEYCODE_SPACE:
                 toggleShowMenu();
                 break;
-            case KeyEvent.KEYCODE_P:
+            case KeyEvent.KEYCODE_T:
                 toggleShowPhotoBoothTitle();
                 break;
             case KeyEvent.KEYCODE_H:  // help screens for debug
+            case KeyEvent.KEYCODE_I:
             case KeyEvent.KEYCODE_HELP:
                 debugHelp++;
                 if (debugHelp > 2) {
@@ -1246,12 +1287,12 @@ public class PhotoBooth extends PApplet {
             for (File file : files) {
                 if (file.isFile()) {
                     String name = file.getName().toLowerCase();
-                    println("sbs file name: " + name);
+                    if (DEBUG) println("sbs file name: " + name);
                     String fullPath = file.getAbsolutePath();
-                    println("sbs file path: " + fullPath);
+                    if (DEBUG) println("sbs file path: " + fullPath);
                     if (fullPath.toLowerCase().endsWith(".jpg") || fullPath.toLowerCase().endsWith(".jpeg")) {
                         String nameWithoutExt = fullPath.substring(0, fullPath.lastIndexOf('.'));
-                        println("nameWithoutExt: " + nameWithoutExt);
+                        if (DEBUG) println("nameWithoutExt: " + nameWithoutExt);
                         if (nameWithoutExt.toLowerCase().endsWith("_2x1")) {
                             boolean sbsFilesAdded = sbsImageFiles.add(fullPath);
                             if (sbsFilesAdded) println("sbs file added: " + fullPath);
@@ -1316,7 +1357,7 @@ public class PhotoBooth extends PApplet {
 
     // copied from PApplet.java Processing-Android
     public PImage loadImage(String filename) {
-        System.out.println("loadImage " + filename);
+        if (DEBUG) System.out.println("loadImage " + filename);
         InputStream stream = createInput(filename);
         if (stream == null) {
             System.err.println("Could not find the image " + filename + ".");
@@ -1446,18 +1487,33 @@ public class PhotoBooth extends PApplet {
             mainActivity.launchSettings();
         } else if (y > (XBP_DISPLAY_FRAME_HEIGHT - 144)) {
             //if (DEBUG) PApplet.println("mouseReleased photo booth show menu");
-            setKeyCode(KeyEvent.KEYCODE_U, 'U'); // toggleShowMenu()
-        } else {
-            if (showMenu) {
+            setKeyCode(KeyEvent.KEYCODE_U, 'U', true); // toggleShowMenu()
+        } else if (showMenu) {
                 int keyCode = gui.mousePressed(x, y);
-                setKeyCode(keyCode, 0);
-            }
+                setKeyCode(keyCode, 0, true);
+        // hidden active keys for review previous or next image
+        } else if (x > 176 && x <688 && y > 140 && y < (height-156)) {
+            setKeyCode(KeyEvent.KEYCODE_COMMA, ',', true); // invisible left arrow button for keyboard shortcut
+        } else if (x > width-688 && x < width-176 && y > 140+259 && y < (height-156)) {
+            setKeyCode(KeyEvent.KEYCODE_PERIOD, ',', true); // invisible right arrow button for keyboard shortcut
         }
     }
 
-    public void setKeyCode(int lastKeyCode, int lastKey) {
-        this.lastKey = lastKey;
-        this.lastKeyCode = lastKeyCode;
+    public void setKeyCode(int lastKeyCode, int lastKey, boolean keyUp) {
+        if (keyUp) {
+            this.lastKey = lastKey;
+            this.lastKeyCode = lastKeyCode;
+        } else {  // key down
+            switch (lastKeyCode) {
+                case KeyEvent.KEYCODE_DPAD_LEFT:
+                case KeyEvent.KEYCODE_DPAD_RIGHT:
+                case KeyEvent.KEYCODE_DPAD_UP:
+                case KeyEvent.KEYCODE_DPAD_DOWN:
+                    this.lastKey = lastKey;
+                    this.lastKeyCode = lastKeyCode;
+                    break;
+            }
+        }
     }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
