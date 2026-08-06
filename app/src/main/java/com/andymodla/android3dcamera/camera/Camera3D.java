@@ -175,7 +175,7 @@ public class Camera3D {
     // Function modes
     public static final int FUNCTION_MODE_OFF = 0;
     public static final int FUNCTION_MODE_EV = 1;
-    public static final int FUNCTION_MODE_METERING = 3;
+    public static final int FUNCTION_MODE_ZOOM = 3;
     public static final int FUNCTION_MODE_PARALLAX = 2;
     private volatile int functionMode = FUNCTION_MODE_EV;
     private volatile int lastFunctionMode = FUNCTION_MODE_OFF;
@@ -629,9 +629,9 @@ public class Camera3D {
     public String getEv() {
         String sev;
         if (exposureCompensationIndex < 0) {
-            sev = "EV -" + EV_TABLE[-exposureCompensationIndex];
+            sev = "EV-" + EV_TABLE[-exposureCompensationIndex];
         } else if (exposureCompensationIndex > 0) {
-            sev = "EV +" + EV_TABLE[exposureCompensationIndex];
+            sev = "EV+" + EV_TABLE[exposureCompensationIndex];
         } else {
             sev = "EV " + EV_TABLE[exposureCompensationIndex];
         }

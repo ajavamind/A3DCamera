@@ -25,7 +25,7 @@ public class Gui {
         if (DEBUG) base.println("createGui()");
         this.base = base;
         menuWidth = base.width;
-        menuHeight = base.height / 6;
+        menuHeight = base.height / 6 - 20;
         menuX = 0;
         menuY = 0;
         menuBar = new MainHorzMenuBar(base, menuX, menuY, menuWidth, menuHeight);

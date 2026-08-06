@@ -78,7 +78,7 @@ public class PhotoBooth extends PApplet {
 
     int displayFPS = 30; // display frames per second
     int reviewTimeout = 0;  // frame count for review timeout
-    int MAX_REVIEW_TIMEOUT_SECONDS = 120;  // for photo booth camera mode
+    int MAX_REVIEW_TIMEOUT_SECONDS = 90;  // for photo booth camera mode
     int REVIEW_TIMEOUT_SECONDS = 3;  // for stereoscope camera mode
 
     // Parallax and vertical alignment adjustments in pixels for XBP photo booth display
@@ -89,6 +89,7 @@ public class PhotoBooth extends PApplet {
     private volatile boolean crossEye = false;
     private volatile boolean grid = false;
     private volatile boolean showMenu = false;
+    private volatile boolean showEv = false;
     private volatile boolean showPhotoBoothTitle = false;
     volatile boolean update = false;
     boolean screenshot = false;
@@ -107,6 +108,16 @@ public class PhotoBooth extends PApplet {
     private String[] rotatingText = {"-", "\\", "|", "/"};
     private int rotatingIndex = 0;
     private volatile boolean rotating = true;
+
+    // menu mode functions
+    private static final String NO_OPERATION_MODE = "";
+    private static final String PARALLAX_MODE = "Parallax";
+    private static final String ZOOM_MODE = "Zoom";
+    private static final int NO_OPERATION_MODE_INDEX = 0;
+    private static final int PARALLAX_MODE_INDEX = 1;
+    private static final int ZOOM_MODE_INDEX = 2;
+    private int modeIndex = NO_OPERATION_MODE_INDEX;
+    private String[] menuModeLabels = {NO_OPERATION_MODE, PARALLAX_MODE, ZOOM_MODE};
 
     DisplayMode displayMode = DisplayMode.SBS;
     int debugHelp = 0;
@@ -308,6 +319,11 @@ public class PhotoBooth extends PApplet {
         update = true;
     }
 
+    public void toggleEv() {
+        showEv = !showEv;
+        update = true;
+    }
+
     public void setMirror(boolean mirror) {
         if (DEBUG) PApplet.println("setMirror(" + mirror + ")");
         this.mirror = mirror;
@@ -450,15 +466,14 @@ public class PhotoBooth extends PApplet {
             media.rightReview.resize(Camera3D.CAMERA_WIDTH_DEFAULT, Camera3D.CAMERA_HEIGHT_DEFAULT);
 
             // this code has to run here on the processing draw() GL thread to create the textures
-            if (g instanceof processing.opengl.PGraphicsOpenGL) {
-                ((processing.opengl.PGraphicsOpenGL) g).getTexture(media.leftReview);
-                ((processing.opengl.PGraphicsOpenGL) g).getTexture(media.rightReview);
-            }
+//            if (g instanceof processing.opengl.PGraphicsOpenGL) {
+//                ((processing.opengl.PGraphicsOpenGL) g).getTexture(media.leftReview);
+//                ((processing.opengl.PGraphicsOpenGL) g).getTexture(media.rightReview);
+//            }
             initial = false;
             if (DEBUG)
                 PApplet.println("PhotoBooth draw() initialization done in " + n2s(System.nanoTime() - t0) + " seconds");
             setReviewLabel();
-
 
         }
 
@@ -614,9 +629,14 @@ public class PhotoBooth extends PApplet {
 //                drawParallax();
 //            }
 //        }
-        if (showMenu) {
+        if (showMenu && update) {
+            update = false;
             gui.displayMenuBar();
+
+        }
+        if (state == MainActivity.LIVE_VIEW_STATE && modeIndex == NO_OPERATION_MODE_INDEX) {
             drawEv();
+        } else if (modeIndex == PARALLAX_MODE_INDEX) {
             drawParallax();
         }
 
@@ -933,22 +953,16 @@ public class PhotoBooth extends PApplet {
             // Second vertical line (3/4 of frame width)
             rect(frameX + 3 * XBP_DISPLAY_FRAME_WIDTH / 4 - thickness / 2, top, thickness, XBP_DISPLAY_FRAME_HEIGHT - bottom);
         }
-        // draw hidden buttons
-        //fill(gray);
-        //rect(MainActivity.HIDDEN_SHUTTER_BUTTON_X, 0, width - MainActivity.HIDDEN_SETTINGS_BUTTON_X, MainActivity.HIDDEN_SETTINGS_BUTTON_Y);
-        //rect(0, 0, MainActivity.HIDDEN_SETTINGS_BUTTON_X, MainActivity.HIDDEN_SETTINGS_BUTTON_Y);
-
-        //drawEv();
-        //drawParallax();
     }
 
     void drawEv() {
+        if (!showEv) return;
         String ev = stereoCamera.getEv();
-        if (stereoCamera.getFunctionMode() == Camera3D.FUNCTION_MODE_EV) {
-            ev = "=" + Camera3D.METERING_NAMES[parameters.getExposureMeteringIndex()] + " " + ev;
-        }
+//        if (stereoCamera.getFunctionMode() == Camera3D.FUNCTION_MODE_EV) {
+//            ev = Camera3D.METERING_NAMES[parameters.getExposureMeteringIndex()]  + ev;
+//        }
 
-        int level = 78;
+        int level = 160;
         DisplayMode position = displayMode.get();
         if (position == DisplayMode.SBS) { // for stereoscope
             showString(ev, LEFT, 0, level);
@@ -1017,7 +1031,8 @@ public class PhotoBooth extends PApplet {
 
     // called by MainActivity onKeyUp to process key events for the photo booth exclusively
     public boolean processKeyCode() {
-        //if (DEBUG) println("processKeyCode() lastKeyCode=" + lastKeyCode);
+        if (lastKeyCode == 0) return true;
+        if (DEBUG) println("processKeyCode() lastKeyCode=" + lastKeyCode);
 
         int iParallax;
         switch (lastKeyCode) {
@@ -1065,20 +1080,22 @@ public class PhotoBooth extends PApplet {
             case KeyEvent.KEYCODE_Z:
                 zoomToggle();
                 break;
-//            case KeyEvent.KEYCODE_SPACE:
-//                testMode = !testMode;
-//                update = true;
-//                break;
             case KeyEvent.KEYCODE_DPAD_UP:
-                if (showMenu) {
-                    stereoCamera.previousFunctionMode();
+                if (state == MainActivity.REVIEW_PHOTO_STATE) {
+                    if (currentIndex != sbsImageFiles.size()-1) {
+                        currentIndex = sbsImageFiles.size()-1;
+                        reloadReviewImage(currentIndex);
+                    }
                 } else if (zoom) {
                     shiftOffsetY -= shiftOffsetDelta[magnifyIndex];
                 }
                 break;
             case KeyEvent.KEYCODE_DPAD_DOWN:
-                if (showMenu) {
-                    stereoCamera.nextFunctionMode();
+                if (state == MainActivity.REVIEW_PHOTO_STATE) {
+                    if (currentIndex != 0) {
+                        currentIndex = 0;
+                        reloadReviewImage(currentIndex);
+                    }
                 } else if (zoom) {
                     shiftOffsetY += shiftOffsetDelta[magnifyIndex];
                 }
@@ -1119,7 +1136,7 @@ public class PhotoBooth extends PApplet {
                         iParallax = parameters.getParallaxOffset() - DELTA_PARALLAX;
                         parameters.setParallaxOffset(iParallax);
                         parallax = toDisplayPixels(iParallax);
-                        if (DEBUG) PApplet.println("iParallax = " + iParallax);
+                        //if (DEBUG) PApplet.println("iParallax = " + iParallax);
                     }
                 } else if (zoom) {
                     shiftOffsetX -= shiftOffsetDelta[magnifyIndex];
@@ -1135,21 +1152,73 @@ public class PhotoBooth extends PApplet {
                 }
                 break;
             case KeyEvent.KEYCODE_MINUS:
-                iParallax = parameters.getParallaxOffset() - DELTA_PARALLAX;
-                parameters.setParallaxOffset(iParallax);
-                parallax = toDisplayPixels(iParallax);
-                if (DEBUG) PApplet.println("parallax = " + parallax);
+            case MainActivity.BUTTON_MINUS_KEY:
+                if (modeIndex == NO_OPERATION_MODE_INDEX) {
+                    if (state == MainActivity.LIVE_VIEW_STATE) {
+                        //if (stereoCamera.getFunctionMode() == Camera3D.FUNCTION_MODE_EV) {
+                            int index = stereoCamera.decrementExposureCompensation(1);
+                            parameters.setExposureCompensationIndex(index);
+                        //}
+                    } else if (state == MainActivity.REVIEW_PHOTO_STATE) {
+                        currentIndex--;
+                        if (currentIndex < 0) {
+                            currentIndex = 0;
+                        } else {
+                            reloadReviewImage(currentIndex);
+                        }
+                    }
+                } else if (modeIndex == PARALLAX_MODE_INDEX) {
+                    iParallax = parameters.getParallaxOffset() - DELTA_PARALLAX;
+                    parameters.setParallaxOffset(iParallax);
+                    parallax = toDisplayPixels(iParallax);
+                    if (DEBUG) PApplet.println("parallax = " + parallax);
+                } else if (modeIndex == ZOOM_MODE_INDEX) {
+
+                }
                 break;
             case KeyEvent.KEYCODE_PLUS:
             case KeyEvent.KEYCODE_EQUALS:
-                iParallax = parameters.getParallaxOffset() + DELTA_PARALLAX;
-                parameters.setParallaxOffset(iParallax);
-                parallax = toDisplayPixels(iParallax);
-                if (DEBUG) PApplet.println("parallax = " + parallax);
+                case MainActivity.BUTTON_PLUS_KEY:
+                if (modeIndex == NO_OPERATION_MODE_INDEX) {
+                    if (state == MainActivity.LIVE_VIEW_STATE) {
+                        //if (stereoCamera.getFunctionMode() == Camera3D.FUNCTION_MODE_EV) {
+                            int index = stereoCamera.incrementExposureCompensation(1);
+                            parameters.setExposureCompensationIndex(index);
+                        //}
+                    }
+                } else if (state == MainActivity.REVIEW_PHOTO_STATE) {
+                    currentIndex++;
+                    if (currentIndex >= sbsImageFiles.size()) {
+                        currentIndex--;
+                    } else {
+                        reloadReviewImage(currentIndex);
+                    }
+
+                } else if (modeIndex  == PARALLAX_MODE_INDEX) {
+                    iParallax = parameters.getParallaxOffset() + DELTA_PARALLAX;
+                    parameters.setParallaxOffset(iParallax);
+                    parallax = toDisplayPixels(iParallax);
+                    if (DEBUG) PApplet.println("parallax = " + parallax);
+                } else if (modeIndex == ZOOM_MODE_INDEX) {
+
+                }
                 break;
+
             case KeyEvent.KEYCODE_G:
                 toggleGrid();
                 break;
+
+            case MainActivity.BUTTON_B_KEY:
+                toggleEv();
+                break;
+
+            case MainActivity.BUTTON_A_KEY:
+                toggleShowMenu();
+                break;
+
+//            case MainActivity.MODE_KEY:
+//                mainActivity.processMode();
+//                return true;
 
             case KeyEvent.KEYCODE_U:
             case KeyEvent.KEYCODE_SPACE:
@@ -1485,21 +1554,25 @@ public class PhotoBooth extends PApplet {
         } else if (x < MainActivity.HIDDEN_SETTINGS_BUTTON_X && y < MainActivity.HIDDEN_SETTINGS_BUTTON_Y) {
             //if (DEBUG) PApplet.println("mouseReleased photo booth settings");
             mainActivity.launchSettings();
-        } else if (y > (XBP_DISPLAY_FRAME_HEIGHT - 144)) {
-            //if (DEBUG) PApplet.println("mouseReleased photo booth show menu");
-            setKeyCode(KeyEvent.KEYCODE_U, 'U', true); // toggleShowMenu()
+//        } else if (y > (XBP_DISPLAY_FRAME_HEIGHT - 144)) {
+//            //if (DEBUG) PApplet.println("mouseReleased stereoscope camera show menu");
+//            setKeyCode(KeyEvent.KEYCODE_U, 'U', true);
+        } else if (gui.menuBar.isOutside(x, y)) {
+            toggleShowMenu();
         } else if (showMenu) {
-                int keyCode = gui.mousePressed(x, y);
-                setKeyCode(keyCode, 0, true);
-        // hidden active keys for review previous or next image
-        } else if (x > 176 && x <688 && y > 140 && y < (height-156)) {
-            setKeyCode(KeyEvent.KEYCODE_COMMA, ',', true); // invisible left arrow button for keyboard shortcut
-        } else if (x > width-688 && x < width-176 && y > 140+259 && y < (height-156)) {
-            setKeyCode(KeyEvent.KEYCODE_PERIOD, ',', true); // invisible right arrow button for keyboard shortcut
+            int keyCode = gui.mousePressed(x, y);
+            //if (keyCode > 0) setKeyCode(keyCode, 0, true);
+            if (keyCode > 0) mainActivity.onKeyUp(keyCode, null);
+            // hidden active keys for review previous or next image
+//        } else if (x > 176 && x <688 && y > 140 && y < (height-156)) {
+//            setKeyCode(KeyEvent.KEYCODE_COMMA, ',', true); // invisible left arrow button for keyboard shortcut
+//        } else if (x > width-688 && x < width-176 && y > 140+259 && y < (height-156)) {
+//            setKeyCode(KeyEvent.KEYCODE_PERIOD, ',', true); // invisible right arrow button for keyboard shortcut
         }
     }
 
     public void setKeyCode(int lastKeyCode, int lastKey, boolean keyUp) {
+        if (lastKeyCode == 0) return;
         if (keyUp) {
             this.lastKey = lastKey;
             this.lastKeyCode = lastKeyCode;
