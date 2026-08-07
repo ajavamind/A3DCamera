@@ -75,13 +75,21 @@ public class MainActivity extends AppCompatActivity {
     public boolean isAiEdit = false;
     private UdpRemoteControl udpRemoteControl;
 
-    // photo booth states definitions
+    // stereoscope camera and photo booth state definitions
     public static final int LIVE_VIEW_STATE = 0;
     public static final int REVIEW_PHOTO_STATE = 1;
     public static final int REVIEW_AI_EDIT_STATE = 2;
     public volatile int state = LIVE_VIEW_STATE;
-    public static final String stateName[] = {"LIVE_VIEW_STATE", "REVIEW_PHOTO_STATE", "REVIEW_AI_EDIT_STATE"};
+    public static final String[] stateName = {"LIVE_VIEW_STATE", "REVIEW_PHOTO_STATE", "REVIEW_AI_EDIT_STATE"};
     public volatile DisplayMode displayMode = DisplayMode.SBS;
+
+    // function modes definitions - changes GUI key labels and key function
+    public static final int FUNCTION_MODE_LIVEVIEW = 0; //
+    public static final int FUNCTION_MODE_REVIEW = 1;
+    public static final int FUNCTION_MODE_PARALLAX = 2; // runs with both live view and review states
+    public static final int FUNCTION_MODE_ZOOM = 3; // runs with both live view and review states
+    public static final int NUMBER_OF_FUNCTIONS = 4;
+    public int functionMode = FUNCTION_MODE_LIVEVIEW;
 
     private boolean exitApp = false; // exit app flag with back or esc button
 
@@ -108,11 +116,11 @@ public class MainActivity extends AppCompatActivity {
     public int CONTINUOUS_COUNT = 0;
 
     // Key codes for Photo Booth Buzzer Box, Beam Pro device: Camera, Volume up and down functionality
-    static final int PB_SHUTTER_KEY = KeyEvent.KEYCODE_CAMERA;  // Camera function
+    static final int PB_SHUTTER_KEY = KeyEvent.KEYCODE_CAMERA;  // Camera shutter
     static final int PB_PRINT_KEY = KeyEvent.KEYCODE_CAMERA;    // Review Photo Function and launch print
     static final int PB_AI_EDITOR_KEY = KeyEvent.KEYCODE_CAMERA; // Review Photo Function and launch AI Editor
-    static final int PB_FUNCTION_TOGGLE_KEY = KeyEvent.KEYCODE_VOLUME_UP; // Toggle through functions round robin
-    static final int PB_IMAGE_TOGGLE_KEY = KeyEvent.KEYCODE_VOLUME_DOWN;  // Toggle through photo type: SBS, Anaglyph, Left Eye, Right Eye
+    static final int PB_STATE_TOGGLE_KEY = KeyEvent.KEYCODE_VOLUME_UP; // Toggle through states round robin
+    static final int PB_IMAGE_TOGGLE_KEY = KeyEvent.KEYCODE_VOLUME_DOWN;  // Toggle through photo views: SBS, Anaglyph, Left Eye, Right Eye
 
     // Key codes for 8BitDo Micro Bluetooth Keyboard controller (Android mode)
 
@@ -649,17 +657,44 @@ public class MainActivity extends AppCompatActivity {
 
     public void setLiveView() {
         state = LIVE_VIEW_STATE;
+        setFunctionMode(FUNCTION_MODE_LIVEVIEW);
         wakeUpSketch(state);
     }
 
     public void setReview() {
         state = REVIEW_PHOTO_STATE;
+        setFunctionMode(FUNCTION_MODE_REVIEW);
         wakeUpSketch(state);
     }
 
     public void setAiEditReview() {
         state = REVIEW_AI_EDIT_STATE;
         wakeUpSketch(state);
+    }
+
+    public boolean isLiveviewFunction() {
+        return (functionMode == FUNCTION_MODE_LIVEVIEW);
+    }
+
+    public boolean isReviewFunction() {
+        return (functionMode == FUNCTION_MODE_REVIEW);
+    }
+
+    public boolean isParallaxFunction() {
+        return (functionMode == FUNCTION_MODE_PARALLAX);
+    }
+
+    public boolean isZoomFunction() {
+        return (functionMode == FUNCTION_MODE_ZOOM);
+    }
+
+    public void setFunctionMode(int func) {
+        functionMode = func;
+        photoBooth.setMenuKeyLabels(func);
+    }
+
+    public int getFunctionMode() {
+        return functionMode;
     }
 
     public void wakeUpSketch(int theState) {

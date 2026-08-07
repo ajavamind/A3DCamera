@@ -173,12 +173,12 @@ public class Camera3D {
     public static String[] METERING_NAMES = {"FRAME AVERAGE", "CENTER WEIGHTED", "SPOT METERING"};
 
     // Function modes
-    public static final int FUNCTION_MODE_OFF = 0;
-    public static final int FUNCTION_MODE_EV = 1;
-    public static final int FUNCTION_MODE_ZOOM = 3;
-    public static final int FUNCTION_MODE_PARALLAX = 2;
-    private volatile int functionMode = FUNCTION_MODE_EV;
-    private volatile int lastFunctionMode = FUNCTION_MODE_OFF;
+//    public static final int FUNCTION_MODE_OFF = 0;
+//    public static final int FUNCTION_MODE_EV = 1;
+//    public static final int FUNCTION_MODE_ZOOM = 3;
+//    public static final int FUNCTION_MODE_PARALLAX = 2;
+//    private volatile int functionMode = FUNCTION_MODE_EV;
+//    private volatile int lastFunctionMode = FUNCTION_MODE_OFF;
 
     // Saturation 0 - 10, default 5
     private static final CaptureRequest.Key<Integer> SATURATION = new CaptureRequest.Key<>("org.codeaurora.qcamera3.saturation.use_saturation", Integer.class);
@@ -1202,38 +1202,38 @@ public class Camera3D {
         return timestamp;
     }
 
-    public void changeFunction() {
-        if (functionMode == FUNCTION_MODE_OFF) {
-            lastFunctionMode = functionMode;
-            functionMode = FUNCTION_MODE_EV;
-        } else {
-            lastFunctionMode = functionMode;
-            functionMode = FUNCTION_MODE_OFF;
-        }
-    }
-
-    public int getFunctionMode() {
-        return functionMode;
-    }
-
-    public void nextFunctionMode() {
-        if (functionMode == FUNCTION_MODE_OFF) {
-            functionMode = FUNCTION_MODE_EV;
-        } else if (functionMode == FUNCTION_MODE_EV) {
-            functionMode = FUNCTION_MODE_PARALLAX;
-        } else if (functionMode == FUNCTION_MODE_PARALLAX) {
-            functionMode = FUNCTION_MODE_EV;
-        }
-    }
-
-    public void previousFunctionMode() {
-        if (functionMode == FUNCTION_MODE_OFF) {
-            functionMode = FUNCTION_MODE_PARALLAX;
-        } else if (functionMode == FUNCTION_MODE_PARALLAX) {;
-            functionMode = FUNCTION_MODE_EV;
-        } else if (functionMode == FUNCTION_MODE_EV) {
-            functionMode = FUNCTION_MODE_PARALLAX;
-        }
-    }
+//    public void changeFunction() {
+//        if (functionMode == FUNCTION_MODE_OFF) {
+//            lastFunctionMode = functionMode;
+//            functionMode = FUNCTION_MODE_EV;
+//        } else {
+//            lastFunctionMode = functionMode;
+//            functionMode = FUNCTION_MODE_OFF;
+//        }
+//    }
+//
+//    public int getFunctionMode() {
+//        return functionMode;
+//    }
+//
+//    public void nextFunctionMode() {
+//        if (functionMode == FUNCTION_MODE_OFF) {
+//            functionMode = FUNCTION_MODE_EV;
+//        } else if (functionMode == FUNCTION_MODE_EV) {
+//            functionMode = FUNCTION_MODE_PARALLAX;
+//        } else if (functionMode == FUNCTION_MODE_PARALLAX) {
+//            functionMode = FUNCTION_MODE_EV;
+//        }
+//    }
+//
+//    public void previousFunctionMode() {
+//        if (functionMode == FUNCTION_MODE_OFF) {
+//            functionMode = FUNCTION_MODE_PARALLAX;
+//        } else if (functionMode == FUNCTION_MODE_PARALLAX) {;
+//            functionMode = FUNCTION_MODE_EV;
+//        } else if (functionMode == FUNCTION_MODE_EV) {
+//            functionMode = FUNCTION_MODE_PARALLAX;
+//        }
+//    }
 
 }

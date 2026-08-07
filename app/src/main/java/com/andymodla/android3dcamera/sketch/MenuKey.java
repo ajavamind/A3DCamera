@@ -84,6 +84,10 @@ public class MenuKey implements IGui {
         this.textOnly = value;
     }
 
+    void setFontSize(float fontSize) {
+        this.fontSize = fontSize;
+    }
+
     void draw() {
         if (visible) {
             base.stroke(gray);

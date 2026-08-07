@@ -60,11 +60,11 @@ class MainHorzMenuBar implements IGui {
 
         // bottom menu bar
         minusKey = new MenuKey(base, KeyEvent.KEYCODE_MINUS, "EV-", menuTextSize, yellow, backTransparent);
-        downArrowKey = new MenuKey(base, KeyEvent.KEYCODE_DPAD_DOWN, DOWN_ARROW, LARGE_FONT_SIZE, yellow, backTransparent);
+        downArrowKey = new MenuKey(base, KeyEvent.KEYCODE_DPAD_DOWN, DOWN_ARROW, menuTextSize, yellow, backTransparent);
         leftArrowKey = new MenuKey(base, KeyEvent.KEYCODE_DPAD_LEFT, LEFT_ARROW, menuTextSize, yellow, backTransparent);
-        okKey = new MenuKey(base, MainActivity.BUTTON_B_KEY, "EV", menuTextSize, yellow, backTransparent);
+        okKey = new MenuKey(base, MainActivity.BUTTON_B_KEY, "LIVEVIEW\nEV", menuTextSize, yellow, backTransparent);
         rightArrowKey = new MenuKey(base, KeyEvent.KEYCODE_DPAD_RIGHT, RIGHT_ARROW , menuTextSize, yellow, backTransparent);
-        upArrowKey = new MenuKey(base, KeyEvent.KEYCODE_DPAD_UP, UP_ARROW, LARGE_FONT_SIZE, yellow, backTransparent);
+        upArrowKey = new MenuKey(base, KeyEvent.KEYCODE_DPAD_UP, UP_ARROW, menuTextSize, yellow, backTransparent);
         plusKey = new MenuKey(base, KeyEvent.KEYCODE_PLUS,  "EV+", menuTextSize, yellow, backTransparent);
 
         menuKey = new MenuKey[numKeys];
@@ -102,6 +102,55 @@ class MainHorzMenuBar implements IGui {
             menuKey[i].setPosition(menuX + inset + j * w, inset + menuY2, w - 2 * inset, h - inset - inset / 2, inset);
             menuKey[i].setActive(true);
             menuKey[i].setVisible(true);
+        }
+
+    }
+
+    // update key labels for camera functions
+    public void setMenuKeyLabels(int mode) {
+        switch (mode) {
+            case MainActivity.FUNCTION_MODE_LIVEVIEW:
+                menuKey[6].setText("\u25C9");
+                menuKey[6].setFontSize(GIANT_FONT_SIZE);
+                menuKey[7].setText("EV-");
+                menuKey[8].setText("");
+                menuKey[9].setText("");
+                menuKey[10].setText("LIVEVIEW\nEV");
+                menuKey[11].setText("");
+                menuKey[12].setText("");
+                menuKey[13].setText("EV+");
+                break;
+            case MainActivity.FUNCTION_MODE_REVIEW:
+                menuKey[6].setText("PRINT");
+                menuKey[6].setFontSize(SMALL_FONT_SIZE);
+                menuKey[7].setText("");
+                menuKey[8].setText("FIRST\nPHOTO");
+                menuKey[9].setText("PREV\nPHOTO");
+                menuKey[10].setText("REVIEW");
+                menuKey[11].setText("NEXT\nPHOTO");
+                menuKey[12].setText("LAST\nPHOTO");
+                menuKey[13].setText("");
+                break;
+            case MainActivity.FUNCTION_MODE_PARALLAX:
+                menuKey[7].setText("-8");
+                menuKey[8].setText("-4");
+                menuKey[9].setText("-1");
+                menuKey[10].setText("PARALLAX");
+                menuKey[11].setText("+1");
+                menuKey[12].setText("+4");
+                menuKey[13].setText("+8");
+                break;
+            case MainActivity.FUNCTION_MODE_ZOOM:
+                menuKey[7].setText("ZOOM-");
+                menuKey[8].setText("MOVE\nDOWN");
+                menuKey[9].setText("MOVE\nLEFT");
+                menuKey[10].setText("ZOOM\nRESET");
+                menuKey[11].setText("MOVE\nRIGHT");
+                menuKey[12].setText("MOVE\nUP");
+                menuKey[13].setText("ZOOM+");
+                break;
+            default:
+                break;
         }
 
     }

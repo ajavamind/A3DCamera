@@ -32,10 +32,15 @@ public class Gui {
 
     }
 
+    public MainHorzMenuBar getMenuBar() {
+        return menuBar;
+    }
+
     void displayMenuBar() {
         if (DEBUG) base.println("displayMenuBar()");
         menuBar.display();
     }
+
 
     int mousePressed(int x, int y) {
         return menuBar.mousePressed(x, y);

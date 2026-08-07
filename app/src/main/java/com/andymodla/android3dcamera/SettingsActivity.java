@@ -299,10 +299,10 @@ public class SettingsActivity extends AppCompatActivity {
             if (event.getAction() == KeyEvent.ACTION_DOWN) {
                 int current = seekParallax.getProgress();
                 int delta = 2;
-                if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT || keyCode == KeyEvent.KEYCODE_BUTTON_L2) {
+                if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT ) {
                     seekParallax.setProgress(Math.max(seekParallax.getMin(), current - delta));
                     return true;
-                } else if (keyCode == KeyEvent.KEYCODE_DPAD_RIGHT || keyCode == KeyEvent.KEYCODE_BUTTON_R2) {
+                } else if (keyCode == KeyEvent.KEYCODE_DPAD_RIGHT ) {
                     seekParallax.setProgress(Math.min(seekParallax.getMax(), current + delta));
                     return true;
                 }
@@ -323,10 +323,10 @@ public class SettingsActivity extends AppCompatActivity {
             if (event.getAction() == KeyEvent.ACTION_DOWN) {
                 int current = seekVertical.getProgress();
                 int delta = 1;
-                if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT || keyCode == KeyEvent.KEYCODE_BUTTON_L2) {
+                if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT ) {
                     seekVertical.setProgress(Math.max(seekVertical.getMin(), current - delta));
                     return true;
-                } else if (keyCode == KeyEvent.KEYCODE_DPAD_RIGHT || keyCode == KeyEvent.KEYCODE_BUTTON_R2) {
+                } else if (keyCode == KeyEvent.KEYCODE_DPAD_RIGHT ) {
                     seekVertical.setProgress(Math.min(seekVertical.getMax(), current + delta));
                     return true;
                 }
