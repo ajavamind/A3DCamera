@@ -14,6 +14,7 @@ public interface IGui {
     // color is ARGB bytes - Alpha, Red, Blue, Green
     static final int black = 0xFF000000;   // black
     static final int gray = 0xFF808080;
+    static final int lighttransparent = 0x80c0c0c0;
     static final int graytransparent = 0x80808080;
     static final int darktransparent = 0x80202020; //color(32, 32, 32, 128);
     static final int white = 0xFFFFFFFF; // white

@@ -181,7 +181,7 @@ public class MainActivity extends AppCompatActivity {
 
     private TextView countdownTextView;
     private CommandLine commandLine;
-    private String splashMessage = "Welcome to Experimental A3DCamera by Andy Modla";
+    private String splashMessage = "Welcome to A3DCamera - Experimental Prototype 3D Camera - Andy Modla";
 
     public DisplayMode getDisplayMode() {
         return displayMode;
@@ -765,22 +765,19 @@ public class MainActivity extends AppCompatActivity {
         if (!isBasicCamera) {
             if (!photoBooth.isReady()) return true;  // ignore keystrokes until sketch is ready
 
-            // up keys to ignore
+            // up keys to ignore due to multiple codes output from game controller key press
             switch (keyCode) {
-//                case KeyEvent.KEYCODE_DPAD_RIGHT:
-//                case KeyEvent.KEYCODE_DPAD_LEFT:
-//                case KeyEvent.KEYCODE_DPAD_UP:
-//                case KeyEvent.KEYCODE_DPAD_DOWN:
                 case KeyEvent.KEYCODE_DPAD_CENTER:
                 case KeyEvent.KEYCODE_MENU:
                 case KeyEvent.KEYCODE_SPACE:
+                case KeyEvent.KEYCODE_BACK:
                     return true;
             }
+            // send to photo booth sketch to process on its next draw() frame
+            photoBooth.setKeyCode(keyCode, ch, true);
 
-           // if (keyCode != MODE_KEY) {
-                photoBooth.setKeyCode(keyCode, ch, true);
-            //}
-
+            // select keys not processed by sketch are handled here
+            // these keys must be mutually exclusive between here and the sketch
             switch (keyCode) {
                 case KeyEvent.KEYCODE_VOLUME_UP:
                 case MODE_KEY:
@@ -829,9 +826,9 @@ public class MainActivity extends AppCompatActivity {
                 }
                 return true;
 
-            case KeyEvent.KEYCODE_BACK:
+            //case KeyEvent.KEYCODE_BACK:
             case KeyEvent.KEYCODE_ESCAPE:
-            case BUTTON_A_KEY:
+            //case BUTTON_A_KEY:
                 if (continuousMode) {
                     continuousMode = false;
                     countdownDigit = -1;

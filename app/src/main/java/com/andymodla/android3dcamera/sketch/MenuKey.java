@@ -68,6 +68,10 @@ public class MenuKey implements IGui {
         this.highlight = highlight;
     }
 
+    void setBackgroundColor( int bgc) {
+        this.keyBackgroundColor = bgc;
+    }
+
     void setVisible(boolean visible) {
         this.visible = visible;
     }
