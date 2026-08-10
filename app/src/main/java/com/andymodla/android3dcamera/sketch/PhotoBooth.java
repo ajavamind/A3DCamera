@@ -112,7 +112,7 @@ public class PhotoBooth extends PApplet {
 
     private String[] rotatingText = {"-", "\\", "|", "/"};
     private int rotatingIndex = 0;
-    private volatile boolean rotating = true;
+    private volatile boolean rotating = false;  // for test to show frame rate
 
 //    // menu mode functions
 //    private static final String NO_OPERATION_MODE = "";
@@ -254,15 +254,19 @@ public class PhotoBooth extends PApplet {
         textSize(72);
         textAlign(CENTER, CENTER);
         fill(yellow);
+        int level = 72;
         if (parameters.isPhotoBoothCameraMode()) {
             text("3D Photo Booth", (float) width / 4, (float) height / 2); // left
             text("3D Photo Booth", ((float) 3 * width / 4) + STEREO_OFFSET, (float) height / 2); // right
         } else {
             text("3D Stereoscope", (float) width / 4, (float) height / 2);  // left
             text("3D Stereoscope", ((float) 3 * width / 4) + STEREO_OFFSET, (float) height / 2); // right
-            text("Camera", (float) width / 4, (float) (height / 2) + 72);  // left
-            text("Camera", ((float) 3 * width / 4) + STEREO_OFFSET, (float) (height / 2) + 72); // right
+            text("Camera", (float) width / 4, (float) (height / 2) + level);  // left
+            text("Camera", ((float) 3 * width / 4) + STEREO_OFFSET, (float) (height / 2) + level); // right
         }
+        text("Please wait ...", (float) width / 4, (float) (height / 2) + 4*level);  // left
+        text("Please wait ...", ((float) 3 * width / 4) + STEREO_OFFSET, (float) (height / 2) + 4*level); // right
+
         if (DEBUG)
             PApplet.println("PhotoBooth setup done in " + n2s(System.nanoTime() - t0) + " seconds");
 
@@ -295,14 +299,19 @@ public class PhotoBooth extends PApplet {
 
     public void setDisplayMode(DisplayMode mode) {
         displayMode = mode;
+        // set next key press label
         if (mode == DisplayMode.SBS) {
-            if (DEBUG) PApplet.println("Display SBS");
+            if (DEBUG) PApplet.println("Display SBS Parallel Image");
+            gui.menuBar.setMenuKeyLabel(1, "ANAGLYPH");
         } else if (mode == DisplayMode.ANAGLYPH) {
-            if (DEBUG) PApplet.println("Display ANAGLYPH");
+            if (DEBUG) PApplet.println("Display ANAGLYPH Image");
+            gui.menuBar.setMenuKeyLabel(1, "LEFT");
         } else if (mode == DisplayMode.LEFT) {
-            if (DEBUG) PApplet.println("Display LEFT");
+            if (DEBUG) PApplet.println("Display LEFT Image");
+            gui.menuBar.setMenuKeyLabel(1, "RIGHT");
         } else if (mode == DisplayMode.RIGHT) {
-            if (DEBUG) PApplet.println("Display RIGHT");
+            if (DEBUG) PApplet.println("Display RIGHT Image");
+            gui.menuBar.setMenuKeyLabel(1, "SBS");
         }
         update = true;
     }
@@ -1207,7 +1216,10 @@ public class PhotoBooth extends PApplet {
                 break;
 
             case KeyEvent.KEYCODE_DPAD_DOWN:
-                if (state == MainActivity.REVIEW_PHOTO_STATE && mainActivity.isReviewFunction()) {
+                if (state == MainActivity.LIVE_VIEW_STATE && mainActivity.isLiveviewFunction()) {
+                    resetZoom();
+                }
+                else if (state == MainActivity.REVIEW_PHOTO_STATE && mainActivity.isReviewFunction()) {
                     if (currentIndex != 0) {
                         currentIndex = 0;
                         reloadReviewImage(currentIndex);
@@ -1227,10 +1239,11 @@ public class PhotoBooth extends PApplet {
             case KeyEvent.KEYCODE_PERIOD:
             case KeyEvent.KEYCODE_DPAD_RIGHT:
                 //if (showMenu) {
-                if (mainActivity.isLiveviewFunction()) {
-                    int index = stereoCamera.incrementExposureCompensation(1);
-                    parameters.setExposureCompensationIndex(index);
-                } else if (mainActivity.isParallaxFunction()) {
+//                if (mainActivity.isLiveviewFunction()) {
+//                    int index = stereoCamera.incrementExposureCompensation(1);
+//                    parameters.setExposureCompensationIndex(index);
+//                } else
+                if (mainActivity.isParallaxFunction()) {
                     if (showParallax) {
                         iParallax = parameters.getParallaxOffset() + DELTA_PARALLAX;
                         parameters.setParallaxOffset(iParallax);
@@ -1254,10 +1267,11 @@ public class PhotoBooth extends PApplet {
             case KeyEvent.KEYCODE_COMMA:
             case KeyEvent.KEYCODE_DPAD_LEFT:
                 //if (showMenu) {
-                if (mainActivity.isLiveviewFunction()) {
-                    int index = stereoCamera.decrementExposureCompensation(1);
-                    parameters.setExposureCompensationIndex(index);
-                } else if (mainActivity.isParallaxFunction()) {
+//                if (mainActivity.isLiveviewFunction()) {
+//                    int index = stereoCamera.decrementExposureCompensation(1);
+//                    parameters.setExposureCompensationIndex(index);
+//                } else
+                if (mainActivity.isParallaxFunction()) {
                     if (showParallax) {
                         iParallax = parameters.getParallaxOffset() - DELTA_PARALLAX;
                         parameters.setParallaxOffset(iParallax);

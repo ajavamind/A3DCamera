@@ -56,6 +56,10 @@ public class MenuKey implements IGui {
         this.inset = inset;
     }
 
+    void setKeyColor(int keyColor) {
+        this.keyColor = keyColor;
+    }
+
     void setValue(int value) {
         this.value = value;
     }

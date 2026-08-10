@@ -181,7 +181,7 @@ public class MainActivity extends AppCompatActivity {
 
     private TextView countdownTextView;
     private CommandLine commandLine;
-    private String splashMessage = "Welcome to A3DCamera - Experimental Prototype 3D Camera - Andy Modla";
+    private String splashMessage = "Welcome to A3DCamera - Prototype 3D Camera - Andy Modla";
 
     public DisplayMode getDisplayMode() {
         return displayMode;
@@ -409,7 +409,7 @@ public class MainActivity extends AppCompatActivity {
         setVisibility();
 
         if (commandLine == null) {
-            commandLine = new CommandLine(this, parameters, splashMessage + " Version: " + BuildConfig.VERSION_NAME);
+            commandLine = new CommandLine(this, parameters, splashMessage + " Version: Alpha " + BuildConfig.VERSION_NAME);
         }
 
     }
