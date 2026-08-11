@@ -16,7 +16,7 @@ public class ToastHelper {
             public void run() {
                 toast.cancel();
             }
-        }, 500); // 500 milliseconds = 0.5 seconds
+        }, 1000); // 500 milliseconds = 0.5 seconds
 
         toast.show();
     }

@@ -264,6 +264,7 @@ public class PhotoBooth extends PApplet {
             text("Camera", (float) width / 4, (float) (height / 2) + level);  // left
             text("Camera", ((float) 3 * width / 4) + STEREO_OFFSET, (float) (height / 2) + level); // right
         }
+        textSize(36);
         text("Please wait ...", (float) width / 4, (float) (height / 2) + 4*level);  // left
         text("Please wait ...", ((float) 3 * width / 4) + STEREO_OFFSET, (float) (height / 2) + 4*level); // right
 
@@ -333,8 +334,10 @@ public class PhotoBooth extends PApplet {
     }
 
     public void toggleShowMenu() {
-        showMenu = !showMenu;
-        update = true;
+        if (parameters.isStereoscopeCameraMode()) {
+            showMenu = !showMenu;
+            update = true;
+        }
     }
 
     public void toggleEv() {
@@ -1092,6 +1095,7 @@ public class PhotoBooth extends PApplet {
 
         int iParallax;
         switch (lastKeyCode) {
+
             case KeyEvent.KEYCODE_A:
                 displayMode = displayMode.next();
                 break;
@@ -1115,6 +1119,7 @@ public class PhotoBooth extends PApplet {
             case KeyEvent.KEYCODE_X:
                 toggleCrossEye();
                 break;
+
 //            case KeyEvent.KEYCODE_FORWARD:  // 125 forward media button on mouse: mirror toggle
 //                File mediaFile = media.getMediaFile();
 //                if (mediaFile == null) {
@@ -1196,7 +1201,7 @@ public class PhotoBooth extends PApplet {
                 toggleShowMenu();
                 break;
 
-            case KeyEvent.KEYCODE_DPAD_UP:
+            case MainActivity.UP_ARROW_KEY:
                 if (state == MainActivity.REVIEW_PHOTO_STATE && mainActivity.isReviewFunction()) {
 
                     if (currentIndex != sbsImageFiles.size() - 1) {
@@ -1215,7 +1220,7 @@ public class PhotoBooth extends PApplet {
                 }
                 break;
 
-            case KeyEvent.KEYCODE_DPAD_DOWN:
+            case MainActivity.DOWN_ARROW_KEY:
                 if (state == MainActivity.LIVE_VIEW_STATE && mainActivity.isLiveviewFunction()) {
                     resetZoom();
                 }
@@ -1237,7 +1242,7 @@ public class PhotoBooth extends PApplet {
                 break;
 
             case KeyEvent.KEYCODE_PERIOD:
-            case KeyEvent.KEYCODE_DPAD_RIGHT:
+            case MainActivity.RIGHT_ARROW_KEY:
                 //if (showMenu) {
 //                if (mainActivity.isLiveviewFunction()) {
 //                    int index = stereoCamera.incrementExposureCompensation(1);
@@ -1265,7 +1270,7 @@ public class PhotoBooth extends PApplet {
                 //}
                 break;
             case KeyEvent.KEYCODE_COMMA:
-            case KeyEvent.KEYCODE_DPAD_LEFT:
+            case MainActivity.LEFT_ARROW_KEY:
                 //if (showMenu) {
 //                if (mainActivity.isLiveviewFunction()) {
 //                    int index = stereoCamera.decrementExposureCompensation(1);
@@ -1718,10 +1723,10 @@ public class PhotoBooth extends PApplet {
             println("setKeyCode "+lastKeyCode);
         } else {  // key down
             switch (lastKeyCode) {
-                case KeyEvent.KEYCODE_DPAD_LEFT:
-                case KeyEvent.KEYCODE_DPAD_RIGHT:
-                case KeyEvent.KEYCODE_DPAD_UP:
-                case KeyEvent.KEYCODE_DPAD_DOWN:
+                case MainActivity.LEFT_ARROW_KEY:
+                case MainActivity.RIGHT_ARROW_KEY:
+                case MainActivity.UP_ARROW_KEY:
+                case MainActivity.DOWN_ARROW_KEY:
                     this.lastKey = lastKey;
                     this.lastKeyCode = lastKeyCode;
                     break;

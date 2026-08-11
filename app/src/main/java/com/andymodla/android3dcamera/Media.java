@@ -427,7 +427,11 @@ public class Media {
     }
 
     private void nothingToPrint() {
-        Toast.makeText(context, "Nothing to Print", Toast.LENGTH_SHORT).show();
+        ((MainActivity)context).runOnUiThread(new Runnable() {
+            public void run() {
+                ToastHelper.showToast(context, "Photo Not Available To Print");
+            }
+        });
     }
 
     public File getMediaFile() {

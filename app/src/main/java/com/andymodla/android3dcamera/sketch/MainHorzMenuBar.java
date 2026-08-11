@@ -50,13 +50,13 @@ class MainHorzMenuBar implements IGui {
         menuTextSize = SMALL_FONT_SIZE;
 
         // top menu bar
-        settingsKey = new MenuKey(base, KeyEvent.KEYCODE_BUTTON_L1, "\u2699", LARGE_FONT_SIZE, yellow, backTransparent);
-        imageModeKey = new MenuKey(base, KeyEvent.KEYCODE_BUTTON_L2, "ANAGLYPH", menuTextSize, yellow, backTransparent);
+        settingsKey = new MenuKey(base, MainActivity.SETTINGS_KEY, "\u2699", LARGE_FONT_SIZE, yellow, backTransparent);
+        imageModeKey = new MenuKey(base, MainActivity.ANAGLYPH_KEY, "ANAGLYPH", menuTextSize, yellow, backTransparent);
         optionsKey = new MenuKey(base, MainActivity.BUTTON_Y_KEY, "ZOOM\nY", menuTextSize, yellow, backTransparent);
         functionKey = new MenuKey(base, MainActivity.BUTTON_X_KEY, "PARALLAX\nX", menuTextSize, yellow, backTransparent);
         backKey = new MenuKey(base, MainActivity.BUTTON_A_KEY, "BACK\nA", menuTextSize, yellow, backTransparent);
         reviewKey = new MenuKey(base, MainActivity.MODE_KEY, "REVIEW", menuTextSize, yellow, backTransparent);
-        shutterKey = new MenuKey(base, KeyEvent.KEYCODE_BUTTON_R1, "\u25C9", GIANT_FONT_SIZE, yellow, backTransparent);
+        shutterKey = new MenuKey(base, MainActivity.SHUTTER_KEY, "\u25C9", GIANT_FONT_SIZE, yellow, backTransparent);
 
         // bottom menu bar
         downArrowKey = new MenuKey(base, KeyEvent.KEYCODE_DPAD_DOWN, "RESET\nZOOM", menuTextSize, yellow, backTransparent);
@@ -124,6 +124,7 @@ class MainHorzMenuBar implements IGui {
                 menuKey[9].setKeyColor(yellow);
                 menuKey[9].setText("EV-");
                 menuKey[10].setText("LIVEVIEW\nEV"+" B");
+                menuKey[11].setKeyColor(yellow);
                 menuKey[11].setText("EV+");
                 menuKey[12].setText("");
                 menuKey[13].setText("");
@@ -136,13 +137,14 @@ class MainHorzMenuBar implements IGui {
                 menuKey[5].setText("LIVEVIEW");
                 menuKey[6].setText("PRINT");
                 menuKey[6].setFontSize(SMALL_FONT_SIZE);
-                menuKey[6].setKeyCode(MainActivity.PRINT_KEY);
+                menuKey[6].setKeyCode(MainActivity.SHUTTER_KEY);  // decode print in shutter logic
 
                 menuKey[7].setText("FIRST\nPHOTO"+DOWN_ARROW);
                 menuKey[8].setText("PREV\nPHOTO"+LEFT_ARROW);
                 menuKey[9].setKeyColor(graytransparent);
                 menuKey[9].setText("AI EDIT");
                 menuKey[10].setText("REVIEW\n"+" B");
+                menuKey[11].setKeyColor(graytransparent);
                 menuKey[11].setText("SHARE");
                 menuKey[12].setText("NEXT\nPHOTO"+RIGHT_ARROW);
                 menuKey[13].setText("LAST\nPHOTO"+UP_ARROW);
@@ -158,6 +160,7 @@ class MainHorzMenuBar implements IGui {
                 menuKey[9].setKeyColor(yellow);
                 menuKey[9].setText("-1");
                 menuKey[10].setText("PARALLAX\n"+" B");
+                menuKey[11].setKeyColor(yellow);
                 menuKey[11].setText("+1");
                 menuKey[12].setText("+4"+RIGHT_ARROW);
                 menuKey[13].setText("");
@@ -173,6 +176,7 @@ class MainHorzMenuBar implements IGui {
                 menuKey[9].setKeyColor(yellow);
                 menuKey[9].setText("ZOOM-");
                 menuKey[10].setText("ZOOM\n"+" B");
+                menuKey[11].setKeyColor(yellow);
                 menuKey[11].setText("ZOOM+");
                 menuKey[12].setText("SHIFT\nRIGHT"+RIGHT_ARROW);
                 menuKey[13].setText("SHIFT\nUP"+UP_ARROW);
