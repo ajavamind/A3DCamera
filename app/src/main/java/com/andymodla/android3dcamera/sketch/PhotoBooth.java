@@ -8,6 +8,7 @@ package com.andymodla.android3dcamera.sketch;
 import static android.graphics.BitmapFactory.decodeStream;
 
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.media.MediaScannerConnection;
 import android.view.KeyEvent;
 import android.graphics.Bitmap;
@@ -202,6 +203,9 @@ public class PhotoBooth extends PApplet {
     }
 
     public void setMenuKeyLabels(int func) {
+        if (state == MainActivity.REVIEW_PHOTO_STATE) {
+            resetZoom();
+        }
         gui.getMenuBar().setMenuKeyLabels(func);
     }
 
@@ -306,10 +310,10 @@ public class PhotoBooth extends PApplet {
             gui.menuBar.setMenuKeyLabel(1, "ANAGLYPH");
         } else if (mode == DisplayMode.ANAGLYPH) {
             if (DEBUG) PApplet.println("Display ANAGLYPH Image");
-            gui.menuBar.setMenuKeyLabel(1, "LEFT");
+            gui.menuBar.setMenuKeyLabel(1, "LEFT\nEYE");
         } else if (mode == DisplayMode.LEFT) {
             if (DEBUG) PApplet.println("Display LEFT Image");
-            gui.menuBar.setMenuKeyLabel(1, "RIGHT");
+            gui.menuBar.setMenuKeyLabel(1, "RIGHT\nEYE");
         } else if (mode == DisplayMode.RIGHT) {
             if (DEBUG) PApplet.println("Display RIGHT Image");
             gui.menuBar.setMenuKeyLabel(1, "SBS");
@@ -483,7 +487,7 @@ public class PhotoBooth extends PApplet {
 //    }
 
     private void setReviewLabel() {
-        if (DEBUG) PApplet.println("PhotoBooth reloadImage()");
+        if (DEBUG) PApplet.println("PhotoBooth setReviewLabel()");
         if (currentIndex >= 0) {
             String fullPath = sbsImageFiles.get(currentIndex);
             String name = fullPath.substring(0, fullPath.lastIndexOf("_2x1."));
@@ -1130,21 +1134,23 @@ public class PhotoBooth extends PApplet {
 
             case KeyEvent.KEYCODE_Z:
             case MainActivity.BUTTON_Y_KEY:  // ZOOM
-                toggleShowZoom();
-                if (showZoom) {
-                    zoom = true;
-                    int xfunction = MainActivity.FUNCTION_MODE_ZOOM;
-                    mainActivity.setFunctionMode(xfunction);
-                    gui.menuBar.setMenuKeyLabels(xfunction);
-                    showMenu = true;
-                } else {
-                    if (state == MainActivity.LIVE_VIEW_STATE) {
-                        mainActivity.setFunctionMode(MainActivity.FUNCTION_MODE_LIVEVIEW);
-                        gui.menuBar.setMenuKeyLabels(MainActivity.FUNCTION_MODE_LIVEVIEW);
+                if (state != MainActivity.LIVE_VIEW_STATE) {
+                    toggleShowZoom();
+                    if (showZoom) {
+                        zoom = true;
+                        int xfunction = MainActivity.FUNCTION_MODE_ZOOM;
+                        mainActivity.setFunctionMode(xfunction);
+                        gui.menuBar.setMenuKeyLabels(xfunction);
+                        showMenu = true;
                     } else {
-                        mainActivity.setFunctionMode(MainActivity.FUNCTION_MODE_REVIEW);
-                        gui.menuBar.setMenuKeyLabels(MainActivity.FUNCTION_MODE_REVIEW);
+                        if (state == MainActivity.LIVE_VIEW_STATE) {
+                            mainActivity.setFunctionMode(MainActivity.FUNCTION_MODE_LIVEVIEW);
+                            gui.menuBar.setMenuKeyLabels(MainActivity.FUNCTION_MODE_LIVEVIEW);
+                        } else {
+                            mainActivity.setFunctionMode(MainActivity.FUNCTION_MODE_REVIEW);
+                            gui.menuBar.setMenuKeyLabels(MainActivity.FUNCTION_MODE_REVIEW);
 
+                        }
                     }
                 }
                 break;
@@ -1222,7 +1228,7 @@ public class PhotoBooth extends PApplet {
 
             case MainActivity.DOWN_ARROW_KEY:
                 if (state == MainActivity.LIVE_VIEW_STATE && mainActivity.isLiveviewFunction()) {
-                    resetZoom();
+                    //resetZoom();  removed - TODO replace with crop??
                 }
                 else if (state == MainActivity.REVIEW_PHOTO_STATE && mainActivity.isReviewFunction()) {
                     if (currentIndex != 0) {
@@ -1639,6 +1645,11 @@ public class PhotoBooth extends PApplet {
             result[1] = media.rightReview;
         }
         ((Bitmap) original.getNative()).recycle();
+
+//        if (DEBUG) {
+//            println("leftReview bitmap=" + ((Bitmap) result[0].getNative()));
+//            println("rightReview bitmap=" + ((Bitmap) result[1].getNative()));
+//        }
         return result;
     }
 

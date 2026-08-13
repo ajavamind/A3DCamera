@@ -702,6 +702,8 @@ public class Camera3D {
     public void closeCamera() {
         Log.d(TAG, "closeCamera()");
         parameters.setExposureCompensationIndex(exposureCompensationIndex); // save exposure compensation index in parameters
+        stopCameraThread();
+
         if (mCameraCaptureSession != null) {
             try {
                 if (mCameraCaptureSession.isReprocessable()) {
@@ -721,7 +723,6 @@ public class Camera3D {
             }
             mCameraDevice = null;
         }
-        stopCameraThread();
 
     }
 
