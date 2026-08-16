@@ -110,7 +110,7 @@ public class MainActivity extends AppCompatActivity {
     public volatile int continuousCounter = 0;
     public volatile int labelContinuousCounter = 0;
     public static int CONTINUOUS_COUNT_PHOTO_BOOTH = 3; //(one less 4 photos captured for a strip collection)
-    public static int CONTINUOUS_COUNT_DEFAULT = 24 * 60 * 60 / 2; // second count is one less - one day
+    public static int CONTINUOUS_COUNT_DEFAULT = (24 * 60 * 60 / 2) - 1; // second count is one less - one day
     public int CONTINUOUS_COUNT = 0;
 
     // Key codes for Photo Booth Buzzer Box, Beam Pro device: Camera, Volume up and down functionality
@@ -352,7 +352,6 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        ///  for debug
         decorView.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
@@ -395,7 +394,7 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             }
         });
-        CameraInfoUtil.displayCameraInfo(this); // for debug
+        if (MyDebug.DEBUG) CameraInfoUtil.displayCameraInfo(this);
     }
 
     @Override
@@ -432,7 +431,6 @@ public class MainActivity extends AppCompatActivity {
         Log.d(TAG, "onResume()");
         super.onResume();
 
-        // for debugging and test
         if (allPermissionsGranted) {
             if (camera == null) {
                 Log.e(TAG, "Internal error - camera is null");
@@ -529,11 +527,11 @@ public class MainActivity extends AppCompatActivity {
             Log.d(TAG, "Right button pressed");
 
             if (!isBasicCamera) {
-                //if (isAiEdit) {
-                processPrintStateToggle();
-                //} else {
-                //    processStateToggle();
-                //}
+                if (parameters.getIsAiEdit()) {
+                    processPrintStateToggle();
+                } else {
+                    processStateToggle();
+                }
             } else {
                 media.reviewPhotos(displayMode);
             }
@@ -631,7 +629,9 @@ public class MainActivity extends AppCompatActivity {
         Log.d(TAG, "processStateToggle state=" + stateName[state]);
         if (state == LIVE_VIEW_STATE) {
             setReview();
-        } else if (state == REVIEW_PHOTO_STATE) {
+        } else if (state == REVIEW_PHOTO_STATE && !parameters.getIsAiEdit()) {
+            setLiveView();
+        } else if (state == REVIEW_AI_EDIT_STATE) {
             setLiveView();
         }
     }
@@ -823,7 +823,15 @@ public class MainActivity extends AppCompatActivity {
             case CONTINUOUS_KB_KEY: // start continuous capture mode
                 if (continuousModeFeature) {
                     if (continuousMode) {
-                        return true;  // ignore key when already in continuous mode
+                        continuousMode = false;
+                        countdownDigit = -1;
+                        Toast.makeText(this, "Continuous Mode Canceled ", Toast.LENGTH_SHORT).show();
+                        camera.closeCamera();
+                        camera.captureInProgress.set(false);
+                        camera.openCamera();
+                        return true;
+
+                        //return true;  // ignore key when already in continuous mode
                     } else {
                         continuousMode = true;
                         startContinuousCapturePhoto();
@@ -1094,7 +1102,11 @@ public class MainActivity extends AppCompatActivity {
                     startCountdownSequence(countdownStart);  // calls createCameraCaptureSession() after count down finished
                     continuousCounter = parameters.getCountdownTimer();
                 } else {
-                    continuousCounter = CONTINUOUS_COUNT_DEFAULT;
+                    if (parameters.isPhotoBoothCameraMode()) {
+                        continuousCounter = CONTINUOUS_COUNT_PHOTO_BOOTH;
+                    } else {
+                        continuousCounter = CONTINUOUS_COUNT_DEFAULT;
+                    }
                     labelContinuousCounter = 0;
                     CONTINUOUS_COUNT = 0;
                     camera.createCameraCaptureSession();
@@ -1239,7 +1251,6 @@ public class MainActivity extends AppCompatActivity {
 
 
     private void setVisibility() {
-        //if (DEBUG) println("setVisibility width = "+width + " height="+height);
         runOnUiThread(new Runnable() {
                           @Override
                           public void run() {

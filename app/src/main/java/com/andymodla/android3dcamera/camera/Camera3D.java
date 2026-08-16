@@ -30,7 +30,6 @@ import android.media.ImageReader;
 import android.media.ImageReader.OnImageAvailableListener;
 import android.media.ToneGenerator;
 import android.os.Build;
-import android.os.Debug;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
@@ -91,7 +90,7 @@ public class Camera3D {
     private HandlerThread mImageReaderThread0;
     private volatile Handler mImageReaderHandler0;
 
-    private static final int MAX_NUM_CAMERAS = 6;
+    public static final int MAX_NUM_CAMERAS = 6;
     // Camera Ids for Xreal Beam Pro
     private String leftCameraId = "0";
     private String frontCameraId = "1";
@@ -541,8 +540,8 @@ public class Camera3D {
         // Setup ImageReaders for image capture
         captureCameraWidth = CAMERA_WIDTH_DEFAULT; // use default image camera width lens pixels
         captureCameraHeight = CAMERA_HEIGHT_DEFAULT;
-        mImageReader0 = ImageReader.newInstance(captureCameraWidth, captureCameraHeight, ImageFormat.JPEG, 2);  // 2 maxImages
-        mImageReader2 = ImageReader.newInstance(captureCameraWidth, captureCameraHeight, ImageFormat.JPEG, 2);  // 2 maxImages
+        mImageReader0 = ImageReader.newInstance(captureCameraWidth, captureCameraHeight, ImageFormat.JPEG, 2);  //  maxImages
+        mImageReader2 = ImageReader.newInstance(captureCameraWidth, captureCameraHeight, ImageFormat.JPEG, 2);  //  maxImages
 
         if (useProcessingSketch) {
             // Create ImageReaders for YUV preview with buffer count
@@ -602,8 +601,10 @@ public class Camera3D {
             }
 
             // 5. Clamp the index to ensure it stays within hardware boundaries
-            if (exposureCompensationIndex < minExposureIndex) exposureCompensationIndex = minExposureIndex;
-            if (exposureCompensationIndex > maxExposureIndex) exposureCompensationIndex = maxExposureIndex;
+            if (exposureCompensationIndex < minExposureIndex)
+                exposureCompensationIndex = minExposureIndex;
+            if (exposureCompensationIndex > maxExposureIndex)
+                exposureCompensationIndex = maxExposureIndex;
 
             Log.d(TAG, "Exposure compensation index: " + exposureCompensationIndex + " min: " + minExposureIndex + " max: " + maxExposureIndex + " step: " + stepFloat);
         } catch (CameraAccessException e) {
@@ -826,7 +827,7 @@ public class Camera3D {
     }
 
     public void resumeCameraPreviewSession() {
-        Log.d(TAG, "startCameraPreviewSession()");
+        Log.d(TAG, "resumeCameraPreviewSession()");
         if (mCameraCaptureSession != null) {
             try {
                 mCameraCaptureSession.setRepeatingRequest(previewRequestBuilder.build(), null, mCameraHandler);
@@ -949,47 +950,6 @@ public class Camera3D {
                 }
             };
 
-    public String[] getCameraIdList() {
-        ArrayList<String> list = new ArrayList<String>();
-        String cameraId = "0";
-        Log.d(TAG, "getCameraIdList()");
-        if (mCameraManager == null) {
-            Log.e(TAG, "CameraManager service not available");
-        } else {
-
-            for (int cameraNum = 0; cameraNum < MAX_NUM_CAMERAS; cameraNum++) {
-                cameraId = String.valueOf(cameraNum);
-                //String[] cameraIds = {leftCameraId, frontCameraId, rightCameraId, stereoCameraId, "4", "5"};
-                try {
-                    // Iterate through all available camera IDs on the device
-                    CameraCharacteristics characteristics = mCameraManager.getCameraCharacteristics(cameraId);
-                    Set<String> group = characteristics.getPhysicalCameraIds();
-                    String[] gList = group.toArray(new String[0]);
-                    Log.d(TAG, "cameraId=" + cameraId + " Set: " + Arrays.toString(group.toArray()));
-
-                    if (group.isEmpty()) {
-                        list.add(cameraId);
-                    } else {
-                        list.add(cameraId);  // include logical camera id
-                        for (String s : gList) {
-                            if (!list.contains(s)) list.add(s);
-                        }
-                    }
-
-                } catch (CameraAccessException e) {
-                    Log.e(TAG, "getCameraIdList(): Failed to access camera characteristics");
-                    break;
-                } catch (IllegalArgumentException ill) {
-                    Log.d(TAG, "getCameraIdList(): Illegal Argument Failed to access camera characteristics ");
-                    break;
-                }
-            }
-        }
-        Log.d(TAG, "getCameraIdList(): No more cameras >= " + cameraId);
-        String[] rList = list.toArray(new String[0]);
-        return rList;
-    }
-
     /**
      * Create a camera capture session to take a picture
      */
@@ -1050,11 +1010,18 @@ public class Camera3D {
             mImageReader0.setOnImageAvailableListener(new OnImageAvailableListener() {
                 @Override
                 public void onImageAvailable(ImageReader reader) {
-                    imageL = reader.acquireLatestImage();
+                    try {
+                        imageL = reader.acquireLatestImage();
+                    } catch (IllegalStateException ise) {
+                        if (imageL != null) imageL.close();
+                        imageL = null;
+                        return;
+                    }
                     if (((MainActivity) context).state == LIVE_VIEW_STATE) {
                         saveImageFiles(imageL, imageR);
                     } else {
                         if (imageL != null) imageL.close();
+                        imageL = null;
                     }
                 }
             }, mCameraHandler);
@@ -1063,11 +1030,17 @@ public class Camera3D {
             mImageReader2.setOnImageAvailableListener(new OnImageAvailableListener() {
                 @Override
                 public void onImageAvailable(ImageReader reader) {
-                    imageR = reader.acquireLatestImage();
+                    try {
+                        imageR = reader.acquireLatestImage();
+                    } catch (IllegalStateException ise) {
+                        if (imageR != null) imageR.close();
+                        imageR = null;
+                    }
                     if (((MainActivity) context).state == LIVE_VIEW_STATE) {
                         saveImageFiles(imageL, imageR);
                     } else {
                         if (imageR != null) imageR.close();
+                        imageR = null;
                     }
                 }
             }, mCameraHandler);
@@ -1083,7 +1056,12 @@ public class Camera3D {
                             // You can process the result here if needed
 
                             Log.d(TAG, "Capture Request completed successfully");
-                            //captureInProgress.set(false);  // done capturing images
+                            resumeCameraPreviewSession();
+                            captureInProgress.set(false);  //  done capturing images
+                            if (((MainActivity) context).getContinuousMode() && ((MainActivity) context).getContinuousCounter() > 0) {
+                                ((MainActivity) context).nextContinuousCapturePhoto();
+                            }
+
                         }
 
                         @Override
@@ -1106,11 +1084,14 @@ public class Camera3D {
                                 default:
                                     Log.e(TAG, "Capture failed for unknown reason");
                             }
-                        }
-                    };
+                            resumeCameraPreviewSession();
+                            captureInProgress.set(false);  //  done capturing images
+                            ((MainActivity) context).setContinuousMode(false);
 
+                            }
+                    };
+            pauseCameraPreviewSession();
             mCameraCaptureSession.captureSingleRequest(captureBuilder.build(), cameraExecutor, captureSingleRequestListener);
-            //Log.d(TAG, "createCameraCaptureSession() request sent");
         } catch (CameraAccessException e) {
             Log.e(TAG, "Error capturing images", e);
             Toast.makeText(context, "Error capturing images", Toast.LENGTH_SHORT).show();
@@ -1120,9 +1101,8 @@ public class Camera3D {
         }
     }
 
-    private void saveImageFiles(Image left, Image right) {
+    private synchronized void saveImageFiles(Image left, Image right) {
         if (left != null && right != null) {
-            //Log.d(TAG, "saveImageFiles() "+left.getTimestamp() +" "+right.getTimestamp());
             leftBytes = convertToBytes(left);
             rightBytes = convertToBytes(right);
             left.close();
@@ -1132,23 +1112,27 @@ public class Camera3D {
                 leftBytes = null;
                 rightBytes = null;
             }
-            captureInProgress.set(false);  //  done capturing images
-            Log.d(TAG, "saveImageFiles() done captureInProgress=" + captureInProgress.get());
-
-            if (((MainActivity) context).getContinuousMode() && ((MainActivity) context).getContinuousCounter() > 0) {
-                    ((MainActivity) context).nextContinuousCapturePhoto();
-            }
+            //captureInProgress.set(false);  //  done capturing images
+            //Log.d(TAG, "saveImageFiles() done captureInProgress=" + captureInProgress.get());
+//            resumeCameraPreviewSession();
+//            if (((MainActivity) context).getContinuousMode() && ((MainActivity) context).getContinuousCounter() > 0) {
+//                    ((MainActivity) context).nextContinuousCapturePhoto();
+//            }
         }
     }
 
     private byte[] convertToBytes(Image image) {
         // Get the JPEG image data, add other formats if needed
-        Image.Plane[] planes = image.getPlanes();
-        ByteBuffer buffer = planes[0].getBuffer();
-        byte[] bytes = new byte[buffer.remaining()];
-        buffer.get(bytes);
-        //Log.d(TAG, "convertToBytes Image Format: " + image.getFormat() + " planes " + planes.length);
-        return bytes;
+        try {
+            Image.Plane[] planes = image.getPlanes();
+            ByteBuffer buffer = planes[0].getBuffer();
+            byte[] bytes = new byte[buffer.remaining()];
+            buffer.get(bytes);
+            //Log.d(TAG, "convertToBytes Image Format: " + image.getFormat() + " planes " + planes.length);
+            return bytes;
+        } catch (IllegalStateException ise) {
+            return null;
+        }
     }
 
     public void shutterSound() {
@@ -1202,39 +1186,5 @@ public class Camera3D {
     public String getTimestamp() {
         return timestamp;
     }
-
-//    public void changeFunction() {
-//        if (functionMode == FUNCTION_MODE_OFF) {
-//            lastFunctionMode = functionMode;
-//            functionMode = FUNCTION_MODE_EV;
-//        } else {
-//            lastFunctionMode = functionMode;
-//            functionMode = FUNCTION_MODE_OFF;
-//        }
-//    }
-//
-//    public int getFunctionMode() {
-//        return functionMode;
-//    }
-//
-//    public void nextFunctionMode() {
-//        if (functionMode == FUNCTION_MODE_OFF) {
-//            functionMode = FUNCTION_MODE_EV;
-//        } else if (functionMode == FUNCTION_MODE_EV) {
-//            functionMode = FUNCTION_MODE_PARALLAX;
-//        } else if (functionMode == FUNCTION_MODE_PARALLAX) {
-//            functionMode = FUNCTION_MODE_EV;
-//        }
-//    }
-//
-//    public void previousFunctionMode() {
-//        if (functionMode == FUNCTION_MODE_OFF) {
-//            functionMode = FUNCTION_MODE_PARALLAX;
-//        } else if (functionMode == FUNCTION_MODE_PARALLAX) {;
-//            functionMode = FUNCTION_MODE_EV;
-//        } else if (functionMode == FUNCTION_MODE_EV) {
-//            functionMode = FUNCTION_MODE_PARALLAX;
-//        }
-//    }
 
 }

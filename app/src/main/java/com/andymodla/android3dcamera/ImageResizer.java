@@ -15,7 +15,7 @@ import java.io.IOException;
 public class ImageResizer {
 
     private static final String TAG = "ImageResizer";
-    private static final boolean DEBUG = true;
+    private static final boolean DEBUG = MyDebug.DEBUG;
 
     /**
      * Loads an image, resizes it to 6x4 aspect ratio with padding,

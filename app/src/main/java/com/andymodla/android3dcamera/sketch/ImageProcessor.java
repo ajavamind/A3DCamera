@@ -17,6 +17,7 @@ import android.view.KeyEvent;
 import android.graphics.Bitmap;
 import com.andymodla.android3dcamera.DisplayMode;
 import com.andymodla.android3dcamera.Media;
+import com.andymodla.android3dcamera.MyDebug;
 import com.andymodla.android3dcamera.camera.Camera3D;
 import com.andymodla.android3dcamera.Parameters;
 
@@ -37,7 +38,7 @@ import java.util.Collections;
 
 class ImageProcessor {
     private static final int FONT_SIZE = 24;
-    private static final boolean DEBUG = false;
+    private static final boolean DEBUG = MyDebug.DEBUG;
     PApplet pApplet;
 
     // 6x4 paper used with Canon CP1300

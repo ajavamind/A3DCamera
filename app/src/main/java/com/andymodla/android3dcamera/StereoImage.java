@@ -17,6 +17,8 @@ import java.nio.IntBuffer;
 
 public class StereoImage {
     private static final String TAG = "A3DCamera";
+    private static int[] inPixels;
+    private static int[] outPixels;
 
     /**
      * Align LR image pairs by shifting both eyes symmetrically (half offset each, opposite directions).
@@ -99,22 +101,26 @@ public class StereoImage {
         // getPixels() on an ARGB_8888 bitmap always returns 0xAARRGGBB ints,
         // avoiding the byte-order ambiguity of copyPixelsToBuffer(IntBuffer)
         // which can swap channels on little-endian ARM devices.
-        int[] lPixels = new int[w * h];
-        int[] rPixels = new int[w * h];
 
-        imgL.getPixels(lPixels, 0, w, 0, 0, w, h);
-        imgR.getPixels(rPixels, 0, w, 0, 0, w, h);
-
+        if (inPixels == null) inPixels = new int[w * h];
         // Output buffer sized exactly to the final region
-        int[] outPixels = new int[finalW * finalH];
+        if (outPixels == null) outPixels = new int[finalW * finalH];
+
+        imgL.getPixels(inPixels, 0, w, 0, 0, w, h);
 
         // 4. Direct row-by-row assembly into final array (symmetric offsets)
+        // Left image
         for (int j = 0; j < finalH; j++) {
             int rowL = srcRowLBase + j;
-            int rowR = srcRowRBase + j;
+            System.arraycopy(inPixels, rowL * w + leftSrcCol, outPixels, j * finalW, copyWidth);
+        }
 
-            System.arraycopy(lPixels, rowL * w + leftSrcCol, outPixels, j * finalW, copyWidth);
-            System.arraycopy(rPixels, rowR * w + rightSrcCol, outPixels, j * finalW + copyWidth, copyWidth);
+        imgR.getPixels(inPixels, 0, w, 0, 0, w, h);
+
+        // Right image
+        for (int j = 0; j < finalH; j++) {
+            int rowR = srcRowRBase + j;
+            System.arraycopy(inPixels, rowR * w + rightSrcCol, outPixels, j * finalW + copyWidth, copyWidth);
         }
 
         // 5. Clear bitmap to prevent ghosting from previous calls, then write

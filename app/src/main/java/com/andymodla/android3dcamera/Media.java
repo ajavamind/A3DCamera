@@ -203,7 +203,6 @@ public class Media {
             }
         }
 
-
     }
 
     // converts bytes to bitmap and optionally saves to file

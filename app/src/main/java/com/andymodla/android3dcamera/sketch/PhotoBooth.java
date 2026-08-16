@@ -15,6 +15,7 @@ import android.graphics.Bitmap;
 
 import com.andymodla.android3dcamera.DisplayMode;
 import com.andymodla.android3dcamera.Media;
+import com.andymodla.android3dcamera.MyDebug;
 import com.andymodla.android3dcamera.camera.Camera3D;
 import com.andymodla.android3dcamera.Parameters;
 import com.andymodla.android3dcamera.MainActivity;
@@ -35,8 +36,8 @@ import java.util.Date;
 
 
 public class PhotoBooth extends PApplet {
-    private static boolean DEBUG = true;
-    private static boolean testMode = false;
+    private static final boolean DEBUG = MyDebug.DEBUG;
+    private static final boolean testMode = false;
 
     int black = color(0);
     int white = color(255);
@@ -225,7 +226,7 @@ public class PhotoBooth extends PApplet {
 
         currentLeft = media.leftReview;
         currentRight = media.rightReview;
-        setReviewLabel();
+        setReviewLabel("");
     }
 
     public void setup() {
@@ -486,14 +487,14 @@ public class PhotoBooth extends PApplet {
 //
 //    }
 
-    private void setReviewLabel() {
+    private void setReviewLabel(String prefix) {
         if (DEBUG) PApplet.println("PhotoBooth setReviewLabel()");
         if (currentIndex >= 0) {
             String fullPath = sbsImageFiles.get(currentIndex);
             String name = fullPath.substring(0, fullPath.lastIndexOf("_2x1."));
             String nameWithoutExt = name.substring(name.lastIndexOf("/") + 5);
-            if (DEBUG) println("nameWithoutExt: " + nameWithoutExt);
-            setImageLabel(nameWithoutExt);
+            //if (DEBUG) println("nameWithoutExt: " + nameWithoutExt);
+            setImageLabel(prefix + ": " + nameWithoutExt);
         }
     }
 
@@ -514,7 +515,7 @@ public class PhotoBooth extends PApplet {
             initial = false;
             if (DEBUG)
                 PApplet.println("PhotoBooth draw() initialization done in " + n2s(System.nanoTime() - t0) + " seconds");
-            setReviewLabel();
+            setReviewLabel("Previous");
 
         }
 
@@ -938,6 +939,7 @@ public class PhotoBooth extends PApplet {
         }
     }
 
+    // experimental noClip() option
     public void drawPhotoNoClip(PImage img) {
         float offsetX = 0;
         float offsetY = 0;
@@ -1447,7 +1449,7 @@ public class PhotoBooth extends PApplet {
 
     public void setReviewImages(PImage left, PImage right, File reviewSBS) {
         update = false;
-        if (DEBUG) PApplet.println("setReviewImages() left=" + left + " right=" + right);
+        //if (DEBUG) PApplet.println("setReviewImages() left=" + left + " right=" + right);
         currentLeft = left;
         currentRight = right;
         if (currentLeft != null && currentRight != null) {
@@ -1457,7 +1459,7 @@ public class PhotoBooth extends PApplet {
             sbsImageFiles.add(reviewSBS.getAbsolutePath());
             currentIndex = sbsImageFiles.size() - 1;
         }
-        if (DEBUG) PApplet.println("setReviewImages() added: " + sbsImageFiles.get(currentIndex));
+        //if (DEBUG) PApplet.println("setReviewImages() added: " + sbsImageFiles.get(currentIndex));
     }
 
     void drawReview() {

@@ -2,6 +2,8 @@ package com.andymodla.android3dcamera.camera;
 
 import static androidx.core.content.ContextCompat.getSystemService;
 
+import static com.andymodla.android3dcamera.camera.Camera3D.MAX_NUM_CAMERAS;
+
 import android.content.Context;
 import android.graphics.ImageFormat;
 import android.hardware.camera2.CameraAccessException;
@@ -11,15 +13,16 @@ import android.hardware.camera2.params.StreamConfigurationMap;
 import android.util.Log;
 import android.util.Size;
 
+import com.andymodla.android3dcamera.MainActivity;
+
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 
 public class CameraInfoUtil {
-
-    //private static final String TAG = "CameraSyncChecker";
     private static final String TAG = "A3DCamera";
-
 
     public static void displayCameraInfo(Context context) {
 
@@ -111,9 +114,9 @@ public class CameraInfoUtil {
                 if (isLogical) {
                     // Standard template creation failed, try using physical IDs explicitly
                     // or fallback to opening physical camera ID 3 or ID 1 directly.
-                    Log.d(TAG, "Camera "+cameraIdList[3]+" is a logical multi-camera.");
+                    Log.d(TAG, "Camera " + cameraIdList[3] + " is a logical multi-camera.");
                 } else {
-                    Log.d(TAG, "Camera "+ cameraIdList[3]+ " is not a logical multi-camera.");
+                    Log.d(TAG, "Camera " + cameraIdList[3] + " is not a logical multi-camera.");
                 }
             } catch (CameraAccessException e) {
                 Log.e(TAG, "Error accessing camera characteristics", e);
@@ -227,5 +230,49 @@ though all images in a single capture request will share the same timestamp.
             }
         }
     }
+
+    public String[] getCameraIdList(Context context) {
+        ArrayList<String> list = new ArrayList<String>();
+        String cameraId = "0";
+        Log.d(TAG, "getCameraIdList()");
+        // Create camera manager
+        CameraManager mCameraManager = (CameraManager) context.getSystemService(Context.CAMERA_SERVICE);
+        if (mCameraManager == null) {
+            Log.e(TAG, "CameraManager service not available");
+        } else {
+
+            for (int cameraNum = 0; cameraNum < MAX_NUM_CAMERAS; cameraNum++) {
+                cameraId = String.valueOf(cameraNum);
+                //String[] cameraIds = {leftCameraId, frontCameraId, rightCameraId, stereoCameraId, "4", "5"};
+                try {
+                    // Iterate through all available camera IDs on the device
+                    CameraCharacteristics characteristics = mCameraManager.getCameraCharacteristics(cameraId);
+                    Set<String> group = characteristics.getPhysicalCameraIds();
+                    String[] gList = group.toArray(new String[0]);
+                    Log.d(TAG, "cameraId=" + cameraId + " Set: " + Arrays.toString(group.toArray()));
+
+                    if (group.isEmpty()) {
+                        list.add(cameraId);
+                    } else {
+                        list.add(cameraId);  // include logical camera id
+                        for (String s : gList) {
+                            if (!list.contains(s)) list.add(s);
+                        }
+                    }
+
+                } catch (CameraAccessException e) {
+                    Log.e(TAG, "getCameraIdList(): Failed to access camera characteristics");
+                    break;
+                } catch (IllegalArgumentException ill) {
+                    Log.d(TAG, "getCameraIdList(): Illegal Argument Failed to access camera characteristics ");
+                    break;
+                }
+            }
+        }
+        Log.d(TAG, "getCameraIdList(): No more cameras >= " + cameraId);
+        String[] rList = list.toArray(new String[0]);
+        return rList;
+    }
+
 
 }
