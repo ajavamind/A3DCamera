@@ -423,13 +423,12 @@ public class MainActivity extends AppCompatActivity {
             Log.d(TAG, "isFinishing");
         }
         camera.closeCamera();
-        super.onPause();
     }
 
     @Override
     protected void onResume() {
-        Log.d(TAG, "onResume()");
         super.onResume();
+        Log.d(TAG, "onResume()");
 
         if (allPermissionsGranted) {
             if (camera == null) {
@@ -446,15 +445,14 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onStop() {
-        if (MyDebug.LOG)
-            Log.d(TAG, "onStop");
         super.onStop();
+        Log.d(TAG, "onStop");
     }
 
     @Override
     protected void onDestroy() {
-        Log.d(TAG, "onDestroy()");
         super.onDestroy();
+        Log.d(TAG, "onDestroy()");
         camera.destroy();
         if (photoBoothFragment != null) {
             photoBoothFragment.onDestroy();
@@ -1126,7 +1124,7 @@ public class MainActivity extends AppCompatActivity {
                 camera.createCameraCaptureSession();
                 if (continuousCounter <= 0) {
                     continuousMode = false;
-                    Toast.makeText(this, "Continuous Mode Completed ", Toast.LENGTH_SHORT).show();
+                    //showToast("Continuous Mode Completed "); java.lang.NullPointerException: Can't toast on a thread that has not called Looper.prepare()
                 }
             }
         }

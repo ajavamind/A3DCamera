@@ -360,7 +360,7 @@ public class Media {
             int counter = ((MainActivity) context).getContinuousCounter();
             Log.d(TAG, "ContinuousCounter=" + counter);
             if (((MainActivity) context).getContinuousMode()) {
-                timestamp += "_" + ((MainActivity) context).nextLabelContinuousCounter();
+                timestamp += "_C" + ((MainActivity) context).nextLabelContinuousCounter();
             }
             // Save SBS image and keep file
             if (crossEye) {

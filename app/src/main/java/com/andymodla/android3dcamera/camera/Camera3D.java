@@ -77,7 +77,7 @@ public class Camera3D {
     private boolean useProcessingSketch = true;
     private CameraManager mCameraManager;
     private CameraDevice mCameraDevice;
-    private CameraCaptureSession mCameraCaptureSession;
+    private volatile CameraCaptureSession mCameraCaptureSession;
     private CaptureRequest.Builder previewRequestBuilder;
     private CaptureRequest.Builder captureBuilder;
     private HandlerThread mCameraThread;
@@ -150,6 +150,7 @@ public class Camera3D {
 
     volatile Image imageL;
     volatile Image imageR;
+
     volatile byte[] leftBytes;
     volatile byte[] rightBytes;
 
@@ -301,21 +302,36 @@ public class Camera3D {
     }
 
     public void destroy() {
+        // Detach every ImageReader listener FIRST. The native layer posts
+        // onImageAvailable events through the reader's own ListenerHandler; if a
+        // listener is still attached when the camera thread dies, the next event
+        // throws "sending message to a Handler on a dead thread".
+        if (mImageReader0 != null) mImageReader0.setOnImageAvailableListener(null, null);
+        if (mImageReader2 != null) mImageReader2.setOnImageAvailableListener(null, null);
+        if (imageReader0 != null) imageReader0.setOnImageAvailableListener(null, null);
+        if (imageReader2 != null) imageReader2.setOnImageAvailableListener(null, null);
+
         if (mCameraDevice != null) {
             mCameraDevice.close();
             mCameraDevice = null;
         }
+        // Close the readers AFTER detaching listeners and closing the device.
+        // close() releases any buffered images, so no buffers leak on exit.
         if (mImageReader0 != null) {
             mImageReader0.close();
+            mImageReader0 = null;
         }
         if (mImageReader2 != null) {
             mImageReader2.close();
+            mImageReader2 = null;
         }
         if (imageReader0 != null) {
             imageReader0.close();
+            imageReader0 = null;
         }
         if (imageReader2 != null) {
             imageReader2.close();
+            imageReader2 = null;
         }
     }
 
@@ -381,9 +397,14 @@ public class Camera3D {
                 cameraExecutor = null;
             }
 
-            // Null out references on main thread so they are ready for a fresh start
+            // Null out references on main thread so they are ready for a fresh start.
+            // mCameraHandler / mImageReaderHandler0 MUST be cleared here (before the
+            // async join finishes) � otherwise a fast onResume() could hand a dead
+            // handler to openCamera()/setOnImageAvailableListener().
             mCameraThread = null;
+            mCameraHandler = null;
             mImageReaderThread0 = null;
+            mImageReaderHandler0 = null;
         }
     }
 
@@ -402,13 +423,73 @@ public class Camera3D {
 
         @Override
         public void surfaceDestroyed(@NonNull SurfaceHolder holder) {
-            if (null != mCameraDevice) {
-                mCameraDevice.close();
-                mCameraDevice = null;
+//            if (null != mCameraDevice) {
+//                mCameraDevice.close();
+//                mCameraDevice = null;
+
+            // Closing the device here orphans mCameraCaptureSession (it is never
+            // nulled), so createCameraCaptureSession() then fails with a stale
+            // "Camera not ready" and the shutter appears dead. closeCamera()
+            // handles teardown in the correct order; nothing to do here.
+        }
+    };
+
+    // capture (JPEG) image available listeners � named fields so they can be removed/re-added per shot
+    private final OnImageAvailableListener captureListener0 = new OnImageAvailableListener() {
+        @Override
+        public void onImageAvailable(ImageReader reader) {
+            try {
+                imageL = reader.acquireLatestImage();
+            } catch (IllegalStateException ise) {
+                // reader closed or buffer already taken � drop it, the other side will clean up
+                if (imageL != null) imageL.close();
+                imageL = null;
+                return;
+            }
+            if (((MainActivity) context).state == LIVE_VIEW_STATE) {
+                saveImageFiles(imageL, imageR);
+            } else {
+                // user left live view while capturing: discard this frame
+                if (imageL != null) imageL.close();
+                imageL = null;
             }
         }
     };
 
+    private final OnImageAvailableListener captureListener2 = new OnImageAvailableListener() {
+        @Override
+        public void onImageAvailable(ImageReader reader) {
+            try {
+                imageR = reader.acquireLatestImage();
+            } catch (IllegalStateException ise) {
+                if (imageR != null) imageR.close();
+                imageR = null;
+                return;
+            }
+            if (((MainActivity) context).state == LIVE_VIEW_STATE) {
+                saveImageFiles(imageL, imageR);
+            } else {
+                if (imageR != null) imageR.close();
+                imageR = null;
+            }
+        }
+    };
+
+    /**
+     * Force-release any buffered images still held by a capture ImageReader.
+     * Must be called on the handler thread that owns the reader (mCameraHandler)
+     * so it cannot race with onImageAvailable().
+     */
+    private void drainCaptureReader(ImageReader reader, final int which) {
+        if (reader == null) return;
+        try {
+            Image img = reader.acquireLatestImage();
+            if (img != null) img.close();
+        } catch (IllegalStateException ignored) {
+        }
+        if (which == 0) { imageL = null; } else { imageR = null; }
+    }
+	
     /**
      * Image available listener for left preview frames
      */
@@ -532,7 +613,16 @@ public class Camera3D {
     public void openCamera() {
         if (isCameraOpen()) {
             Log.d(TAG, "openCamera() already open cameraWidth=" + cameraWidth + " cameraHeight=" + cameraHeight);
-            return;
+            // Device is open but the preview session was lost (e.g. surface
+            // destroyed). Rebuild it instead of returning early, otherwise the
+            // shutter never works again until a full pause/resume cycle.
+//            if (mCameraCaptureSession == null) {
+//                Log.d(TAG, "openCamera() device open but session missing recreating preview session");
+//                recreatePreviewSession();
+//            } else {
+//                Log.d(TAG, "openCamera() already open cameraWidth=" + cameraWidth + " cameraHeight=" + cameraHeight);
+//            }
+            //return;
         }
         Log.d(TAG, "openCamera() cameraWidth=" + cameraWidth + " cameraHeight=" + cameraHeight);
         startCameraThread();
@@ -575,6 +665,22 @@ public class Camera3D {
 
     public boolean isCameraOpen() {
         return mCameraDevice != null;
+    }
+
+    /**
+     * Rebuild the preview session when the device is still open but the session
+     * was lost (surface destroyed, onDisconnected, etc.).
+     */
+    private void recreatePreviewSession() {
+        if (mCameraDevice == null) return;
+        if (useProcessingSketch) {
+            createProcessingPreviewSession();
+        } else if (mSurfaceHolder0 != null && mSurfaceHolder2 != null
+                && mSurfaceView0.isAttachedToWindow() && mSurfaceView2.isAttachedToWindow()) {
+            createCameraPreviewSession();
+        } else {
+            Log.d(TAG, "recreatePreviewSession() surfaces not attached yet � waiting for surfaceCreated");
+        }
     }
 
     private void initExposureCompensation() {
@@ -688,6 +794,9 @@ public class Camera3D {
                 mCameraDevice.close();
                 mCameraDevice = null;
             }
+            // The session dies with the device drop the stale reference so
+            // createCameraCaptureSession() doesn't trust it.
+            mCameraCaptureSession = null;
         }
 
         @Override
@@ -696,6 +805,7 @@ public class Camera3D {
                 mCameraDevice.close();
             }
             mCameraDevice = null;
+            mCameraCaptureSession = null;
             Log.e(TAG, "Camera " + camera.getId() + " hardware failure");
         }
     };
@@ -703,27 +813,59 @@ public class Camera3D {
     public void closeCamera() {
         Log.d(TAG, "closeCamera()");
         parameters.setExposureCompensationIndex(exposureCompensationIndex); // save exposure compensation index in parameters
-        stopCameraThread();
 
         if (mCameraCaptureSession != null) {
             try {
-                if (mCameraCaptureSession.isReprocessable()) {
-                    mCameraCaptureSession.stopRepeating();
-                    mCameraCaptureSession.abortCaptures();
-                    mCameraCaptureSession.close();
-                }
+                mCameraCaptureSession.stopRepeating();
+                mCameraCaptureSession.abortCaptures();
             } catch (CameraAccessException e) {
-                throw new RuntimeException(e);
+                Log.e(TAG, "Error stopping preview session", e);
             }
-            if (mCameraCaptureSession != null) {
-                mCameraCaptureSession.close();
-            }
-            mCameraCaptureSession = null;
-            if (mCameraDevice != null) {
+        }
+
+        // Close the device BEFORE stopping the camera thread. The device is what
+        // generates onImageAvailable events; closing it first stops new events at
+        // the source while the handler threads that receive them are still alive.
+        if (mCameraDevice != null) {
+            try {
                 mCameraDevice.close();
+            } catch (RuntimeException e) {
+                Log.e(TAG, "Error closing camera device", e);
             }
             mCameraDevice = null;
         }
+
+        // Detach all ImageReader listeners so no further events can be posted to
+        // the about-to-die handler threads (prevents the dead-thread crash).
+        if (mImageReader0 != null) mImageReader0.setOnImageAvailableListener(null, null);
+        if (mImageReader2 != null) mImageReader2.setOnImageAvailableListener(null, null);
+        if (imageReader0 != null) imageReader0.setOnImageAvailableListener(null, null);
+        if (imageReader2 != null) imageReader2.setOnImageAvailableListener(null, null);
+
+        // Release any images still held in shared fields so their native buffers
+        // are freed before the threads go away.
+        synchronized (this) {
+            if (imageL != null) { imageL.close(); imageL = null; }
+            if (imageR != null) { imageR.close(); imageR = null; }
+            if (imageLeft != null) { imageLeft.close(); imageLeft = null; }
+            if (imageRight != null) { imageRight.close(); imageRight = null; }
+        }
+
+        if (mCameraCaptureSession != null) {
+            try {
+                mCameraCaptureSession.close();
+            } catch (RuntimeException e) {
+                Log.e(TAG, "Error closing capture session", e);
+            }
+        }
+        // Always null the session may have been closed out from under us
+        // (device closed, onDisconnected), and a stale reference makes the
+        // shutter think the camera is ready when it is not.
+        mCameraCaptureSession = null;
+
+        // Now stop the handler threads. With no device and no listeners, nothing
+        // can post to them anymore.
+        stopCameraThread();
 
     }
 
@@ -865,6 +1007,7 @@ public class Camera3D {
                     return;
                 }
                 Log.d(TAG, "Camera Id: " + mCameraDevice.getId() + " Preview session configured");
+
                 mCameraCaptureSession = session;
                 try {
                     previewRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
@@ -956,7 +1099,6 @@ public class Camera3D {
     public void createCameraCaptureSession() {
         Log.d(TAG, "createCameraCaptureSession() captureInProgress=" + captureInProgress.get());
         if (captureInProgress.get()) return;
-        captureInProgress.set(true);
 
         if (mCameraDevice == null || mCameraCaptureSession == null) {
             Toast.makeText(context, "Camera not ready", Toast.LENGTH_SHORT).show();
@@ -964,6 +1106,20 @@ public class Camera3D {
             if (mCameraCaptureSession == null) Log.e(TAG, "mCameraCaptureSession is null");
             return;
         }
+//            // session and retry once. Session never configured ? tell the user.
+//            if (mCameraDevice != null && mCameraCaptureSession == null) {
+//                Log.w(TAG, "createCameraCaptureSession() session missing recreating preview session");
+//                recreatePreviewSession();
+//            }
+//            if (mCameraDevice == null || mCameraCaptureSession == null) {
+//                captureInProgress.set(false);
+//                Toast.makeText(context, "Camera not ready", Toast.LENGTH_SHORT).show();
+//                if (mCameraDevice == null) Log.e(TAG, "mCameraDevice is null");
+//                if (mCameraCaptureSession == null) Log.e(TAG, "mCameraCaptureSession is null");
+//                return;
+//            }
+//        }
+        captureInProgress.set(true);
 
         try {
             // Create capture request for both cameras
@@ -997,53 +1153,21 @@ public class Camera3D {
             captureBuilder.set(CaptureRequest.NOISE_REDUCTION_MODE, CaptureRequest.NOISE_REDUCTION_MODE_FAST); // NOISE_REDUCTION_MODE
             captureBuilder.set(CaptureRequest.EDGE_MODE, CaptureRequest.EDGE_MODE_FAST); // EDGE_MODE
             captureBuilder.set(CaptureRequest.CONTROL_EXTENDED_SCENE_MODE, 1);  // sync left and right cameras
-            imageL = null;
-            imageR = null;
-            leftBytes = null;
-            rightBytes = null;
+            synchronized (this) {
+                imageL = null;
+                imageR = null;
+                leftBytes = null;
+                rightBytes = null;
+            }
 
             timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
             ((MainActivity) context).remoteShutter();  // send shutter release broadcast message
-            //Log.d(TAG, "createCameraCaptureSession() "+timestamp + " state="+((MainActivity)context).state);
+            Log.d(TAG, "createCameraCaptureSession() "+timestamp + " state="+((MainActivity)context).state);
 
-            // left image reader
-            mImageReader0.setOnImageAvailableListener(new OnImageAvailableListener() {
-                @Override
-                public void onImageAvailable(ImageReader reader) {
-                    try {
-                        imageL = reader.acquireLatestImage();
-                    } catch (IllegalStateException ise) {
-                        if (imageL != null) imageL.close();
-                        imageL = null;
-                        return;
-                    }
-                    if (((MainActivity) context).state == LIVE_VIEW_STATE) {
-                        saveImageFiles(imageL, imageR);
-                    } else {
-                        if (imageL != null) imageL.close();
-                        imageL = null;
-                    }
-                }
-            }, mCameraHandler);
-
-            // right image reader
-            mImageReader2.setOnImageAvailableListener(new OnImageAvailableListener() {
-                @Override
-                public void onImageAvailable(ImageReader reader) {
-                    try {
-                        imageR = reader.acquireLatestImage();
-                    } catch (IllegalStateException ise) {
-                        if (imageR != null) imageR.close();
-                        imageR = null;
-                    }
-                    if (((MainActivity) context).state == LIVE_VIEW_STATE) {
-                        saveImageFiles(imageL, imageR);
-                    } else {
-                        if (imageR != null) imageR.close();
-                        imageR = null;
-                    }
-                }
-            }, mCameraHandler);
+            // left/right image readers � install fresh listeners for this shot.
+            // Re-adding the same listener instance is a no-op, so continuous mode is safe.
+            mImageReader0.setOnImageAvailableListener(captureListener0, mCameraHandler);
+            mImageReader2.setOnImageAvailableListener(captureListener2, mCameraHandler);
 
             CameraCaptureSession.CaptureCallback captureSingleRequestListener =
                     new CameraCaptureSession.CaptureCallback() {
@@ -1061,7 +1185,6 @@ public class Camera3D {
                             if (((MainActivity) context).getContinuousMode() && ((MainActivity) context).getContinuousCounter() > 0) {
                                 ((MainActivity) context).nextContinuousCapturePhoto();
                             }
-
                         }
 
                         @Override
@@ -1091,9 +1214,28 @@ public class Camera3D {
                             }
                     };
             pauseCameraPreviewSession();
-            mCameraCaptureSession.captureSingleRequest(captureBuilder.build(), cameraExecutor, captureSingleRequestListener);
+            try {
+                mCameraCaptureSession.captureSingleRequest(captureBuilder.build(), cameraExecutor, captureSingleRequestListener);
+            } catch (RuntimeException e) {
+                // Session became invalid between the null check and the request
+                // (e.g. surface destroyed). Recover: clear state, drop listeners,
+                // rebuild the preview session so the next shutter press works.
+                Log.e(TAG, "captureSingleRequest failed recovering", e);
+                mImageReader0.setOnImageAvailableListener(null, null);
+                mImageReader2.setOnImageAvailableListener(null, null);
+                synchronized (this) {
+                    if (imageL != null) { imageL.close(); imageL = null; }
+                    if (imageR != null) { imageR.close(); imageR = null; }
+                }
+                captureInProgress.set(false);
+                mCameraCaptureSession = null;
+                recreatePreviewSession();
+            }
         } catch (CameraAccessException e) {
             Log.e(TAG, "Error capturing images", e);
+            mImageReader0.setOnImageAvailableListener(null, null);
+            mImageReader2.setOnImageAvailableListener(null, null);
+            captureInProgress.set(false);
             Toast.makeText(context, "Error capturing images", Toast.LENGTH_SHORT).show();
         }
         if (parameters.getIsSoundOn()) {

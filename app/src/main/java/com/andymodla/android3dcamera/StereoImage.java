@@ -17,8 +17,6 @@ import java.nio.IntBuffer;
 
 public class StereoImage {
     private static final String TAG = "A3DCamera";
-    private static int[] inPixels;
-    private static int[] outPixels;
 
     /**
      * Align LR image pairs by shifting both eyes symmetrically (half offset each, opposite directions).
@@ -42,7 +40,7 @@ public class StereoImage {
         Log.d(TAG, "alignLR left w=" + w + " h=" + h);
 
         // Ensure input bitmaps are ARGB_8888 so getPixels() returns correct
-        // 0xAARRGGBB int values (fixes colour swap with RGBA_8888 sources)
+        // 0xAARRGGBB int values (fixes color swap with RGBA_8888 sources)
         if (imgL.getConfig() != Bitmap.Config.ARGB_8888) {
             imgL = imgL.copy(Bitmap.Config.ARGB_8888, false);
         }
@@ -102,9 +100,9 @@ public class StereoImage {
         // avoiding the byte-order ambiguity of copyPixelsToBuffer(IntBuffer)
         // which can swap channels on little-endian ARM devices.
 
-        if (inPixels == null) inPixels = new int[w * h];
+        int[] inPixels = new int[w*h];
         // Output buffer sized exactly to the final region
-        if (outPixels == null) outPixels = new int[finalW * finalH];
+        int[] outPixels = new int[finalW * finalH];
 
         imgL.getPixels(inPixels, 0, w, 0, 0, w, h);
 
@@ -134,21 +132,21 @@ public class StereoImage {
      * Create color anaglyph Bitmap from left and right eye view Bitmaps
      * with horizontal offset for stereo window and vertical offset for camera alignment correction
      *
-     * @param bufL       Left eye view image
-     * @param bufR       Right eye view image
+     * @param imgL       Left eye view image
+     * @param imgR       Right eye view image
      * @param horzOffset Horizontal offset for stereo window placement parallax
      * @param vertOffset Vertical offset for camera alignment correction
      */
-    public static Bitmap colorAnaglyph(Bitmap bufL, Bitmap bufR, int horzOffset, int vertOffset) {
+    public static Bitmap colorAnaglyph(Bitmap imgL, Bitmap imgR, int horzOffset, int vertOffset) {
         Log.d(TAG, "colorAnaglyph horzOffset=" + horzOffset + " vertOffset=" + vertOffset);
 
-        if (bufL == null || bufR == null) {
+        if (imgL == null || imgR == null) {
             Log.d(TAG, "colorAnaglyph null images");
             return null;
         }
 
-        int w = bufL.getWidth();
-        int h = bufL.getHeight();
+        int w = imgL.getWidth();
+        int h = imgL.getHeight();
         Log.d(TAG, "colorAnaglyph left image width=" +w+ " height=" +h);
         // Pre-allocate pixel arrays for batch processing
         int[] pixelsL = new int[w * h];
@@ -156,8 +154,8 @@ public class StereoImage {
         int[] pixelsA = new int[w * h];
 
         // Get all pixels at once (much faster than individual getPixel calls)
-        bufL.getPixels(pixelsL, 0, w, 0, 0, w, h);
-        bufR.getPixels(pixelsR, 0, w, 0, 0, w, h);
+        imgL.getPixels(pixelsL, 0, w, 0, 0, w, h);
+        imgR.getPixels(pixelsR, 0, w, 0, 0, w, h);
 
         // Process pixels with optimized indexing
         int idx = 0;
