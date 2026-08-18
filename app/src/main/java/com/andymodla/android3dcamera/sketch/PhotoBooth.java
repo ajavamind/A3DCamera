@@ -108,6 +108,7 @@ public class PhotoBooth extends PApplet {
     private volatile int lastKey; // for processKeyCode()
 
     private static final int STEREO_OFFSET = -10; // right image shift used for stereo depth
+    private static final int TITLE_STEREO_OFFSET = -160; // right image shift used for stereo depth
     private String imageLabel;
     private int labelFrameCount = 0;
     private static final int IMAGE_LABEL_TIMEOUT_FRAMES = 90;
@@ -256,7 +257,7 @@ public class PhotoBooth extends PApplet {
 
         }
 
-        textSize(72);
+        textSize(36);
         textAlign(CENTER, CENTER);
         fill(yellow);
         int level = 72;
@@ -265,13 +266,13 @@ public class PhotoBooth extends PApplet {
             text("3D Photo Booth", ((float) 3 * width / 4) + STEREO_OFFSET, (float) height / 2); // right
         } else {
             text("3D Stereoscope", (float) width / 4, (float) height / 2);  // left
-            text("3D Stereoscope", ((float) 3 * width / 4) + STEREO_OFFSET, (float) height / 2); // right
+            text("3D Stereoscope", ((float) 3 * width / 4) + TITLE_STEREO_OFFSET, (float) height / 2); // right
             text("Camera", (float) width / 4, (float) (height / 2) + level);  // left
-            text("Camera", ((float) 3 * width / 4) + STEREO_OFFSET, (float) (height / 2) + level); // right
+            text("Camera", ((float) 3 * width / 4) + TITLE_STEREO_OFFSET, (float) (height / 2) + level); // right
         }
-        textSize(36);
-        text("Please wait ...", (float) width / 4, (float) (height / 2) + 4*level);  // left
-        text("Please wait ...", ((float) 3 * width / 4) + STEREO_OFFSET, (float) (height / 2) + 4*level); // right
+        textSize(24);
+        text("Please wait ...", (float) width / 4, (float) (height / 2) + 4 * level);  // left
+        text("Please wait ...", ((float) 3 * width / 4) + TITLE_STEREO_OFFSET, (float) (height / 2) + 4 * level); // right
 
         if (DEBUG)
             PApplet.println("PhotoBooth setup done in " + n2s(System.nanoTime() - t0) + " seconds");
@@ -494,7 +495,11 @@ public class PhotoBooth extends PApplet {
             String name = fullPath.substring(0, fullPath.lastIndexOf("_2x1."));
             String nameWithoutExt = name.substring(name.lastIndexOf("/") + 5);
             //if (DEBUG) println("nameWithoutExt: " + nameWithoutExt);
-            setImageLabel(prefix + ": " + nameWithoutExt);
+            if (prefix.isEmpty()) {
+                setImageLabel(nameWithoutExt);
+            } else {
+                setImageLabel(prefix + ": " + nameWithoutExt);
+            }
         }
     }
 
@@ -1038,7 +1043,7 @@ public class PhotoBooth extends PApplet {
 
     void drawZoom() {
         if (!showZoom) return;
-        String sZoom = "ZOOM " + "+" + magnifyScale[magnifyIndex] + " x=" + shiftOffsetX + " y=" + shiftOffsetY;
+        String sZoom = "+" + magnifyScale[magnifyIndex] + "  x: " + (int)shiftOffsetX + "  y: " + (int)shiftOffsetY;
 //        if (stereoCamera.getFunctionMode() == Camera3D.FUNCTION_MODE_PARALLAX) {
 //            px = "= " + Camera3D.FOCUS_DISTANCE_NAMES[parameters.getFocusDistanceIndex()] + " " + px;
 //        }
@@ -1088,7 +1093,7 @@ public class PhotoBooth extends PApplet {
         } else {
             x = width / 2; // CENTER
         }
-        textSize(48);
+        textSize(24);
         fill(yellow);
         textAlign(CENTER, CENTER);
         text(ev, x, height - bottom);
@@ -1178,7 +1183,7 @@ public class PhotoBooth extends PApplet {
                 break;
 
             case MainActivity.BUTTON_B_KEY:
-                if (DEBUG) println("B key "+(mainActivity.isZoomFunction())+ " " +zoom);
+                if (DEBUG) println("B key " + (mainActivity.isZoomFunction()) + " " + zoom);
                 if (mainActivity.isLiveviewFunction()) {
                     toggleEv();
                 } else if (mainActivity.isReviewFunction()) {
@@ -1198,7 +1203,7 @@ public class PhotoBooth extends PApplet {
                     //showParallax = !showParallax;
                     //mainActivity.setFunctionMode(MainActivity.FUNCTION_MODE_LIVEVIEW);
                     //gui.menuBar.setMenuKeyLabels(MainActivity.FUNCTION_MODE_LIVEVIEW);
-                } else if (state == MainActivity.REVIEW_PHOTO_STATE){
+                } else if (state == MainActivity.REVIEW_PHOTO_STATE) {
                     mainActivity.setFunctionMode(MainActivity.FUNCTION_MODE_REVIEW);
                     gui.menuBar.setMenuKeyLabels(MainActivity.FUNCTION_MODE_REVIEW);
                 } else {
@@ -1215,6 +1220,8 @@ public class PhotoBooth extends PApplet {
                     if (currentIndex != sbsImageFiles.size() - 1) {
                         currentIndex = sbsImageFiles.size() - 1;
                         reloadReviewImage(currentIndex);
+                    } else {
+                        setReviewLabel("End");
                     }
                 } else if (mainActivity.isParallaxFunction()) {
 //                    if (showParallax) {
@@ -1224,18 +1231,19 @@ public class PhotoBooth extends PApplet {
 //                        if (DEBUG) PApplet.println("iParallax = " + iParallax);
 //                    }
                 } else if (mainActivity.isZoomFunction() && zoom) {
-                    shiftOffsetY += shiftOffsetDelta[magnifyIndex];
+                    shiftOffsetY -= shiftOffsetDelta[magnifyIndex];
                 }
                 break;
 
             case MainActivity.DOWN_ARROW_KEY:
                 if (state == MainActivity.LIVE_VIEW_STATE && mainActivity.isLiveviewFunction()) {
                     //resetZoom();  removed - TODO replace with crop??
-                }
-                else if (state == MainActivity.REVIEW_PHOTO_STATE && mainActivity.isReviewFunction()) {
+                } else if (state == MainActivity.REVIEW_PHOTO_STATE && mainActivity.isReviewFunction()) {
                     if (currentIndex != 0) {
                         currentIndex = 0;
                         reloadReviewImage(currentIndex);
+                    } else {
+                        setReviewLabel("Begin");
                     }
                 } else if (mainActivity.isParallaxFunction()) {
 //                    if (showParallax) {
@@ -1245,7 +1253,7 @@ public class PhotoBooth extends PApplet {
 //                        if (DEBUG) PApplet.println("iParallax = " + iParallax);
 //                    }
                 } else if (mainActivity.isZoomFunction() && zoom) {
-                    shiftOffsetY -= shiftOffsetDelta[magnifyIndex];
+                    shiftOffsetY += shiftOffsetDelta[magnifyIndex];
                 }
                 break;
 
@@ -1265,12 +1273,13 @@ public class PhotoBooth extends PApplet {
                     }
 
                 } else if (mainActivity.isZoomFunction()) {
-                    shiftOffsetX += shiftOffsetDelta[magnifyIndex];
+                    shiftOffsetX -= shiftOffsetDelta[magnifyIndex];
                 } else if (mainActivity.isReviewFunction()) {
                     //               if (state == MainActivity.REVIEW_PHOTO_STATE) {
                     currentIndex++;
                     if (currentIndex >= sbsImageFiles.size()) {
                         currentIndex--;
+                        setReviewLabel("End");
                     } else {
                         reloadReviewImage(currentIndex);
                     }
@@ -1292,7 +1301,7 @@ public class PhotoBooth extends PApplet {
                         //if (DEBUG) PApplet.println("iParallax = " + iParallax);
                     }
                 } else if (mainActivity.isZoomFunction()) {
-                    shiftOffsetX -= shiftOffsetDelta[magnifyIndex];
+                    shiftOffsetX += shiftOffsetDelta[magnifyIndex];
                 } else if (state == MainActivity.REVIEW_PHOTO_STATE) {
                     currentIndex--;
                     if (currentIndex < 0) {
@@ -1712,10 +1721,10 @@ public class PhotoBooth extends PApplet {
             return;
         }
         if (showMenu) {
-                int keyCode = gui.mousePressed(x, y);
-                if (keyCode > 0)
-                    mainActivity.onKeyUp(keyCode, null);
-                return;
+            int keyCode = gui.mousePressed(x, y);
+            if (keyCode > 0)
+                mainActivity.onKeyUp(keyCode, null);
+            return;
         }
         // upper right corner is shutter release when menu button is not visible
         if (x > MainActivity.HIDDEN_SHUTTER_BUTTON_X && y < MainActivity.HIDDEN_SHUTTER_BUTTON_Y) {
@@ -1733,7 +1742,7 @@ public class PhotoBooth extends PApplet {
         if (keyUp) {
             this.lastKey = lastKey;
             this.lastKeyCode = lastKeyCode;
-            println("setKeyCode "+lastKeyCode);
+            println("setKeyCode " + lastKeyCode);
         } else {  // key down
             switch (lastKeyCode) {
                 case MainActivity.LEFT_ARROW_KEY:

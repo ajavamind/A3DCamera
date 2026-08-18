@@ -354,13 +354,17 @@ public class Media {
         // Save Anaglyph image and recycle Anaglyph bitmap
         if (parameters.isPhotoBoothCameraMode() || parameters.getSaveAnaglyph()) {
             reviewAnaglyph = createAndSaveAnaglyph(PHOTO_PREFIX + timestamp, leftBitmap, rightBitmap);
+            // anaglyphBitmap is recycled inside createAndSaveAnaglyph; drop the
+            // field reference so a failed save (IOException) doesn't keep the
+            // ~47MB bitmap alive between shots.
+            anaglyphBitmap = null;
         }
 
         if (saveSBS) {
             int counter = ((MainActivity) context).getContinuousCounter();
             Log.d(TAG, "ContinuousCounter=" + counter);
             if (((MainActivity) context).getContinuousMode()) {
-                timestamp += "_C" + ((MainActivity) context).nextLabelContinuousCounter();
+                timestamp = timestamp + "_C" + ((MainActivity) context).nextLabelContinuousCounter();
             }
             // Save SBS image and keep file
             if (crossEye) {

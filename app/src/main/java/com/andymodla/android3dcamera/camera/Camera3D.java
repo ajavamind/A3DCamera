@@ -482,12 +482,13 @@ public class Camera3D {
      */
     private void drainCaptureReader(ImageReader reader, final int which) {
         if (reader == null) return;
-        try {
-            Image img = reader.acquireLatestImage();
-            if (img != null) img.close();
-        } catch (IllegalStateException ignored) {
+        // acquireLatestImage() only releases the newest image; any older
+        // unconsumed images stay in the queue and pin their buffers.
+        // Drain every pending image so all maxImages slots are freed.
+        Image img;
+        while ((img = reader.acquireLatestImage()) != null) {
+            img.close();
         }
-        if (which == 0) { imageL = null; } else { imageR = null; }
     }
 	
     /**
@@ -1178,10 +1179,18 @@ public class Camera3D {
                                 TotalCaptureResult result) {
                             // This method is called when the capture is complete
                             // You can process the result here if needed
-
                             Log.d(TAG, "Capture Request completed successfully");
                             resumeCameraPreviewSession();
                             captureInProgress.set(false);  //  done capturing images
+                            // Free any leftover JPEG buffers BEFORE the next shot.
+                            // In continuous mode saveImageFiles() runs on a background
+                            // thread and lags behind capture; unconsumed images pin
+                            // every ImageReader buffer slot, which produces
+                            // "Unable to acquire a buffer item" warnings and finally
+                            // REASON_ERROR. This callback always runs on mCameraHandler,
+                            // the same thread as captureListener0/2, so it cannot race.
+                            drainCaptureReader(mImageReader0, 0);
+                            drainCaptureReader(mImageReader2, 1);
                             if (((MainActivity) context).getContinuousMode() && ((MainActivity) context).getContinuousCounter() > 0) {
                                 ((MainActivity) context).nextContinuousCapturePhoto();
                             }
@@ -1209,6 +1218,9 @@ public class Camera3D {
                             }
                             resumeCameraPreviewSession();
                             captureInProgress.set(false);  //  done capturing images
+                            // Release pinned buffers so the next manual shot works
+                            drainCaptureReader(mImageReader0, 0);
+                            drainCaptureReader(mImageReader2, 1);
                             ((MainActivity) context).setContinuousMode(false);
 
                             }
@@ -1221,6 +1233,8 @@ public class Camera3D {
                 // (e.g. surface destroyed). Recover: clear state, drop listeners,
                 // rebuild the preview session so the next shutter press works.
                 Log.e(TAG, "captureSingleRequest failed recovering", e);
+                drainCaptureReader(mImageReader0, 0);
+                drainCaptureReader(mImageReader2, 1);
                 mImageReader0.setOnImageAvailableListener(null, null);
                 mImageReader2.setOnImageAvailableListener(null, null);
                 synchronized (this) {
