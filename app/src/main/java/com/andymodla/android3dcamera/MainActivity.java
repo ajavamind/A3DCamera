@@ -123,11 +123,11 @@ public class MainActivity extends AppCompatActivity {
     // Key codes for 8BitDo Micro Bluetooth Keyboard controller (Android mode)
 
     // Key codes for ShanWan Q36 Bluetooth Mini Game Controller
-    // S switch set for Android mode
+    // S switch set for Android mode the center position on the controller
     public static final int SHUTTER_KEY = KeyEvent.KEYCODE_BUTTON_R1; // 103
-    public static final int MODE_KEY = KeyEvent.KEYCODE_BUTTON_R2; // 105
-    public static final int ANAGLYPH_KEY = KeyEvent.KEYCODE_BUTTON_L2; // 104
-    public static final int SETTINGS_KEY = KeyEvent.KEYCODE_BUTTON_L1; // 102
+    public static final int ANAGLYPH_KEY = KeyEvent.KEYCODE_BUTTON_R2; // 105
+    public static final int MODE_KEY = KeyEvent.KEYCODE_BUTTON_L1; // 102
+    public static final int SETTINGS_KEY = KeyEvent.KEYCODE_BUTTON_L2; // 104
 
     public static final int UP_ARROW_KEY = KeyEvent.KEYCODE_DPAD_UP; // 19 up arrow
     public static final int DOWN_ARROW_KEY = KeyEvent.KEYCODE_DPAD_DOWN; // 20 down arrow
@@ -137,6 +137,7 @@ public class MainActivity extends AppCompatActivity {
     public static final int BUTTON_PLUS_KEY = KeyEvent.KEYCODE_BUTTON_START; // 108 "+" button
     public static final int BUTTON_MINUS_KEY = KeyEvent.KEYCODE_BUTTON_SELECT; // 109 "-" button
 
+    // game controller key labels do not match Android key codes it outputs!
     public static final int BUTTON_X_KEY = KeyEvent.KEYCODE_BUTTON_Y; //  100 up
     public static final int BUTTON_Y_KEY = KeyEvent.KEYCODE_BUTTON_X; //  99 up
     public static final int BUTTON_B_KEY = KeyEvent.KEYCODE_BUTTON_A;  //  96 up
@@ -172,8 +173,8 @@ public class MainActivity extends AppCompatActivity {
 
     public static final int HIDDEN_SHUTTER_BUTTON_X = 2040;
     public static final int HIDDEN_SHUTTER_BUTTON_Y = 140;
-    public static final int HIDDEN_SETTINGS_BUTTON_X = 360;
-    public static final int HIDDEN_SETTINGS_BUTTON_Y = 140;
+    public static final int HIDDEN_MODE_BUTTON_X = 360;
+    public static final int HIDDEN_MODE_BUTTON_Y = 140;
 
     private TextView countdownTextView;
     private CommandLine commandLine;
@@ -380,8 +381,8 @@ public class MainActivity extends AppCompatActivity {
                             if (x > HIDDEN_SHUTTER_BUTTON_X && y < HIDDEN_SHUTTER_BUTTON_Y) {
                                 capturePhoto();
                                 // upper left corner is hidden launch settings button
-                            } else if (x < HIDDEN_SETTINGS_BUTTON_X && y < HIDDEN_SETTINGS_BUTTON_Y) {
-                                launchSettings();
+                            } else if (x < HIDDEN_MODE_BUTTON_X && y < HIDDEN_MODE_BUTTON_Y) {
+                                processModeChange(); // liveview/review
                             }
                         }
                         // Log when the finger/mouse is lifted

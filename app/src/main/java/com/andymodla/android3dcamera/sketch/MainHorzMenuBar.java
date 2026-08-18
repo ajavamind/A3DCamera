@@ -50,12 +50,12 @@ class MainHorzMenuBar implements IGui {
         menuTextSize = SMALL_FONT_SIZE;
 
         // top menu bar
+        reviewKey = new MenuKey(base, MainActivity.MODE_KEY, "REVIEW", menuTextSize, yellow, backTransparent);
         settingsKey = new MenuKey(base, MainActivity.SETTINGS_KEY, "\u2699", LARGE_FONT_SIZE, yellow, backTransparent);
-        imageModeKey = new MenuKey(base, MainActivity.ANAGLYPH_KEY, "ANAGLYPH", menuTextSize, yellow, backTransparent);
         optionsKey = new MenuKey(base, MainActivity.BUTTON_Y_KEY, "", menuTextSize, graytransparent, backTransparent);
         functionKey = new MenuKey(base, MainActivity.BUTTON_X_KEY, "PARALLAX\nX", menuTextSize, yellow, backTransparent);
         backKey = new MenuKey(base, MainActivity.BUTTON_A_KEY, "BACK\nA", menuTextSize, yellow, backTransparent);
-        reviewKey = new MenuKey(base, MainActivity.MODE_KEY, "REVIEW", menuTextSize, yellow, backTransparent);
+        imageModeKey = new MenuKey(base, MainActivity.ANAGLYPH_KEY, "ANAGLYPH", menuTextSize, yellow, backTransparent);
         shutterKey = new MenuKey(base, MainActivity.SHUTTER_KEY, "\u25C9", GIANT_FONT_SIZE, yellow, backTransparent);
 
         // bottom menu bar
@@ -70,12 +70,12 @@ class MainHorzMenuBar implements IGui {
         menuKey = new MenuKey[numKeys];
         //gridKey = new MenuKey(base, KeyEvent.KEYCODE_G, "Grid", menuTextSize, yellow, backTransparent);
 
-        menuKey[0] = settingsKey;
-        menuKey[1] = imageModeKey;
+        menuKey[0] = reviewKey;
+        menuKey[1] = settingsKey;
         menuKey[2] = optionsKey;
         menuKey[3] = functionKey;
         menuKey[4] = backKey;
-        menuKey[5] = reviewKey;
+        menuKey[5] = imageModeKey;
         menuKey[6] = shutterKey;
 
         menuKey[7] = downArrowKey;
@@ -88,8 +88,8 @@ class MainHorzMenuBar implements IGui {
 
         //h = (float) menuHeight; // height of each key area rectangle
         //w = menuWidth / (float) ((numKeys)); // width of key
-        h = MainActivity.HIDDEN_SETTINGS_BUTTON_Y + 24;
-        w = MainActivity.HIDDEN_SETTINGS_BUTTON_X - 20;
+        h = MainActivity.HIDDEN_MODE_BUTTON_Y + 24;
+        w = MainActivity.HIDDEN_MODE_BUTTON_X - 20;
         // top menu bar
         for (int i = 0; i < 7; i++) {
             menuKey[i].setPosition(menuX + inset + i * w, inset + menuY, w - 2 * inset, h - inset - inset / 2, inset);
@@ -117,7 +117,7 @@ class MainHorzMenuBar implements IGui {
                 menuKey[2].setText("");
                 menuKey[3].setBackgroundColor(backTransparent);
                 menuKey[4].setText("BACK\nA");
-                menuKey[5].setText("REVIEW");
+                menuKey[0].setText("REVIEW");
                 menuKey[6].setText("\u25C9");
                 menuKey[6].setFontSize(GIANT_FONT_SIZE);
                 menuKey[6].setKeyCode(KeyEvent.KEYCODE_BUTTON_R1);
@@ -140,7 +140,7 @@ class MainHorzMenuBar implements IGui {
                 menuKey[2].setText("ZOOM\nY");
                 menuKey[3].setBackgroundColor(backTransparent);
                 menuKey[4].setText("BACK\nA");
-                menuKey[5].setText("LIVEVIEW");
+                menuKey[0].setText("LIVEVIEW");
                 menuKey[6].setText("PRINT");
                 menuKey[6].setFontSize(SMALL_FONT_SIZE);
                 menuKey[6].setKeyCode(MainActivity.SHUTTER_KEY);  // decode print in shutter logic

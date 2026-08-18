@@ -309,16 +309,16 @@ public class PhotoBooth extends PApplet {
         // set next key press label
         if (mode == DisplayMode.SBS) {
             if (DEBUG) PApplet.println("Display SBS Parallel Image");
-            gui.menuBar.setMenuKeyLabel(1, "ANAGLYPH");
+            gui.menuBar.setMenuKeyLabel(5, "ANAGLYPH");
         } else if (mode == DisplayMode.ANAGLYPH) {
             if (DEBUG) PApplet.println("Display ANAGLYPH Image");
-            gui.menuBar.setMenuKeyLabel(1, "LEFT\nEYE");
+            gui.menuBar.setMenuKeyLabel(5, "LEFT\nEYE");
         } else if (mode == DisplayMode.LEFT) {
             if (DEBUG) PApplet.println("Display LEFT Image");
-            gui.menuBar.setMenuKeyLabel(1, "RIGHT\nEYE");
+            gui.menuBar.setMenuKeyLabel(5, "RIGHT\nEYE");
         } else if (mode == DisplayMode.RIGHT) {
             if (DEBUG) PApplet.println("Display RIGHT Image");
-            gui.menuBar.setMenuKeyLabel(1, "SBS");
+            gui.menuBar.setMenuKeyLabel(5, "SBS");
         }
         update = true;
     }
@@ -1731,9 +1731,9 @@ public class PhotoBooth extends PApplet {
             if (DEBUG) PApplet.println("mouseReleased shutter release");
             mainActivity.capturePhoto();
             // upper left corner is settings menu invisible button
-        } else if (x < MainActivity.HIDDEN_SETTINGS_BUTTON_X && y < MainActivity.HIDDEN_SETTINGS_BUTTON_Y) {
-            if (DEBUG) PApplet.println("mouseReleased photo booth settings");
-            mainActivity.launchSettings();
+        } else if (x < MainActivity.HIDDEN_MODE_BUTTON_X && y < MainActivity.HIDDEN_MODE_BUTTON_Y) {
+            if (DEBUG) PApplet.println("mouseReleased photo booth mode change");
+            mainActivity.processModeChange(); // liveview/review
         }
     }
 

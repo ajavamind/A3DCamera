@@ -423,10 +423,18 @@ public class Camera3D {
 
         @Override
         public void surfaceDestroyed(@NonNull SurfaceHolder holder) {
-//            if (null != mCameraDevice) {
-//                mCameraDevice.close();
-//                mCameraDevice = null;
-
+            if (null != mCameraDevice) {
+                mCameraDevice.close();
+                mCameraDevice = null;
+            }
+            if (mCameraCaptureSession != null) {
+                try {
+                    mCameraCaptureSession.stopRepeating();
+                    mCameraCaptureSession.abortCaptures();
+                } catch (CameraAccessException e) {
+                    Log.e(TAG, "Error stopping preview session", e);
+                }
+            }
             // Closing the device here orphans mCameraCaptureSession (it is never
             // nulled), so createCameraCaptureSession() then fails with a stale
             // "Camera not ready" and the shutter appears dead. closeCamera()
@@ -798,6 +806,14 @@ public class Camera3D {
             // The session dies with the device drop the stale reference so
             // createCameraCaptureSession() doesn't trust it.
             mCameraCaptureSession = null;
+//            if (mCameraCaptureSession != null && mCameraCaptureSession.) {
+//                try {
+//                    mCameraCaptureSession.stopRepeating();
+//                    mCameraCaptureSession.abortCaptures();
+//                } catch (CameraAccessException e) {
+//                    Log.e(TAG, "Error stopping preview session", e);
+//                }
+//            }
         }
 
         @Override
@@ -806,7 +822,14 @@ public class Camera3D {
                 mCameraDevice.close();
             }
             mCameraDevice = null;
-            mCameraCaptureSession = null;
+            if (mCameraCaptureSession != null) {
+                try {
+                    mCameraCaptureSession.stopRepeating();
+                    mCameraCaptureSession.abortCaptures();
+                } catch (CameraAccessException e) {
+                    Log.e(TAG, "Error stopping preview session", e);
+                }
+            }
             Log.e(TAG, "Camera " + camera.getId() + " hardware failure");
         }
     };
@@ -1007,10 +1030,10 @@ public class Camera3D {
                 if (mCameraDevice == null || session == null) {
                     return;
                 }
-                Log.d(TAG, "Camera Id: " + mCameraDevice.getId() + " Preview session configured");
 
                 mCameraCaptureSession = session;
                 try {
+                    Log.d(TAG, "Camera Id: " + mCameraDevice.getId() + " Preview session configured");
                     previewRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
                     previewRequestBuilder.addTarget(imageReader0.getSurface());
                     previewRequestBuilder.addTarget(imageReader2.getSurface());
@@ -1057,6 +1080,9 @@ public class Camera3D {
                     Log.d(TAG, "Camera Id: " + mCameraDevice.getId() + " Preview session started");
                 } catch (CameraAccessException e) {
                     Log.d(TAG, "Camera Id: " + mCameraDevice.getId() + " Failed to start preview: " + e.getMessage());
+                } catch (IllegalStateException ise) {
+                    Log.d(TAG, "createProcessingPreviewSession onConfigured IllegalStateException - null out mCameraDevice and retry open camera");
+                    mCameraDevice = null;
                 }
             }
 

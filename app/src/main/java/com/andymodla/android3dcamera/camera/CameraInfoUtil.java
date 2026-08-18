@@ -12,9 +12,6 @@ import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.util.Log;
 import android.util.Size;
-
-import com.andymodla.android3dcamera.MainActivity;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
