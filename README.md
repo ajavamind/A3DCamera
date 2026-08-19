@@ -1,39 +1,42 @@
 # 3D/AI Camera Photo Booth
 **This repository is the open source documentation for a 3D Camera Photo Booth demonstration project I presented at the 2026 Philadelphia Maker Faire, April 19, 2026.**
 
-**The Photo Booth is a sub-section of the A3DCamera code and is turned on with Bluetooth keyboard configuration commands. 
-The Photo Booth mode installs as a regular camera app and must be configured by enabling a countdown timer and other options. 
-The Photo Booth features parallax adjusted live view SBS (parallel side by side L/R), Anaglyph, 2D left and 2D right eye viewing modes.**
+**The Photo Booth is a sub-section of the A3DCamera code and now employs a Settings menu or Bluetooth keyboard configuration commands to configure its operation. 
+The Photo Booth mode runs with a countdown timer, local WiFi network communication, and photo printing options. 
+The Photo Booth features parallax adjusted live view SBS (parallel side by side L/R), Anaglyph, 2D left and 2D right eye image viewing modes for demonstrating
+stereoscopy. I used a configurable private AI Edit feature only for the exhibit that required Internet access to work. 
+The code used in the exhibit is found in release 2 versions only.**
 
 **See documentation for the [ Photo Booth ](docs/PhotoBooth.md).**
 
-**Work in Progress**
+**Work in Progress --- Now up to level release 3 with many performance updates and feature changes especially for the 3D Stereoscope Camera sub-section of A3DCamera.
+Currently in Alpha testing.**
 
 # A3DCamera
-A personal 3D Camera Android App Project
+A personal Android 3D Camera App Project
 
 This is a personal camera project intended for 3D photography hobbyists and experimenters.
-The app runs on the Xreal Beam Pro tablet device and takes 3D photos exclusively. It is not intended to replace the native camera app.
+The app runs on the Xreal Beam Pro tablet device and takes 3D photos exclusively. It is not intended to replace the native 3D camera app.
 
 It is a starting point for special purpose **_experimental_** 3D camera apps using the Xreal Beam Pro and Leia LumePad 2 cameras.
 It's a software playground for experimenting. See Experiments section below.
 
 ## Design Goals
-The overriding goal is to have a 3D camera app that can be used in a stereoscope to take and review photos, and supports
+The overriding goal is to have a 3D camera app that can be used in a stereoscope to take and review photos, and support
 a live view 3D photo booth operation with a printer. These are use cases where the XBP cannot be accessed by touch.
-Captured photos can be automatically sent to local 3D display devices for review or editing.
+Captured photos can be sent to local 3D display devices (automatically for review or editing and selected for immediate printing.
 
 ### Use Cases
 The intended uses for the app are situations where the camera is not in your hands and the screen cannot or should not be touched or when the app display is not a touch screen. 
 The specific uses I would like to have with a 3D camera app are:
 
-* 3D Photo Booth with a 6x4 photo printer.
-* 3D live view, photo capture, or photo viewing using any stereoscope. This worked with London Stereoscopic Company OWL stereoscope using adapters to hold the BPO in place. This includes the Mercury Works phone viewer stereoscope.
+* 3D Photo Booth with a local network 6x4 photo printer.
+* 3D live view, photo capture, or photo viewing using any stereoscope. This worked with London Stereoscopic Company OWL stereoscope using adapters to hold the BPO in place. This includes a [Mercury Works](https://www.mercuryworks.store) phone viewer stereoscope.
 * Live View and Review Anaglyph 3D for finding and demonstrating the stereo window. This would be usedful in a photo booth and live 3D demonstrations.
 * Remote control of the camera using Bluetooth or on a local Wi-Fi network
-* Simultaneous multiple 2D and 3D cameras remote control
+* Simultaneous separate multiple 2D and 3D cameras remote control from the app
 * Display and download captured 3D images on 3D display devices/tablets/monitors connected to the local Wi-Fi network used by XBP.
-* Trigger a twin XBP simultaneously connected to the local Wi-Fi network established by XBP Wi-Fi hotspot.
+* Trigger a twin XBP camera tablets simultaneously connected to the local Wi-Fi network established by XBP Wi-Fi hotspot.
 * Sharing photos via email, for direct printing SBS or Anaglyph, or for review and alignment using 3D apps like [3DSteroidPro](https://play.google.com/store/apps/details?id=jp.suto.stereoroidpro&hl=en_US) and for sharing with custom 3D apps.
 * The default display mode shows the stereo image without GUI controls or other display information to allow free-viewing and stereoscopes or Anaglyph glasses. The display of the 3D parallel L/R image should be centered on the display and no larger than 130 cm wide for a stereoscope or for free-viewing the image to minimize eye strain. 
 * Turn off the display, while allowing the camera to continue functioning with remote control. Blanking the screen is for photographing wild life without disturing them. 
@@ -44,15 +47,11 @@ For the above uses cases the app requires remote key control of its functions an
 
 With the remote control requirements for the app, a minimum Bluetooth controller is needed. 
 I want to keep the GUI mostly for viewing 3D images and for showing brief information status or settings.
-Therefore only key or mouse input will determine the camera operation.
+Therefore key or mouse input will by preference determine the camera operation.
 
-I chose the [8BitDo](https://www.8bitdo.com) Micro Bluetooth game key controller in its Android mode. With this controller's 15 keys many camera functions can be set or controlled with a single key.
-The 8BitDo Micro is sold as key programmable in its keyboard mode, but I found it impossible to modify key codes using the manufacturer's [Google Play Store app](https://play.google.com/store/apps/details?id=com.abitdo.advance). 
-Fortunately the out of the box Android key mode is good enough.
+The latest A3DCamera version uses a Shan Wan wireless Bluetooth mini game controller in its Android mode, specifically the [Q36 version](http://www.shanwan.com.hk/en/Q36XSP.html). With this controller's 15 keys many camera functions can be selected or adjusted. I those this version because it has a "wake-up" function to automatically reconnect when it disconnects if not used frequently.
 
-There is also a keyboard mode with the 8BitDo Micro. See the key diagram below. 
-The app uses these equivalent keys so a standard Bluetooth keyboard device can also be used simulatneously with the game controller.
-With keyboard input, a command line interface is present for debugging and camera parameter setup until a Settings GUI feature is coded.
+See the key diagram below. 
 
 ## Camera Functions
 ### Camera Mode
@@ -72,8 +71,8 @@ The camera reports its LENS_FOCUS_DISTANCE_CALIBRATION as APPROXIMATE.
 The focus distance options are hyper focal 1.66 meters, Photo Booth 5.50 centimeters, and macro 100 cm. Macro may not be useful for 3D but shows how the lens can focus close.
 
 ### Exposure
-Auto exposure sets the best subject lighting by automatically changing shutter speed and ISO. There is no manual exposure control implemented. 
-The photographer can set the type of exposure metering: Frame Average, Center Weighted, and Spot Metering.
+Auto exposure sets the best subject lighting by automatically changing shutter speed and ISO. There is exposure compensation manual exposure control implemented. 
+The photographer can use the Settings menu to set the type of exposure metering: Frame Average, Center Weighted, and Spot Metering.
 
 ### Image Storage
 The app stores image files in the "DCIM/A3DCamera" folder. The base folder can be changed to "Pictures/A3DCamera" in the code.
@@ -82,9 +81,11 @@ The app stores 3D photos in several formats. Left and Right Camera images are st
 Side by Side (SBS) parallel left and right images are stored as "_2x1" suffix filename jpg files.
 Anaglyph 3D images are stored as "_ana" suffix filename jpg files.
 
-* The A3DCamera folder stores SBS photos.
-* The A3DCamera/Anaglyph subfolder stores Anaglyph photos as a settings option.
-* The A3DCamera/LR subfolder stores single left and right photos as a settings option. 
+* The DCIM/A3DCamera folder for SBS photo storage.
+* The DCIM/A3DCamera/Anaglyph subfolder for Anaglyph photo storage as an optional settings option.
+* The DCIM/A3DCamera/LR subfolder for single left and right photo storage as an optional settings option.
+* The DCIM/A3DCamera/AIEdit subfolder for AI edited photo storage (a separate private app use option)
+* The DCIM/A3DCamera/Screenshots
 
 Left and right images contain limited EXIF capture information: for example- IMG20250904_r.jpg f2.2, 1/3 second, 2.16mm, ISO413
 Each left and right camera photo captured is 4080 x 3072 pixels, this is the full maximum sensor size of each left and right camera. Note the aspect ratio is not exactly 4:3. 
@@ -101,30 +102,24 @@ The SBS display is sized at 130 mm for viewing in a stereoscope.
 As a hobbyist app the user is encouraged to use [Stereo Photo Maker (English)](https://stereo.jpn.org/eng/stphmkr/) 
 to align left and right images vertically, correct any horizontal perspective distortion, and set the most pleasing stereo window.
 
-When using the Command Line feature below you can set the vertical misalignment and the stereo window to your preference.
+When using the Command Line feature or command key below you can set the vertical misalignment and parallax to adjust the stereo window for your preference.
 These values persist after app restart and adjust the saved photos, except for single left and right photos.
 
 ### Camera Control
 #### On Camera
-Take photos with the camera key (when not set to launch the native 3D app) or volume up key upon key release. In photo booth mode the volume up key changes function to review and the volume down key rotates live view SBS, anaglyph, and left/right photos.
+Take photos with the XBP red Mode key (You have to modify you XBP to launch the A3DCamera app instead of the native XBP 3D camera app). In stereoscope and photo booth mode the volume up key changes function to review and the volume down key rotates live view SBS, anaglyph, and left/right photo views.
 
 There is an invisible button at the top right of the screen for touch photo capture during live view.
-
-Use the volume down on key release to review the last photo taken. The Review function launches the [3DSteroid Pro (StereoRoidPro)](https://play.google.com/store/apps/details?id=jp.suto.stereoroidpro&hl=en_US)
-app by default to view the photo.
-If this app is not installed, you can select the app you will use for review.
-
-The camera key may need to be changed to not select the native 3D app automatically, rather function as a shutter key only.
+There is an invisible button at the top left of the screen for touch review last photo capture
 
 #### Wired Remote Control
 A wired USB-C connected Android keyboard can control the camera with keys similar to wireless keyboards or game controllers.
 
 #### Bluetooth Remote Control
-Three Bluetooth devices can be connected to the Beam Pro tablet simultaneously: Game controller, keyboard, and a mouse.
-A disadvantage of the Game controller is that it disconnect/unpairs after about 15 minutes, whereas the mouse does not unpair.
+Three Bluetooth devices can be connected to the Beam Pro tablet simultaneously: mini game controller, keyboard, and a mouse.
 
 ##### Bluetooth Game Controller Remote Control
-Here is the current key mapping for a 8BitDo Bluetooth game controller in Android mode. The controller must be paired with the Beam Pro. 
+Here is the current key mapping for the Bluetooth game controller in Android mode. The game controller must be paired with the Beam Pro. 
 
 * SHUTTER - Take a photo on key release. In Photo Booth mode show count down seconds delay, until photo capture.
 * FOCUS   - Cycle through fixed focus distances: Hyperfocal, Photo Booth, Macro
@@ -140,17 +135,21 @@ Here is the current key mapping for a 8BitDo Bluetooth game controller in Androi
 * BACK    - Cancel continuous capture. To exit/pause the app, press the back button twice.
 * OK/REVIEW - Review the last photo taken in [3DSteroid Pro (StereoRoidPro)](https://play.google.com/store/apps/details?id=jp.suto.stereoroidpro&hl=en_US) or another viewer. OK function for menus and setting when camera is not active
 * SHARE    - Share the last photo taken with Email, Messaging, Photo Viewing, Printer, etc. apps.
-![8BitDo Micro Bluetooth Controller](images/A3DCamera_Layout_1080.png)
+* 
+![Shan Wan Bluetooth Game Controller](images/Shan_Wan_Q36_Mini_Game_Controller_900x600.png)
 
 ##### Bluetooth Keyboard Remote Control
 The app can also be controlled with any Bluetooth ASCII keyboard. 
-Here are the Android keyboard keys matching the similar functions of the 8BitDo Micro game controller (but not using same key code as with keyboard mode on the game controller)
+The app uses these equivalent keys so a standard Bluetooth keyboard device can also be used simulatneously with the game controller.
+With keyboard input, a command line interface is present for debugging and camera parameter setup until a Settings GUI feature is coded.
+
+Here are the Android keyboard keys matching the similar functions of the mini game controller (but not using same key code as with keyboard mode on the game controller)
 
 * Q - FOCUS DISTANCE - Cycle through fixed focus distances: Hyperfocal, Photo Booth, Macro, Auto Focus
 * A - DISPLAY - Toggle change Review display mode (SBS,  Anaglyph, Left, Right)
 * T - EXPOSURE METERING FN  - Cycle through exposure metering: Frame Average, Center Weighted, Spot Metering
 
-Incomplete work in progress
+Use H key to see all the commands possible
 
 ##### Bluetooth Mouse Remote Control
 Connect a Bluetooth Mouse to control the camera app with the mouse buttons. A mouse can be rewired in a buzzer style box as a Photo Booth controller.
@@ -186,8 +185,7 @@ There are no camera leveling, tilt, or subject distance suggestions from the app
 1. I discovered my camera lens vertical alignment is only off by 1 pixels so that live free-viewing is possible without eye strain for me. But the camera can not be too close to the subject.
 2. Distance to the subject should be about 1.5 meter to match the tablet's 50mm camera lens interaxial separation distance.
 3. Synchronization of the camera lens shutters is not known. However the shutter speed is automatically set by the camera so motion blur is possible.
-4. I use a Bluetooth remote to take photos instead of the button keys on the camera. This requires pairing with a remote controller,  keyboard or mouse.
-5. The 8BitDo Bluetooth game controller is not useful for a photo booth because it times out the connection if it is not used often enough. Much better is the Bluetooth wireless mouse, it has no timeout issues.
+4. I use a Bluetooth remote to take photos instead of the button keys on the camera. This requires pairing with a remote controller, keyboard or mouse.
 
 ## App Download 
 
@@ -221,9 +219,9 @@ These two commands affect the live view image, and change the alignment of store
 2. On the navigation bar press the box or circle to exit (however neither will close the app, unless you swipe it off or clear/close all apps).
 
 ## Hardware Isssues
-1. The 8BitDo Micro Bluetooth Controller times out after 10 minutes. The game controller is not used with the Photo Booth and is only experimental.
-2. The XReal BP camera will time out at a maximum of 15 minutes ( Settings->screen timeout). 
-   This can be extended by entering Developer mode, use developer options to set stay awake on. You must keep the device charged with the power cable connected to prevent timeout and last for a long session required for a photo booth.
+1. The XReal BP camera will time out at a maximum of 15 minutes ( Settings->screen timeout). 
+   This can be extended by entering Developer mode, use developer options to set stay awake on.
+   You must keep the device charged with the power cable connected to prevent timeout and last for a long session required for a photo booth.
    The USB data connector is connected to a small portable monitor and is powered by the XReal Beam Pro camera when charging.
    This is the camera setup for the Photo Booth (tested for at least 7 hours of operation).
 
@@ -232,8 +230,6 @@ These two commands affect the live view image, and change the alignment of store
 Set image capture aspect ratio: 4:3, 16:9 and 1:1.
 
 Time Interval captures.
-
-A GUI interface: Settings menu, etc. I am thinking of a browser interface for this instead of a GUI.
 
 ## Experiments
 ### 1. Wi-Fi Remote Control
