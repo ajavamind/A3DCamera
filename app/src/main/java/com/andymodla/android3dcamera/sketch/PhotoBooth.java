@@ -492,6 +492,7 @@ public class PhotoBooth extends PApplet {
         if (DEBUG) PApplet.println("PhotoBooth setReviewLabel()");
         if (currentIndex >= 0) {
             String fullPath = sbsImageFiles.get(currentIndex);
+            media.setReviewFilePath(fullPath);
             String name = fullPath.substring(0, fullPath.lastIndexOf("_2x1."));
             String nameWithoutExt = name.substring(name.lastIndexOf("/") + 5);
             //if (DEBUG) println("nameWithoutExt: " + nameWithoutExt);
@@ -501,6 +502,17 @@ public class PhotoBooth extends PApplet {
                 setImageLabel(prefix + ": " + nameWithoutExt);
             }
         }
+    }
+
+    public File getCurrentSbsFile() {
+        File reviewSbs = null;
+        if (sbsImageFiles.size() > 0) {
+            String fullPath = sbsImageFiles.get(currentIndex);
+            if (fullPath != null) {
+                reviewSbs = new File(fullPath);
+            }
+        }
+        return reviewSbs;
     }
 
     public void draw() {

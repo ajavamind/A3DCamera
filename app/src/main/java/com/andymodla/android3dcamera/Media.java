@@ -1,5 +1,7 @@
 package com.andymodla.android3dcamera;
 
+import static com.andymodla.android3dcamera.DisplayMode.ANAGLYPH;
+import static com.andymodla.android3dcamera.DisplayMode.RIGHT;
 import static java.lang.System.exit;
 
 import android.content.ActivityNotFoundException;
@@ -46,10 +48,10 @@ public class Media {
     //private String BASE_FOLDER = Environment.DIRECTORY_PICTURES;
     //private String DOWNLOAD_FOLDER_NAME = Environment.DIRECTORY_DOWNLOADS;
     public static final String SAVE_FOLDER = "A3DCamera";
-    public static final  String SAVE_ANA_FOLDER = "Anaglyph";
-    public static final  String SAVE_LR_FOLDER = "LR";
-    public static final  String SAVE_AI_EDIT_FOLDER = "AiEdit";
-    public static final  String SAVE_SCREENSHOT_FOLDER = "Screenshots";
+    public static final String SAVE_ANA_FOLDER = "Anaglyph";
+    public static final String SAVE_LR_FOLDER = "LR";
+    public static final String SAVE_AI_EDIT_FOLDER = "AiEdit";
+    public static final String SAVE_SCREENSHOT_FOLDER = "Screenshots";
     public static final String SCREENSHOT_PREFIX = "Screenshot_";
     public static final String SCREENSHOT_FILETYPE = ".png";
 
@@ -76,15 +78,17 @@ public class Media {
     volatile private File reviewAnaglyph;
     volatile private File reviewLeft;
     volatile private File reviewRight;
+    volatile private File reviewFile;
 
-    private String reviewSBSpath;
-    private String reviewAnaglyphPath;
-    private String reviewLeftPath;
-    private String reviewRightPath;
+    private String reviewSBSpath = "";
+    private String reviewAnaglyphPath = "";
+    private String reviewLeftPath = "";
+    private String reviewRightPath = "";
+    private String reviewFilePath = "";  // previous photo file path from list
 
     private String PHOTO_PREFIX = "IMG_";
     public static String APP_REVIEW_PACKAGE = "jp.suto.stereoroidpro"; // Review with StereoRoidPro app default
-    public static String APP_AIEDIT_PACKAGE = "com.andymodla.fluxkontext"; // AI edit with itcamera app default
+    public static String APP_AIEDIT_PACKAGE = "com.andymodla.fluxkontext"; // AI edit with itCamera app default
     public static String APP_PHOTO_REVIEW_PACKAGE = "com.google.android.apps.photosgo"; // Review with Google Gallery on XReal Beam Pro
     private String APP_CANON_PRINT_SERVICE_PACKAGE = "jp.co.canon.android.printservice.plugin";
     private String APP_LEIAPLAYER_REVIEW_PACKAGE = "com.leialoft.leiaplayer"; // Review with Leia Player app default
@@ -111,44 +115,45 @@ public class Media {
         this.camera = camera;
     }
 
-    public void savePaths() {
-        Log.d(TAG, "savePaths");
-        if (reviewSBS == null || reviewAnaglyph == null || reviewLeft == null || reviewRight == null) return;
-        reviewSBSpath = reviewSBS.getAbsolutePath();
-        reviewAnaglyphPath = reviewAnaglyph.getAbsolutePath();
-        reviewLeftPath = reviewLeft.getAbsolutePath();
-        reviewRightPath = reviewRight.getAbsolutePath();
-        storageHelper.writeStringToPrivateStorage(context, "ReviewFilePaths", "SBS", reviewSBSpath);
-        storageHelper.writeStringToPrivateStorage(context, "ReviewFilePaths", "Anaglyph", reviewAnaglyphPath);
-        storageHelper.writeStringToPrivateStorage(context, "ReviewFilePaths", "Left", reviewLeftPath);
-        storageHelper.writeStringToPrivateStorage(context, "ReviewFilePaths", "Right", reviewRightPath);
-    }
-
-    // not used work in progress,
-    public void restorePaths() {
-        Log.d(TAG, "restorePaths");
-        try {
-            reviewSBSpath = storageHelper.readStringFromPrivateStorage(context, "ReviewFilePaths", "SBS");
-            if (reviewSBSpath != null) {
-                reviewSBS = new File(reviewSBSpath);
-            }
-            reviewAnaglyphPath = storageHelper.readStringFromPrivateStorage(context, "ReviewFilePaths", "Anaglyph");
-            if (reviewAnaglyphPath != null) {
-                reviewAnaglyph = new File(reviewAnaglyphPath);
-            }
-            reviewLeftPath = storageHelper.readStringFromPrivateStorage(context, "ReviewFilePaths", "Left");
-            if (reviewLeftPath != null) {
-                reviewLeft = new File(reviewLeftPath);
-// TODO loadImage into photo booth currentLeft
-            }
-            reviewRightPath = storageHelper.readStringFromPrivateStorage(context, "ReviewFilePaths", "Right");
-            if (reviewRightPath != null) {
-                reviewRight = new File(reviewRightPath);
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error restoring paths", e);
-        }
-    }
+//    public void savePaths() {
+//        Log.d(TAG, "savePaths");
+//        if (reviewSBS == null || reviewAnaglyph == null || reviewLeft == null || reviewRight == null)
+//            return;
+//        reviewSBSpath = reviewSBS.getAbsolutePath();
+//        reviewAnaglyphPath = reviewAnaglyph.getAbsolutePath();
+//        reviewLeftPath = reviewLeft.getAbsolutePath();
+//        reviewRightPath = reviewRight.getAbsolutePath();
+//        storageHelper.writeStringToPrivateStorage(context, "ReviewFilePaths", "SBS", reviewSBSpath);
+//        storageHelper.writeStringToPrivateStorage(context, "ReviewFilePaths", "Anaglyph", reviewAnaglyphPath);
+//        storageHelper.writeStringToPrivateStorage(context, "ReviewFilePaths", "Left", reviewLeftPath);
+//        storageHelper.writeStringToPrivateStorage(context, "ReviewFilePaths", "Right", reviewRightPath);
+//    }
+//
+//    // not used work in progress,
+//    public void restorePaths() {
+//        Log.d(TAG, "restorePaths");
+//        try {
+//            reviewSBSpath = storageHelper.readStringFromPrivateStorage(context, "ReviewFilePaths", "SBS");
+//            if (reviewSBSpath != null) {
+//                reviewSBS = new File(reviewSBSpath);
+//            }
+//            reviewAnaglyphPath = storageHelper.readStringFromPrivateStorage(context, "ReviewFilePaths", "Anaglyph");
+//            if (reviewAnaglyphPath != null) {
+//                reviewAnaglyph = new File(reviewAnaglyphPath);
+//            }
+//            reviewLeftPath = storageHelper.readStringFromPrivateStorage(context, "ReviewFilePaths", "Left");
+//            if (reviewLeftPath != null) {
+//                reviewLeft = new File(reviewLeftPath);
+//// TODO loadImage into photo booth currentLeft
+//            }
+//            reviewRightPath = storageHelper.readStringFromPrivateStorage(context, "ReviewFilePaths", "Right");
+//            if (reviewRightPath != null) {
+//                reviewRight = new File(reviewRightPath);
+//            }
+//        } catch (Exception e) {
+//            Log.e(TAG, "Error restoring paths", e);
+//        }
+//    }
 
     /**
      *
@@ -262,7 +267,7 @@ public class Media {
             Log.e(TAG, "Error saving image", e);
             return null;
         }
-        Log.d(TAG, "saveImageFile "+filename + " width=" + bitmap.getWidth() + " height=" + bitmap.getHeight() );
+        Log.d(TAG, "saveImageFile " + filename + " width=" + bitmap.getWidth() + " height=" + bitmap.getHeight());
         return bitmap;
     }
 
@@ -325,9 +330,9 @@ public class Media {
 
             Log.d(TAG, "SBS image saved: " + file.getAbsolutePath());
             if (((MainActivity) context).imageSender != null) {
-                String imageUrl = "http://"+((MainActivity) context).hostIpAddr+":"+((MainActivity) context).hostPort+File.separator+filename;
+                String imageUrl = "http://" + ((MainActivity) context).hostIpAddr + ":" + ((MainActivity) context).hostPort + File.separator + filename;
                 Log.d(TAG, "imageSender.sendImageUrl " + imageUrl);
-                ((MainActivity) context).imageSender.sendImageUrl(null, parameters.getReceiverPort(), imageUrl );
+                ((MainActivity) context).imageSender.sendImageUrl(null, parameters.getReceiverPort(), imageUrl);
             }
 
         } catch (IOException e) {
@@ -395,44 +400,70 @@ public class Media {
         }
         if (!parameters.getIsBlankScreen()) {
             //Toast.makeText(context, "Saved " + timestamp, Toast.LENGTH_SHORT).show();
-            if (pApplet != null) ((PhotoBooth)pApplet).setImageLabel(timestamp);
+            if (pApplet != null) ((PhotoBooth) pApplet).setImageLabel(timestamp);
         }
+    }
+
+    public void setReviewFilePath(String path) {
+        reviewFilePath = path;
     }
 
     public void printImageType() {
         DisplayMode displayMode = ((MainActivity) context).getDisplayMode();
-        if (displayMode == DisplayMode.SBS) {
-            if (reviewSBS == null) {
-                nothingToPrint();
-                return;
-            }
-            sharePrintImage(reviewSBS, true);
-        } else if (displayMode == DisplayMode.ANAGLYPH) {
-            if (reviewAnaglyph == null) {
-                nothingToPrint();
-                return;
-            }
-            sharePrintImage(reviewAnaglyph, false);
-        } else if (displayMode == DisplayMode.LEFT){
-            if (reviewLeft == null) {
-                nothingToPrint();
-                return;
-            }
-            sharePrintImage(reviewLeft, false);
-        } else if (displayMode == DisplayMode.RIGHT){
-            if (reviewRight == null) {
-                nothingToPrint();
-                return;
-            }
-            sharePrintImage(reviewRight, false);
+        switch (displayMode) {
+            case SBS:
+                if (reviewSBS == null) {
+                    if (reviewFilePath != null && !reviewFilePath.isEmpty()) {
+                        try {
+                            reviewFile = new File(reviewFilePath);
+                        } catch (Exception e) {
+                            reviewFile = null;
+                        }
+                    } else {
+                        reviewFile = null;
+                    }
+                    if (reviewFile == null) {
+                        nothingToPrint();
+                        return;
+                    }
+                }
+                if (reviewFilePath.equals(reviewSBSpath)) {
+                    sharePrintImage(reviewSBS, true);
+                } else {
+                    sharePrintImage(reviewFile, true);                }
+                break;
+
+            case ANAGLYPH:
+                if (reviewAnaglyph == null) {
+                    nothingToPrint();
+                    return;
+                }
+                sharePrintImage(reviewAnaglyph, false);
+                break;
+
+            case LEFT:
+                if (reviewLeft == null) {
+                    nothingToPrint();
+                    return;
+                }
+                sharePrintImage(reviewLeft, false);
+                break;
+
+            case RIGHT:
+                if (reviewRight == null) {
+                    nothingToPrint();
+                    return;
+                }
+                sharePrintImage(reviewRight, false);
+                break;
         }
 
     }
 
     private void nothingToPrint() {
-        ((MainActivity)context).runOnUiThread(new Runnable() {
+        ((MainActivity) context).runOnUiThread(new Runnable() {
             public void run() {
-                ToastHelper.showToast(context, "Photo Not Available To Print");
+                ToastHelper.showToast(context, "Photo File Not Saved For Printing");
             }
         });
     }
@@ -442,9 +473,9 @@ public class Media {
         DisplayMode displayMode = ((MainActivity) context).getDisplayMode();
         if (displayMode == DisplayMode.SBS) {
             return reviewSBS;
-        } else if (displayMode == DisplayMode.ANAGLYPH) {
+        } else if (displayMode == ANAGLYPH) {
             return reviewAnaglyph;
-        } else if (displayMode == DisplayMode.LEFT){
+        } else if (displayMode == DisplayMode.LEFT) {
             return reviewLeft;
         } else {
             return reviewRight;
@@ -702,6 +733,7 @@ public class Media {
             return false;
         }
     }
+
     private int calculateInSampleSize(BitmapFactory.Options options, int reqWidth, int reqHeight) {
         final int height = options.outHeight;
         final int width = options.outWidth;
@@ -814,7 +846,7 @@ public class Media {
 
     public void sharePrintImage(File imageFile, boolean make6x4AR) {
         if (imageFile == null) return;
-        Log.d(TAG, "sharePrintImage " + imageFile.getAbsolutePath()+ " make6x4AR=" + make6x4AR);
+        Log.d(TAG, "sharePrintImage " + imageFile.getAbsolutePath() + " make6x4AR=" + make6x4AR);
 
         if (make6x4AR) {
             String filename = imageFile.getAbsolutePath();
