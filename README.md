@@ -121,23 +121,33 @@ Three Bluetooth devices can be connected to the Beam Pro tablet simultaneously: 
 ##### Bluetooth Game Controller Remote Control
 Here is the current key mapping for the Bluetooth game controller in Android mode. The game controller must be paired with the Beam Pro. 
 
-* SHUTTER - Take a photo on key release. In Photo Booth mode show count down seconds delay, until photo capture.
-* FOCUS   - Cycle through fixed focus distances: Hyperfocal, Photo Booth, Macro
-* MODE    - Select Auto, Manual, and Shutter Priority (only Auto implemented)
-* BURST   - Start continous photo capture at about 1 photo every two seconds (or less depending on the number of files stored),
-   until the Back key is pressed and released again, or until 60 images are captured. In Photo Booth mode take a maximum of 4 images.
-* DISP    - Toggle change Review display mode (SBS,  Anaglyph, L/R)
-* TIMER   - Set countdown delay time before taking a photo with the shutter or burst key. This value is also used in Photo Booth mode.
-* ISO     - Set the ISO (not implemented)
-* SPEED   - Set the Shutter speed (not implemented)
-* FN      - Cycle through exposure metering: Frame Average, Center Weighted, Spot Metering
-* MENU    - Settings, etc. not implemented
-* BACK    - Cancel continuous capture. To exit/pause the app, press the back button twice.
-* OK/REVIEW - Review the last photo taken in [3DSteroid Pro (StereoRoidPro)](https://play.google.com/store/apps/details?id=jp.suto.stereoroidpro&hl=en_US) or another viewer. OK function for menus and setting when camera is not active
-* SHARE    - Share the last photo taken with Email, Messaging, Photo Viewing, Printer, etc. apps.
-* 
-![Shan Wan Bluetooth Game Controller](images/Shan_Wan_Q36_Mini_Game_Controller_900x600.png)
+![Shan Wan Bluetooth Game Controller](images/Shan_Wan_Q36_mini_Game_Controller_900x600.png)
 
+* Review - (Volume up key or L game controller key) Toggles between Live-View and Review photo modes
+* Settings - (L2 gamer controller key or 'J' keyboard key) Enters Settings menu
+* Image Mode - (Volume down key or R2 game controller key) Toggles SBS, Anaglyph, Left and Right image viewing
+* Shutter/Print - (XBP Mode/Camera key or R game controller key) In Live-view mode take a photo on key release. In Photo Booth mode show count down seconds delay, until photo capture. In Review mode print current review photo.
+
+* Y - Zoom and shift photo in review mode
+* X - View and modify the parallax in either live-view or review. Saves change in storage
+* BACK (A game controller key)   - Toggles game controll soft keys on the display. Cancel continuous capture or return to camera app from print. Outside app this is the BACK key.
+* STATUS ( B game controller key) - Toggle status. Use to display EV to use minus or plus keys to change exposure compensation. Same applies to Zoom and parallax changes
+* MINUS - decrease EV exposure compensation by 1/6.
+* PLUS - increase EV exposure compensation by 1/6
+* HOME - To exit/pause the app, press the Home game controller key.
+* ARROW KEYS - See options on display soft key menu
+
+* Press Screen in center region - Toggles menu soft keys corresponding to game controller similar to A game controller key
+
+**Settings**
+* Focus Distance   - Select fixed focus distances: Hyperfocal, Photo Booth, Macro
+* C - CONTINUOUS shutter   - Start continous photo capture at about 1 photo every two seconds (or less depending on the number of files stored),
+   until the Back key is pressed and released again, or until 60 images are captured. In Photo Booth mode take a maximum of 4 images.
+* A    - Toggle change Review display mode (SBS,  Anaglyph, L/R)
+*  ???  - Set countdown delay time before taking a photo with the shutter or burst key. This value is also used in Photo Booth mode.
+* Q - FOCUS Distance  - Select fixed focus distances: Hyperfocal, Photo Booth, Macro
+
+  
 ##### Bluetooth Keyboard Remote Control
 The app can also be controlled with any Bluetooth ASCII keyboard. 
 The app uses these equivalent keys so a standard Bluetooth keyboard device can also be used simulatneously with the game controller.
@@ -145,11 +155,11 @@ With keyboard input, a command line interface is present for debugging and camer
 
 Here are the Android keyboard keys matching the similar functions of the mini game controller (but not using same key code as with keyboard mode on the game controller)
 
-* Q - FOCUS DISTANCE - Cycle through fixed focus distances: Hyperfocal, Photo Booth, Macro, Auto Focus
+* Q - FOCUS DISTANCE - Cycle through fixed focus distances: Hyperfocal, Photo Booth, Macro
 * A - DISPLAY - Toggle change Review display mode (SBS,  Anaglyph, Left, Right)
 * T - EXPOSURE METERING FN  - Cycle through exposure metering: Frame Average, Center Weighted, Spot Metering
 
-Use H key to see all the commands possible
+Use H key to see all the commands possible.
 
 ##### Bluetooth Mouse Remote Control
 Connect a Bluetooth Mouse to control the camera app with the mouse buttons. A mouse can be rewired in a buzzer style box as a Photo Booth controller.
@@ -183,9 +193,9 @@ There are no camera leveling, tilt, or subject distance suggestions from the app
 
 ## Usage
 1. I discovered my camera lens vertical alignment is only off by 1 pixels so that live free-viewing is possible without eye strain for me. But the camera can not be too close to the subject.
-2. Distance to the subject should be about 1.5 meter to match the tablet's 50mm camera lens interaxial separation distance.
-3. Synchronization of the camera lens shutters is not known. However the shutter speed is automatically set by the camera so motion blur is possible.
-4. I use a Bluetooth remote to take photos instead of the button keys on the camera. This requires pairing with a remote controller, keyboard or mouse.
+2. Distance to the subject of about 1.5 meter matches the tablet's 50mm camera lens interaxial separation distance using best viewing experience calculations.
+3. Synchronization of the camera lens shutters is not known. The shutter speed is automatically set by the camera so motion blur is possible.
+4. I like to use a Bluetooth remote to take photos instead of the button keys on the camera. This requires pairing with a remote controller, keyboard or mouse.
 
 ## App Download 
 
