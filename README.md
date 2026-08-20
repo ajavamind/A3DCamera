@@ -49,7 +49,8 @@ With the remote control requirements for the app, a minimum Bluetooth controller
 I want to keep the GUI mostly for viewing 3D images and for showing brief information status or settings.
 Therefore key or mouse input will by preference determine the camera operation.
 
-The latest A3DCamera version uses a Shan Wan wireless Bluetooth mini game controller in its Android mode, specifically the [Q36 version](http://www.shanwan.com.hk/en/Q36XSP.html). With this controller's 15 keys many camera functions can be selected or adjusted. I those this version because it has a "wake-up" function to automatically reconnect when it disconnects if not used frequently.
+The latest A3DCamera version 3.x uses a Shan Wan wireless Bluetooth mini game controller [Q36 version](http://www.shanwan.com.hk/en/Q36XSP.html) in its Switch Pro mode. 
+With this controller's 15 keys many camera functions can be selected or adjusted. I picked this controller brand because it has a "wake-up" function to automatically reconnect when it disconnects when not used frequently enough.
 
 See the key diagram below. 
 
@@ -119,7 +120,12 @@ A wired USB-C connected Android keyboard can control the camera with keys simila
 Three Bluetooth devices can be connected to the Beam Pro tablet simultaneously: mini game controller, keyboard, and a mouse.
 
 ##### Bluetooth Game Controller Remote Control
-Here is the current key mapping for the Bluetooth game controller in Android mode. The game controller must be paired with the Beam Pro. 
+Here are the current app key function mapping for the Shan Wan Bluetooth mini game controller in Switch Pro mode. 
+The Shan Wan Q36 game controller must be paired with the Beam Pro with the Mode switch set to "S" (center position).
+The reason for "S" instead of "X" the documented Android setting is because two keys L2 and R2 will not generate any output codes in that mode.
+The app requires all keys to be functional for its operation and the app handles all Android codes sent by the controller.
+I suppose the controller could be reconfigured differently to generate codes for L2 and R2, but the Switch mode works out of the box in Android, 
+because the app can accomodate the controller codes it does receive.
 
 ![Shan Wan Bluetooth Game Controller](images/Shan_Wan_Q36_mini_Game_Controller_900x600.png)
 
@@ -225,8 +231,8 @@ The following commands examples are coded:
 These two commands affect the live view image, and change the alignment of stored SBS and Anaglyph photos.
 
 ## Software Issues
-1. To pause the app without using the BACK key, swipe from the right edge to the left, to show the navigation bar.
-2. On the navigation bar press the box or circle to exit (however neither will close the app, unless you swipe it off or clear/close all apps).
+1. To pause the app without using the BACK key, use HOME key or swipe from the right edge to the left, to show the navigation bar. Restart the app by pressing the app icon.
+2. To use the navigation bar press the box or circle to exit (however neither will close the app, unless you swipe it off or clear/close all apps).
 
 ## Hardware Isssues
 1. The XReal BP camera will time out at a maximum of 15 minutes ( Settings->screen timeout). 
@@ -237,9 +243,8 @@ These two commands affect the live view image, and change the alignment of store
 
 ## Stretch Goals
 
-Set image capture aspect ratio: 4:3, 16:9 and 1:1.
-
-Time Interval captures.
+1. Set image capture aspect ratio: 4:3, 16:9 and 1:1.
+2. Time Interval and continuous captures.
 
 ## Experiments
 ### 1. Wi-Fi Remote Control
