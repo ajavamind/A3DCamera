@@ -58,9 +58,10 @@ See the key diagram below.
 ### Camera Mode
 Captures 3D photos only. A 3D video option is not implemented.
 
-There are two camera modes:
-1. Stereoscope - Basic point and shoot, auto exposure, fixed focus camera with live view stereoscope: SBS, Anaglyph, Left and Right and image capture. Manual preset parallax and vertical alignment supported for SBS and Anaglyph. Option to save anaglyph. Option to save single Left and right photos without parallax or vertical alignment.
-2. Photo Booth - Stereoscope mode plus additional features for a photo booth. This mode always saves anaglyph and single Left and right photos by default, unless turned off.
+There are three camera modes: (incomplete work in progress with Basic and stereoscope currently combined - this will change in Settings in the future)
+1. Basic 3D Camera - Simple point and shoot, auto exposure, fixed focus camera with live view stereoscope: SBS, Anaglyph, Left and Right and image capture. Manual preset parallax and vertical alignment supported for SBS and Anaglyph. Option to save anaglyph. Option to save single Left and right photos without parallax or vertical alignment. Uses 2D soft key menu.
+2. Stereoscope - Basic 3D camera that shows display with text in left and right eye viewports for viewing in a stereoscope
+3. Photo Booth - 3D Camera mode plus additional features for a photo booth. This mode always saves anaglyph and single Left and right photos by default, unless turned off.
 
 ### Focus
 The camera app is fixed focus with selected distances. The camera is set to fixed focus of approximately 166 cm, which is the hyper focal distance of the lens.
@@ -103,8 +104,8 @@ The SBS display is sized at 130 mm for viewing in a stereoscope.
 As a hobbyist app the user is encouraged to use [Stereo Photo Maker (English)](https://stereo.jpn.org/eng/stphmkr/) 
 to align left and right images vertically, correct any horizontal perspective distortion, and set the most pleasing stereo window.
 
-When using the Command Line feature or command key below you can set the vertical misalignment and parallax to adjust the stereo window for your preference.
-These values persist after app restart and adjust the saved photos, except for single left and right photos.
+When using the Command Line feature to configure the app (See Photo Booth section for details), you can set the vertical misalignment and parallax to adjust the stereo window for your preference.
+These values persist after app restart and adjust the saved SBS and Anaglyph photos, except for unadjusted left and right photos.
 
 ### Camera Control
 #### On Camera
@@ -122,9 +123,10 @@ Three Bluetooth devices can be connected to the Beam Pro tablet simultaneously: 
 ##### Bluetooth Game Controller Remote Control
 Here are the current app key function mapping for the Shan Wan Bluetooth mini game controller in Switch Pro mode. 
 The Shan Wan Q36 game controller must be paired with the Beam Pro with the Mode switch set to "S" (center position).
-The reason for "S" instead of "X" the documented Android setting is because two keys L2 and R2 will not generate any output codes in that mode.
+
+The reason for "S" instead of "X", the documented Android setting, is because two keys L2 and R2 will not generate any output codes in that mode.
 The app requires all keys to be functional for its operation and the app handles all Android codes sent by the controller.
-I suppose the controller could be reconfigured differently to generate codes for L2 and R2, but the Switch mode works out of the box in Android, 
+I suppose the controller could be reconfigured differently to generate codes for L2 and R2 in its Android mode, but the Switch mode works out of the box for Android apps, 
 because the app can accomodate the controller codes it does receive.
 
 ![Shan Wan Bluetooth Game Controller](images/Shan_Wan_Q36_mini_Game_Controller_900x600.png)
@@ -146,13 +148,7 @@ because the app can accomodate the controller codes it does receive.
 * Press Screen in center region - Toggles menu soft keys corresponding to game controller similar to A game controller key
 
 **Settings**
-* Focus Distance   - Select fixed focus distances: Hyperfocal, Photo Booth, Macro
-* C - CONTINUOUS shutter   - Start continous photo capture at about 1 photo every two seconds (or less depending on the number of files stored),
-   until the Back key is pressed and released again, or until 60 images are captured. In Photo Booth mode take a maximum of 4 images.
-* A    - Toggle change Review display mode (SBS,  Anaglyph, L/R)
-*  ???  - Set countdown delay time before taking a photo with the shutter or burst key. This value is also used in Photo Booth mode.
-* Q - FOCUS Distance  - Select fixed focus distances: Hyperfocal, Photo Booth, Macro
-
+The Settings menu allows settings to be changed and saved using a GUI. It is not displayed in 3D in the stereoscope camera configuration.
   
 ##### Bluetooth Keyboard Remote Control
 The app can also be controlled with any Bluetooth ASCII keyboard. 
@@ -164,8 +160,10 @@ Here are the Android keyboard keys matching the similar functions of the mini ga
 * Q - FOCUS DISTANCE - Cycle through fixed focus distances: Hyperfocal, Photo Booth, Macro
 * A - DISPLAY - Toggle change Review display mode (SBS,  Anaglyph, Left, Right)
 * T - EXPOSURE METERING FN  - Cycle through exposure metering: Frame Average, Center Weighted, Spot Metering
-
-Use H key to see all the commands possible.
+* C - CONTINUOUS shutter  - Start continous photo capture at about 1 photo every two seconds (or less depending on the number of files stored),
+   until the Back key is pressed and released again, or until 60 images are captured. In Photo Booth mode take a maximum of 4 images.
+*  TBD  - Set countdown delay time before taking a photo with the shutter or burst key. This value is also used in Photo Booth mode.
+* H - HELP to see all the slash and keyboard commands possible.
 
 ##### Bluetooth Mouse Remote Control
 Connect a Bluetooth Mouse to control the camera app with the mouse buttons. A mouse can be rewired in a buzzer style box as a Photo Booth controller.
@@ -191,7 +189,7 @@ The switches connect to buttons in the wireless mouse.
 * RIGHT Button: Toggle between live view and review of last captured photo in display mode set by the middle button.
    
 ### Limitations
-Captured images are on par in quality with the native camera app. However, with this camera images may still need adjustments for vertical alignment, horizontal perspective, contrast, color saturation, and sharpening.
+Captured images are on par in quality with the native camera app. However, with this camera images may still need adjustments for vertical alignment, horizontal perspective, contrast, color saturation, color balance, and sharpening.
 
 Color balance adjustments are not implemented. Exposure lock is not implemented.
 
