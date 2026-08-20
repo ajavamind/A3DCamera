@@ -207,16 +207,22 @@ You will be asked to scan the file for security, respond yes.
 
 My Beam Pro is in developers mode, but you do not have to be in that mode to install.
 
-To enter developer mode, press the Settings -> About This device -> Build number (key) 7 times to enter this mode.
+In order to keep the XBP from sleeping you must be in developer mode. To enter developer mode, press the Settings -> About This device -> Build number (key) 7 times to set this mode.
 In developer mode, use Settings -> System -> Developer options to turn on USB debugging and use Android Studio or Processing.org Android Mode SDK to download an app.
 
-The Beam Pro device uses the red mode key to launch the native 3D camera app. This will interfere with the A3DCamera app operation. Change the mode key to no app launch or to launch the A3DCamera app instead.
- For best performance close all other apps except an HTTP server app used for photo file transer before starting A3DCamera.
+By default the Beam Pro device uses the red mode key to launch the native 3D camera app. This will interfere with the A3DCamera app operation. Change the mode key to no app launch or to launch the A3DCamera app instead. To do this, use Settings -> System -> Gestures -> Mode (red) button. Press "Quick Start" to on or off. Press "Start ... >" to select the "Quick Start" application. If you chose "On" then "Select Application" to launch the "A3DCamera" app instead of the native Camera app.
+
+Also in "Gestures" you can change the Navigation mode to 3-button navigation. This is my preferred way to swipe and use navigation keys with the app.
+
+And in "Gestures" you can change the power button operation from the default "Access digital assistant" to the "Power menu" which I prefer to lock or restart my XBP.
+I move the "Assistant" app icon to the home screen to access a digital assistant.
+
+For best performance close all apps including background apps, except the HTTP server app used for photo file transfers, before starting A3DCamera.
 
 ## Command Line Debug
-There is no GUI for setting camera parameters. The app implements a command line interface to set and save parameters.
+The app implements a command line interface to set and save parameters.
 
-After connecting an Android keyboard to the app, the '/' (forward slash) key will show a prompt line to enter a command. Press the enter key to complete the command and see the results.
+After connecting an Android keyboard to the app, the '/' (forward slash) key twice to show a prompt line to enter a command. Press the enter key to complete the command and see the results.
 
 The following commands examples are coded:
 1. /p=nnn  This sets the stereo window parallax adjustment (offset). The value comes from Stereo Photo Maker auto alignment of a sample left and right image from the XBP. nnn is the horizontal alignment after auto alignment. Example /p=212
@@ -227,7 +233,10 @@ The following commands examples are coded:
 
 These two commands affect the live view image, and change the alignment of stored SBS and Anaglyph photos.
 
-## Usage Tricks
+A list of commands screenshot with the "H" help key from a wireless keyboard:
+
+
+## Usage Hints
 1. To pause the app without using the BACK key, use HOME key or swipe from the right edge to the left, to show the navigation bar. Restart the app by pressing the app icon.
 2. To use the navigation bar press the box or circle to exit (however neither will close the app, unless you swipe it off or clear/close all apps).
 
