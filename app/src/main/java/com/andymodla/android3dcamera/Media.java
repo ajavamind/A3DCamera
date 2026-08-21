@@ -415,8 +415,12 @@ public class Media {
                 if (reviewSBS == null) {
                     if (reviewFilePath != null && !reviewFilePath.isEmpty()) {
                         try {
-                            reviewFile = new File(reviewFilePath);
+                            //Log.d(TAG, "printImageType "+reviewFilePath);
+                            String filename = reviewFilePath.substring(35);
+                            //Log.d(TAG, filename);
+                            reviewFile = new File(Environment.getExternalStoragePublicDirectory(BASE_FOLDER + File.separator + SAVE_FOLDER), filename);
                         } catch (Exception e) {
+                            //Log.d(TAG, "Exception "+e);
                             reviewFile = null;
                         }
                     } else {
@@ -426,11 +430,10 @@ public class Media {
                         nothingToPrint();
                         return;
                     }
-                }
-                if (reviewFilePath.equals(reviewSBSpath)) {
-                    sharePrintImage(reviewSBS, true);
                 } else {
-                    sharePrintImage(reviewFile, true);                }
+                    reviewFile = reviewSBS;
+                }
+                sharePrintImage(reviewFile, true);
                 break;
 
             case ANAGLYPH:
@@ -845,7 +848,10 @@ public class Media {
     }
 
     public void sharePrintImage(File imageFile, boolean make6x4AR) {
-        if (imageFile == null) return;
+        if (imageFile == null) {
+            Log.d(TAG, "sharePrintImage File null make6x4AR=" + make6x4AR);
+            return;
+        }
         Log.d(TAG, "sharePrintImage " + imageFile.getAbsolutePath() + " make6x4AR=" + make6x4AR);
 
         if (make6x4AR) {
