@@ -1,7 +1,7 @@
 # 3D/AI Camera Photo Booth
 **This repository is the open source documentation for a 3D Camera Photo Booth demonstration project I presented at the 2026 Philadelphia Maker Faire, April 19, 2026.**
 
-**The Photo Booth is a sub-section of the A3DCamera code and now employs a Settings menu or Bluetooth keyboard configuration commands to configure its operation. 
+**The Photo Booth is a sub-section of the A3DCamera code and now can use a Settings menu or Bluetooth keyboard commands to configure its operation. 
 The Photo Booth mode runs with a countdown timer, local WiFi network communication, and photo printing options. 
 The Photo Booth features parallax adjusted live view SBS (parallel side by side L/R), Anaglyph, 2D left and 2D right eye image viewing modes for demonstrating
 stereoscopy. I used a configurable private AI Edit feature only for the exhibit that required Internet access to work. 
@@ -9,8 +9,8 @@ The code used in the exhibit is found in release 2 versions only.**
 
 **See documentation for the [ Photo Booth ](docs/PhotoBooth.md).**
 
-**Work in Progress --- Now up to level release 3 with many performance updates and feature changes especially for the 3D Stereoscope Camera sub-section of A3DCamera.
-Currently in Alpha testing.**
+**Work in Progress --- the code is currently at level release 3 with many performance updates and feature changes especially for the 3D Stereoscope Camera sub-section of A3DCamera.
+The code is in alpha testing.**
 
 # A3DCamera
 A personal Android 3D Camera App Project
@@ -37,10 +37,10 @@ The specific uses I would like to have with a 3D camera app are:
 * Simultaneous separate multiple 2D and 3D cameras remote control from the app
 * Display and download captured 3D images on 3D display devices/tablets/monitors connected to the local Wi-Fi network used by XBP.
 * Trigger a twin XBP camera tablets simultaneously connected to the local Wi-Fi network established by XBP Wi-Fi hotspot.
-* Sharing photos via email, for direct printing SBS or Anaglyph, or for review and alignment using 3D apps like [3DSteroidPro](https://play.google.com/store/apps/details?id=jp.suto.stereoroidpro&hl=en_US) and for sharing with custom 3D apps.
+* Sharing photos via email, for direct printing SBS or Anaglyph, or for review and alignment using 3D apps like [3DSteroidPro](https://play.google.com/store/apps/details?id=jp.suto.stereoroidpro&hl=en_US) and for sharing with custom 3D apps. (This feature is currently not available)
 * The default display mode shows the stereo image without GUI controls or other display information to allow free-viewing and stereoscopes or Anaglyph glasses. The display of the 3D parallel L/R image should be centered on the display and no larger than 130 cm wide for a stereoscope or for free-viewing the image to minimize eye strain. 
 * Turn off the display, while allowing the camera to continue functioning with remote control. Blanking the screen is for photographing wild life without disturing them. 
-Blanking the screen helps conserve battery power with long interval timer captures. (Only implemented with Photo Booth mode)
+Blanking the screen helps conserve battery power with long interval timer captures.
 
 ### Camera App Design
 For the above uses cases the app requires remote key control of its functions and not requiring a touch screen.
@@ -58,13 +58,14 @@ See the key diagram below.
 ### Camera Mode
 Captures 3D photos only. A 3D video option is not implemented.
 
-There are three camera modes: (incomplete work in progress with Basic and stereoscope currently combined - this will change in Settings in the future)
+There are three camera app modes: (this is incomplete work in progress with Basic and Stereoscope currently combined - this will change in Settings in the future)
 1. Basic 3D Camera - Simple point and shoot, auto exposure, fixed focus camera with live view stereoscope: SBS, Anaglyph, Left and Right and image capture. Manual preset parallax and vertical alignment supported for SBS and Anaglyph. Option to save anaglyph. Option to save single Left and right photos without parallax or vertical alignment. Uses 2D soft key menu.
-2. Stereoscope - Basic 3D camera that shows display with text in left and right eye viewports for viewing in a stereoscope
+2. Stereoscope 3D Camera - Basic 3D camera that shows display with text in left and right eye viewports for a stereoscope
 3. Photo Booth - 3D Camera mode plus additional features for a photo booth. This mode always saves anaglyph and single Left and right photos by default, unless turned off.
 
 ### Focus
-The camera app is fixed focus with selected distances. The camera is set to fixed focus of approximately 166 cm, which is the hyper focal distance of the lens.
+The camera app is fixed focus with selected distances selected in Settings. 
+The camera is set to a default fixed focus of approximately 166 cm, which is the hyper focal distance of the lens.
 Note the code uses 0.60356647 diopters to set the hyper focal distance.
 The hyper focal distance in cm is one divided by this value.
 It is considered sharp from 83 cm (half the hyperfocal distance) and beyond.
@@ -77,20 +78,18 @@ Auto exposure sets the best subject lighting by automatically changing shutter s
 The photographer can use the Settings menu to set the type of exposure metering: Frame Average, Center Weighted, and Spot Metering.
 
 ### Image Storage
-The app stores image files in the "DCIM/A3DCamera" folder. The base folder can be changed to "Pictures/A3DCamera" in the code.
+The app stores image files in the "DCIM/A3DCamera" folder. The base folder can be changed to "Pictures/A3DCamera", for example with a code change.
 
-The app stores 3D photos in several formats. Left and Right Camera images are stored respectively as "_l" and "_r" suffix filename jpg files.
-Side by Side (SBS) parallel left and right images are stored as "_2x1" suffix filename jpg files.
-Anaglyph 3D images are stored as "_ana" suffix filename jpg files.
+The app stores 3D photos in several formats:
+1. Side by Side (SBS) parallel left and right images are stored as "_2x1" suffix filename jpg files. The app modifies the SBS stereo image for parallax to set the stereo window.
+2. Anaglyph 3D images are stored as "_ana" suffix filename jpg files. The app modifies the Anaglyph stereo image for parallax to set the stereo window. Storage is optional in Settings.
+3. Left and Right Camera images are stored respectively as "_l" and "_r" suffix filename jpg files. Only Left and right images contain limited EXIF capture information: for example- IMG20250904_r.jpg f2.2, 1/3 second, 2.16mm, ISO413. The L/R images are not modified for parallax. Storage is optional in Settings. Each left and right camera photo captured is 4080 x 3072 pixels, the normal maximum sensor size of each left and right camera. Note the aspect ratio is not exactly 4:3. The camera sensor can capture an image at 8160x6144, but RAM memory size and processor speed limitations make stereo difficult at this resolution. The native camera app has an option for single 8K 2D image capture.
 
 * The DCIM/A3DCamera folder for SBS photo storage.
 * The DCIM/A3DCamera/Anaglyph subfolder for Anaglyph photo storage as an optional settings option.
 * The DCIM/A3DCamera/LR subfolder for single left and right photo storage as an optional settings option.
-* The DCIM/A3DCamera/AIEdit subfolder for AI edited photo storage (a separate private app use option)
+* The DCIM/A3DCamera/AIEdit subfolder for AI edited photo storage (a separate private app usage option)
 * The DCIM/A3DCamera/Screenshots
-
-Left and right images contain limited EXIF capture information: for example- IMG20250904_r.jpg f2.2, 1/3 second, 2.16mm, ISO413
-Each left and right camera photo captured is 4080 x 3072 pixels, this is the full maximum sensor size of each left and right camera. Note the aspect ratio is not exactly 4:3. 
 
 ### Display
 The app display is a centered viewfinder sized to permit use of stereoscopic "free-viewing". This is a learned eye relaxing technique you can use to help see your subject in 3D with parallal SBS left and right eye images. 
@@ -109,10 +108,10 @@ These values persist after app restart and adjust the saved SBS and Anaglyph pho
 
 ### Camera Control
 #### On Camera
-Take photos with the XBP red Mode key (You have to modify you XBP to launch the A3DCamera app instead of the native XBP 3D camera app). In stereoscope and photo booth mode the volume up key changes function to review and the volume down key rotates live view SBS, anaglyph, and left/right photo views.
+Take photos with the XBP red Mode key (You have to modify your XBP Settings to launch the A3DCamera app instead of the native XBP 3D camera app). In stereoscope and photo booth mode the volume up key changes function to review and the volume down key rotates live view SBS, Anaglyph, and left/right photo views.
 
-There is an invisible button at the top right of the screen for touch photo capture during live view.
-There is an invisible button at the top left of the screen for touch review last photo capture
+There is an invisible button at the top right of the screen for touch screen photo capture during live view.
+There is an invisible button at the top left of the screen for touch screen review for the last photo captured
 
 #### Wired Remote Control
 A wired USB-C connected Android keyboard can control the camera with keys similar to wireless keyboards or game controllers.
@@ -152,10 +151,10 @@ The Settings menu allows settings to be changed and saved using a GUI. It is not
   
 ##### Bluetooth Keyboard Remote Control
 The app can also be controlled with any Bluetooth ASCII keyboard. 
-The app uses these equivalent keys so a standard Bluetooth keyboard device can also be used simulatneously with the game controller.
-With keyboard input, a command line interface is present for debugging and camera parameter setup until a Settings GUI feature is coded.
+The app uses equivalent key codes from a standard Bluetooth keyboard device simulatneously with the game controller.
+With keyboard input, a command line interface is present for debugging and camera parameter setup remotely over WiFi.
 
-Here are the Android keyboard keys matching the similar functions of the mini game controller (but not using same key code as with keyboard mode on the game controller)
+Here are the Android keyboard keys matching the similar functions of the mini game controller (but not using same key code as the game controller)
 
 * Q - FOCUS DISTANCE - Cycle through fixed focus distances: Hyperfocal, Photo Booth, Macro
 * A - DISPLAY - Toggle change Review display mode (SBS,  Anaglyph, Left, Right)
@@ -173,7 +172,7 @@ This mode is the default after a clean install (no app of the XBP)
 
 * LEFT Button - Capture a photo (shutter button). In photo review mode this button sends a photo to the printer
 * MIDDLE Button - Share the photo with a selected app.
-* RIGHT Button - Review the last photo using a default app like 3DSteroid.
+* RIGHT Button - Review the last photo.
 
 
 ###### Photo Booth Camera Mode (Buzzer Box)
@@ -201,23 +200,29 @@ There are no camera leveling, tilt, or subject distance suggestions from the app
 3. Synchronization of the camera lens shutters is not known. The shutter speed is automatically set by the camera so motion blur is possible.
 4. I like to use a Bluetooth remote to take photos instead of the button keys on the camera. This requires pairing with a remote controller, keyboard or mouse.
 
-## App Download 
+## App Download and Install
 
-Download the apk file from the Release section above into the XBeam Pro "Downloads" folder. Use the "Files" app to find and click on the A3DCamera apk file in the Downloads folder to install it. 
+Download the release apk file from the Release section above into the your XBeam Pro "Downloads" folder. Use the "Files" app to find and click on the A3DCamera apk file in the Downloads folder to install it. 
 You will be asked to scan the file for security, respond yes.
 
 My Beam Pro is in developers mode, but you do not have to be in that mode to install.
 
-To enter developer mode, press the Settings -> About This device -> Build number (key) 7 times to enter this mode.
+In order to keep the XBP from sleeping you must be in developer mode. To enter developer mode, press the Settings -> About This device -> Build number (key) 7 times to set this mode.
 In developer mode, use Settings -> System -> Developer options to turn on USB debugging and use Android Studio or Processing.org Android Mode SDK to download an app.
 
-The Beam Pro device may be configured to use the camera key to launch the native 3D camera app. This will interfere with the A3DCamera app operation.
-You should close all other camera apps before using A3DCamera for best performance.
+By default the Beam Pro device uses the red mode key to launch the native 3D camera app. This will interfere with the A3DCamera app operation. Change the mode key to no app launch or to launch the A3DCamera app instead. To do this, use Settings -> System -> Gestures -> Mode (red) button. Press "Quick Start" to on or off. Press "Start ... >" to select the "Quick Start" application. If you chose "On" then "Select Application" to launch the "A3DCamera" app instead of the native Camera app.
+
+Also in "Gestures" you can change the Navigation mode to 3-button navigation. This is my preferred way to swipe and use navigation keys with the app.
+
+And in "Gestures" you can change the power button operation from the default "Access digital assistant" to the "Power menu" which I prefer to lock or restart my XBP.
+I move the "Assistant" app icon to the home screen to access a digital assistant.
+
+For best performance close all apps including background apps, except the HTTP server app used for photo file transfers, before starting A3DCamera.
 
 ## Command Line Debug
-There is no GUI for setting camera parameters. The app implements a command line interface to set and save parameters.
+The app implements a command line interface to set and save parameters.
 
-After connecting an Android keyboard to the app, the '/' (forward slash) key will show a prompt line to enter a command. Press the enter key to complete the command and see the results.
+After connecting an Android keyboard to the app, the '/' (forward slash) key twice to show a prompt line to enter a command. Press the enter key to complete the command and see the results.
 
 The following commands examples are coded:
 1. /p=nnn  This sets the stereo window parallax adjustment (offset). The value comes from Stereo Photo Maker auto alignment of a sample left and right image from the XBP. nnn is the horizontal alignment after auto alignment. Example /p=212
@@ -228,14 +233,17 @@ The following commands examples are coded:
 
 These two commands affect the live view image, and change the alignment of stored SBS and Anaglyph photos.
 
-## Software Issues
+A list of commands screenshot with the "H" help key from a wireless keyboard:
+
+
+## Usage Hints
 1. To pause the app without using the BACK key, use HOME key or swipe from the right edge to the left, to show the navigation bar. Restart the app by pressing the app icon.
 2. To use the navigation bar press the box or circle to exit (however neither will close the app, unless you swipe it off or clear/close all apps).
 
 ## Hardware Isssues
 1. The XReal BP camera will time out at a maximum of 15 minutes ( Settings->screen timeout). 
-   This can be extended by entering Developer mode, use developer options to set stay awake on.
-   You must keep the device charged with the power cable connected to prevent timeout and last for a long session required for a photo booth.
+   This can be extended by entering Developer mode, set a developer option to "Stay awake" to prevent the app from sleeping during charging.
+   You must keep the device charged with the power cable connected to prevent battery power depletion and app timeout to be able to last for hours during a long session required for a photo booth.
    The USB data connector is connected to a small portable monitor and is powered by the XReal Beam Pro camera when charging.
    This is the camera setup for the Photo Booth (tested for at least 7 hours of operation).
 
