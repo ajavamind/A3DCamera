@@ -38,6 +38,7 @@ import java.util.Date;
 public class PhotoBooth extends PApplet {
     private static final boolean DEBUG = MyDebug.DEBUG;
     private static final boolean testMode = false;
+    private static boolean testCheckDraw = false;
 
     int black = color(0);
     int white = color(255);
@@ -707,6 +708,13 @@ public class PhotoBooth extends PApplet {
 //        else if (state == MainActivity.REVIEW_PHOTO_STATE) {
 //            drawImageLabel();
 //        }
+
+        // display draw frame counter for debug
+        if (testCheckDraw) {
+            fill(yellow);
+            textSize(48);
+            text(""+frameCount, width/2, height/3);
+        }
 
         // last thing to check is screenshot
         if (screenshot) {
@@ -1420,6 +1428,10 @@ public class PhotoBooth extends PApplet {
                         if (DEBUG) PApplet.println(s);
                     }
                 }
+                break;
+            case KeyEvent.KEYCODE_D:
+                // toggle show frame count
+                testCheckDraw = !testCheckDraw;
                 break;
             default:
                 lastKeyCode = 0;
