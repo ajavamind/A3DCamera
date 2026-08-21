@@ -305,7 +305,7 @@ public class Camera3D {
         // Detach every ImageReader listener FIRST. The native layer posts
         // onImageAvailable events through the reader's own ListenerHandler; if a
         // listener is still attached when the camera thread dies, the next event
-        // throws "sending message to a Handler on a dead thread".
+        // will throw a "sending message to a Handler on a dead thread".
         if (mImageReader0 != null) mImageReader0.setOnImageAvailableListener(null, null);
         if (mImageReader2 != null) mImageReader2.setOnImageAvailableListener(null, null);
         if (imageReader0 != null) imageReader0.setOnImageAvailableListener(null, null);
@@ -349,30 +349,6 @@ public class Camera3D {
             mImageReaderThread0 = new HandlerThread("ImageReaderThread0");
             mImageReaderThread0.start();
             mImageReaderHandler0 = new Handler(mImageReaderThread0.getLooper());
-        }
-    }
-
-    public void stopCameraThreadold() {
-        Log.d(TAG, "stopCameraThread");
-        if (mCameraThread != null) {
-            mImageReaderHandler0.removeCallbacksAndMessages(null);
-            mCameraThread.quitSafely(); // Safely shut down the looper
-            mImageReaderThread0.quitSafely();
-            try {
-                mCameraThread.join(); // Wait for the thread to finish
-                mCameraThread = null;
-                mCameraHandler = null;
-                if (cameraExecutor != null) {
-                    cameraExecutor.shutdown(); // Non-blocking request to stop
-                    cameraExecutor = null;
-                }
-
-                mImageReaderThread0.join();
-                mImageReaderThread0 = null;
-                mImageReaderHandler0 = null;
-            } catch (InterruptedException e) {
-                Log.e(TAG, "Interrupted while stopping camera thread", e);
-            }
         }
     }
 
@@ -446,20 +422,48 @@ public class Camera3D {
     private final OnImageAvailableListener captureListener0 = new OnImageAvailableListener() {
         @Override
         public void onImageAvailable(ImageReader reader) {
+            Image newLeft;
             try {
-                imageL = reader.acquireLatestImage();
+                newLeft = reader.acquireLatestImage();
             } catch (IllegalStateException ise) {
-                // reader closed or buffer already taken � drop it, the other side will clean up
-                if (imageL != null) imageL.close();
-                imageL = null;
+                // reader closed or all maxImages slots already held: drop it,
+                // the rest of the pipeline will clean up.
                 return;
             }
-            if (((MainActivity) context).state == LIVE_VIEW_STATE) {
-                saveImageFiles(imageL, imageR);
-            } else {
+            if (newLeft == null) return;
+
+            // Close any previously acquired left image that has not been
+            // consumed yet. Reassigning imageL without closing the old value
+            // pins its native buffer forever, which is what exhausts the
+            // maxImages queue in continuous mode.
+            Image oldLeft;
+            Image pairedRight;
+            synchronized (Camera3D.this) {
+                oldLeft = imageL;
+                imageL = newLeft;
+                pairedRight = imageR;
+            }
+            if (oldLeft != null) {
+                try { oldLeft.close(); } catch (IllegalStateException ignored) {}
+            }
+
+            if (((MainActivity) context).state != LIVE_VIEW_STATE) {
                 // user left live view while capturing: discard this frame
-                if (imageL != null) imageL.close();
-                imageL = null;
+                synchronized (Camera3D.this) {
+                    imageL = null;
+                }
+                try { newLeft.close(); } catch (IllegalStateException ignored) {}
+                return;
+            }
+            // Only save once BOTH sides of the stereo pair are available;
+            // otherwise we would hand saveImageFiles() a half-null pair (which
+            // it silently drops) and leave imageL pinned.
+            if (pairedRight != null) {
+                synchronized (Camera3D.this) {
+                    imageL = null;
+                    imageR = null;
+                }
+                saveImageFiles(newLeft, pairedRight);
             }
         }
     };
@@ -467,35 +471,66 @@ public class Camera3D {
     private final OnImageAvailableListener captureListener2 = new OnImageAvailableListener() {
         @Override
         public void onImageAvailable(ImageReader reader) {
+            Image newRight;
             try {
-                imageR = reader.acquireLatestImage();
+                newRight = reader.acquireLatestImage();
             } catch (IllegalStateException ise) {
-                if (imageR != null) imageR.close();
-                imageR = null;
                 return;
             }
-            if (((MainActivity) context).state == LIVE_VIEW_STATE) {
-                saveImageFiles(imageL, imageR);
-            } else {
-                if (imageR != null) imageR.close();
-                imageR = null;
+            if (newRight == null) return;
+
+            Image oldRight;
+            Image pairedLeft;
+            synchronized (Camera3D.this) {
+                oldRight = imageR;
+                imageR = newRight;
+                pairedLeft = imageL;
+            }
+            if (oldRight != null) {
+                try { oldRight.close(); } catch (IllegalStateException ignored) {}
+            }
+
+            if (((MainActivity) context).state != LIVE_VIEW_STATE) {
+                synchronized (Camera3D.this) {
+                    imageR = null;
+                }
+                try { newRight.close(); } catch (IllegalStateException ignored) {}
+                return;
+            }
+            if (pairedLeft != null) {
+                synchronized (Camera3D.this) {
+                    imageL = null;
+                    imageR = null;
+                }
+                saveImageFiles(pairedLeft, newRight);
             }
         }
     };
 
     /**
      * Force-release any buffered images still held by a capture ImageReader.
-     * Must be called on the handler thread that owns the reader (mCameraHandler)
-     * so it cannot race with onImageAvailable().
+     *
+     * NOTE: the capture completion callback is dispatched through the same
+     * {@code mCameraHandler} thread that runs captureListener0/2 (we pass a
+     * HandlerExecutor to captureSingleRequest), so this cannot race with
+     * onImageAvailable(). Even so, imageL/imageR may still be pinned by a
+     * still-running saveImageFiles() on the background save thread, so
+     * acquireNextImage() can legitimately throw "maxImages already acquired".
+     * That is not fatal: swallow it and move on instead of crashing.
      */
     private void drainCaptureReader(ImageReader reader, final int which) {
         if (reader == null) return;
-        // acquireLatestImage() only releases the newest image; any older
-        // unconsumed images stay in the queue and pin their buffers.
         // Drain every pending image so all maxImages slots are freed.
-        Image img;
-        while ((img = reader.acquireLatestImage()) != null) {
-            img.close();
+        // acquireNextImage() returns null when the queue is empty; if all
+        // slots are already acquired (held elsewhere) it throws, which we
+        // tolerate.
+        try {
+            Image img;
+            while ((img = reader.acquireNextImage()) != null) {
+                try { img.close(); } catch (IllegalStateException ignored) {}
+            }
+        } catch (IllegalStateException ise) {
+            Log.w(TAG, "drainCaptureReader: slots still held, skipping (" + ise.getMessage() + ")");
         }
     }
 	
@@ -639,6 +674,11 @@ public class Camera3D {
         // Setup ImageReaders for image capture
         captureCameraWidth = CAMERA_WIDTH_DEFAULT; // use default image camera width lens pixels
         captureCameraHeight = CAMERA_HEIGHT_DEFAULT;
+        // maxImages: keep enough headroom for continuous-capture mode, where
+        // saveImageFiles() runs on a background thread and lags behind the
+        // capture callbacks. With only 2 slots the held imageL/imageR plus one
+        // pending frame exhaust the queue and throw
+        // "maxImages (N) has already been acquired". 6 is a safe margin.
         mImageReader0 = ImageReader.newInstance(captureCameraWidth, captureCameraHeight, ImageFormat.JPEG, 2);  //  maxImages
         mImageReader2 = ImageReader.newInstance(captureCameraWidth, captureCameraHeight, ImageFormat.JPEG, 2);  //  maxImages
 
@@ -728,6 +768,7 @@ public class Camera3D {
     }
 
     public void setExposureCompensation(int index) {
+        if (previewRequestBuilder == null) return;
         if (index < minExposureIndex || index > maxExposureIndex) {
             Log.e(TAG, "Invalid exposure compensation index: " + index);
             return;
@@ -738,7 +779,7 @@ public class Camera3D {
         try {
             mCameraCaptureSession.setRepeatingRequest(previewRequestBuilder.build(), null, mCameraHandler);
         } catch (CameraAccessException e) {
-            throw new RuntimeException(e);
+            clearCamera();
         }
     }
 
@@ -786,6 +827,9 @@ public class Camera3D {
         @Override
         public void onOpened(@NonNull CameraDevice camera) { // Open camera
             mCameraDevice = camera;
+            // Camera came back (possibly after a recovery cycle) — reset the
+            // retry counter so future transient errors get a fresh budget.
+            retryCount = 0;
             if (useProcessingSketch) {
                 createProcessingPreviewSession();
             } else {
@@ -800,37 +844,41 @@ public class Camera3D {
         @Override
         public void onDisconnected(@NonNull CameraDevice camera) { // Turn off camera
             if (null != mCameraDevice) {
-                mCameraDevice.close();
+                try { mCameraDevice.close(); } catch (RuntimeException ignored) {}
                 mCameraDevice = null;
             }
-            // The session dies with the device drop the stale reference so
-            // createCameraCaptureSession() doesn't trust it.
-            mCameraCaptureSession = null;
-//            if (mCameraCaptureSession != null && mCameraCaptureSession.) {
-//                try {
-//                    mCameraCaptureSession.stopRepeating();
-//                    mCameraCaptureSession.abortCaptures();
-//                } catch (CameraAccessException e) {
-//                    Log.e(TAG, "Error stopping preview session", e);
-//                }
-//            }
+            // The session dies with the device; drop the stale reference so
+            // createCameraCaptureSession() doesn't trust it. Guard against
+            // null/already-closed sessions (can happen on double disconnect).
+            if (mCameraCaptureSession != null) {
+                try { mCameraCaptureSession.close(); } catch (RuntimeException ignored) {}
+                mCameraCaptureSession = null;
+            }
+            // Release any pinned capture buffers so a later reopen is clean.
+            releaseCaptureImages();
         }
 
         @Override
         public void onError(@NonNull CameraDevice camera, int error) {
+            Log.e(TAG, "Camera " + camera.getId() + " hardware failure error=" + error);
             if (mCameraDevice != null) {
-                mCameraDevice.close();
+                try { mCameraDevice.close(); } catch (RuntimeException ignored) {}
             }
             mCameraDevice = null;
             if (mCameraCaptureSession != null) {
                 try {
                     mCameraCaptureSession.stopRepeating();
                     mCameraCaptureSession.abortCaptures();
-                } catch (CameraAccessException e) {
+                } catch (CameraAccessException | IllegalStateException e) {
                     Log.e(TAG, "Error stopping preview session", e);
                 }
+                try { mCameraCaptureSession.close(); } catch (RuntimeException ignored) {}
+                mCameraCaptureSession = null;
             }
-            Log.e(TAG, "Camera " + camera.getId() + " hardware failure");
+            // Clear captureInProgress so the shutter is not stuck "busy".
+            captureInProgress.set(false);
+            releaseCaptureImages();
+            handleCameraRecovery(error);
         }
     };
 
@@ -942,7 +990,7 @@ public class Camera3D {
                                 previewRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON);
                                 previewRequestBuilder.set(CaptureRequest.CONTROL_AE_EXPOSURE_COMPENSATION, exposureCompensationIndex);
                                 previewRequestBuilder.set(CaptureRequest.CONTROL_AE_LOCK, true);
-                                //  Let system handle tonemapping (remove custom curve)
+                                //  Let system handle tone mapping (remove custom curve)
                                 previewRequestBuilder.set(CaptureRequest.TONEMAP_MODE, CaptureRequest.TONEMAP_MODE_FAST);
                                 //previewRequestBuilder.set(CaptureRequest.TONEMAP_MODE, CaptureRequest.TONEMAP_MODE_CONTRAST_CURVE);
                                 //previewRequestBuilder.set(CaptureRequest.TONEMAP_CURVE, new TonemapCurve(curve_srgb, curve_srgb, curve_srgb));
@@ -987,7 +1035,7 @@ public class Camera3D {
                 mCameraCaptureSession.stopRepeating();
                 mCameraCaptureSession.abortCaptures();
             } catch (CameraAccessException e) {
-                throw new RuntimeException(e);
+                clearCamera();
             }
         }
     }
@@ -998,7 +1046,7 @@ public class Camera3D {
             try {
                 mCameraCaptureSession.setRepeatingRequest(previewRequestBuilder.build(), null, mCameraHandler);
             } catch (CameraAccessException e) {
-                throw new RuntimeException(e);
+                clearCamera();
             }
         }
     }
@@ -1082,7 +1130,7 @@ public class Camera3D {
                     Log.d(TAG, "Camera Id: " + mCameraDevice.getId() + " Failed to start preview: " + e.getMessage());
                 } catch (IllegalStateException ise) {
                     Log.d(TAG, "createProcessingPreviewSession onConfigured IllegalStateException - null out mCameraDevice and retry open camera");
-                    mCameraDevice = null;
+                    clearCamera();
                 }
             }
 
@@ -1119,6 +1167,78 @@ public class Camera3D {
 
                 }
             };
+
+    private void clearCamera() {
+        Log.e(TAG, "clearCamera()");
+        if (mCameraCaptureSession != null) {
+            try { mCameraCaptureSession.close(); } catch (RuntimeException ignored) {}
+            mCameraCaptureSession = null;
+        }
+        if (mCameraDevice != null) {
+            try { mCameraDevice.close(); } catch (RuntimeException ignored) {}
+            mCameraDevice = null;
+        }
+        releaseCaptureImages();
+        ((MainActivity)context).restartApp();
+    }
+
+    /**
+     * Close any JPEG capture images currently held in imageL/imageR and detach
+     * the capture listeners. Safe to call from any callback thread during
+     * teardown/recovery. Does NOT touch the preview (YUV) readers.
+     */
+    private void releaseCaptureImages() {
+        if (mImageReader0 != null) mImageReader0.setOnImageAvailableListener(null, null);
+        if (mImageReader2 != null) mImageReader2.setOnImageAvailableListener(null, null);
+        synchronized (this) {
+            if (imageL != null) { try { imageL.close(); } catch (IllegalStateException ignored) {} imageL = null; }
+            if (imageR != null) { try { imageR.close(); } catch (IllegalStateException ignored) {} imageR = null; }
+        }
+    }
+
+    private int retryCount = 0;
+    private static final int MAX_RETRIES = 3;
+
+    private void handleCameraRecovery(int errorCode) {
+        // Don't attempt recovery if the host activity is being destroyed.
+        if (((MainActivity) context).isFinishing()) {
+            Log.w(TAG, "handleCameraRecovery: activity finishing, skipping reopen");
+            return;
+        }
+        if (retryCount >= MAX_RETRIES) {
+            Log.e(TAG, "Max retries reached. Camera hardware is completely unresponsive.");
+            // Fall back to a full app restart as a last resort.
+            clearCamera();
+            return;
+        }
+
+        // Tear down anything still referencing the dead device so the reopen
+        // builds fresh surfaces/readers instead of layering on stale ones.
+        releaseCaptureImages();
+        if (mCameraCaptureSession != null) {
+            try { mCameraCaptureSession.close(); } catch (RuntimeException ignored) {}
+            mCameraCaptureSession = null;
+        }
+        // Close and recreate the capture ImageReaders: their buffers may have
+        // been left in a bad state by the error. openCamera() will recreate
+        // them, but only after closing the old references here to avoid leaks.
+        if (mImageReader0 != null) { try { mImageReader0.close(); } catch (RuntimeException ignored) {} mImageReader0 = null; }
+        if (mImageReader2 != null) { try { mImageReader2.close(); } catch (RuntimeException ignored) {} mImageReader2 = null; }
+
+        // Certain device errors require a brief cooldown for the OS subsystem to restart
+        long cooldownDelay = (errorCode == CameraDevice.StateCallback.ERROR_CAMERA_SERVICE) ? 1000 : 300;
+
+        new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                retryCount++;
+                Log.d(TAG, "Attempting camera reinitialization, try #" + retryCount);
+                // Call the existing open/setup method directly without hitting onCreate.
+                // startCameraThread() will (re)create the handler/executor if they were lost.
+                openCamera();
+            }
+        }, cooldownDelay);
+    }
 
     /**
      * Create a camera capture session to take a picture
@@ -1253,7 +1373,13 @@ public class Camera3D {
                     };
             pauseCameraPreviewSession();
             try {
-                mCameraCaptureSession.captureSingleRequest(captureBuilder.build(), cameraExecutor, captureSingleRequestListener);
+                // Route the capture callback through mCameraHandler (the same
+                // thread captureListener0/2 run on) via a HandlerExecutor. Using
+                // the generic cameraExecutor thread pool here was the root cause
+                // of the "pool-6-thread-1" crash: drainCaptureReader() ran on a
+                // different thread from the listeners, raced with the held
+                // imageL/imageR, and threw "maxImages already acquired".
+                mCameraCaptureSession.captureSingleRequest(captureBuilder.build(), new HandlerExecutor(mCameraHandler), captureSingleRequestListener);
             } catch (RuntimeException e) {
                 // Session became invalid between the null check and the request
                 // (e.g. surface destroyed). Recover: clear state, drop listeners,
