@@ -134,6 +134,7 @@ public class PhotoBooth extends PApplet {
 
     String[] help2 = {
             "Photo Booth Bluetooth Android Keyboard Functions:",
+            "Debug Toggle Display Frame Counter: D",
             "Cycle Display Mode: A",
             "Decrease Parallax: Minus (-)",
             "Increase Parallax: Plus (+) or Equals (=)",
