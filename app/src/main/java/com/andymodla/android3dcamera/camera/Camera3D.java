@@ -193,6 +193,15 @@ public class Camera3D {
     public final Object imageLock = new Object(); // synchronizes PImage pixel access between ImageReader and sketch threads
     public final AtomicBoolean captureInProgress = new AtomicBoolean(false);
 
+    // Guards against a re-entrant openCamera() while the device is still
+    // opening (between mCameraManager.openCamera() and onOpened/onError/
+    // onDisconnected). Without this, a second openCamera() call during that
+    // window passes the isCameraOpen() guard, recreates the ImageReaders
+    // (leaking the first set), and calls openCamera() again - which creates a
+    // second capture session that invalidates the first, producing the
+    // "Session has been closed" IllegalStateException in onConfigured.
+    private final AtomicBoolean mOpenInProgress = new AtomicBoolean(false);
+
     // Image processing got preview
     private final AtomicBoolean isProcessingLeft = new AtomicBoolean(false);
     private final AtomicBoolean isProcessingRight = new AtomicBoolean(false);
@@ -388,7 +397,18 @@ public class Camera3D {
         @Override
         public void surfaceCreated(@NonNull SurfaceHolder holder) {
             Log.d(TAG, "Surface holder surfaceCreated");
-            if (mSurfaceView0.isAttachedToWindow() && mSurfaceView2.isAttachedToWindow()) {
+            if (!(mSurfaceView0.isAttachedToWindow() && mSurfaceView2.isAttachedToWindow())) {
+                return;
+            }
+            // surfaceDestroyed now calls closeCamera(), so the device may be
+            // closed when this fires. Reopen it (which also rebuilds the
+            // readers/session) instead of calling createCameraPreviewSession()
+            // with a null mCameraDevice, which would silently no-op and leave
+            // the preview dead.
+            if (!isCameraOpen()) {
+                Log.d(TAG, "surfaceCreated: camera not open, calling openCamera()");
+                openCamera();
+            } else {
                 createCameraPreviewSession();
             }
         }
@@ -399,22 +419,18 @@ public class Camera3D {
 
         @Override
         public void surfaceDestroyed(@NonNull SurfaceHolder holder) {
-            if (null != mCameraDevice) {
-                mCameraDevice.close();
-                mCameraDevice = null;
-            }
-            if (mCameraCaptureSession != null) {
-                try {
-                    mCameraCaptureSession.stopRepeating();
-                    mCameraCaptureSession.abortCaptures();
-                } catch (CameraAccessException e) {
-                    Log.e(TAG, "Error stopping preview session", e);
-                }
-            }
-            // Closing the device here orphans mCameraCaptureSession (it is never
-            // nulled), so createCameraCaptureSession() then fails with a stale
-            // "Camera not ready" and the shutter appears dead. closeCamera()
-            // handles teardown in the correct order; nothing to do here.
+            Log.d(TAG, "Surface holder surfaceDestroyed");
+            // Full orderly teardown via closeCamera(): closes device, stops/aborts
+            // and closes the session, detaches listeners, closes all ImageReaders,
+            // releases pinned images, resets the preview busy flags, and stops the
+            // handler threads. The previous version only closed the device and
+            // stopRepeating()/abortCaptures() — it never nulled or closed the
+            // session, never closed the ImageReaders, and never cleared the
+            // isProcessing*/available flags, which leaked native buffers and
+            // could leave the preview in a stuck/black state on the next open.
+            // closeCamera() is null-safe and safe to call from the main thread
+            // (onPause already calls it here).
+            closeCamera();
         }
     };
 
@@ -520,17 +536,45 @@ public class Camera3D {
      */
     private void drainCaptureReader(ImageReader reader, final int which) {
         if (reader == null) return;
-        // Drain every pending image so all maxImages slots are freed.
-        // acquireNextImage() returns null when the queue is empty; if all
-        // slots are already acquired (held elsewhere) it throws, which we
-        // tolerate.
+        // Drain every pending (queued) image so all maxImages slots are freed.
+        // acquireNextImage() returns null when the queue is empty.
         try {
             Image img;
             while ((img = reader.acquireNextImage()) != null) {
                 try { img.close(); } catch (IllegalStateException ignored) {}
             }
         } catch (IllegalStateException ise) {
-            Log.w(TAG, "drainCaptureReader: slots still held, skipping (" + ise.getMessage() + ")");
+            // All maxImages slots are already ACQUIRED (held in imageL/imageR),
+            // not queued, so acquireNextImage() cannot reach them. The held
+            // pair is stale (the capture cycle that produced it is over) - close
+            // it directly to free the slots, then retry the drain once. This
+            // recovers without restarting the app and without raising maxImages.
+            Log.w(TAG, "drainCaptureReader " + which + ": slots held by stale pair, releasing (" + ise.getMessage() + ")");
+            releaseHeldCapturePair();
+            try {
+                Image img;
+                while ((img = reader.acquireNextImage()) != null) {
+                    try { img.close(); } catch (IllegalStateException ignored) {}
+                }
+            } catch (IllegalStateException ise2) {
+                Log.w(TAG, "drainCaptureReader " + which + ": still held after release, giving up this cycle");
+            }
+        }
+    }
+
+    /**
+     * Close any JPEG capture images currently held in imageL/imageR and null
+     * them. Unlike releaseCaptureImages() this does NOT detach the listeners -
+     * use it mid-stream (between captures) to free slots stranded by an
+     * incomplete stereo pair without disrupting the next shot.
+     *
+     * Runs on mCameraHandler (same thread as captureListener0/2 and the
+     * capture callback), so it cannot race with them.
+     */
+    private void releaseHeldCapturePair() {
+        synchronized (this) {
+            if (imageL != null) { try { imageL.close(); } catch (IllegalStateException ignored) {} imageL = null; }
+            if (imageR != null) { try { imageR.close(); } catch (IllegalStateException ignored) {} imageR = null; }
         }
     }
 	
@@ -657,19 +701,37 @@ public class Camera3D {
     public void openCamera() {
         if (isCameraOpen()) {
             Log.d(TAG, "openCamera() already open cameraWidth=" + cameraWidth + " cameraHeight=" + cameraHeight);
-            // Device is open but the preview session was lost (e.g. surface
-            // destroyed). Rebuild it instead of returning early, otherwise the
-            // shutter never works again until a full pause/resume cycle.
-//            if (mCameraCaptureSession == null) {
-//                Log.d(TAG, "openCamera() device open but session missing recreating preview session");
-//                recreatePreviewSession();
-//            } else {
-//                Log.d(TAG, "openCamera() already open cameraWidth=" + cameraWidth + " cameraHeight=" + cameraHeight);
-//            }
-            //return;
+            // Device is open but the preview session may have been lost (e.g.
+            // surface destroyed). Rebuild just the session and return - do NOT
+            // fall through, otherwise we leak the existing ImageReaders (their
+            // references get overwritten without close()) and call
+            // mCameraManager.openCamera() again on an already-open device.
+            if (mCameraCaptureSession == null) {
+                Log.d(TAG, "openCamera() device open but session missing recreating preview session");
+                recreatePreviewSession();
+            }
+            return;
         }
+        // A previous openCamera() is still in flight (device not open yet):
+        // ignore the re-entrant call instead of recreating readers and calling
+        // mCameraManager.openCamera() a second time, which would create a
+        // duplicate session and invalidate the in-flight one (the source of the
+        // "Session has been closed" IllegalStateException in onConfigured).
+        if (mOpenInProgress.get()) {
+            Log.d(TAG, "openCamera() already opening in progress, ignoring re-entrant call");
+            return;
+        }
+        mOpenInProgress.set(true);
         Log.d(TAG, "openCamera() cameraWidth=" + cameraWidth + " cameraHeight=" + cameraHeight);
         startCameraThread();
+        // Defensive: clear preview-frame busy flags in case a prior teardown
+        // (closeCamera / surfaceDestroyed / onError) left them stuck true, which
+        // would silently drop all preview frames and produce a black screen.
+        isProcessingLeft.set(false);
+        isProcessingRight.set(false);
+        available.set(false);
+        imageLeft = null;
+        imageRight = null;
 
         // Setup ImageReaders for image capture
         captureCameraWidth = CAMERA_WIDTH_DEFAULT; // use default image camera width lens pixels
@@ -779,7 +841,8 @@ public class Camera3D {
         try {
             mCameraCaptureSession.setRepeatingRequest(previewRequestBuilder.build(), null, mCameraHandler);
         } catch (CameraAccessException e) {
-            clearCamera();
+            Log.e(TAG, "setExposureCompensation failed, attempting recovery", e);
+            handleCameraRecovery(CameraDevice.StateCallback.ERROR_CAMERA_DEVICE);
         }
     }
 
@@ -827,6 +890,9 @@ public class Camera3D {
         @Override
         public void onOpened(@NonNull CameraDevice camera) { // Open camera
             mCameraDevice = camera;
+            // Open completed: clear the in-progress guard so future openCamera()
+            // calls (after a close) are not ignored.
+            mOpenInProgress.set(false);
             // Camera came back (possibly after a recovery cycle) — reset the
             // retry counter so future transient errors get a fresh budget.
             retryCount = 0;
@@ -843,6 +909,7 @@ public class Camera3D {
 
         @Override
         public void onDisconnected(@NonNull CameraDevice camera) { // Turn off camera
+            mOpenInProgress.set(false);
             if (null != mCameraDevice) {
                 try { mCameraDevice.close(); } catch (RuntimeException ignored) {}
                 mCameraDevice = null;
@@ -860,6 +927,7 @@ public class Camera3D {
 
         @Override
         public void onError(@NonNull CameraDevice camera, int error) {
+            mOpenInProgress.set(false);
             Log.e(TAG, "Camera " + camera.getId() + " hardware failure error=" + error);
             if (mCameraDevice != null) {
                 try { mCameraDevice.close(); } catch (RuntimeException ignored) {}
@@ -884,6 +952,11 @@ public class Camera3D {
 
     public void closeCamera() {
         Log.d(TAG, "closeCamera()");
+        // Clear the open-in-progress guard so a subsequent openCamera() (e.g.
+        // from onResume or recovery) is not ignored. Safe: if no open is in
+        // flight this is a no-op; if one is, the device's onOpened/onError will
+        // also clear it but we must not strand the guard here.
+        mOpenInProgress.set(false);
         parameters.setExposureCompensationIndex(exposureCompensationIndex); // save exposure compensation index in parameters
 
         if (mCameraCaptureSession != null) {
@@ -892,6 +965,12 @@ public class Camera3D {
                 mCameraCaptureSession.abortCaptures();
             } catch (CameraAccessException e) {
                 Log.e(TAG, "Error stopping preview session", e);
+            } catch (IllegalStateException ise) {
+                // Session was already closed (e.g. a concurrent session was
+                // created, or the device dropped). This is a normal teardown
+                // race - swallow it so closeCamera() can finish releasing the
+                // device/readers instead of crashing the caller.
+                Log.w(TAG, "closeCamera: session already closed", ise);
             }
         }
 
@@ -922,6 +1001,18 @@ public class Camera3D {
             if (imageLeft != null) { imageLeft.close(); imageLeft = null; }
             if (imageRight != null) { imageRight.close(); imageRight = null; }
         }
+        // CRITICAL: clear the preview-frame busy flags. If onPause() lands while
+        // a stereo pair is mid-flight (left listener already set
+        // isProcessingLeft=true and stored imageLeft, but the matching right
+        // frame never arrived), processPreviewFrames() never ran for that pair
+        // and the flag is never cleared. After reopen the left listener would
+        // then drop EVERY frame because isProcessingLeft.get() is true, no pair
+        // ever completes, available stays false, and PhotoBooth draws a black
+        // screen (menu still visible). Resetting here and in openCamera()
+        // guarantees a clean slate for the next preview session.
+        isProcessingLeft.set(false);
+        isProcessingRight.set(false);
+        available.set(false);
 
         if (mCameraCaptureSession != null) {
             try {
@@ -1035,7 +1126,8 @@ public class Camera3D {
                 mCameraCaptureSession.stopRepeating();
                 mCameraCaptureSession.abortCaptures();
             } catch (CameraAccessException e) {
-                clearCamera();
+                Log.e(TAG, "pauseCameraPreviewSession failed, attempting recovery", e);
+                handleCameraRecovery(CameraDevice.StateCallback.ERROR_CAMERA_DEVICE);
             }
         }
     }
@@ -1046,7 +1138,8 @@ public class Camera3D {
             try {
                 mCameraCaptureSession.setRepeatingRequest(previewRequestBuilder.build(), null, mCameraHandler);
             } catch (CameraAccessException e) {
-                clearCamera();
+                Log.e(TAG, "resumeCameraPreviewSession failed, attempting recovery", e);
+                handleCameraRecovery(CameraDevice.StateCallback.ERROR_CAMERA_DEVICE);
             }
         }
     }
@@ -1129,8 +1222,12 @@ public class Camera3D {
                 } catch (CameraAccessException e) {
                     Log.d(TAG, "Camera Id: " + mCameraDevice.getId() + " Failed to start preview: " + e.getMessage());
                 } catch (IllegalStateException ise) {
-                    Log.d(TAG, "createProcessingPreviewSession onConfigured IllegalStateException - null out mCameraDevice and retry open camera");
-                    clearCamera();
+                    // Session became invalid mid-config (device closed, surface
+                    // torn down, etc.). Route through bounded recovery instead of
+                    // clearCamera()->restartApp(), which previously caused an
+                    // infinite startup restart loop when this fired on every launch.
+                    Log.w(TAG, "createProcessingPreviewSession onConfigured IllegalStateException, attempting recovery", ise);
+                    handleCameraRecovery(CameraDevice.StateCallback.ERROR_CAMERA_DEVICE);
                 }
             }
 
@@ -1168,9 +1265,25 @@ public class Camera3D {
                 }
             };
 
+    /**
+     * Teardown-only: close the device, session, capture readers/images and reset
+     * the preview busy flags. Does NOT restart the app.
+     *
+     * IMPORTANT: this must NOT call restartApp(). Earlier versions did, which
+     * turned any transient CameraAccessException/IllegalStateException during
+     * startup (createProcessingPreviewSession.onConfigured), pause/resume, or
+     * setExposureCompensation into a full process restart. When the same error
+     * recurred on the next launch the app entered an infinite restart loop.
+     * App restart is reserved for handleCameraRecovery()'s last-resort path
+     * after MAX_RETRIES bounded reopen attempts.
+     */
     private void clearCamera() {
-        Log.e(TAG, "clearCamera()");
+        Log.e(TAG, "clearCamera() teardown-only");
         if (mCameraCaptureSession != null) {
+            try {
+                mCameraCaptureSession.stopRepeating();
+                mCameraCaptureSession.abortCaptures();
+            } catch (Exception ignored) {}
             try { mCameraCaptureSession.close(); } catch (RuntimeException ignored) {}
             mCameraCaptureSession = null;
         }
@@ -1178,8 +1291,17 @@ public class Camera3D {
             try { mCameraDevice.close(); } catch (RuntimeException ignored) {}
             mCameraDevice = null;
         }
+        // Detach capture listeners and release pinned JPEG images.
         releaseCaptureImages();
-        ((MainActivity)context).restartApp();
+        // Reset preview-frame busy flags so a later reopen isn't starved.
+        isProcessingLeft.set(false);
+        isProcessingRight.set(false);
+        available.set(false);
+        synchronized (this) {
+            if (imageLeft != null) { try { imageLeft.close(); } catch (IllegalStateException ignored) {} imageLeft = null; }
+            if (imageRight != null) { try { imageRight.close(); } catch (IllegalStateException ignored) {} imageRight = null; }
+        }
+        captureInProgress.set(false);
     }
 
     /**
@@ -1206,26 +1328,35 @@ public class Camera3D {
             return;
         }
         if (retryCount >= MAX_RETRIES) {
-            Log.e(TAG, "Max retries reached. Camera hardware is completely unresponsive.");
-            // Fall back to a full app restart as a last resort.
+            Log.e(TAG, "Max retries reached. Camera hardware is completely unresponsive - restarting app as last resort.");
+            // Full teardown, then restart the app. This is the ONLY path that
+            // calls restartApp(), so a transient startup error can no longer
+            // loop the app: it must first exhaust MAX_RETRIES bounded reopen
+            // attempts, each of which resets retryCount to 0 on success.
             clearCamera();
+            if (!((MainActivity) context).isFinishing()) {
+                ((MainActivity) context).restartApp();
+            }
             return;
         }
 
-        // Tear down anything still referencing the dead device so the reopen
-        // builds fresh surfaces/readers instead of layering on stale ones.
-        releaseCaptureImages();
-        if (mCameraCaptureSession != null) {
-            try { mCameraCaptureSession.close(); } catch (RuntimeException ignored) {}
-            mCameraCaptureSession = null;
-        }
-        // Close and recreate the capture ImageReaders: their buffers may have
-        // been left in a bad state by the error. openCamera() will recreate
-        // them, but only after closing the old references here to avoid leaks.
-        if (mImageReader0 != null) { try { mImageReader0.close(); } catch (RuntimeException ignored) {} mImageReader0 = null; }
-        if (mImageReader2 != null) { try { mImageReader2.close(); } catch (RuntimeException ignored) {} mImageReader2 = null; }
-
-        // Certain device errors require a brief cooldown for the OS subsystem to restart
+        // FULL teardown before reopen. openCamera() early-returns when the
+        // device is still open (isCameraOpen()==true), so a partial teardown
+        // here would leave the capture ImageReaders (mImageReader0/2) null
+        // while the device/session stay alive - the next shutter press then
+        // passes the mCameraDevice/mCameraCaptureSession null guard and NPEs at
+        // captureBuilder.addTarget(mImageReader0.getSurface()). Calling
+        // closeCamera() nulls mCameraDevice so openCamera() runs the complete
+        // rebuild path and recreates ALL readers + device + session together.
+        //
+        // Do the teardown AND the reopen on the MAIN thread (posted), not on
+        // this callback thread. handleCameraRecovery is invoked from camera
+        // session callbacks that run on cameraExecutor (e.g. pool-3-thread-1);
+        // calling closeCamera()->stopCameraThread() from there shuts that very
+        // executor down from inside its own callback and blocks it, and any
+        // IllegalStateException from a half-closed session would crash that
+        // thread. Posting to the main thread serializes teardown+reopen and
+        // matches how onPause/onResume already drive the camera.
         long cooldownDelay = (errorCode == CameraDevice.StateCallback.ERROR_CAMERA_SERVICE) ? 1000 : 300;
 
         new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
@@ -1233,8 +1364,16 @@ public class Camera3D {
             public void run() {
                 retryCount++;
                 Log.d(TAG, "Attempting camera reinitialization, try #" + retryCount);
-                // Call the existing open/setup method directly without hitting onCreate.
-                // startCameraThread() will (re)create the handler/executor if they were lost.
+                // Full teardown: close device/session/threads/listeners and
+                // release pinned images + reset preview busy flags.
+                closeCamera();
+                // closeCamera() does not close the JPEG capture ImageReaders;
+                // close them explicitly so openCamera() recreates fresh ones
+                // instead of overwriting stale references (native buffer leak).
+                if (mImageReader0 != null) { try { mImageReader0.close(); } catch (RuntimeException ignored) {} mImageReader0 = null; }
+                if (mImageReader2 != null) { try { mImageReader2.close(); } catch (RuntimeException ignored) {} mImageReader2 = null; }
+                // Reopen: openCamera() recreates the handler/executor, all
+                // ImageReaders, opens the device and builds the preview session.
                 openCamera();
             }
         }, cooldownDelay);
@@ -1247,10 +1386,22 @@ public class Camera3D {
         Log.d(TAG, "createCameraCaptureSession() captureInProgress=" + captureInProgress.get());
         if (captureInProgress.get()) return;
 
-        if (mCameraDevice == null || mCameraCaptureSession == null) {
+        if (mCameraDevice == null || mCameraCaptureSession == null
+                || mImageReader0 == null || mImageReader2 == null) {
+            // Defensive: also guard the JPEG capture readers. A recovery cycle
+            // that nulled mImageReader0/2 without a full reopen would otherwise
+            // NPE at captureBuilder.addTarget(mImageReader0.getSurface()).
             Toast.makeText(context, "Camera not ready", Toast.LENGTH_SHORT).show();
             if (mCameraDevice == null) Log.e(TAG, "mCameraDevice is null");
             if (mCameraCaptureSession == null) Log.e(TAG, "mCameraCaptureSession is null");
+            if (mImageReader0 == null) Log.e(TAG, "mImageReader0 is null");
+            if (mImageReader2 == null) Log.e(TAG, "mImageReader2 is null");
+            // If only the capture readers are missing (device+session alive),
+            // attempt a recovery so the next shutter works instead of staying
+            // permanently broken.
+            if (mCameraDevice != null && mCameraCaptureSession != null) {
+                handleCameraRecovery(CameraDevice.StateCallback.ERROR_CAMERA_DEVICE);
+            }
             return;
         }
 //            // session and retry once. Session never configured ? tell the user.
@@ -1328,13 +1479,18 @@ public class Camera3D {
                             Log.d(TAG, "Capture Request completed successfully");
                             resumeCameraPreviewSession();
                             captureInProgress.set(false);  //  done capturing images
-                            // Free any leftover JPEG buffers BEFORE the next shot.
-                            // In continuous mode saveImageFiles() runs on a background
-                            // thread and lags behind capture; unconsumed images pin
-                            // every ImageReader buffer slot, which produces
-                            // "Unable to acquire a buffer item" warnings and finally
-                            // REASON_ERROR. This callback always runs on mCameraHandler,
-                            // the same thread as captureListener0/2, so it cannot race.
+                            // The capture cycle is over: force-close any image still
+                            // held in imageL/imageR. If the pair completed, saveImageFiles()
+                            // already closed them (they are null - no-op). If only one side
+                            // arrived (rare sensor/timing hiccup, ~1 in 200+ shots), that
+                            // image would otherwise stay acquired forever, pinning a
+                            // maxImages slot each time it happens until the reader is
+                            // exhausted ("maxImages already acquired"). Bounding image
+                            // lifetime to one capture cycle eliminates the slow leak
+                            // WITHOUT raising maxImages (avoids the OOM you hit at 6).
+                            // This runs on mCameraHandler, same thread as the listeners,
+                            // so it cannot race with onImageAvailable().
+                            releaseHeldCapturePair();
                             drainCaptureReader(mImageReader0, 0);
                             drainCaptureReader(mImageReader2, 1);
                             if (((MainActivity) context).getContinuousMode() && ((MainActivity) context).getContinuousCounter() > 0) {
@@ -1364,7 +1520,10 @@ public class Camera3D {
                             }
                             resumeCameraPreviewSession();
                             captureInProgress.set(false);  //  done capturing images
-                            // Release pinned buffers so the next manual shot works
+                            // Capture failed: any image that did arrive is useless now.
+                            // Force-close the held pair (same leak fix as onCaptureCompleted)
+                            // before draining queued buffers.
+                            releaseHeldCapturePair();
                             drainCaptureReader(mImageReader0, 0);
                             drainCaptureReader(mImageReader2, 1);
                             ((MainActivity) context).setContinuousMode(false);

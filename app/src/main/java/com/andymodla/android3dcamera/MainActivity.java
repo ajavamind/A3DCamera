@@ -1291,6 +1291,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void restartApp() {
+        showToast("Restarting Camera Buffer Overflow!");
         Intent intent = getPackageManager().getLaunchIntentForPackage(getPackageName());
         if (intent != null) {
             // Clear the back stack and start as a new task
