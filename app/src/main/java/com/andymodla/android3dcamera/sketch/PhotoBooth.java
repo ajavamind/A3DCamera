@@ -35,18 +35,10 @@ import java.util.Collections;
 import java.util.Date;
 
 
-public class PhotoBooth extends PApplet {
+public class PhotoBooth extends PApplet implements IGui {
     private static final boolean DEBUG = true; //MyDebug.DEBUG;
     private static final boolean testMode = false;
     private static boolean testCheckDraw = false;
-
-    int black = color(0);
-    int white = color(255);
-    int yellow = color(255, 255, 128);
-    int magenta = color(255, 0, 128);
-    int green = color(0, 255, 128);
-
-    int gray = color(128);
 
     MainActivity mainActivity;
     Camera3D stereoCamera;  // The stereo camera used with the device
@@ -270,19 +262,19 @@ public class PhotoBooth extends PApplet {
         textSize(36);
         textAlign(CENTER, CENTER);
         fill(yellow);
-        int level = 72;
+        int row = 72;
         if (parameters.isPhotoBoothCameraMode()) {
             text("3D Photo Booth", (float) width / 4, (float) height / 2); // left
             text("3D Photo Booth", ((float) 3 * width / 4) + STEREO_OFFSET, (float) height / 2); // right
         } else {
             text("3D Stereoscope", (float) width / 4, (float) height / 2);  // left
             text("3D Stereoscope", ((float) 3 * width / 4) + TITLE_STEREO_OFFSET, (float) height / 2); // right
-            text("Camera", (float) width / 4, (float) (height / 2) + level);  // left
-            text("Camera", ((float) 3 * width / 4) + TITLE_STEREO_OFFSET, (float) (height / 2) + level); // right
+            text("Camera", (float) width / 4, (float) (height / 2) + row);  // left
+            text("Camera", ((float) 3 * width / 4) + TITLE_STEREO_OFFSET, (float) (height / 2) + row); // right
         }
         textSize(24);
-        text("Please wait ...", (float) width / 4, (float) (height / 2) + 4 * level);  // left
-        text("Please wait ...", ((float) 3 * width / 4) + TITLE_STEREO_OFFSET, (float) (height / 2) + 4 * level); // right
+        text("Please wait ...", (float) width / 4, (float) (height / 2) + 4 * row);  // left
+        text("Please wait ...", ((float) 3 * width / 4) + TITLE_STEREO_OFFSET, (float) (height / 2) + 4 * row); // right
 
         if (DEBUG)
             PApplet.println("PhotoBooth setup done in " + n2s(System.nanoTime() - t0) + " seconds");
@@ -567,7 +559,7 @@ public class PhotoBooth extends PApplet {
         processKeyCode();
 
         background(black);
-        //background(128);  // for debug
+        //background(gray);  // for debug
 
         if (reviewTimeout > 0) {
             //if (DEBUG) println("reviewTimeout = " + reviewTimeout + "  ");
@@ -671,14 +663,14 @@ public class PhotoBooth extends PApplet {
                 }
             } else if (state == MainActivity.REVIEW_PHOTO_STATE) {
                 textAlign(RIGHT);
-                fill(green);
+                fill(lightgreen);
                 text("Print", width - 50, height - 48);
                 if (parameters.getSbsCropPrint() && displayMode == DisplayMode.SBS) {
                     text("Crop", width - 50, height - 96);
                 }
             } else if (state == MainActivity.REVIEW_AI_EDIT_STATE) {
                 textAlign(RIGHT);
-                fill(magenta);
+                fill(lightmagenta);
                 text("AI Edit", width - 50, height - 48);
 
             }
@@ -877,7 +869,7 @@ public class PhotoBooth extends PApplet {
         // show any display pause with rotating text
         if (rotating) {
             textSize(48);
-            fill(IGui.dimyellow);
+            fill(dimyellow);
             textAlign(CENTER, CENTER);
             rotatingIndex = (rotatingIndex + 1) % rotatingText.length;
             text(rotatingText[rotatingIndex], width / 2, height / 2);
@@ -1773,7 +1765,7 @@ public class PhotoBooth extends PApplet {
 
     private void clearImage(PImage img) {
         img.loadPixels();
-        java.util.Arrays.fill(img.pixels, 0); // fill black
+        java.util.Arrays.fill(img.pixels, black); // fill black
         img.updatePixels();
     }
 

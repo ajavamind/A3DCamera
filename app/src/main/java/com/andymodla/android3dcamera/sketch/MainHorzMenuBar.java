@@ -61,9 +61,9 @@ class MainHorzMenuBar implements IGui {
         // bottom menu bar
         downArrowKey = new MenuKey(base, KeyEvent.KEYCODE_DPAD_DOWN, "", menuTextSize, yellow, backTransparent);
         leftArrowKey = new MenuKey(base, KeyEvent.KEYCODE_DPAD_LEFT, "", menuTextSize, yellow, backTransparent);
-        minusKey = new MenuKey(base, KeyEvent.KEYCODE_MINUS, "EV-", menuTextSize, yellow, backTransparent);
+        minusKey = new MenuKey(base, KeyEvent.KEYCODE_MINUS, "-EV", menuTextSize, yellow, backTransparent);
         okKey = new MenuKey(base, MainActivity.BUTTON_B_KEY, "LIVEVIEW\nEV", menuTextSize, yellow, backTransparent);
-        plusKey = new MenuKey(base, KeyEvent.KEYCODE_PLUS,  "EV+", menuTextSize, yellow, backTransparent);
+        plusKey = new MenuKey(base, KeyEvent.KEYCODE_PLUS,  "+EV", menuTextSize, yellow, backTransparent);
         rightArrowKey = new MenuKey(base, KeyEvent.KEYCODE_DPAD_RIGHT, "" , menuTextSize, yellow, backTransparent);
         upArrowKey = new MenuKey(base, KeyEvent.KEYCODE_DPAD_UP, "", menuTextSize, yellow, backTransparent);
 
@@ -133,10 +133,10 @@ class MainHorzMenuBar implements IGui {
                 menuKey[8].setActive(false);
                 menuKey[8].setVisible(false);
                 menuKey[9].setKeyColor(yellow);
-                menuKey[9].setText("EV-");
+                menuKey[9].setText("-EV");
                 menuKey[10].setText("LIVEVIEW\nEV"+" B");
                 menuKey[11].setKeyColor(yellow);
-                menuKey[11].setText("EV+");
+                menuKey[11].setText("+EV");
                 menuKey[12].setText("");
                 menuKey[12].setActive(false);
                 menuKey[12].setVisible(false);

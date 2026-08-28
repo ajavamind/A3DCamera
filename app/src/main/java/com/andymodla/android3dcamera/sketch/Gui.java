@@ -3,7 +3,7 @@ package com.andymodla.android3dcamera.sketch;
 import processing.core.PApplet;
 
 
-// The GUI assumes the sketch screen is at (0,0)
+// The GUI assumes the sketch screen is at (0,0) top left corner of the display
 public class Gui {
     static final boolean DEBUG = false;
 

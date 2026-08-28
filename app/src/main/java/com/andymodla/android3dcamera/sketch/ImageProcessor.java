@@ -36,7 +36,7 @@ import java.util.Collections;
 
 // Apply filters to the live view
 
-class ImageProcessor {
+class ImageProcessor implements IGui {
     private static final int FONT_SIZE = 24;
     private static final boolean DEBUG = MyDebug.DEBUG;
     PApplet pApplet;
@@ -56,23 +56,6 @@ class ImageProcessor {
 
     // Processing filters available are:
     String[] filters = {"NONE", "THRESHOLD", "GRAY", "OPAQUE", "INVERT", "POSTERIZE", "BLUR", "ERODE", "DILATE"};
-    // Graphical User Interface
-    int black = pApplet.color(0);   // black
-    int gray = pApplet.color(128);
-    int graytransparent = pApplet.color(128, 128, 128, 128);
-    int darktransparent = pApplet.color(32, 32, 32, 128);
-    int white = pApplet.color(255); // white
-    int red = pApplet.color(255, 0, 0);
-    int aqua = pApplet.color(128, 0, 128);
-    int lightblue = pApplet.color(64, 64, 128);
-    int darkblue = pApplet.color(32, 32, 64);
-    int blue = pApplet.color(0, 0, 255);
-    int hintblue = pApplet.color(192, 128, 255);
-    int yellow = pApplet.color(255, 204, 0);
-    int silver = pApplet.color(193, 194, 186);
-    int brown = pApplet.color(69, 66, 61);
-    int bague = pApplet.color(183, 180, 139);
-    int offWhite = pApplet.color(224);
 
     int filterNum; // selects the filter to use
     int verticalOffset; // for 3D photo Side by Side correcton
