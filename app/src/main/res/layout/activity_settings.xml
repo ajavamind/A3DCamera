@@ -56,7 +56,7 @@
             android:layout_marginBottom="12dp">
 <!--
             <RadioButton
-                android:id="@+id/rb_basic_camera_mode"
+                android:id="@+id/rb_simple_camera_mode"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Basic Camera Mode"
@@ -66,10 +66,20 @@
                 android:layout_marginBottom="4dp" />
 -->
             <RadioButton
+                android:id="@+id/rb_basic_camera_mode"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Basic 3D Camera Mode"
+                android:textColor="#FFFFFF"
+                android:textSize="13sp"
+                android:buttonTint="#4FC3F7"
+                android:layout_marginBottom="4dp" />
+
+            <RadioButton
                 android:id="@+id/rb_stereoscope_camera_mode"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Stereoscope Camera Mode"
+                android:text="Stereoscope 3D Camera Mode"
                 android:textColor="#FFFFFF"
                 android:textSize="13sp"
                 android:buttonTint="#4FC3F7"
@@ -79,7 +89,7 @@
                 android:id="@+id/rb_photo_booth_camera_mode"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Photo Booth Camera Mode"
+                android:text="Photo Booth 3D Camera Mode"
                 android:textColor="#FFFFFF"
                 android:textSize="13sp"
                 android:buttonTint="#4FC3F7"

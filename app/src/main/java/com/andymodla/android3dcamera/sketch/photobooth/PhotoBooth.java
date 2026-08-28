@@ -264,17 +264,20 @@ public class PhotoBooth extends PApplet implements IGui {
         fill(yellow);
         int row = 72;
         if (parameters.isPhotoBoothCameraMode()) {
-            text("3D Photo Booth", (float) width / 4, (float) height / 2); // left
-            text("3D Photo Booth", ((float) 3 * width / 4) + STEREO_OFFSET, (float) height / 2); // right
+            text("3D Photo Booth", (float) width / 2, (float) height / 2); // left
+            textSize(24);
+            text("Please wait ...", (float) width / 2, (float) (height / 2) + 4 * row);  // left
+        } else if (parameters.isStereoscopeCameraMode()) {
+            text("3D Stereoscope Camera", (float) width / 4, (float) height / 2);  // left
+            text("3D Stereoscope Camera", ((float) 3 * width / 4) + TITLE_STEREO_OFFSET, (float) height / 2); // right
+            textSize(24);
+            text("Please wait ...", (float) width / 4, (float) (height / 2) + 4 * row);  // left
+            text("Please wait ...", ((float) 3 * width / 4) + TITLE_STEREO_OFFSET, (float) (height / 2) + 4 * row); // right
         } else {
-            text("3D Stereoscope", (float) width / 4, (float) height / 2);  // left
-            text("3D Stereoscope", ((float) 3 * width / 4) + TITLE_STEREO_OFFSET, (float) height / 2); // right
-            text("Camera", (float) width / 4, (float) (height / 2) + row);  // left
-            text("Camera", ((float) 3 * width / 4) + TITLE_STEREO_OFFSET, (float) (height / 2) + row); // right
+            text("3D Camera", (float) width / 2, (float) height / 2);  // center
+            textSize(24);
+            text("Please wait ...", (float) width / 2, (float) (height / 2) + 4 * row);  // left
         }
-        textSize(24);
-        text("Please wait ...", (float) width / 4, (float) (height / 2) + 4 * row);  // left
-        text("Please wait ...", ((float) 3 * width / 4) + TITLE_STEREO_OFFSET, (float) (height / 2) + 4 * row); // right
 
         if (DEBUG)
             PApplet.println("PhotoBooth setup done in " + n2s(System.nanoTime() - t0) + " seconds");
@@ -342,7 +345,7 @@ public class PhotoBooth extends PApplet implements IGui {
     }
 
     public void toggleShowMenu() {
-        if (parameters.isStereoscopeCameraMode()) {
+        if (parameters.isStereoscopeCameraMode() || parameters.isBasicCameraMode()) {
             showMenu = !showMenu;
             update = true;
         }
@@ -447,7 +450,7 @@ public class PhotoBooth extends PApplet implements IGui {
     }
 
     public void setReviewTimeout(int reviewTimeout) {
-        if (parameters.getAutoReview() && parameters.isBasicCameraMode()) {
+        if (parameters.getAutoReview() && parameters.isSimpleCameraMode()) {
             this.reviewTimeout = MAX_REVIEW_TIMEOUT_SECONDS * displayFPS;
         } else if (reviewTimeout == 0) {
             this.reviewTimeout = 2;  // review timeout in frames

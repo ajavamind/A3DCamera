@@ -72,9 +72,10 @@ class ParamStore {
             private final Context context;
 
             // Camera application modes
-            public static final int STEREOSCOPE_MODE = 0;
-            public static final int PHOTO_BOOTH_MODE = 1;
-            volatile int cameraMode = STEREOSCOPE_MODE;
+            public static final int BASIC_MODE = 1;
+            public static final int STEREOSCOPE_MODE = 2;
+            public static final int PHOTO_BOOTH_MODE = 3;
+            volatile int cameraMode = BASIC_MODE;
 
 //            public static final int BASIC_MODE = 0;
 //            public static final int STEREOSCOPE_MODE = 1;
@@ -233,9 +234,13 @@ class ParamStore {
             }
 
             //------------------------------------------------------------------------------
-
+            // Camera modes
+            public boolean isSimpleCameraMode() { // This mode does not use the photobooth sketch!
+                return false;
+            }
+            // The following three functions use photo booth sketch:
             public boolean isBasicCameraMode() {
-                return false; //(getCameraMode() == BASIC_MODE);
+                return (getCameraMode() == BASIC_MODE);
             }
 
             public boolean isStereoscopeCameraMode() {
@@ -679,8 +684,8 @@ class ParamStore {
 
             ParamStore cameraModeStore = new ParamStore(
                     "mode", "cameraMode", "Application Camera Mode",
-                    "getCameraMode", "setCameraMode", int.class, "0",
-                    "Configures application camera mode: Stereoscope, Photo Booth."
+                    "getCameraMode", "setCameraMode", int.class, "1",
+                    "Application camera mode: Simple 3D Camera, Basic 3D Camera, Stereoscope 3D Camera, Photo Booth."
             );
 
             ParamStore isBlankScreenStore = new ParamStore(

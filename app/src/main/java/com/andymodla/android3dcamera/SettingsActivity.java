@@ -413,19 +413,21 @@ public class SettingsActivity extends AppCompatActivity {
         // Camera Mode from RadioGroup
         checkedId = rgCameraMode.getCheckedRadioButtonId();
         int cameraMode;
-        if (checkedId == R.id.rb_stereoscope_camera_mode) {
-            cameraMode = 0;
-        } else {
-            cameraMode = 1;
-        }
-
-//        if (checkedId == R.id.rb_basic_camera_mode) {
+//        if (checkedId == R.id.rb_stereoscope_camera_mode) {
 //            cameraMode = 0;
-//        } else if (checkedId == R.id.rb_stereoscope_camera_mode) {
-//            cameraMode = 1;
 //        } else {
-//            cameraMode = 2;
+//            cameraMode = 1;
 //        }
+
+        if (checkedId == R.id.rb_basic_camera_mode) {
+            cameraMode = 1;
+        } else if (checkedId == R.id.rb_stereoscope_camera_mode) {
+            cameraMode = 2;
+        } else if (checkedId == R.id.rb_photo_booth_camera_mode){
+            cameraMode = 3;
+        } else {
+            cameraMode = 0;
+        }
         parameters.setCameraMode(cameraMode);
 
         // --- Booleans ---
