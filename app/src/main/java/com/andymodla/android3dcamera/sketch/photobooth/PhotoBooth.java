@@ -210,11 +210,15 @@ public class PhotoBooth extends PApplet implements IGui {
 
     public void reloadLastReviewImage() {
         int index = sbsImageFiles.size()-1;
-        if (index>0) reloadReviewImage(index);
+        if (index >= 0) reloadReviewImage(index);
     }
 
     private void reloadReviewImage(int index) {
         if (DEBUG) PApplet.println("PhotoBooth reloadImage() index=" + index);
+        if (sbsImageFiles.size() <= 0) {
+            if (DEBUG) println("sbsImageFiles size="+sbsImageFiles.size());
+            return;
+        }
         PImage sbsImage = loadImage(sbsImageFiles.get(index));
         if (sbsImage != null) {
             //((Bitmap)media.leftReview.getNative()).recycle();
@@ -495,6 +499,9 @@ public class PhotoBooth extends PApplet implements IGui {
 
     private void setReviewLabel(String prefix) {
         if (DEBUG) PApplet.println("PhotoBooth setReviewLabel()");
+        if (sbsImageFiles.size() <= 0) {
+            return;
+        }
         if (currentIndex >= 0) {
             String fullPath = sbsImageFiles.get(currentIndex);
             media.setReviewFilePath(fullPath);

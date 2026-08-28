@@ -8,7 +8,7 @@ android {
 
     defaultConfig {
         applicationId "com.andymodla.android3dcamera"
-        minSdk 31
+        minSdk 34
         targetSdk 34
         versionCode 20
         versionName "3.0"

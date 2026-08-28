@@ -684,7 +684,7 @@ class ParamStore {
 
             ParamStore cameraModeStore = new ParamStore(
                     "mode", "cameraMode", "Application Camera Mode",
-                    "getCameraMode", "setCameraMode", int.class, "1",
+                    "getCameraMode", "setCameraMode", int.class, "2", // default Stereoscope 3D Camera
                     "Application camera mode: Simple 3D Camera, Basic 3D Camera, Stereoscope 3D Camera, Photo Booth."
             );
 

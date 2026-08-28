@@ -2,6 +2,7 @@ package com.andymodla.android3dcamera;
 
 import static android.Manifest.permission.CAMERA;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.content.Context;
@@ -32,14 +33,19 @@ import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
+import androidx.core.content.ContextCompat;
 import com.andymodla.android3dcamera.camera.Camera3D;
 import com.andymodla.android3dcamera.camera.CameraInfoUtil;
 import com.andymodla.android3dcamera.sketch.photobooth.PhotoBooth;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -60,6 +66,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String PREFS_NAME = "Parameters";
 
     volatile boolean allPermissionsGranted = false;
+    private volatile boolean cameraInitialized = false;
 
     // aspect ratio
     int aspectRatioIndex = 0;  // default
@@ -230,6 +237,7 @@ public class MainActivity extends AppCompatActivity {
         isAiEdit = parameters.getIsAiEdit();
         //aiVisionEnabled = parameters.getAiVisionEnabled();
 
+        checkPermissions();
 //        private static String title1 = "3D/AI Photo Booth by Andy Modla";
 //        private static String title2 = "Philadelphia Maker Faire - April 19, 2026";
 //        private static String instruction1 = "Look at Camera";
@@ -278,7 +286,6 @@ public class MainActivity extends AppCompatActivity {
             setContentView(R.layout.layout);
         }
 
-        checkPermissions();
         camera = new Camera3D(this, media, parameters, photoBooth);
         media.setCamera(camera);
         if (parameters.getUdpControlEnabled()) {
@@ -342,16 +349,10 @@ public class MainActivity extends AppCompatActivity {
             return handleMouseEvent(motionEvent);
         });
 
-        decorView.post(new Runnable() {
-            @Override
-            public void run() {
-                camera.init(isSimpleCamera);
-                camera.openCamera();
-                if (photoBooth != null) {
-                    photoBooth.setCamera(camera);
-                }
-            }
-        });
+        // Start the camera after the first layout pass (as before), but only
+        // if permission was ALREADY granted. On first launch (dialog pending)
+        // the open is deferred to onPermissionsResult()/onResume().
+        startCamera();
 
         decorView.setOnTouchListener(new View.OnTouchListener() {
             @Override
@@ -431,6 +432,11 @@ public class MainActivity extends AppCompatActivity {
         super.onResume();
         Log.d(TAG, "onResume()");
 
+        // Re-evaluate the ACTUAL runtime permission state on every resume.
+        // Covers returning from the permission dialog AND returning from
+        // system Settings (no result callback fires in that case).
+        allPermissionsGranted = hasRuntimePermissions();
+
         if (allPermissionsGranted) {
             if (camera == null) {
                 Log.e(TAG, "Internal error - camera is null");
@@ -438,9 +444,7 @@ public class MainActivity extends AppCompatActivity {
             }
 
             camera.shutterSound();
-            if (!camera.isCameraOpen()) {
-                camera.openCamera();
-            }
+            startCamera();
         }
     }
 
@@ -1318,89 +1322,226 @@ public class MainActivity extends AppCompatActivity {
      * Permissions
      ===================================================================*/
 
-    private void checkPermissions() {
-        Log.d(TAG, "checkPermissions");
-        String[] permissions = {CAMERA};
-        boolean needsPermission = false;
+    /*==================================================================
+     * Permissions — fixed, single launcher, camera + storage in one flow
+     *
+     * Requests:
+     *   - CAMERA                        (all API levels)
+     *   - READ_MEDIA_IMAGES / VIDEO     (API 33+)
+     *   - READ_MEDIA_VISUAL_USER_SELECTED is NOT requested directly —
+     *     it is granted automatically when the user picks
+     *     "Select photos and videos" (partial access) on API 34+.
+     *   - READ_EXTERNAL_STORAGE         (for API 31–32 only, since minSdk = 34)
+     *==================================================================*/
 
-        for (String permission : permissions) {
-            if (ActivityCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED) {
-                needsPermission = true;
-                break;
+// --- AndroidManifest.xml (debug AND main) ---
+//
+// <uses-feature android:name="android.hardware.camera" android:required="false" />
+// <uses-permission android:name="android.permission.CAMERA" />
+// <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+// <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+// <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+//                     android:maxSdkVersion="32" />
+//
+// NOTE: do NOT declare MANAGE_EXTERNAL_STORAGE for a camera app —
+// use MediaStore to save pictures and READ_MEDIA_* to read the gallery.
+
+
+        /*==================================================================
+         * Single permission launcher for everything
+         ===================================================================*/
+        private final ActivityResultLauncher<String[]> permissionLauncher =
+                registerForActivityResult(new ActivityResultContracts.RequestMultiplePermissions(),
+                        this::onPermissionsResult);
+
+        /*==================================================================
+         * Build the exact permission set for this device's API level
+         ===================================================================*/
+        private String[] requiredPermissions() {
+            List<String> perms = new ArrayList<>();
+            perms.add(Manifest.permission.CAMERA);            // camera
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {  // API 33+
+                perms.add(Manifest.permission.READ_MEDIA_IMAGES);
+                perms.add(Manifest.permission.READ_MEDIA_VIDEO);
+            } else {                                          // API 31–32
+                perms.add(Manifest.permission.READ_EXTERNAL_STORAGE);
             }
+            return perms.toArray(new String[0]);
         }
 
-        checkAndRequestStoragePermission();
+        /*==================================================================
+         * Entry point — call this from onCreate() AFTER super.onCreate()
+         ===================================================================*/
+        private void checkPermissions() {
+            Log.d(TAG, "checkPermissions");
 
-        if (needsPermission) {
-            Log.d(TAG, "Needs permission");
-            ActivityCompat.requestPermissions(this, permissions, MY_CAMERA_REQUEST_CODE);
-        } else {
-            allPermissionsGranted = true;
-        }
-
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
-                                           @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        Log.d(TAG, "onRequestPermissionsResult requestCode=" + requestCode);
-        if (requestCode == MY_CAMERA_REQUEST_CODE) {
-            allPermissionsGranted = true;
-            for (int result : grantResults) {
-                Log.d(TAG, "result=" + result);
-                if (result != PackageManager.PERMISSION_GRANTED) {
-                    allPermissionsGranted = false;
-                    break;
+            List<String> missing = new ArrayList<>();
+            for (String permission : requiredPermissions()) {
+                if (ContextCompat.checkSelfPermission(this, permission)
+                        != PackageManager.PERMISSION_GRANTED) {
+                    missing.add(permission);
                 }
             }
+
+            if (missing.isEmpty()) {
+                allPermissionsGranted = true;
+                Log.d(TAG, "All permissions already granted");
+                onAllPermissionsGranted();                    // start camera here
+                return;
+            }
+
+            Log.d(TAG, "Requesting missing permissions: " + missing);
+            // ONE request, ONE dialog flow. Never launch a second
+            // permission request while one is pending — API 30+ drops it.
+            permissionLauncher.launch(missing.toArray(new String[0]));
         }
-    }
 
-    void checkHeap() {
-        ActivityManager am = (ActivityManager) getSystemService(ACTIVITY_SERVICE);
+        /*==================================================================
+         * Result callback — replaces the old onRequestPermissionsResult
+         ===================================================================*/
+        private void onPermissionsResult(Map<String, Boolean> result) {
+            allPermissionsGranted = true;
+            List<String> denied = new ArrayList<>();
 
-// Standard heap limit (without largeHeap="true")
-        int standardHeapSize = am.getMemoryClass();
+            for (Map.Entry<String, Boolean> entry : result.entrySet()) {
+                Log.d(TAG, entry.getKey() + " = " + entry.getValue());
+                if (!entry.getValue()) {
+                    denied.add(entry.getKey());
+                    allPermissionsGranted = false;
+                }
+            }
 
-// Large heap limit (available when largeHeap="true" is set)
-        int largeHeapSize = am.getLargeMemoryClass();
+            // API 34+ partial media access: user chose "Select photos and videos"
+            boolean partialMediaAccess =
+                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE
+                            && ContextCompat.checkSelfPermission(this,
+                            Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED)
+                            == PackageManager.PERMISSION_GRANTED;
 
-        System.out.println("Standard: " + standardHeapSize + "MB, Large: " + largeHeapSize + "MB");
-    }
-
-    private void checkAndRequestStoragePermission() {
-        // Since min SDK is 31, no need to check Build.VERSION.SDK_INT for older versions
-        if (Environment.isExternalStorageManager()) {
-            // Permission is already present; perform your file logic
-            //Toast.makeText(this, "File Permission already granted", Toast.LENGTH_SHORT).show();
-        } else {
-            // Permission is missing; ask programmatically
-            try {
-                Intent intent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
-                intent.setData(Uri.parse("package:" + getPackageName()));
-                storageActivityResultLauncher.launch(intent);
-            } catch (Exception e) {
-                // Fallback option if the specific app-setting intent fails
-                Intent intent = new Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION);
-                storageActivityResultLauncher.launch(intent);
+            if (allPermissionsGranted) {
+                Log.d(TAG, "All permissions granted");
+                onAllPermissionsGranted();
+            } else if (partialMediaAccess) {
+                Log.d(TAG, "Partial media access granted (user-selected photos)");
+                // Acceptable for many apps; if you truly need full gallery access:
+                Toast.makeText(this,
+                        "Only selected photos are accessible. Enable full access in Settings.",
+                        Toast.LENGTH_LONG).show();
+                allPermissionsGranted = true;                 // partial is enough to run
+                onAllPermissionsGranted();
+            } else {
+                handleDeniedPermissions(denied);
             }
         }
-    }
 
-// For reference not used
-//    @Override
-//    public void onBackPressed() {
-//        // Check if a specific condition is met, for example, if a drawer is open
-//        // if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
-//        //     drawerLayout.closeDrawer(GravityCompat.START);
-//        // } else {
-//        // Call the super method to allow the default back button behavior
-//        Log.d(TAG, "onBackPressed()");
-//        super.onBackPressed();
-//        // }
-//    }
+        /*==================================================================
+         * Denial handling — including "Don't ask again" (dialog never
+         * shows again on API 30+ after two denials)
+         ===================================================================*/
+        private void handleDeniedPermissions(List<String> denied) {
+            Log.d(TAG, "Denied: " + denied);
+
+            // Anything permanently denied can only be fixed in Settings.
+            boolean permanentlyDenied = false;
+            for (String permission : denied) {
+                if (!ActivityCompat.shouldShowRequestPermissionRationale(this, permission)) {
+                    permanentlyDenied = true;                 // "Don't allow" chosen
+                }
+            }
+
+            if (permanentlyDenied) {
+                new AlertDialog.Builder(this)
+                        .setTitle("Permissions required")
+                        .setMessage("Camera and media access are required to use this app. "
+                                + "Enable them in Settings.")
+                        .setPositiveButton("Open Settings", (d, w) -> openAppSettings())
+                        .setNegativeButton("Cancel", (d, w) ->
+                                Toast.makeText(this, "App cannot work without permissions",
+                                        Toast.LENGTH_LONG).show())
+                        .show();
+            } else {
+                Toast.makeText(this,
+                        "Camera and media permissions are required",
+                        Toast.LENGTH_LONG).show();
+                // Optionally retry: permissionLauncher.launch(requiredPermissions());
+            }
+        }
+
+        /*==================================================================
+         * Success hook — wire your camera start-up here
+         ===================================================================*/
+        private void onAllPermissionsGranted() {
+            Log.d(TAG, "onAllPermissionsGranted — starting camera");
+            startCamera();
+        }
+
+        /*==================================================================
+         * Camera start helper — defers init/open to the first layout pass
+         * (same as the old decorView.post), is idempotent (no double
+         * init/open), and only opens when permission is actually granted.
+         * Called from: onCreate, onPermissionsResult, and onResume.
+         ===================================================================*/
+        private void startCamera() {
+            if (camera == null || decorView == null) {
+                Log.e(TAG, "startCamera: camera or decorView not ready yet");
+                return;
+            }
+            decorView.post(new Runnable() {
+                @Override
+                public void run() {
+                    if (!cameraInitialized) {
+                        camera.init(isSimpleCamera);
+                        cameraInitialized = true;
+                    }
+                    if (photoBooth != null) {
+                        photoBooth.setCamera(camera);
+                    }
+                    if (allPermissionsGranted && !camera.isCameraOpen()) {
+                        Log.d(TAG, "startCamera: opening camera");
+                        camera.openCamera();
+                    }
+                }
+            });
+        }
+
+        /*==================================================================
+         * Check the real runtime permission state (not the stale flag).
+         * Full grant, or (API 34+) partial media access with camera granted.
+         ===================================================================*/
+        private boolean hasRuntimePermissions() {
+            for (String permission : requiredPermissions()) {
+                if (ContextCompat.checkSelfPermission(this, permission)
+                        != PackageManager.PERMISSION_GRANTED) {
+                    // API 34+ partial media access ("Select photos and videos")
+                    // together with camera permission is enough to run.
+                    return Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE
+                            && ContextCompat.checkSelfPermission(this,
+                            Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+                            && ContextCompat.checkSelfPermission(this,
+                            Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED)
+                            == PackageManager.PERMISSION_GRANTED;
+                }
+            }
+            return true;
+        }
+
+        private void openAppSettings() {
+            Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+            Uri uri = Uri.fromParts("package", getPackageName(), null);
+            intent.setData(uri);
+            startActivity(intent);
+        }
+
+        /*==================================================================
+         * Heap check
+         ===================================================================*/
+        void checkHeap() {
+            ActivityManager am = (ActivityManager) getSystemService(ACTIVITY_SERVICE);
+            int standardHeapSize = am.getMemoryClass();
+            int largeHeapSize = am.getLargeMemoryClass();
+            System.out.println("Standard: " + standardHeapSize + "MB, Large: " + largeHeapSize + "MB");
+        }
 
 }
 
