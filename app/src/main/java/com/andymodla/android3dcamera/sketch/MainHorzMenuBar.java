@@ -103,7 +103,7 @@ class MainHorzMenuBar implements IGui {
             menuKey[i].setActive(true);
             menuKey[i].setVisible(true);
         }
-
+        setMenuKeyLabels(MainActivity.FUNCTION_MODE_LIVEVIEW);
     }
 
     // update key labels for camera functions
@@ -115,7 +115,11 @@ class MainHorzMenuBar implements IGui {
                 menuKey[2].setKeyColor(graytransparent);
                 menuKey[2].setHighlight(false);
                 menuKey[2].setText("");
+                menuKey[2].setActive(false);
+                menuKey[2].setVisible(false);
                 menuKey[3].setBackgroundColor(backTransparent);
+                menuKey[3].setVisible(true);
+                menuKey[3].setActive(true);
                 menuKey[4].setText("BACK\nA");
                 menuKey[0].setText("REVIEW");
                 menuKey[6].setText("\u25C9");
@@ -123,21 +127,32 @@ class MainHorzMenuBar implements IGui {
                 menuKey[6].setKeyCode(KeyEvent.KEYCODE_BUTTON_R1);
 
                 menuKey[7].setText("");
+                menuKey[7].setActive(false);
+                menuKey[7].setVisible(false);
                 menuKey[8].setText("");
+                menuKey[8].setActive(false);
+                menuKey[8].setVisible(false);
                 menuKey[9].setKeyColor(yellow);
                 menuKey[9].setText("EV-");
                 menuKey[10].setText("LIVEVIEW\nEV"+" B");
                 menuKey[11].setKeyColor(yellow);
                 menuKey[11].setText("EV+");
                 menuKey[12].setText("");
+                menuKey[12].setActive(false);
+                menuKey[12].setVisible(false);
                 menuKey[13].setText("");
-
+                menuKey[13].setActive(false);
+                menuKey[13].setVisible(false);
                 break;
+
             case MainActivity.FUNCTION_MODE_REVIEW:
                 menuKey[2].setBackgroundColor(backTransparent);
                 menuKey[2].setActive(true);
+                menuKey[2].setVisible(true);
                 menuKey[2].setKeyColor(yellow);
                 menuKey[2].setText("ZOOM\nY");
+                menuKey[3].setActive(false);
+                menuKey[3].setVisible(false);
                 menuKey[3].setBackgroundColor(backTransparent);
                 menuKey[4].setText("BACK\nA");
                 menuKey[0].setText("LIVEVIEW");
@@ -146,14 +161,22 @@ class MainHorzMenuBar implements IGui {
                 menuKey[6].setKeyCode(MainActivity.SHUTTER_KEY);  // decode print in shutter logic
 
                 menuKey[7].setText("FIRST\nPHOTO"+DOWN_ARROW);
+                menuKey[7].setActive(true);
+                menuKey[7].setVisible(true);
                 menuKey[8].setText("PREV\nPHOTO"+LEFT_ARROW);
+                menuKey[8].setActive(true);
+                menuKey[8].setVisible(true);
                 menuKey[9].setKeyColor(graytransparent);
                 menuKey[9].setText("AI EDIT");
                 menuKey[10].setText("REVIEW\n"+" B");
                 menuKey[11].setKeyColor(graytransparent);
                 menuKey[11].setText("SHARE");
                 menuKey[12].setText("NEXT\nPHOTO"+RIGHT_ARROW);
+                menuKey[12].setActive(true);
+                menuKey[12].setVisible(true);
                 menuKey[13].setText("LAST\nPHOTO"+UP_ARROW);
+                menuKey[13].setActive(true);
+                menuKey[13].setVisible(true);
                 break;
 
             case MainActivity.FUNCTION_MODE_PARALLAX:

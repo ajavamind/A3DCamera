@@ -653,6 +653,7 @@ public class MainActivity extends AppCompatActivity {
     public void setLiveView() {
         state = LIVE_VIEW_STATE;
         setFunctionMode(FUNCTION_MODE_LIVEVIEW);
+        photoBooth.clearImageLabelTimeout();
         wakeUpSketch(state);
     }
 

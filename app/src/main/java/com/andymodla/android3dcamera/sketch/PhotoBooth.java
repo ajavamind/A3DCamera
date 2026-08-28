@@ -36,7 +36,7 @@ import java.util.Date;
 
 
 public class PhotoBooth extends PApplet {
-    private static final boolean DEBUG = MyDebug.DEBUG;
+    private static final boolean DEBUG = true; //MyDebug.DEBUG;
     private static final boolean testMode = false;
     private static boolean testCheckDraw = false;
 
@@ -101,6 +101,9 @@ public class PhotoBooth extends PApplet {
     volatile boolean update = false;
     boolean screenshot = false;
 
+    private float centerReviewX = 0;
+    private float centerLiveViewX = 0;
+
     private float shiftOffsetX = 0;
     private float shiftOffsetY = 0;
     private int DISPLAY_OFFSET_Y = 180;  // status display line for filename, EV, parallax, zoom
@@ -111,7 +114,7 @@ public class PhotoBooth extends PApplet {
     private static final int STEREO_OFFSET = -10; // right image shift used for stereo depth
     private static final int TITLE_STEREO_OFFSET = -160; // right image shift used for stereo depth
     private String imageLabel;
-    private int labelFrameCount = 0;
+    private volatile int labelFrameCount = 0;
     private static final int IMAGE_LABEL_TIMEOUT_FRAMES = 90;
 
     private String[] rotatingText = {"-", "\\", "|", "/"};
@@ -211,6 +214,11 @@ public class PhotoBooth extends PApplet {
             resetZoom();
         }
         gui.getMenuBar().setMenuKeyLabels(func);
+    }
+
+    public void reloadLastReviewImage() {
+        int index = sbsImageFiles.size()-1;
+        if (index>0) reloadReviewImage(index);
     }
 
     private void reloadReviewImage(int index) {
@@ -410,7 +418,7 @@ public class PhotoBooth extends PApplet {
     public int toDisplayPixels(int cameraPixels) {
         float dispImgWidth = (float) XBP_DISPLAY_FRAME_WIDTH / 2;
         int displayPixels = (int) Math.round(cameraPixels * dispImgWidth / (float) Camera3D.CAMERA_WIDTH_DEFAULT);
-        if (DEBUG) println("toDisplayPixels(" + cameraPixels + ") = " + displayPixels);
+        //if (DEBUG) println("toDisplayPixels(" + cameraPixels + ") = " + displayPixels);
         return displayPixels;
     }
 
@@ -520,16 +528,32 @@ public class PhotoBooth extends PApplet {
     public void draw() {
         if (initial) {
             long t0 = System.nanoTime();
-            // Force OpenGL texture creation/upload now, on the GL thread
-            // assumes review images are the default size
-
-            media.leftReview.resize(Camera3D.CAMERA_WIDTH_DEFAULT, Camera3D.CAMERA_HEIGHT_DEFAULT);
-            media.rightReview.resize(Camera3D.CAMERA_WIDTH_DEFAULT, Camera3D.CAMERA_HEIGHT_DEFAULT);
+            // Force OpenGL texture creation/upload now, on the GL thread.
+            // The review images are already captured/loaded at the camera's
+            // native resolution, so only resize if their size does not match
+            // (resize() allocates a brand-new ~50MB Bitmap via
+            // createScaledBitmap + a full bilinear resample, which is the
+            // single most expensive call here when the size already matches).
+            if (media.leftReview.width != Camera3D.CAMERA_WIDTH_DEFAULT ||
+                media.leftReview.height != Camera3D.CAMERA_HEIGHT_DEFAULT) {
+                media.leftReview.resize(Camera3D.CAMERA_WIDTH_DEFAULT, Camera3D.CAMERA_HEIGHT_DEFAULT);
+            }
+            if (media.rightReview.width != Camera3D.CAMERA_WIDTH_DEFAULT ||
+                media.rightReview.height != Camera3D.CAMERA_HEIGHT_DEFAULT) {
+                media.rightReview.resize(Camera3D.CAMERA_WIDTH_DEFAULT, Camera3D.CAMERA_HEIGHT_DEFAULT);
+            }
 
             // this code has to run here on the processing draw() GL thread to create the textures
             if (g instanceof processing.opengl.PGraphicsOpenGL) {
+                long t1 = System.nanoTime();
                 ((processing.opengl.PGraphicsOpenGL) g).getTexture(media.leftReview);
+                long t2 = System.nanoTime();
                 ((processing.opengl.PGraphicsOpenGL) g).getTexture(media.rightReview);
+                long t3 = System.nanoTime();
+                if (DEBUG) {
+                    PApplet.println("PhotoBooth init: resize+leftTex=" + n2s(t1 - t0) +
+                                    "s rightTex=" + n2s(t3 - t2) + "s total=" + n2s(t3 - t0) + "s");
+                }
             }
             initial = false;
             if (DEBUG)
@@ -543,6 +567,7 @@ public class PhotoBooth extends PApplet {
         processKeyCode();
 
         background(black);
+        //background(128);  // for debug
 
         if (reviewTimeout > 0) {
             //if (DEBUG) println("reviewTimeout = " + reviewTimeout + "  ");
@@ -725,14 +750,21 @@ public class PhotoBooth extends PApplet {
     }
 
     private void drawLiveView() {
-
         // Synchronize with ImageReader thread: grab reference only when pixels are stable
+        float imgWidth = 1280;
+        float imgHeight = 960;
+
         if (stereoCamera.available.get()) {
             synchronized (stereoCamera.imageLock) {
                 if (stereoCamera.available.compareAndSet(true, false)) {
                     imgLeft = stereoCamera.leftImage;
                     imgRight = stereoCamera.rightImage;
                     AR = (float) imgLeft.width / (float) imgLeft.height;
+                    //imgWidth = imgLeft.width; //(float) XBP_DISPLAY_FRAME_WIDTH / 2;
+                    //imgHeight = imgWidth / AR;
+
+                    //AR = (float) (imgLeft.width-toDisplayPixels(parameters.getParallaxOffset()) )/ (float) imgLeft.height;
+                    //println("AR="+AR);
                 }
             }
         }
@@ -740,7 +772,29 @@ public class PhotoBooth extends PApplet {
             if (displayMode == DisplayMode.ANAGLYPH) {
                 drawAnaglyph(imgLeft, imgRight);
             } else if (displayMode == DisplayMode.SBS) {
-                drawSBS(imgLeft, imgRight);
+                // calculate centering facter centerX
+
+
+                //parallax = parameters.getParallaxOffset();
+                float ar = (float) 1280/ (float)960;
+                centerLiveViewX = 0;//52;//1024-((float)768*ar)/2; // to do refactor
+                //float ar = (float) halfWidth/ (float)original.height;
+                //centerReviewX = (1024-((float)768*ar))/2; // to do refactor
+                //if (DEBUG) println("centerLiveViewX="+centerLiveViewX);
+                //centerLiveViewX = centerReviewX;
+                int cParallax = parallax;
+                int cVertAlign = verticalAlignment;
+                //parallax = toDisplayPixels(parameters.getParallaxOffset());
+                //centerLiveViewX = (float)parallax/2;
+                //println("display parallax="+parallax);
+                //verticalAlignment = 0;
+                //println("live w="+imgWidth+" h="+imgHeight);
+                //centerLiveViewX = 0;
+                //drawSBS(imgLeft, imgRight, centerLiveViewX, 1024-(float)
+                //        toDisplayPixels(parameters.getParallaxOffset()), 768);
+                drawSBS(imgLeft, imgRight, centerLiveViewX, 1024, 768);
+                parallax = cParallax;
+                verticalAlignment = cVertAlign;
             } else if (displayMode == DisplayMode.LEFT) {
                 drawPhoto(imgLeft);
             } else if (displayMode == DisplayMode.RIGHT) {
@@ -750,13 +804,13 @@ public class PhotoBooth extends PApplet {
         }
     }
 
-    public void drawSBS(PImage imgLeft, PImage imgRight) {
+    public void drawSBS(PImage imgLeft, PImage imgRight, float centerX, float imgWidth, float imgHeight) {
         float offsetX = 0;
         float offsetY = 0;
 
         // Calculate base image dimensions - each image gets half the frame width
-        float imgWidth = (float) XBP_DISPLAY_FRAME_WIDTH / 2;
-        float imgHeight = imgWidth / AR;
+//        float imgWidth = (float) XBP_DISPLAY_FRAME_WIDTH / 2;
+//        float imgHeight = imgWidth / AR;
 
         // Center vertically within frame
         float baseVerticalOffset = frameY + (XBP_DISPLAY_FRAME_HEIGHT - imgHeight) / 2;
@@ -783,11 +837,11 @@ public class PhotoBooth extends PApplet {
         if (zoom) {
             scale(magnifyScale[magnifyIndex], magnifyScale[magnifyIndex]);
         }
-
+        //float iC = 0; //(imgWidth - (float)imgLeft.width)/2;
         if (crossEye) {
-            image(imgRight, -offsetX, -offsetY, imgWidth, imgHeight);
+            image(imgRight, -offsetX+centerX, -offsetY, imgWidth, imgHeight);
         } else {
-            image(imgLeft, -offsetX, -offsetY, imgWidth, imgHeight);
+            image(imgLeft, -offsetX+centerX, -offsetY, imgWidth, imgHeight);
         }
         pop();
         noClip();
@@ -809,9 +863,9 @@ public class PhotoBooth extends PApplet {
         }
 
         if (crossEye) {
-            image(imgLeft, -offsetX, -offsetY, imgWidth, imgHeight);
+            image(imgLeft, -offsetX+centerX, -offsetY, imgWidth, imgHeight);
         } else {
-            image(imgRight, -offsetX, -offsetY, imgWidth, imgHeight);
+            image(imgRight, -offsetX+centerX, -offsetY, imgWidth, imgHeight);
         }
 
         pop();
@@ -1020,8 +1074,10 @@ public class PhotoBooth extends PApplet {
             rect(leftMargin, XBP_DISPLAY_FRAME_HEIGHT / 2 - thickness / 2, width - leftMargin - rightMargin, thickness);
             // First vertical line (1/4 of frame width)
             rect(frameX + XBP_DISPLAY_FRAME_WIDTH / 4 - thickness / 2, top, thickness, XBP_DISPLAY_FRAME_HEIGHT - bottom);
+            // Center vertical line (center of canvas)
+            rect(width / 2 - thickness / 2, top, thickness, height - bottom);
             // Second vertical line (3/4 of frame width)
-            rect(frameX + 3 * XBP_DISPLAY_FRAME_WIDTH / 4 - thickness / 2, top, thickness, XBP_DISPLAY_FRAME_HEIGHT - bottom);
+            rect(frameX + (3 * XBP_DISPLAY_FRAME_WIDTH) / 4 - thickness / 2, top, thickness, XBP_DISPLAY_FRAME_HEIGHT - bottom);
         }
     }
 
@@ -1087,6 +1143,10 @@ public class PhotoBooth extends PApplet {
 
     public void setImageLabelTimeout() {
         this.labelFrameCount = IMAGE_LABEL_TIMEOUT_FRAMES;
+    }
+
+    public void clearImageLabelTimeout() {
+        this.labelFrameCount = 0;
     }
 
     void drawImageLabel() {
@@ -1362,6 +1422,10 @@ public class PhotoBooth extends PApplet {
                     if (zoom) {
                         if (magnifyIndex > 0) {
                             magnifyIndex--;
+                            if (magnifyIndex == 0) {
+                                shiftOffsetY = 0;
+                                shiftOffsetX = 0;
+                            }
                             update = true;
                         }
                     }
@@ -1486,8 +1550,13 @@ public class PhotoBooth extends PApplet {
         //if (DEBUG) PApplet.println("setReviewImages() left=" + left + " right=" + right);
         currentLeft = left;
         currentRight = right;
+
         if (currentLeft != null && currentRight != null) {
             update = true;
+            // calculate centering facter centerX
+            float ar = (float) currentLeft.width/ (float)currentLeft.height;
+            centerReviewX = (1024-((float)768*ar))/2; // to do refactor
+            if (DEBUG) println("setReviewImages centerReviewX="+centerReviewX);
         }
         if (reviewSBS != null) {
             sbsImageFiles.add(reviewSBS.getAbsolutePath());
@@ -1497,14 +1566,19 @@ public class PhotoBooth extends PApplet {
     }
 
     void drawReview() {
-        // PApplet.println("drawReview()");
         synchronized (media.reviewLock) {
             if (currentLeft != null && currentRight != null && currentLeft.width > 0 && currentLeft.height > 0 && currentRight.width > 0 && currentRight.height > 0) {
+                // save parameters that should not change review presentation
                 boolean saveMirror = mirror;  // review does not display mirror image
                 mirror = false;
-
+                int cParallax = parallax;
+                int cVertAlign = verticalAlignment;
+                parallax = 0;
+                verticalAlignment = 0;
                 if (displayMode == DisplayMode.SBS) {
-                    drawSBS(currentLeft, currentRight);
+                    float imgWidth = (float) XBP_DISPLAY_FRAME_WIDTH / 2;
+                    float imgHeight = imgWidth / AR;
+                    drawSBS(currentLeft, currentRight, centerReviewX, imgWidth, imgHeight);
                 } else if (displayMode == DisplayMode.ANAGLYPH) {
                     drawAnaglyph(currentLeft, currentRight);
                 } else if (displayMode == DisplayMode.LEFT) {
@@ -1512,13 +1586,16 @@ public class PhotoBooth extends PApplet {
                 } else if (displayMode == DisplayMode.RIGHT) {
                     drawPhoto(currentRight);
                 }
+                // restore parameters
                 mirror = saveMirror;
+                parallax = cParallax;
+                verticalAlignment = cVertAlign;
             } else {
                 // Display message if no images
                 fill(255);
                 textAlign(CENTER, CENTER);
                 textSize(48);
-                text("Waiting for Photo", width / 2, height / 2);
+                text("No Photo Available for Review", width / 2, height / 2);
             }
         }
     }
@@ -1663,12 +1740,16 @@ public class PhotoBooth extends PApplet {
 
         // Calculate the width of each half, using integer division
         int halfWidth = original.width / 2;
-
+        // calculate centering facter centerX
+        float ar = (float) halfWidth/ (float)original.height;
+        centerReviewX = (1024-((float)768*ar))/2; // to do refactor
+        if (DEBUG) println("splitImageLR centerReviewX="+centerReviewX);
         // Create the left half image
         if (media.leftReview == null) {
             result[0] = createImage(imageWidth, imageHeight, ARGB);
             result[0].copy(original, 0, 0, halfWidth, original.height, 0, 0, halfWidth, original.height);
         } else {
+            clearImage(media.leftReview);
             media.leftReview.copy(original, 0, 0, halfWidth, original.height, 0, 0, halfWidth, original.height);
             result[0] = media.leftReview;
         }
@@ -1677,6 +1758,7 @@ public class PhotoBooth extends PApplet {
             result[1] = createImage(imageWidth, imageHeight, ARGB);
             result[1].copy(original, halfWidth, 0, halfWidth, original.height, 0, 0, halfWidth, original.height);
         } else {
+            clearImage(media.rightReview);
             media.rightReview.copy(original, halfWidth, 0, halfWidth, original.height, 0, 0, halfWidth, original.height);
             result[1] = media.rightReview;
         }
@@ -1687,6 +1769,12 @@ public class PhotoBooth extends PApplet {
 //            println("rightReview bitmap=" + ((Bitmap) result[1].getNative()));
 //        }
         return result;
+    }
+
+    private void clearImage(PImage img) {
+        img.loadPixels();
+        java.util.Arrays.fill(img.pixels, 0); // fill black
+        img.updatePixels();
     }
 
     public File make6x4ImageFile(String filename) {

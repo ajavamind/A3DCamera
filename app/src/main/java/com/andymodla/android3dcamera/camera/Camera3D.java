@@ -97,10 +97,10 @@ public class Camera3D {
     private String rightCameraId = "2";
     private String stereoCameraId = "3";
 
-    // Xreal Beam Pro camera sensor sizes this app supports
+    // Xreal Beam Pro highest camera sensor sizes this app supports
     public static int CAMERA_WIDTH_DEFAULT = 4080;
     public static int CAMERA_HEIGHT_DEFAULT = 3072;
-    // todo
+    // todo other aspect ratios
     public static int CAMERA_WIDTH_AR_4_3 = 4000;
     public static int CAMERA_HEIGHT_AR_4_3 = 3000;
     public static int CAMERA_WIDTH_AR_16_9 = 3840;
@@ -297,11 +297,12 @@ public class Camera3D {
             Log.d(TAG, "Not using the basic camera");
         } else {
             useProcessingSketch = false;
-            Log.d(TAG, "setupSurfaces() for basic camera");
+            //Log.d(TAG, "setupSurfaces() for basic camera");
             // set up display surfaces
             mSurfaceView0 = ((MainActivity) context).findViewById(R.id.surfaceView);
             mSurfaceView2 = ((MainActivity) context).findViewById(R.id.surfaceView2);
 
+            //Log.d(TAG, "mSurfaceView0 w="+mSurfaceView0.getWidth() + " h="+mSurfaceView0.getHeight());
             mSurfaceHolder0 = mSurfaceView0.getHolder();
             mSurfaceHolder2 = mSurfaceView2.getHolder();
 
@@ -758,7 +759,6 @@ public class Camera3D {
             leftImage.setNative(Bitmap.createBitmap(cameraWidth, cameraHeight, Bitmap.Config.ARGB_8888));
             rightImage = pApplet.createImage(cameraWidth, cameraHeight, PImage.ARGB);
             rightImage.setNative(Bitmap.createBitmap(cameraWidth, cameraHeight, Bitmap.Config.ARGB_8888));
-
         }
         leftBitmap = Bitmap.createBitmap(cameraWidth, cameraHeight, Bitmap.Config.ARGB_8888);
         rightBitmap = Bitmap.createBitmap(cameraWidth, cameraHeight, Bitmap.Config.ARGB_8888);
@@ -849,13 +849,13 @@ public class Camera3D {
     public String getEv() {
         String sev;
         if (exposureCompensationIndex < 0) {
-            sev = "EV-" + EV_TABLE[-exposureCompensationIndex];
+            sev = "-" + EV_TABLE[-exposureCompensationIndex];
         } else if (exposureCompensationIndex > 0) {
-            sev = "EV+" + EV_TABLE[exposureCompensationIndex];
+            sev = "+" + EV_TABLE[exposureCompensationIndex];
         } else {
-            sev = "EV " + EV_TABLE[exposureCompensationIndex];
+            sev = " " + EV_TABLE[exposureCompensationIndex];
         }
-        return sev;
+        return sev+" EV";
     }
 
     public int incrementExposureCompensation(int delta) {

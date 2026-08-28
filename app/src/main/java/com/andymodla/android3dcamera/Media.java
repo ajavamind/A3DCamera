@@ -395,6 +395,8 @@ public class Media {
 
                 if (parameters.getAutoReview() && parameters.isPhotoBoothCameraMode()) {
                     ((MainActivity) context).setReview();
+                } else {
+                    ((PhotoBooth) pApplet).reloadLastReviewImage();
                 }
             }
         }
