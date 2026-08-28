@@ -1,4 +1,4 @@
-package com.andymodla.android3dcamera.sketch;
+package com.andymodla.android3dcamera.sketch.photobooth;
 
 /**
  * The Photo Booth Processing sketch for the Graphic user interface

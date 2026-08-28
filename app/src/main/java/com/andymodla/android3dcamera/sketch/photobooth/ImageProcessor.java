@@ -1,4 +1,4 @@
-package com.andymodla.android3dcamera.sketch;
+package com.andymodla.android3dcamera.sketch.photobooth;
 
 import static android.graphics.Color.blue;
 import static android.graphics.Color.green;

@@ -27,7 +27,7 @@ import android.widget.Toast;
 import androidx.core.content.FileProvider;
 
 import com.andymodla.android3dcamera.camera.Camera3D;
-import com.andymodla.android3dcamera.sketch.PhotoBooth;
+import com.andymodla.android3dcamera.sketch.photobooth.PhotoBooth;
 
 import java.io.File;
 import java.io.FileOutputStream;

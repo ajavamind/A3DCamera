@@ -49,7 +49,7 @@ import com.andymodla.android3dcamera.MainActivity;
 import com.andymodla.android3dcamera.R;  // kludge fix this
 import com.andymodla.android3dcamera.Media;
 import com.andymodla.android3dcamera.Parameters;
-import com.andymodla.android3dcamera.sketch.PhotoBooth;
+import com.andymodla.android3dcamera.sketch.photobooth.PhotoBooth;
 
 import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;

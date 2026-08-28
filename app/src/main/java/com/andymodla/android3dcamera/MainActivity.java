@@ -37,7 +37,7 @@ import androidx.core.app.ActivityCompat;
 
 import com.andymodla.android3dcamera.camera.Camera3D;
 import com.andymodla.android3dcamera.camera.CameraInfoUtil;
-import com.andymodla.android3dcamera.sketch.PhotoBooth;
+import com.andymodla.android3dcamera.sketch.photobooth.PhotoBooth;
 
 import java.io.File;
 import java.util.Timer;
