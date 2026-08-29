@@ -111,6 +111,7 @@ class MainHorzMenuBar implements IGui {
         base.println("setMenuKeyLabels "+mode);
         switch (mode) {
             case MainActivity.FUNCTION_MODE_LIVEVIEW:
+                menuKey[0].setText("REVIEW");
                 menuKey[2].setBackgroundColor(backTransparent);
                 menuKey[2].setKeyColor(graytransparent);
                 menuKey[2].setHighlight(false);
@@ -121,7 +122,6 @@ class MainHorzMenuBar implements IGui {
                 menuKey[3].setVisible(true);
                 menuKey[3].setActive(true);
                 menuKey[4].setText("BACK\nA");
-                menuKey[0].setText("REVIEW");
                 menuKey[6].setText("\u25C9");
                 menuKey[6].setFontSize(GIANT_FONT_SIZE);
                 menuKey[6].setKeyCode(KeyEvent.KEYCODE_BUTTON_R1);
@@ -146,6 +146,7 @@ class MainHorzMenuBar implements IGui {
                 break;
 
             case MainActivity.FUNCTION_MODE_REVIEW:
+                menuKey[0].setText("LIVEVIEW");
                 menuKey[2].setBackgroundColor(backTransparent);
                 menuKey[2].setActive(true);
                 menuKey[2].setVisible(true);
@@ -155,7 +156,6 @@ class MainHorzMenuBar implements IGui {
                 menuKey[3].setVisible(false);
                 menuKey[3].setBackgroundColor(backTransparent);
                 menuKey[4].setText("BACK\nA");
-                menuKey[0].setText("LIVEVIEW");
                 menuKey[6].setText("PRINT");
                 menuKey[6].setFontSize(SMALL_FONT_SIZE);
                 menuKey[6].setKeyCode(MainActivity.SHUTTER_KEY);  // decode print in shutter logic
@@ -200,7 +200,6 @@ class MainHorzMenuBar implements IGui {
                 menuKey[2].setBackgroundColor(lighttransparent);
                 menuKey[3].setBackgroundColor(backTransparent);
                 menuKey[4].setText("BACK\nA");
-
                 menuKey[7].setText("SHIFT\nDOWN"+DOWN_ARROW);
                 menuKey[8].setText("SHIFT\nLEFT"+LEFT_ARROW);
                 menuKey[9].setKeyColor(yellow);

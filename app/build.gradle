@@ -60,8 +60,6 @@ dependencies {
     // oscP5.jar used for receiving broadcast messages over UDP
     // exclude Apache httpclient and http core from build as we use okhttp3 exclusively
     implementation files('libs/oscP5.jar')
-    implementation files('libs/processing-core.jar')
-
     // native libyuv library for yuv image to RGB conversion
     implementation "io.github.crow-misia.libyuv:libyuv-android:0.43.2"
 

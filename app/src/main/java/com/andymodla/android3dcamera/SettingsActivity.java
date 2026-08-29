@@ -61,7 +61,7 @@ public class SettingsActivity extends AppCompatActivity {
 
     // --- RadioGroup for camera mode ---
     private RadioGroup rgCameraMode;
-    //private RadioButton rbBasicCameraMode;
+    private RadioButton rbBasicCameraMode;
     private RadioButton rbStereoscopeCameraMode;
     private RadioButton rbPhotoBoothCameraMode;
 
@@ -115,7 +115,7 @@ public class SettingsActivity extends AppCompatActivity {
             conditional2SettingsLayout.setVisibility(View.GONE);
         }
 
-        if (mode == 1) {
+        if (mode == 1 || mode == 2 || mode == 3) {
             conditional1SettingsLayout.setVisibility(View.VISIBLE);
             conditional2SettingsLayout.setVisibility(View.VISIBLE);
         }
@@ -168,7 +168,7 @@ public class SettingsActivity extends AppCompatActivity {
         //rbFocusAuto = findViewById(R.id.rb_focus_auto);
 
         rgCameraMode = findViewById(R.id.rg_camera_mode);
-        //rbBasicCameraMode = findViewById(R.id.rb_basic_camera_mode);
+        rbBasicCameraMode = findViewById(R.id.rb_basic_camera_mode);
         rbStereoscopeCameraMode = findViewById(R.id.rb_stereoscope_camera_mode);
         rbPhotoBoothCameraMode = findViewById(R.id.rb_photo_booth_camera_mode);
 
@@ -249,17 +249,15 @@ public class SettingsActivity extends AppCompatActivity {
         swSaveLr.setChecked(parameters.getSaveLr());
         swSaveAnaglyph.setChecked(parameters.getSaveAnaglyph());
 
-        // Camera mode index: 0=basic camera, 1=stereoscope camera, 2=photo booth camera
+        // Camera mode index: 1=basic camera, 2=stereoscope camera, 3=photo booth camera
         int cmi = parameters.getCameraMode();
         switch (cmi) {
-            case 0: rgCameraMode.check(R.id.rb_stereoscope_camera_mode); break;
-            case 1: rgCameraMode.check(R.id.rb_photo_booth_camera_mode); break;
-            default: rgCameraMode.check(R.id.rb_stereoscope_camera_mode); break;
-
-//            case 0: rgCameraMode.check(R.id.rb_basic_camera_mode); break;
-//            case 1: rgCameraMode.check(R.id.rb_stereoscope_camera_mode); break;
-//            case 2: rgCameraMode.check(R.id.rb_photo_booth_camera_mode); break;
-//            default: rgCameraMode.check(R.id.rb_basic_camera_mode); break;
+            case 1: rgCameraMode.check(R.id.rb_basic_camera_mode); break;
+            case 2: rgCameraMode.check(R.id.rb_stereoscope_camera_mode); break;
+            case 3: rgCameraMode.check(R.id.rb_photo_booth_camera_mode); break;
+            //default: rgCameraMode.check(R.id.rb_simple_camera_mode); break;
+            default:
+                break;
         }
 
             swSoundOn.setChecked(parameters.getIsSoundOn());

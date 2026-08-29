@@ -8,7 +8,6 @@ package com.andymodla.android3dcamera.sketch.photobooth;
 import static android.graphics.BitmapFactory.decodeStream;
 
 import android.graphics.BitmapFactory;
-import android.graphics.Color;
 import android.media.MediaScannerConnection;
 import android.view.KeyEvent;
 import android.graphics.Bitmap;
@@ -23,7 +22,7 @@ import com.andymodla.android3dcamera.MainActivity;
 import processing.core.PApplet;
 import processing.core.PImage;
 import processing.opengl.PGL;
-
+import processing.opengl.PGraphicsOpenGL;
 import android.os.Environment;
 
 import java.io.File;
@@ -255,6 +254,8 @@ public class PhotoBooth extends PApplet implements IGui {
                     media.rightReview = split[1];
                 }
             } else {
+                if (DEBUG) println("NO files loaded from DCIM/A3DCamera folder during initial start");
+                // load test image
                 media.leftReview = loadImage("Image_l.JPG");
                 media.rightReview = loadImage("Image_r.JPG");
             }
@@ -349,7 +350,7 @@ public class PhotoBooth extends PApplet implements IGui {
     }
 
     public void toggleShowMenu() {
-        if (parameters.isStereoscopeCameraMode() || parameters.isBasicCameraMode()) {
+        if (parameters.isStereoscopeCameraMode() || parameters.isBasicCameraMode() || parameters.isPhotoBoothCameraMode()) {
             showMenu = !showMenu;
             update = true;
         }
@@ -546,11 +547,14 @@ public class PhotoBooth extends PApplet implements IGui {
             }
 
             // this code has to run here on the processing draw() GL thread to create the textures
+            // The textures are large 4080x3072 pixels taking about 12 seconds to initialize both
+            // when using .getTexture(media.leftReview) and .getTexture(media.rightReview)
+            // new function added to PGraphicsOpenGL.allocateTexture(PImage)
             if (g instanceof processing.opengl.PGraphicsOpenGL) {
                 long t1 = System.nanoTime();
-                ((processing.opengl.PGraphicsOpenGL) g).getTexture(media.leftReview);
+                ((processing.opengl.PGraphicsOpenGL) g).allocateTexture(media.leftReview);
                 long t2 = System.nanoTime();
-                ((processing.opengl.PGraphicsOpenGL) g).getTexture(media.rightReview);
+                ((processing.opengl.PGraphicsOpenGL) g).allocateTexture(media.rightReview);
                 long t3 = System.nanoTime();
                 if (DEBUG) {
                     PApplet.println("PhotoBooth init: resize+leftTex=" + n2s(t1 - t0) +

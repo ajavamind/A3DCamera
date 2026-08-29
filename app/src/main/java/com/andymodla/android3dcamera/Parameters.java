@@ -72,6 +72,7 @@ class ParamStore {
             private final Context context;
 
             // Camera application modes
+            public static final int SIMPLE_MODE = 0;
             public static final int BASIC_MODE = 1;
             public static final int STEREOSCOPE_MODE = 2;
             public static final int PHOTO_BOOTH_MODE = 3;
@@ -238,6 +239,7 @@ class ParamStore {
             public boolean isSimpleCameraMode() { // This mode does not use the photobooth sketch!
                 return false;
             }
+
             // The following three functions use photo booth sketch:
             public boolean isBasicCameraMode() {
                 return (getCameraMode() == BASIC_MODE);

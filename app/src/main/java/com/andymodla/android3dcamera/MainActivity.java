@@ -266,6 +266,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         if (!isSimpleCamera) {
+            // all camera modes use photo booth sketch except simple camera
             FrameLayout frame = new FrameLayout(this);
             frame.setId(CompatUtils.getUniqueViewId());
             setContentView(frame, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
@@ -378,7 +379,8 @@ public class MainActivity extends AppCompatActivity {
 
                     case MotionEvent.ACTION_UP:
                         // upper right corner is hidden shutter release button
-                        if (parameters.isSimpleCameraMode()) {
+                        // ignore for photo booth based camera modes
+                        if (isSimpleCamera) {
                             if (x > HIDDEN_SHUTTER_BUTTON_X && y < HIDDEN_SHUTTER_BUTTON_Y) {
                                 capturePhoto();
                                 // upper left corner is hidden launch settings button
@@ -1296,7 +1298,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void restartApp() {
-        showToast("Restarting Camera Buffer Overflow!");
+        showToast("Restarting A3DCamera");
         Intent intent = getPackageManager().getLaunchIntentForPackage(getPackageName());
         if (intent != null) {
             // Clear the back stack and start as a new task
