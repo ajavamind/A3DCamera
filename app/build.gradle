@@ -3,11 +3,11 @@ plugins {
 }
 
 android {
-    namespace 'com.andymodla.android3dcamera'
+    namespace 'com.andymodla.a3dcamera'
     compileSdk 36
 
     defaultConfig {
-        applicationId "com.andymodla.android3dcamera"
+        applicationId "com.andymodla.a3dcamera"
         minSdk 34
         targetSdk 34
         versionCode 20

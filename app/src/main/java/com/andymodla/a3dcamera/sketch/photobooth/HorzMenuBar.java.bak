@@ -1,0 +1,103 @@
+package com.andymodla.android3dcamera.sketch.photobooth;
+
+
+import processing.core.PApplet;
+import android.view.KeyEvent;
+
+class HorzMenuBar implements IGui {
+  PApplet base;
+
+  MenuKey printKey;
+  MenuKey aiEditKey;
+  MenuKey shareKey;
+
+  MenuKey[] menuKey;
+
+  int numKeys = 3;
+  float menuX;
+  float menuY;
+  float menuWidth;
+  float menuHeight;
+  float inset = 10;
+  float w, h;  // width and height of key area
+  float menuTextSize;
+
+  public HorzMenuBar(PApplet base, float menuX, float menuY, float menuWidth, float menuHeight) {
+    this.base = base;
+    this.menuX = menuX; // top left corner of menu bar
+    this.menuY = menuY; // top left corner of menu bar
+    this.menuWidth = menuWidth;
+    this.menuHeight = menuHeight;
+
+    menuTextSize = FONT_SIZE;
+
+    aiEditKey = new MenuKey(base, KeyEvent.KEYCODE_R, "AI Edit", menuTextSize, yellow, backTransparent);
+    printKey = new MenuKey(base, KeyEvent.KEYCODE_P, "Print", menuTextSize, yellow, backTransparent);
+    shareKey = new MenuKey(base, KeyEvent.KEYCODE_B, "Share", menuTextSize, yellow, backTransparent);
+
+    menuKey = new MenuKey[numKeys];
+
+    menuKey[2] = shareKey;
+    menuKey[1] = aiEditKey;
+    menuKey[0] = printKey;
+
+    h = (float) menuHeight; // height of each key area rectangle
+    w = menuWidth/ (float) ((numKeys)); // width of key
+
+    // left side
+    for (int i = 0; i < numKeys; i++) {
+      menuKey[i].setPosition(menuX + inset +i*w, inset +menuY , w - 2 * inset, h - 2 * inset, inset);
+      menuKey[i].setActive(true);
+      menuKey[i].setVisible(true);
+    }
+
+  }
+
+
+  // set all visible
+  public void setVisible(boolean visible) {
+    for (int i = 0; i < menuKey.length; i++) {
+      menuKey[i].setVisible(visible);
+    }
+  }
+
+  // set all active
+  void setActive(boolean active) {
+    for (int i = 0; i < menuKey.length; i++) {
+      menuKey[i].setActive(active);
+    }
+  }
+
+  // display all menu bar keys with background
+  void display() {
+    base.fill(gray); // background color of menu bar area // andy
+    base.noStroke();
+    //rect(0, 0, menuWidth, menuHeight);
+    //base.rect(menuX, menuY, menuWidth, menuHeight);
+
+    for (int i = 0; i < menuKey.length; i++) {
+      menuKey[i].draw();
+      menuKey[i].setHighlight(false);
+    }
+  }
+
+  int mousePressed(int x, int y) {
+    int mkeyCode = 0;
+    int mkey = 0;
+
+    if (x >= menuX && x <= (menuX + menuWidth) ) {
+      // menu touch control area at either left or right side
+      for (int i = 0; i < numKeys; i++) {
+        if (menuKey[i].visible && menuKey[i].active) {
+          if (x >= menuKey[i].x && x<= (menuKey[i].x + menuKey[i].w) &&
+            y >= menuKey[i].y && y <= (menuKey[i].y +menuKey[i].h)) {
+            mkeyCode = menuKey[i].keyCode;
+            menuKey[i].setHighlight(true);
+            break;
+          }
+        }
+      }
+    }
+    return mkeyCode;
+  }
+}
