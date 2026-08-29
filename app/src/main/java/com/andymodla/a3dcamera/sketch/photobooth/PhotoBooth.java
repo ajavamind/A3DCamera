@@ -35,7 +35,7 @@ import java.util.Date;
 
 
 public class PhotoBooth extends PApplet implements IGui {
-    private static final boolean DEBUG = true; //MyDebug.DEBUG;
+    private static final boolean DEBUG = MyDebug.DEBUG;
     private static final boolean testMode = false;
     private static boolean testCheckDraw = false;
 
