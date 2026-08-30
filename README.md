@@ -176,8 +176,6 @@ This mode is the default after a clean install (no app of the XBP)
 
 
 ###### Photo Booth Camera Mode (Buzzer Box)
-This mode is configured with a slash command.
-
 ![Buzzer Box Photo Booth Controller](images/photoboothbuzzerbox2.jpg)
 
 The Buzzer box is a repurposed Bluetooth wireless mouse. The box has 3 contact switches. 
@@ -188,17 +186,17 @@ The switches connect to buttons in the wireless mouse.
 * RIGHT Button: Toggle between live view and review of last captured photo in display mode set by the middle button.
    
 ### Limitations
-Captured images are on par in quality with the native camera app. However, with this camera images may still need adjustments for vertical alignment, horizontal perspective, contrast, color saturation, color balance, and sharpening.
+Captured images are on par in quality with the native camera app. However, with this camera images may still need adjustments for vertical alignment, horizontal perspective lens distortion, contrast, color saturation, color balance, and sharpening.
 
-Color balance adjustments are not implemented. Exposure lock is not implemented.
+Color balance adjustments are not implemented.
 
 There are no camera leveling, tilt, or subject distance suggestions from the app.
 
 ## Usage
 1. I discovered my camera lens vertical alignment is only off by 1 pixels so that live free-viewing is possible without eye strain for me. But the camera can not be too close to the subject.
-2. Distance to the subject of about 1.5 meter matches the tablet's 50mm camera lens interaxial separation distance using best viewing experience calculations.
+2. Camera distance to your subject is about 1.5 meters. This distance matches the tablet's 50mm camera lens interaxial separation based on formula calculations for the best viewing experience.
 3. Synchronization of the camera lens shutters is not known. The shutter speed is automatically set by the camera so motion blur is possible.
-4. I like to use a Bluetooth remote to take photos instead of the button keys on the camera. This requires pairing with a remote controller, keyboard or mouse.
+4. I like to use a Bluetooth remote controller to take photos instead of pressing button keys on the camera. The XBP requires pairing with Bluetooth remote controller, keyboard or mouse.
 
 ## App Download and Install
 
