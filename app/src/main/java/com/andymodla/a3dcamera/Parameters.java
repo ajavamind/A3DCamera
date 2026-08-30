@@ -71,8 +71,8 @@ class ParamStore {
             private final SharedPreferences prefs;
             private final Context context;
 
-            // Camera application modes
-            public static final int SIMPLE_MODE = 0;
+            // Camera modes
+            public static final int SIMPLE_MODE = 0;  // not used in photo booth sketch
             public static final int BASIC_MODE = 1;
             public static final int STEREOSCOPE_MODE = 2;
             public static final int PHOTO_BOOTH_MODE = 3;
@@ -686,8 +686,8 @@ class ParamStore {
 
             ParamStore cameraModeStore = new ParamStore(
                     "mode", "cameraMode", "Application Camera Mode",
-                    "getCameraMode", "setCameraMode", int.class, "2", // default Stereoscope 3D Camera
-                    "Application camera mode: Simple 3D Camera, Basic 3D Camera, Stereoscope 3D Camera, Photo Booth."
+                    "getCameraMode", "setCameraMode", int.class, "1", // default Basic 3D Camera
+                    "Application camera mode: Simple 3D Camera (not used), Basic 3D Camera, Stereoscope 3D Camera, Photo Booth."
             );
 
             ParamStore isBlankScreenStore = new ParamStore(

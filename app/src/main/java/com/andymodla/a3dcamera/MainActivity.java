@@ -704,6 +704,7 @@ public class MainActivity extends AppCompatActivity {
         if (!isSimpleCamera && isReview()) {
             camera.pauseCameraPreviewSession();
             photoBooth.setImageLabelTimeout();
+            photoBooth.reloadImages();
         } else if (!isSimpleCamera && isLiveView()) {
             camera.resumeCameraPreviewSession();
         }

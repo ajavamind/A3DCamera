@@ -12,6 +12,7 @@ import android.media.MediaScannerConnection;
 import android.view.KeyEvent;
 import android.graphics.Bitmap;
 
+import com.andymodla.a3dcamera.BuildConfig;
 import com.andymodla.a3dcamera.DisplayMode;
 import com.andymodla.a3dcamera.Media;
 import com.andymodla.a3dcamera.MyDebug;
@@ -46,7 +47,8 @@ public class PhotoBooth extends PApplet implements IGui {
     Gui gui;
 
     private volatile int state; // updated from MainActivity
-    private boolean initial = true;
+    private volatile boolean initial = true;
+    private volatile boolean reviewImagesPresent = false;
 
     PImage imgLeft;
     PImage imgRight;
@@ -111,16 +113,6 @@ public class PhotoBooth extends PApplet implements IGui {
     private String[] rotatingText = {"-", "\\", "|", "/"};
     private int rotatingIndex = 0;
     private volatile boolean rotating = false;  // for test to show frame rate
-
-//    // menu mode functions
-//    private static final String NO_OPERATION_MODE = "";
-//    private static final String PARALLAX_MODE = "Parallax";
-//    private static final String ZOOM_MODE = "Zoom";
-//    private static final int NO_OPERATION_MODE_INDEX = 0;
-//    private static final int PARALLAX_MODE_INDEX = 1;
-//    private static final int ZOOM_MODE_INDEX = 2;
-//    private int modeIndex = NO_OPERATION_MODE_INDEX;
-//    private String[] menuModeLabels = {NO_OPERATION_MODE, PARALLAX_MODE, ZOOM_MODE};
 
     DisplayMode displayMode = DisplayMode.SBS;
     int debugHelp = 0;
@@ -244,9 +236,9 @@ public class PhotoBooth extends PApplet implements IGui {
         frameRate(displayFPS);
         initial = true;
         if (media.leftReview == null && media.rightReview == null) {
-            boolean success = loadImageFileList();
-            if (DEBUG) PApplet.println("PhotoBooth loadImageFileList() = " + success);
-            if (success) {
+            reviewImagesPresent = loadImageFileList();
+            if (DEBUG) PApplet.println("PhotoBooth loadImageFileList() = " + reviewImagesPresent);
+            if (reviewImagesPresent) {
                 PImage sbsImage = loadImage(sbsImageFiles.get(currentIndex));
                 if (sbsImage != null) {
                     PImage[] split = splitImageLR(sbsImage, Camera3D.CAMERA_WIDTH_DEFAULT, Camera3D.CAMERA_HEIGHT_DEFAULT);
@@ -268,20 +260,21 @@ public class PhotoBooth extends PApplet implements IGui {
         textAlign(CENTER, CENTER);
         fill(yellow);
         int row = 72;
+        String sVersion = " Version: " + BuildConfig.VERSION_NAME + " Alpha";
         if (parameters.isPhotoBoothCameraMode()) {
             text("3D Photo Booth", (float) width / 2, (float) height / 2); // left
             textSize(24);
-            text("Please wait ...", (float) width / 2, (float) (height / 2) + 4 * row);  // left
+            text(sVersion, (float) width / 2, (float) (height / 2) + 4 * row);  // left
         } else if (parameters.isStereoscopeCameraMode()) {
             text("3D Stereoscope Camera", (float) width / 4, (float) height / 2);  // left
             text("3D Stereoscope Camera", ((float) 3 * width / 4) + TITLE_STEREO_OFFSET, (float) height / 2); // right
             textSize(24);
-            text("Please wait ...", (float) width / 4, (float) (height / 2) + 4 * row);  // left
-            text("Please wait ...", ((float) 3 * width / 4) + TITLE_STEREO_OFFSET, (float) (height / 2) + 4 * row); // right
+            text(sVersion, (float) width / 4, (float) (height / 2) + 4 * row);  // left
+            text(sVersion, ((float) 3 * width / 4) + TITLE_STEREO_OFFSET, (float) (height / 2) + 4 * row); // right
         } else {
-            text("3D Camera", (float) width / 2, (float) height / 2);  // center
+            text("3D Basic Camera", (float) width / 2, (float) height / 2);  // center
             textSize(24);
-            text("Please wait ...", (float) width / 2, (float) (height / 2) + 4 * row);  // left
+            text(sVersion, (float) width / 2, (float) (height / 2) + 4 * row);  // left
         }
 
         if (DEBUG)
@@ -1603,6 +1596,13 @@ public class PhotoBooth extends PApplet implements IGui {
                 textSize(48);
                 text("No Photo Available for Review", width / 2, height / 2);
             }
+        }
+    }
+
+    public void reloadImages() {
+        if (DEBUG) println("reloadImages() state=" + MainActivity.stateName[mainActivity.state]);
+        if (!reviewImagesPresent) {
+            reviewImagesPresent = loadImageFileList();
         }
     }
 

@@ -49,7 +49,6 @@ import com.andymodla.a3dcamera.MainActivity;
 import com.andymodla.a3dcamera.R;  // kludge fix this
 import com.andymodla.a3dcamera.Media;
 import com.andymodla.a3dcamera.Parameters;
-import com.andymodla.a3dcamera.sketch.photobooth.PhotoBooth;
 
 import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;
@@ -171,14 +170,6 @@ public class Camera3D {
     private static final int SPOT_METERING = 2;
     static final int[] METERING = {FRAME_AVERAGE, CENTER_WEIGHTED, SPOT_METERING};
     public static String[] METERING_NAMES = {"FRAME AVERAGE", "CENTER WEIGHTED", "SPOT METERING"};
-
-    // Function modes
-//    public static final int FUNCTION_MODE_OFF = 0;
-//    public static final int FUNCTION_MODE_EV = 1;
-//    public static final int FUNCTION_MODE_ZOOM = 3;
-//    public static final int FUNCTION_MODE_PARALLAX = 2;
-//    private volatile int functionMode = FUNCTION_MODE_EV;
-//    private volatile int lastFunctionMode = FUNCTION_MODE_OFF;
 
     // Saturation 0 - 10, default 5
     private static final CaptureRequest.Key<Integer> SATURATION = new CaptureRequest.Key<>("org.codeaurora.qcamera3.saturation.use_saturation", Integer.class);
