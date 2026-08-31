@@ -1,4 +1,4 @@
-package com.andymodla.imagebroadcastdownloader;
+package com.andymodla.photoreceiver;
 
 /**
  * Image Broadcast Downloader app

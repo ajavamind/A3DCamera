@@ -29,7 +29,7 @@ import android.util.Log;
 import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
-import com.andymodla.imagebroadcastdownloader.UrlSource;
+import com.andymodla.photoreceiver.UrlSource;
 
 import netP5.*;
 import netP5.Bytes;

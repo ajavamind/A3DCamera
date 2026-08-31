@@ -1,5 +1,5 @@
 /**
- * Image Broadcast Downloader app for 3D Photo Booth local area network
+ * Image Receiver app for 3D Photo Booth local area network
  * Copyright 2025-2026, Andy Modla All Rights Reserved
  */
 
@@ -42,9 +42,13 @@ import java.io.FileOutputStream;
 import java.net.URL;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
 
-import com.andymodla.imagebroadcastdownloader.DownloadHelper;
-import com.andymodla.imagebroadcastdownloader.UrlSource;
+import com.andymodla.photoreceiver.DownloadHelper;
+import com.andymodla.photoreceiver.UrlSource;
 import android.media.MediaScannerConnection;
 import android.os.Build;
 import processing.core.*;
@@ -52,7 +56,6 @@ import processing.event.*;
 import processing.opengl.*;
 
 import java.util.HashMap;
-import java.util.ArrayList;
 import java.io.File;
 import java.io.BufferedReader;
 import java.io.PrintWriter;
@@ -72,11 +75,14 @@ import android.content.Context; // Required if calling from a Fragment or Servic
 import static android.content.Context.DISPLAY_SERVICE;
 import static android.content.Context.WINDOW_SERVICE;
 import static android.content.Context.ACTIVITY_SERVICE;
-
+import android.os.Environment;
+import android.provider.MediaStore;
 //import MyDebug;
 
 private static final boolean DEBUG = false;
 private static String renderer = P2D;
+public static final String BASE_FOLDER = Environment.DIRECTORY_DCIM;
+    public static final String SAVE_FOLDER = "A3DCamera";
 String modelName;
 String manufacturer;
 String deviceName;
@@ -88,6 +94,10 @@ String hostIp;
 int port = 8000;
 String version = "1.0";
 volatile public String path;
+// Review Global variables
+ArrayList<String> sbsImageFiles; // List of links to image files stored in folder /DCIM/A3DCamera
+int currentIndex = 0;  // current index into sbsImageFiles for review
+
 volatile PImage photo;
 volatile PImage interlacedImage;
 volatile PImage anaImage;
@@ -128,7 +138,8 @@ int realHeight2;
 boolean LETV = false;
 boolean SKYY = false;
 boolean SONY4K = false;
-boolean FREEVI = false;  // flightdeck 3D tablet: not working because build needs API 15 Processing Android Mode library and gradle version to match
+boolean FREEVI = false;  // flightdeck 3D tablet: not working because 
+// build needs API 15 Processing Android Mode library and gradle version to match
 String message1="No Errors";
 String message2="";
 
@@ -146,7 +157,8 @@ void onStart() {
     println("setup DownloadHelper");
     downloadHelper = new DownloadHelper(getContext());
   }
-  urlSource = new UrlSource(downloadHelper, this);
+  urlSource = new UrlSource(downloadHelper);  // (ImageBroadcastDownloader)
+  urlSource.setImageReceiver(this);
 
   if (udpRemoteControl == null) {
     println("setup UDP receiver");
@@ -213,6 +225,7 @@ void settings() {
   } else if (manufacturer.equals("Sony") && (modelName.equals("G8142") )) {
     // Sony Xperia XZ Premium phone used in a stereoscope
     conversion = SBS;
+    useDownloader = false;
     SONY4K = true;
   } else if (manufacturer.equals("Sony") && (modelName.equals("BRAVIA 4K VH2") )) {
     conversion = ANAGLYPH;  // not a 3D display, no stereoscope viewing, not free viewing
@@ -332,6 +345,7 @@ void setup() {
     // wait for surface size change, no callback kludge
     delay(200);
   }
+
   println("setup() ready="+ready);
   System.gc();
 }
@@ -430,6 +444,7 @@ void draw() {
       }
       if (photo != null && photo.width>0 && photo.height>0) {
         System.out.println("Valid image path="+ path + " photo w="+photo.width + " h="+photo.height);
+        // save in list
       } else {
         message1 = "loadImage Error path="+path + " photo null or not read";
       }
@@ -523,6 +538,57 @@ void draw() {
       displayStatus();
     }
   }
+}
+
+/**
+ * Load image file list from external storage
+ *
+ * @return true if images loaded, false if failed to load any image
+ */
+public boolean loadImageFileList() {
+  sbsImageFiles = new ArrayList<String>();
+
+  // Get the external storage directory
+  File externalStorage = Environment.getExternalStorageDirectory();
+  File saveFolder = new File(externalStorage, BASE_FOLDER + File.separator + SAVE_FOLDER);
+  if (DEBUG) println("saveFolder=" + saveFolder.getAbsolutePath());
+  if (!saveFolder.exists() || !saveFolder.isDirectory()) {
+    if (DEBUG) PApplet.println("Folder not found: " + saveFolder.getAbsolutePath());
+    return false;
+  }
+
+  // Get all JPG/JPEG files
+  File[] files = saveFolder.listFiles();
+  if (files != null) {
+    for (File file : files) {
+      if (file.isFile()) {
+        String name = file.getName().toLowerCase();
+        if (DEBUG) println("sbs file name: " + name);
+        String fullPath = file.getAbsolutePath();
+        if (DEBUG) println("sbs file path: " + fullPath);
+        if (fullPath.toLowerCase().endsWith(".jpg") || fullPath.toLowerCase().endsWith(".jpeg")) {
+          String nameWithoutExt = fullPath.substring(0, fullPath.lastIndexOf('.'));
+          if (DEBUG) println("nameWithoutExt: " + nameWithoutExt);
+          if (nameWithoutExt.toLowerCase().endsWith("_2x1")) {
+            boolean sbsFilesAdded = sbsImageFiles.add(fullPath);
+            if (sbsFilesAdded) println("sbs file added: " + fullPath);
+          }
+        }
+      }
+    }
+  }
+
+  // Sort list in ascending order
+  Collections.sort(sbsImageFiles);
+
+  currentIndex = sbsImageFiles.size() - 1;
+  if (DEBUG) PApplet.println("Found " + sbsImageFiles.size());
+  if (currentIndex < 0) {
+    return false;
+  }
+  if (DEBUG) println("Last: " + sbsImageFiles.get(currentIndex));
+
+  return true;
 }
 
 PImage loadImageScaling(String url) {
