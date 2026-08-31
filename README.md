@@ -31,7 +31,7 @@ The intended uses for the app are situations where the camera is not in your han
 The specific uses I would like to have with a 3D camera app are:
 
 * 3D Photo Booth with a local network 6x4 photo printer.
-* 3D live view, photo capture, or photo viewing using any stereoscope. This worked with London Stereoscopic Company OWL stereoscope using adapters to hold the BPO in place. This includes a [Mercury Works](https://www.mercuryworks.store) phone viewer stereoscope.
+* 3D live view, photo capture, or photo viewing using any stereoscope. This worked with London Stereoscopic Company OWL stereoscope using adapters to hold the XBP in place. This includes a [Mercury Works](https://www.mercuryworks.store) phone viewer stereoscope.
 * Live View and Review Anaglyph 3D for finding and demonstrating the stereo window. This would be usedful in a photo booth and live 3D demonstrations.
 * Remote control of the camera using Bluetooth or on a local Wi-Fi network
 * Simultaneous separate multiple 2D and 3D cameras remote control from the app
@@ -311,4 +311,84 @@ Sitting in another room I can see live view output of the camera and capture ima
 
 ## Credits
 
-Thanks to Wilbert Brants for his code example of 3D camera setup and operation. 
+Thanks to Wilbert Brants for sharing his Android 3D camera code example. 
+
+## Licenses
+
+The A3DCamera application uses the MIT License.
+
+--------------------------------------------------------------------------
+
+
+The app includes a Processing-Android Java sketch for displaying the camera viewfinder within a standard Android framework.
+Processing is a platform and sketch library for coding visual art projects.
+
+See [https://processing.org](https://processing.org) for more information about Processing.
+
+The A3DCamera app includes a portion of the Github Processing-Android library source code with a few modifications I made to improve its performance.
+[https://github.com/processing/processing-android](https://github.com/processing/processing-android)
+
+
+The Processing-Android library code is part of the Processing project - [https://android.processing.org/](https://android.processing.org/)
+
+*  Copyright (c) 2012-21 The Processing Foundation
+*  Copyright (c) 2004-12 Ben Fry and Casey Reas
+*  Copyright (c) 2001-04 Massachusetts Institute of Technology
+
+  This library is free software; you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Public
+  License as published by the Free Software Foundation, version 2.1.
+
+  This library is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
+
+  You should have received a copy of the GNU Lesser General
+  Public License along with this library; if not, write to the
+  Free Software Foundation, Inc., 59 Temple Place, Suite 330,
+  Boston, MA  02111-1307  USA
+
+--------------------------------------------------------------------------
+
+The A3dCamera app includes a sub section of the Processing Android library oscP5 for its UDP network operations.
+The code was modified to improve its performance.
+https://www.sojamo.de/libraries/oscp5/
+
+A network library for processing which supports UDP, TCP and Multicast.
+ 
+(c) 2004-2011
+ 
+This library is free software; you can redistribute it and/or
+modify it under the terms of the GNU Lesser General Public
+License as published by the Free Software Foundation; either
+version 2.1 of the License, or (at your option) any later version.
+ 
+This library is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
+ 
+  You should have received a copy of the GNU Lesser General
+Public License along with this library; if not, write to the
+  Free Software Foundation, Inc., 59 Temple Place, Suite 330,
+  Boston, MA  02111-1307  USA
+ 
+  @author		Andreas Schlegel http://www.sojamo.de/libraries/oscP5
+  @modified	12/19/2011
+@version		0.9.8
+ 
+
+netP5 Modified by Andy Modla
+see original source at http://www.sojamo.de/libraries/oscP5/ for code comments
+
+--------------------------------------------------------------------------
+
+io.github.crow-misia.libyuv:libyuv-android:0.43.2
+
+
+Apache-2.0	
+
+https://www.apache.org/licenses/LICENSE-2.0.txt
+
+
