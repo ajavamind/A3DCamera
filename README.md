@@ -136,12 +136,12 @@ because the app can accomodate the controller codes it does receive.
 * Shutter/Print - (XBP Mode/Camera key or R game controller key) In Live-view mode take a photo on key release. In Photo Booth mode show count down seconds delay, until photo capture. In Review mode print current review photo.
 
 * Y - Zoom and shift photo in review mode
-* X - View and modify the parallax in either live-view or review. Saves change in storage
-* BACK (A game controller key)   - Toggles game controll soft keys on the display. Cancel continuous capture or return to camera app from print. Outside app this is the BACK key.
-* STATUS ( B game controller key) - Toggle status. Use to display EV to use minus or plus keys to change exposure compensation. Same applies to Zoom and parallax changes
+* X - View and modify the Parallax in live-view alterning the placement of the stereo window. Saves Parallax change in storage
+* BACK (A game controller key)   - Toggles game controller soft keys on the display. Cancel continuous capture or return to camera app from print. This is the standard BACK key for Android apps.
+* STATUS ( B game controller key) - Toggle current active feature lock/unlock. Use to lock/unlock EV after minus or plus keys change exposure compensation. Same applies to Zoom and Parallax changes
 * MINUS - decrease EV exposure compensation by 1/6.
 * PLUS - increase EV exposure compensation by 1/6
-* HOME - To exit/pause the app, press the Home game controller key.
+* HOME - To exit/pause the app, press the Home game controller key. This key will wake-up the connection to the app.
 * ARROW KEYS - See options on display soft key menu
 
 * Press Screen in center region - Toggles menu soft keys corresponding to game controller similar to A game controller key
@@ -160,9 +160,8 @@ Here are the Android keyboard keys matching the similar functions of the mini ga
 * A - DISPLAY - Toggle change Review display mode (SBS,  Anaglyph, Left, Right)
 * T - EXPOSURE METERING FN  - Cycle through exposure metering: Frame Average, Center Weighted, Spot Metering
 * C - CONTINUOUS shutter  - Start continous photo capture at about 1 photo every two seconds (or less depending on the number of files stored),
-   until the Back key is pressed and released again, or until 60 images are captured. In Photo Booth mode take a maximum of 4 images.
-*  TBD  - Set countdown delay time before taking a photo with the shutter or burst key. This value is also used in Photo Booth mode.
-* H - HELP to see all the slash and keyboard commands possible.
+   until the Back key is pressed and released again. In Photo Booth mode take a maximum of 4 images.
+* H - HELP to see all the slash and key commands implemented.
 
 ##### Bluetooth Mouse Remote Control
 Connect a Bluetooth Mouse to control the camera app with the mouse buttons. A mouse can be rewired in a buzzer style box as a Photo Booth controller.
@@ -191,12 +190,6 @@ Captured images are on par in quality with the native camera app. However, with 
 Color balance adjustments are not implemented.
 
 There are no camera leveling, tilt, or subject distance suggestions from the app.
-
-## Usage
-1. I discovered my camera lens vertical alignment is only off by 1 pixels so that live free-viewing is possible without eye strain for me. But the camera can not be too close to the subject.
-2. Camera distance to your subject is about 1.5 meters. This distance matches the tablet's 50mm camera lens interaxial separation based on formula calculations for the best viewing experience.
-3. Synchronization of the camera lens shutters is not known. The shutter speed is automatically set by the camera so motion blur is possible.
-4. I like to use a Bluetooth remote controller to take photos instead of pressing button keys on the camera. The XBP requires pairing with Bluetooth remote controller, keyboard or mouse.
 
 ## App Download and Install
 
@@ -233,10 +226,13 @@ These two commands affect the live view image, and change the alignment of store
 
 A list of commands screenshot with the "H" help key from a wireless keyboard:
 
-
-## Usage Hints
-1. To pause the app without using the BACK key, use HOME key or swipe from the right edge to the left, to show the navigation bar. Restart the app by pressing the app icon.
-2. To use the navigation bar press the box or circle to exit (however neither will close the app, unless you swipe it off or clear/close all apps).
+## Usage
+1. I discovered my camera lens vertical alignment is only off by 1 pixels so that live free-viewing is possible without eye strain for me. But the camera can not be too close to the subject.
+2. The best camera distance to your subject should be about 1.5 meters based on the tablet's 50mm camera lens interaxial separation. This distance is based on formula calculations to derive the average best 3D viewing experience.
+3. Synchronization of the camera lens shutters is not known. The shutter speed is automatically set by the camera so motion blur is possible.
+4. I like to use a Bluetooth remote controller to take photos instead of pressing button keys on the camera. The XBP requires pairing with Bluetooth remote controller, keyboard or mouse.
+5. To pause the app without using the BACK key, use HOME key or swipe from the right edge to the left, to show the navigation bar. Restart the app by pressing the app icon.
+6. To use the navigation bar press the box or circle to exit (however neither will close the app, unless you swipe it off or clear/close all apps).
 
 ## Hardware Isssues
 1. The XReal BP camera will time out at a maximum of 15 minutes ( Settings->screen timeout). 
@@ -248,7 +244,7 @@ A list of commands screenshot with the "H" help key from a wireless keyboard:
 ## Stretch Goals
 
 1. Set image capture aspect ratio: 4:3, 16:9 and 1:1.
-2. Time Interval and continuous captures.
+2. Time Interval and motion detection captures.
 
 ## Experiments
 ### 1. Wi-Fi Remote Control
