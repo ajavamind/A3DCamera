@@ -209,6 +209,11 @@ And in "Gestures" you can change the power button operation from the default "Ac
 I move the "Assistant" app icon to the home screen to access a digital assistant.
 
 For best performance close all apps including background apps, except the HTTP server app used for photo file transfers, before starting A3DCamera.
+A3DCamera requires the "Simple HTTP Server PLUS" app for broadcasting photos on its local WiFi private network. The A3dCamera app photo booth mode uses this server for sharing photos from the /DCIM/A3DCamera folder. 
+
+For printing 4x6 photos with the Canon CP1300 or CP1500 printer, you need to install the Canon Print Service plugin application from the Google Play store. 
+The Canon printer app package name invoked by A3DCamera app is "jp.co.canon.android.printservice.plugin".
+
 
 ## Command Line Debug
 The app implements a command line interface to set and save parameters.
@@ -233,7 +238,7 @@ A list of commands screenshot with the "H" help key from a wireless keyboard:
 4. I like to use a Bluetooth remote controller to take photos instead of pressing button keys on the camera. The XBP requires pairing with Bluetooth remote controller, keyboard or mouse.
 5. To pause the app without using the BACK key, use HOME key or swipe from the right edge to the left, to show the navigation bar. Restart the app by pressing the app icon.
 6. To use the navigation bar press the box or circle to exit (however neither will close the app, unless you swipe it off or clear/close all apps).
-
+   
 ## Hardware Isssues
 1. The XReal BP camera will time out at a maximum of 15 minutes ( Settings->screen timeout). 
    This can be extended by entering Developer mode, set a developer option to "Stay awake" to prevent the app from sleeping during charging.
@@ -243,7 +248,7 @@ A list of commands screenshot with the "H" help key from a wireless keyboard:
 
 ## Stretch Goals
 
-1. Set image capture aspect ratio: 4:3, 16:9 and 1:1.
+1. Set image capture aspect ratio: 4:3, 16:9 and 1:1 using crop.
 2. Time Interval and motion detection captures.
 
 ## Experiments
