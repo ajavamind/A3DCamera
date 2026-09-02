@@ -311,7 +311,7 @@ Thanks to Wilbert Brants for sharing his Android 3D camera code example.
 
 ## Licenses
 
-The A3DCamera application uses the MIT License.
+The A3DCamera android application uses the MIT License.
 
 --------------------------------------------------------------------------
 
@@ -380,7 +380,13 @@ see original source at http://www.sojamo.de/libraries/oscP5/ for code comments
 
 --------------------------------------------------------------------------
 
-io.github.crow-misia.libyuv:libyuv-android:0.43.2
+Libyuv-android Library
+
+Used to convert yuv images to jpg.
+
+https://github.com/crow-misia/libyuv-android/
+
+io.github.crow-misia.libyuv:libyuv-android:0.44.0
 
 
 Apache-2.0	
