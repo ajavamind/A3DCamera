@@ -1333,8 +1333,8 @@ public class PhotoBooth extends PApplet implements IGui {
                 }
                 break;
 
-            case KeyEvent.KEYCODE_PERIOD:
-            case MainActivity.RIGHT_ARROW_KEY:
+            case KeyEvent.KEYCODE_COMMA:
+            case MainActivity.LEFT_ARROW_KEY:
                 //if (showMenu) {
 //                if (mainActivity.isLiveviewFunction()) {
 //                    int index = stereoCamera.incrementExposureCompensation(1);
@@ -1362,8 +1362,8 @@ public class PhotoBooth extends PApplet implements IGui {
                 }
                 //}
                 break;
-            case KeyEvent.KEYCODE_COMMA:
-            case MainActivity.LEFT_ARROW_KEY:
+            case KeyEvent.KEYCODE_PERIOD:
+            case MainActivity.RIGHT_ARROW_KEY:
                 //if (showMenu) {
 //                if (mainActivity.isLiveviewFunction()) {
 //                    int index = stereoCamera.decrementExposureCompensation(1);

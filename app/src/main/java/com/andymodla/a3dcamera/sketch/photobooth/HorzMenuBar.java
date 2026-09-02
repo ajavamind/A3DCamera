@@ -184,7 +184,7 @@ class HorzMenuBar implements IGui {
                 menuKey[10].setText("REVIEW\n" + " B");
                 //menuKey[11].setKeyColor(graytransparent);
                 menuKey[11].setKeyColor(yellow);
-                menuKey[11].setText("SHARE");
+                menuKey[11].setText("BROADCAST");
                 menuKey[12].setText("NEXT\nPHOTO" + RIGHT_ARROW);
                 menuKey[12].setActive(true);
                 menuKey[12].setVisible(true);
