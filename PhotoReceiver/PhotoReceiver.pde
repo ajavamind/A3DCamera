@@ -235,7 +235,7 @@ void settings() {
     FREEVI = true;
     useDownloader = false;  // FlightDeck Android version does support downloader, but will not use
   } else {
-    conversion = ANAGLYPH;
+    conversion = SBS;  // assume default stereo free viewing
   }
 
   if (LETV) {
