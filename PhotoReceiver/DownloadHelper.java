@@ -1,7 +1,7 @@
 package com.andymodla.photoreceiver;
 
 /**
- * Image Broadcast Downloader app
+ * Photo Receiver app
  * Copyright 2025-2026, Andy Modla All Rights Reserved
  */
 import android.app.DownloadManager;

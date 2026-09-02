@@ -8,7 +8,7 @@ public class Gui {
     static final boolean DEBUG = false;
 
     PApplet base;  // base sketch reference
-    MainHorzMenuBar menuBar;
+    HorzMenuBar menuBar;
 
     // information zone touch coordinates
     // screen boundaries for click zone use
@@ -28,11 +28,11 @@ public class Gui {
         menuHeight = base.height / 6 - 20;
         menuX = 0;
         menuY = 0;
-        menuBar = new MainHorzMenuBar(base, menuX, menuY, menuWidth, menuHeight);
+        menuBar = new HorzMenuBar(base, menuX, menuY, menuWidth, menuHeight);
 
     }
 
-    public MainHorzMenuBar getMenuBar() {
+    public HorzMenuBar getMenuBar() {
         return menuBar;
     }
 

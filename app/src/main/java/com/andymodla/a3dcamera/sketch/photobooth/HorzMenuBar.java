@@ -7,7 +7,7 @@ import android.view.KeyEvent;
 
 import com.andymodla.a3dcamera.MainActivity;
 
-class MainHorzMenuBar implements IGui {
+class HorzMenuBar implements IGui {
     PApplet base;
 
     MenuKey settingsKey;
@@ -39,11 +39,16 @@ class MainHorzMenuBar implements IGui {
     float w, h;  // width and height of key area
     float menuTextSize;
 
-    public MainHorzMenuBar(PApplet abase, float x, float y, float menuWidth, float menuHeight) {
+    public HorzMenuBar() {
+    }
+
+    ;
+
+    public HorzMenuBar(PApplet abase, float x, float y, float menuWidth, float menuHeight) {
         this.base = abase;
         this.menuX = x; // top left corner of menu bar
         this.menuY = y; // top left corner of menu bar
-        this.menuY2 = 1080-menuHeight;
+        this.menuY2 = 1080 - menuHeight;
         this.menuWidth = menuWidth;
         this.menuHeight = menuHeight;
 
@@ -62,9 +67,9 @@ class MainHorzMenuBar implements IGui {
         downArrowKey = new MenuKey(base, KeyEvent.KEYCODE_DPAD_DOWN, "", menuTextSize, yellow, backTransparent);
         leftArrowKey = new MenuKey(base, KeyEvent.KEYCODE_DPAD_LEFT, "", menuTextSize, yellow, backTransparent);
         minusKey = new MenuKey(base, KeyEvent.KEYCODE_MINUS, "-EV", menuTextSize, yellow, backTransparent);
-        okKey = new MenuKey(base, MainActivity.BUTTON_B_KEY, "LIVEVIEW\nEV", menuTextSize, yellow, backTransparent);
-        plusKey = new MenuKey(base, KeyEvent.KEYCODE_PLUS,  "+EV", menuTextSize, yellow, backTransparent);
-        rightArrowKey = new MenuKey(base, KeyEvent.KEYCODE_DPAD_RIGHT, "" , menuTextSize, yellow, backTransparent);
+        okKey = new MenuKey(base, MainActivity.BUTTON_B_KEY, "UNLOCK\nEV", menuTextSize, yellow, backTransparent);
+        plusKey = new MenuKey(base, KeyEvent.KEYCODE_PLUS, "+EV", menuTextSize, yellow, backTransparent);
+        rightArrowKey = new MenuKey(base, KeyEvent.KEYCODE_DPAD_RIGHT, "", menuTextSize, yellow, backTransparent);
         upArrowKey = new MenuKey(base, KeyEvent.KEYCODE_DPAD_UP, "", menuTextSize, yellow, backTransparent);
 
         menuKey = new MenuKey[numKeys];
@@ -106,9 +111,17 @@ class MainHorzMenuBar implements IGui {
         setMenuKeyLabels(MainActivity.FUNCTION_MODE_LIVEVIEW);
     }
 
+    public void updateEvKey(boolean showEv) {
+        if (showEv) {
+            menuKey[10].setText("LOCK\nEV B");
+        } else {
+            menuKey[10].setText("UNLOCK\nEV B");
+        }
+    }
+
     // update key labels for camera functions
     public void setMenuKeyLabels(int mode) {
-        base.println("setMenuKeyLabels "+mode);
+        base.println("setMenuKeyLabels " + mode);
         switch (mode) {
             case MainActivity.FUNCTION_MODE_LIVEVIEW:
                 menuKey[0].setText("REVIEW");
@@ -134,7 +147,7 @@ class MainHorzMenuBar implements IGui {
                 menuKey[8].setVisible(false);
                 menuKey[9].setKeyColor(yellow);
                 menuKey[9].setText("-EV");
-                menuKey[10].setText("LIVEVIEW\nEV"+" B");
+                //menuKey[10].setText("UNLOCK\nEV"+" B");
                 menuKey[11].setKeyColor(yellow);
                 menuKey[11].setText("+EV");
                 menuKey[12].setText("");
@@ -160,21 +173,22 @@ class MainHorzMenuBar implements IGui {
                 menuKey[6].setFontSize(SMALL_FONT_SIZE);
                 menuKey[6].setKeyCode(MainActivity.SHUTTER_KEY);  // decode print in shutter logic
 
-                menuKey[7].setText("FIRST\nPHOTO"+DOWN_ARROW);
+                menuKey[7].setText("FIRST\nPHOTO" + DOWN_ARROW);
                 menuKey[7].setActive(true);
                 menuKey[7].setVisible(true);
-                menuKey[8].setText("PREV\nPHOTO"+LEFT_ARROW);
+                menuKey[8].setText("PREV\nPHOTO" + LEFT_ARROW);
                 menuKey[8].setActive(true);
                 menuKey[8].setVisible(true);
                 menuKey[9].setKeyColor(graytransparent);
                 menuKey[9].setText("AI EDIT");
-                menuKey[10].setText("REVIEW\n"+" B");
-                menuKey[11].setKeyColor(graytransparent);
+                menuKey[10].setText("REVIEW\n" + " B");
+                //menuKey[11].setKeyColor(graytransparent);
+                menuKey[11].setKeyColor(yellow);
                 menuKey[11].setText("SHARE");
-                menuKey[12].setText("NEXT\nPHOTO"+RIGHT_ARROW);
+                menuKey[12].setText("NEXT\nPHOTO" + RIGHT_ARROW);
                 menuKey[12].setActive(true);
                 menuKey[12].setVisible(true);
-                menuKey[13].setText("LAST\nPHOTO"+UP_ARROW);
+                menuKey[13].setText("LAST\nPHOTO" + UP_ARROW);
                 menuKey[13].setActive(true);
                 menuKey[13].setVisible(true);
                 break;
@@ -186,13 +200,13 @@ class MainHorzMenuBar implements IGui {
                 menuKey[4].setText("BACK\nA");
 
                 menuKey[7].setText("");
-                menuKey[8].setText("-4"+LEFT_ARROW);
+                menuKey[8].setText("-4" + LEFT_ARROW);
                 menuKey[9].setKeyColor(yellow);
                 menuKey[9].setText("-1");
-                menuKey[10].setText("PARALLAX\n"+" B");
+                menuKey[10].setText("PARALLAX\n" + " B");
                 menuKey[11].setKeyColor(yellow);
                 menuKey[11].setText("+1");
-                menuKey[12].setText("+4"+RIGHT_ARROW);
+                menuKey[12].setText("+4" + RIGHT_ARROW);
                 menuKey[13].setText("");
                 break;
 
@@ -200,15 +214,15 @@ class MainHorzMenuBar implements IGui {
                 menuKey[2].setBackgroundColor(lighttransparent);
                 menuKey[3].setBackgroundColor(backTransparent);
                 menuKey[4].setText("BACK\nA");
-                menuKey[7].setText("SHIFT\nDOWN"+DOWN_ARROW);
-                menuKey[8].setText("SHIFT\nLEFT"+LEFT_ARROW);
+                menuKey[7].setText("SHIFT\nDOWN" + DOWN_ARROW);
+                menuKey[8].setText("SHIFT\nLEFT" + LEFT_ARROW);
                 menuKey[9].setKeyColor(yellow);
                 menuKey[9].setText("ZOOM-");
-                menuKey[10].setText("ZOOM\n"+" B");
+                menuKey[10].setText("ZOOM\n" + " B");
                 menuKey[11].setKeyColor(yellow);
                 menuKey[11].setText("ZOOM+");
-                menuKey[12].setText("SHIFT\nRIGHT"+RIGHT_ARROW);
-                menuKey[13].setText("SHIFT\nUP"+UP_ARROW);
+                menuKey[12].setText("SHIFT\nRIGHT" + RIGHT_ARROW);
+                menuKey[13].setText("SHIFT\nUP" + UP_ARROW);
                 break;
             default:
                 break;
@@ -247,18 +261,18 @@ class MainHorzMenuBar implements IGui {
     }
 
     boolean isOutside(int x, int y) {
-        return ( y > menuY+menuHeight && y < menuY2);
+        return (y > menuY + menuHeight && y < menuY2);
     }
 
     int mousePressed(int x, int y) {
         int mkeyCode = 0;
 
-        if (y < (menuY+menuHeight)) {
+        if (y < (menuY + menuHeight)) {
             // menu touch control area at either left or right side
             for (int i = 0; i < 7; i++) {
                 if (menuKey[i].visible && menuKey[i].active) {
                     if (x >= menuKey[i].x && x <= (menuKey[i].x + menuKey[i].w)
-                            //&& y >= menuKey[i].y && y <= (menuKey[i].y + menuKey[i].h)
+                        //&& y >= menuKey[i].y && y <= (menuKey[i].y + menuKey[i].h)
                     ) {
                         mkeyCode = menuKey[i].keyCode;
                         menuKey[i].setHighlight(true);
@@ -271,7 +285,7 @@ class MainHorzMenuBar implements IGui {
             for (int i = 7; i < numKeys; i++) {
                 if (menuKey[i].visible && menuKey[i].active) {
                     if (x >= menuKey[i].x && x <= (menuKey[i].x + menuKey[i].w)
-                            //&& y >= menuKey[i].y && y <= (menuKey[i].y + menuKey[i].h)
+                        //&& y >= menuKey[i].y && y <= (menuKey[i].y + menuKey[i].h)
                     ) {
                         mkeyCode = menuKey[i].keyCode;
                         menuKey[i].setHighlight(true);

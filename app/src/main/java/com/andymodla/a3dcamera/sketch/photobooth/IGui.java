@@ -78,4 +78,11 @@ public interface IGui {
     static final String LEFT_RIGHT_ARROW = "\u2194";
     static final String MICROPHONE = "\u1F3A4";
 
+    // Screen layout parameters for GUI
+    static int XBP_CAMERA_DISPLAY_WIDTH = 1280;
+    static int XBP_CAMERA_DISPLAY_HEIGHT = 960;
+
+    static int XBP_DISPLAY_WIDTH = 2400;
+    static int XBP_DISPLAY_HEIGHT = 1080;
+
 }

@@ -10,8 +10,8 @@ android {
         applicationId "com.andymodla.a3dcamera"
         minSdk 34
         targetSdk 34
-        versionCode 21
-        versionName "3.01"
+        versionCode 22
+        versionName "3.02"
 
         //testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -61,7 +61,7 @@ dependencies {
     // exclude Apache httpclient and http core from build as we use okhttp3 exclusively
     implementation files('libs/oscP5.jar')
     // native libyuv library for yuv image to RGB conversion
-    implementation "io.github.crow-misia.libyuv:libyuv-android:0.43.2"
+    implementation "io.github.crow-misia.libyuv:libyuv-android:0.44.0"
 
 //    implementation fileTree(include: ['*.jar'], dir: 'libs')
 //    testImplementation libs.junit

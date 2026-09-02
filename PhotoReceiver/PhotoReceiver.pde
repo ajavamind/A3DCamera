@@ -157,7 +157,7 @@ void onStart() {
     println("setup DownloadHelper");
     downloadHelper = new DownloadHelper(getContext());
   }
-  urlSource = new UrlSource(downloadHelper);  // (ImageBroadcastDownloader)
+  urlSource = new UrlSource(downloadHelper);  // (PhotoReceiver)
   urlSource.setImageReceiver(this);
 
   if (udpRemoteControl == null) {
@@ -387,18 +387,18 @@ void draw() {
         conversion = SBS;
       }
       newPhoto = true;
-    } else if (lastKeyCode == KeyEvent.KEYCODE_VOLUME_UP) {  // volume up
-      conversion++;
-      if (conversion >= conversionName.length) {
-        conversion = NO_CONVERSION;
-      }
-      newPhoto = true;
-    } else if (lastKeyCode == KeyEvent.KEYCODE_VOLUME_DOWN) {  // volume down
-      conversion--;
-      if (conversion < 0) {
-        conversion = SBS;
-      }
-      newPhoto = true;
+    //} else if (lastKeyCode == KeyEvent.KEYCODE_VOLUME_UP) {  // volume up
+    //  conversion++;
+    //  if (conversion >= conversionName.length) {
+    //    conversion = NO_CONVERSION;
+    //  }
+    //  newPhoto = true;
+    //} else if (lastKeyCode == KeyEvent.KEYCODE_VOLUME_DOWN) {  // volume down
+    //  conversion--;
+    //  if (conversion < 0) {
+    //    conversion = SBS;
+    //  }
+    //  newPhoto = true;
     } else if (lastKeyCode >= KeyEvent.KEYCODE_0 && lastKeyCode < (KeyEvent.KEYCODE_0 + conversionName.length)) {
       int kc = lastKeyCode - KeyEvent.KEYCODE_0;
       conversion = (kc >= 0 && kc < conversionName.length) ? kc: 0;
@@ -666,7 +666,7 @@ void displayStatus() {
   text(message1, margin, 100);
   text(message2, margin, 100 + inc);
 
-  text("Image Broadcast Downloader version "+ version + " " + manufacturer + " "+modelName, margin, voffset );
+  text("Photo Receiver version "+ version + " " + manufacturer + " "+modelName, margin, voffset );
   voffset += inc;
   text("Listening On "+hostIp+":"+ port + " realWidth="+realWidth + " realHeight="+realHeight, margin, voffset);
   voffset += inc;
@@ -685,7 +685,7 @@ void displayStatus() {
     voffset += inc;
     if (useDownloader) path = downloadHelper.getPath();
   }
-  text("Downloader path "+path, margin, voffset + inc);
+  text("Download path "+path, margin, voffset + inc);
   voffset += inc;
 }
 
@@ -694,7 +694,7 @@ void displayStatus() {
 void scanImage(String absolutePath) {
   // Trigger media scanner to make image visible in gallery
   MediaScannerConnection.scanFile(getContext(), new String[]{absolutePath},
-    new String[]{"image/png"}, null);
+    new String[]{"image/jpg"}, null);
   System.out.println( "MediaScannerConnection.scanFile Image saved: " + absolutePath);
 }
 

@@ -9,6 +9,7 @@ import static android.graphics.BitmapFactory.decodeStream;
 
 import android.graphics.BitmapFactory;
 import android.media.MediaScannerConnection;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.graphics.Bitmap;
 
@@ -36,7 +37,7 @@ import java.util.Date;
 
 
 public class PhotoBooth extends PApplet implements IGui {
-    private static final boolean DEBUG = MyDebug.DEBUG;
+    private static final boolean DEBUG = true; //MyDebug.DEBUG;
     private static final boolean testMode = false;
     private static boolean testCheckDraw = false;
 
@@ -63,14 +64,6 @@ public class PhotoBooth extends PApplet implements IGui {
     // Review photos for display;
     volatile PImage currentLeft;
     volatile PImage currentRight;
-
-    int XBP_CAMERA_DISPLAY_WIDTH = 1280;
-    int XBP_CAMERA_DISPLAY_HEIGHT = 960;
-
-    int cameraWidth = XBP_CAMERA_DISPLAY_WIDTH;  // default
-    int cameraHeight = XBP_CAMERA_DISPLAY_HEIGHT;
-    int XBP_DISPLAY_WIDTH = 2400;
-    int XBP_DISPLAY_HEIGHT = 1080;
 
     int displayFPS = 30; // display frames per second
     int reviewTimeout = 0;  // frame count for review timeout
@@ -351,6 +344,7 @@ public class PhotoBooth extends PApplet implements IGui {
 
     public void toggleEv() {
         showEv = !showEv;
+        gui.menuBar.updateEvKey(showEv);
         update = true;
     }
 
@@ -1233,6 +1227,7 @@ public class PhotoBooth extends PApplet implements IGui {
                         if (state == MainActivity.LIVE_VIEW_STATE) {
                             mainActivity.setFunctionMode(MainActivity.FUNCTION_MODE_LIVEVIEW);
                             gui.menuBar.setMenuKeyLabels(MainActivity.FUNCTION_MODE_LIVEVIEW);
+                            gui.menuBar.updateEvKey(showEv);
                         } else {
                             mainActivity.setFunctionMode(MainActivity.FUNCTION_MODE_REVIEW);
                             gui.menuBar.setMenuKeyLabels(MainActivity.FUNCTION_MODE_REVIEW);
@@ -1253,6 +1248,7 @@ public class PhotoBooth extends PApplet implements IGui {
                     if (state == MainActivity.LIVE_VIEW_STATE) {
                         mainActivity.setFunctionMode(MainActivity.FUNCTION_MODE_LIVEVIEW);
                         gui.menuBar.setMenuKeyLabels(MainActivity.FUNCTION_MODE_LIVEVIEW);
+                        gui.menuBar.updateEvKey(showEv);
                     } else {
                         mainActivity.setFunctionMode(MainActivity.FUNCTION_MODE_REVIEW);
                         gui.menuBar.setMenuKeyLabels(MainActivity.FUNCTION_MODE_REVIEW);
@@ -1448,6 +1444,18 @@ public class PhotoBooth extends PApplet implements IGui {
 //                    } else {
 //                        reloadReviewImage(currentIndex);
 //                    }
+                    // share broadcast review photo on network
+                    if (DEBUG) println("share broadcast review photo on network");
+                    if (mainActivity.imageSender != null) {
+                        String filename = sbsImageFiles.get(currentIndex);
+                        filename = filename.substring(filename.lastIndexOf(File.separator) + 1);
+                        if (!filename.isEmpty()) {
+                            String imageUrl = "http://" + mainActivity.hostIpAddr + ":" + mainActivity.hostPort + File.separator + filename;
+                            if (DEBUG) println("imageSender.sendImageUrl " + imageUrl);
+                            mainActivity.imageSender.sendImageUrl(null, parameters.getReceiverPort(), imageUrl);
+                        }
+                    }
+
 
                 } else if (mainActivity.isParallaxFunction()) {
                     if (showParallax) {
@@ -1466,7 +1474,10 @@ public class PhotoBooth extends PApplet implements IGui {
                 }
                 break;
 
-            case MainActivity.MODE_KEY:  // processing in MainActivity
+            case MainActivity.MODE_KEY:  // processing in MainActivity and here
+                if (state == MainActivity.LIVE_VIEW_STATE) {
+                    gui.menuBar.updateEvKey(showEv);
+                }
                 break;
 
             case KeyEvent.KEYCODE_U:

@@ -1,4 +1,3 @@
-//package com.andymodla.imagebroadcastdownloader;
 package netP5;
 /**
  * Image Broadcast Downloader app
