@@ -988,6 +988,10 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             case SETTINGS_KEY:
             case KeyEvent.KEYCODE_J:
+                if (camera.captureInProgress.get()) {
+                    Log.d(TAG, "Settings canceled when captureInProgress=" + camera.captureInProgress.get());
+                    return true;
+                }
                 // Launch Settings Activity
                 launchSettings();
                 return true;

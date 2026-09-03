@@ -32,7 +32,10 @@ public class CommandLine {
         rootView = mainActivity.decorView; // Or any appropriate view
         mParameters = parameters;
         mSnackbar = Snackbar.make(rootView, initialMessage, Snackbar.LENGTH_SHORT);
-        mSnackbar.show();
+        if (parameters.isSimpleCameraMode()) {
+            mSnackbar.show();
+        }
+
     }
  
     /**

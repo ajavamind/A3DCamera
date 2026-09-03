@@ -52,6 +52,7 @@ public class Media {
     public static final String SAVE_LR_FOLDER = "LR";
     public static final String SAVE_AI_EDIT_FOLDER = "AiEdit";
     public static final String SAVE_SCREENSHOT_FOLDER = "Screenshots";
+    public static final String SAVE_PRINT_FOLDER = "Print";
     public static final String SCREENSHOT_PREFIX = "Screenshot_";
     public static final String SCREENSHOT_FILETYPE = ".png";
 

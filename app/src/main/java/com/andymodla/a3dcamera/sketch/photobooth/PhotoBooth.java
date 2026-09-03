@@ -492,8 +492,12 @@ public class PhotoBooth extends PApplet implements IGui {
         }
         if (currentIndex >= 0) {
             String fullPath = sbsImageFiles.get(currentIndex);
+            if (fullPath.isEmpty()) {
+                setImageLabel("No review image");
+                return;
+            }
             media.setReviewFilePath(fullPath);
-            String name = fullPath.substring(0, fullPath.lastIndexOf("_2x1."));
+            String name = fullPath.substring(0, fullPath.lastIndexOf("_2x1"));
             String nameWithoutExt = name.substring(name.lastIndexOf("/") + 5);
             //if (DEBUG) println("nameWithoutExt: " + nameWithoutExt);
             if (prefix.isEmpty()) {
@@ -1333,8 +1337,10 @@ public class PhotoBooth extends PApplet implements IGui {
                 }
                 break;
 
-            case KeyEvent.KEYCODE_COMMA:
-            case MainActivity.LEFT_ARROW_KEY:
+
+            case KeyEvent.KEYCODE_PERIOD:
+            case MainActivity.RIGHT_ARROW_KEY:
+
                 //if (showMenu) {
 //                if (mainActivity.isLiveviewFunction()) {
 //                    int index = stereoCamera.incrementExposureCompensation(1);
@@ -1349,7 +1355,7 @@ public class PhotoBooth extends PApplet implements IGui {
                     }
 
                 } else if (mainActivity.isZoomFunction()) {
-                    shiftOffsetX -= shiftOffsetDelta[magnifyIndex];
+                    shiftOffsetX += shiftOffsetDelta[magnifyIndex];
                 } else if (mainActivity.isReviewFunction()) {
                     //               if (state == MainActivity.REVIEW_PHOTO_STATE) {
                     currentIndex++;
@@ -1362,8 +1368,9 @@ public class PhotoBooth extends PApplet implements IGui {
                 }
                 //}
                 break;
-            case KeyEvent.KEYCODE_PERIOD:
-            case MainActivity.RIGHT_ARROW_KEY:
+
+            case KeyEvent.KEYCODE_COMMA:
+            case MainActivity.LEFT_ARROW_KEY:
                 //if (showMenu) {
 //                if (mainActivity.isLiveviewFunction()) {
 //                    int index = stereoCamera.decrementExposureCompensation(1);
@@ -1377,7 +1384,7 @@ public class PhotoBooth extends PApplet implements IGui {
                         //if (DEBUG) PApplet.println("iParallax = " + iParallax);
                     }
                 } else if (mainActivity.isZoomFunction()) {
-                    shiftOffsetX += shiftOffsetDelta[magnifyIndex];
+                    shiftOffsetX -= shiftOffsetDelta[magnifyIndex];
                 } else if (state == MainActivity.REVIEW_PHOTO_STATE) {
                     currentIndex--;
                     if (currentIndex < 0) {
@@ -1711,7 +1718,15 @@ public class PhotoBooth extends PApplet implements IGui {
     // copied from PApplet.java Processing-Android
     public PImage loadImage(String filename) {
         if (DEBUG) System.out.println("loadImage " + filename);
-        InputStream stream = createInput(filename);
+        InputStream stream = null;
+        try {
+            stream = createInput(filename);
+        } catch(Exception e)
+        {
+            if (DEBUG) System.err.println("Could not find the image " + filename + ".");
+            stream = null;
+        }
+
         if (stream == null) {
             System.err.println("Could not find the image " + filename + ".");
             return null;

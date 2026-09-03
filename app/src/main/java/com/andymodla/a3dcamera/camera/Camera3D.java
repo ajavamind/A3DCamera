@@ -756,10 +756,17 @@ public class Camera3D {
 
         if (ActivityCompat.checkSelfPermission(context, CAMERA) == PackageManager.PERMISSION_GRANTED) {
             try {
+                // check if camera open already
+                if (mCameraDevice != null) {
+                    if (mCameraDevice.getId() == stereoCameraId) {
+                        return;
+                    }
+                }
                 mCameraManager.openCamera(stereoCameraId, mStateCallback, mCameraHandler); // logical camera 3 combines 1 and 2
                 Log.d(TAG, "mCameraManager.openCamera( " + stereoCameraId + " )");
             } catch (CameraAccessException e) {
                 Log.e(TAG, "Camera access exception", e);
+                return;
             }
         }
         initExposureCompensation();
@@ -827,6 +834,7 @@ public class Camera3D {
             return;
         }
         previewRequestBuilder.set(CaptureRequest.CONTROL_AE_LOCK, false);
+        previewRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON);
         previewRequestBuilder.set(CaptureRequest.CONTROL_AE_EXPOSURE_COMPENSATION, index);
         previewRequestBuilder.set(CaptureRequest.CONTROL_AE_LOCK, true);
         try {
@@ -923,7 +931,7 @@ public class Camera3D {
             if (mCameraDevice != null) {
                 try { mCameraDevice.close(); } catch (RuntimeException ignored) {}
             }
-            mCameraDevice = null;
+
             if (mCameraCaptureSession != null) {
                 try {
                     mCameraCaptureSession.stopRepeating();
@@ -1172,7 +1180,7 @@ public class Camera3D {
 
                     // Explicit AE mode & compensation
                     previewRequestBuilder.set(CaptureRequest.CONTROL_AE_LOCK, false);
-                    previewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_OFF);
+                    //previewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_OFF);
                     previewRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON);
                     previewRequestBuilder.set(CaptureRequest.CONTROL_AE_EXPOSURE_COMPENSATION, exposureCompensationIndex);
                     previewRequestBuilder.set(CaptureRequest.CONTROL_AE_LOCK, true);
@@ -1421,7 +1429,15 @@ public class Camera3D {
             //captureBuilder.set(CaptureRequest.TONEMAP_CURVE, new TonemapCurve(curve_srgb, curve_srgb, curve_srgb));
             // Sync with preview brightness settings
             captureBuilder.set(CaptureRequest.CONTROL_AE_LOCK, false);
-            captureBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_OFF);
+            //captureBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_OFF);
+
+            // experiment modify base iso/shutter speed
+            // Set ISO
+            //captureBuilder.set(CaptureRequest.SENSOR_SENSITIVITY, 400);
+            // AE_OFF requires you to also set exposure time (nanoseconds!)
+            //captureBuilder.set(CaptureRequest.SENSOR_EXPOSURE_TIME, 20_000_000L); // ~1/50s
+            //captureBuilder.set(CaptureRequest.SENSOR_EXPOSURE_TIME, 16_666_666L); // ~1/60s
+
             captureBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON);
             captureBuilder.set(CaptureRequest.CONTROL_AE_EXPOSURE_COMPENSATION, exposureCompensationIndex);
             captureBuilder.set(CaptureRequest.CONTROL_AE_LOCK, true);
