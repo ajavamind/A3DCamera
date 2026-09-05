@@ -137,8 +137,8 @@ public class MenuKey implements IGui {
     void draw(boolean stereoscopic) {
         if (visible) {
             if (stereoscopic) {
-                drawElement(stereoDimension, -stereoDimension.xOffset); // left eye view
-                drawElement(stereoDimension, -PhotoBooth.STEREO_OFFSET); // right eye view
+                drawElement(stereoDimension, 0); // left eye view
+                drawElement(stereoDimension, -stereoDimension.xOffset-PhotoBooth.STEREO_OFFSET); // right eye view
             } else {
                 drawElement(dimension, 0);
             }

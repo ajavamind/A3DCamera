@@ -553,12 +553,16 @@ public class MainActivity extends AppCompatActivity {
         if (delta > 0) {
             // Scrolled Up (away from user)
             if (!isSimpleCamera) {
-                photoBooth.setKeyCode(KeyEvent.KEYCODE_RIGHT_BRACKET, 0, true);
+                if (state == LIVE_VIEW_STATE) { // todo allow for zoom function
+                    photoBooth.setKeyCode(KeyEvent.KEYCODE_RIGHT_BRACKET, 0, true);
+                }
             }
         } else if (delta < 0) {
             // Scrolled Down (toward user)
             if (!isSimpleCamera) {
-                photoBooth.setKeyCode(KeyEvent.KEYCODE_LEFT_BRACKET, 0, true);
+                if (state == LIVE_VIEW_STATE) { // todo allow for zoom function
+                    photoBooth.setKeyCode(KeyEvent.KEYCODE_LEFT_BRACKET, 0, true);
+                }
             }
         }
     }
@@ -795,7 +799,9 @@ public class MainActivity extends AppCompatActivity {
                     return true;
                 case KeyEvent.KEYCODE_VOLUME_DOWN:
                 case ANAGLYPH_KEY:
-                    processDisplayToggle();
+                    if (!parameters.isStereoscopeCameraMode()) {
+                        processDisplayToggle();
+                    }
                     return true;
                 case KeyEvent.KEYCODE_3D_MODE:
                 case KeyEvent.KEYCODE_ENTER:

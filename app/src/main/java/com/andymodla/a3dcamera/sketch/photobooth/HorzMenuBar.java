@@ -98,33 +98,33 @@ class HorzMenuBar implements IGui {
         float kw = (this.menuWidth)/((float) numKeys /2);
         // top menu bar
         for (int i = 0; i < 7; i++) {
-            menuKey[i].setPosition(menuX + inset + i * kw, inset + menuY, kw - 2 * inset, kh - inset - inset / 2, inset, menuTextSize, 0, false);
+            menuKey[i].setPosition(menuX + i * (inset + kw), inset + menuY, kw - 2 * inset, kh - inset - inset / 2, inset, menuTextSize, 0, false);
             menuKey[i].setActive(true);
             menuKey[i].setVisible(true);
         }
         // bottom menu bar
         for (int i = 7; i < numKeys; i++) {
             int j = i - 7;
-            menuKey[i].setPosition(menuX + inset + j * kw, inset + menuY2, kw - 2 * inset, kh - inset - inset / 2, inset, menuTextSize, 0, false);
+            menuKey[i].setPosition(menuX + j * (inset + kw), inset + menuY2, kw - 2 * inset, kh - inset - inset / 2, inset, menuTextSize, 0, false);
             menuKey[i].setActive(true);
             menuKey[i].setVisible(true);
         }
         //-------------------------------------------------------------
         // Stereoscopic initialization
         kh = kh/2;
-        kw = this.menuWidth/numKeys;
-        float sInset = inset/2;
+        kw = (this.menuWidth/(numKeys))-8;
+        float sInset = 10;
 
         // top menu bar
         for (int i = 0; i < 7; i++) {
-            menuKey[i].setPosition(menuX + sInset + i * kw, sInset + menuY+kh, kw - 2 * sInset, kh - sInset - sInset / 2, sInset, menuTextSize, menuWidth/2.0f, true);
+            menuKey[i].setPosition(menuX + i * (sInset + kw), sInset + menuY+kh, kw - 2 * sInset, kh - sInset - sInset / 2, sInset, menuTextSize, menuWidth/2.0f, true);
             menuKey[i].setActive(true);
             menuKey[i].setVisible(true);
         }
         // bottom menu bar
         for (int i = 7; i < numKeys; i++) {
             int j = i - 7;
-            menuKey[i].setPosition(menuX + sInset + j * kw, sInset + menuY2, kw - 2 * sInset, kh - sInset - sInset / 2, sInset, menuTextSize, menuWidth/2.0f, true);
+            menuKey[i].setPosition( menuX + j * (sInset +  kw), sInset + menuY2, kw - 2 * sInset, kh - sInset - sInset / 2, sInset, menuTextSize, menuWidth/2.0f, true);
             menuKey[i].setActive(true);
             menuKey[i].setVisible(true);
         }
@@ -157,6 +157,7 @@ class HorzMenuBar implements IGui {
                 menuKey[3].setBackgroundColor(backTransparent);
                 menuKey[3].setVisible(true);
                 menuKey[3].setActive(true);
+                menuKey[3].setText("PARALLAX\nX");
                 menuKey[4].setText("BACK\nA");
                 menuKey[6].setText("\u25C9");
                 //if (!stereoscopic) {menuKey[6].setFontSize(GIANT_FONT_SIZE, stereoscopic);}
@@ -169,10 +170,10 @@ class HorzMenuBar implements IGui {
                 menuKey[8].setActive(false);
                 menuKey[8].setVisible(false);
                 menuKey[9].setKeyColor(yellow);
-                menuKey[9].setText("-EV");
+                menuKey[9].setText("EV-");
                 //menuKey[10].setText("UNLOCK\nEV"+" B");
                 menuKey[11].setKeyColor(yellow);
-                menuKey[11].setText("+EV");
+                menuKey[11].setText("EV+");
                 menuKey[12].setText("");
                 menuKey[12].setActive(false);
                 menuKey[12].setVisible(false);
@@ -188,9 +189,10 @@ class HorzMenuBar implements IGui {
                 menuKey[2].setVisible(true);
                 menuKey[2].setKeyColor(yellow);
                 menuKey[2].setText("ZOOM\nY");
-                menuKey[3].setActive(false);
-                menuKey[3].setVisible(false);
-                menuKey[3].setBackgroundColor(backTransparent);
+                menuKey[3].setText("RESET\nZOOM X");
+                //menuKey[3].setActive(false);
+                //menuKey[3].setVisible(false);
+                //menuKey[3].setBackgroundColor(backTransparent);
                 menuKey[4].setText("BACK\nA");
                 menuKey[6].setText("PRINT");
                 menuKey[6].setFontSize(SMALL_FONT_SIZE, stereoscopic);
@@ -207,8 +209,8 @@ class HorzMenuBar implements IGui {
                 menuKey[10].setText("REVIEW\n" + " B");
                 //menuKey[11].setKeyColor(graytransparent);
                 menuKey[11].setKeyColor(yellow);
-                menuKey[11].setText("SEND\nPHOTO");
-                menuKey[12].setText("NEXT\nPHOTO+" + RIGHT_ARROW);
+                menuKey[11].setText("SEND\nPHOTO+");
+                menuKey[12].setText("NEXT\nPHOTO" + RIGHT_ARROW);
                 menuKey[12].setActive(true);
                 menuKey[12].setVisible(true);
                 menuKey[13].setText("LAST\nPHOTO" + UP_ARROW);
@@ -290,7 +292,7 @@ class HorzMenuBar implements IGui {
         boolean stereoscopic = ((PhotoBooth) pApplet).parameters.isStereoscopeCameraMode();
         float dimx = 0; float dimw = 0;
         if (stereoscopic) {
-            x = x%((int)menuWidth/2);
+            x = (x-176)%((int)menuWidth/2)+176;  // todo refactor
         }
         int mkeyCode = 0;
 
@@ -305,6 +307,7 @@ class HorzMenuBar implements IGui {
                         dimx = menuKey[i].dimension.x;
                         dimw = menuKey[i].dimension.w;
                     }
+                    pApplet.println("mousePressed " + i + " x=" + x + " dimx=" + dimx + " dimw=" + dimw);
                     if (x >= dimx && x <= (dimx + dimw)) {
                         mkeyCode = menuKey[i].keyCode;
                         menuKey[i].setHighlight(true);

@@ -187,7 +187,7 @@ public class PhotoBooth extends PApplet implements IGui {
 
     public void setMenuKeyLabels(int func) {
         if (state == MainActivity.LIVE_VIEW_STATE) {
-            resetZoom();
+            //resetZoom();
         }
         gui.getMenuBar().setMenuKeyLabels(func);
     }
@@ -1243,25 +1243,29 @@ public class PhotoBooth extends PApplet implements IGui {
                 }
                 break;
 
-            case MainActivity.BUTTON_X_KEY:  // PARALLAX
-                toggleParallax();
-                if (showParallax) {
-                    int yfunction = MainActivity.FUNCTION_MODE_PARALLAX;
-                    mainActivity.setFunctionMode(yfunction);
-                    gui.menuBar.setMenuKeyLabels(yfunction);
-                    showMenu = true;
+            case MainActivity.BUTTON_X_KEY:  // PARALLAX or Reset Zoom
+                if (state == MainActivity.REVIEW_PHOTO_STATE) {
+                    // reset zoom
+                    resetZoom();
                 } else {
-                    if (state == MainActivity.LIVE_VIEW_STATE) {
-                        mainActivity.setFunctionMode(MainActivity.FUNCTION_MODE_LIVEVIEW);
-                        gui.menuBar.setMenuKeyLabels(MainActivity.FUNCTION_MODE_LIVEVIEW);
-                        gui.menuBar.updateEvKey(showEv);
+                    toggleParallax();
+                    if (showParallax) {
+                        int yfunction = MainActivity.FUNCTION_MODE_PARALLAX;
+                        mainActivity.setFunctionMode(yfunction);
+                        gui.menuBar.setMenuKeyLabels(yfunction);
+                        showMenu = true;
                     } else {
-                        mainActivity.setFunctionMode(MainActivity.FUNCTION_MODE_REVIEW);
-                        gui.menuBar.setMenuKeyLabels(MainActivity.FUNCTION_MODE_REVIEW);
+                        if (state == MainActivity.LIVE_VIEW_STATE) {
+                            mainActivity.setFunctionMode(MainActivity.FUNCTION_MODE_LIVEVIEW);
+                            gui.menuBar.setMenuKeyLabels(MainActivity.FUNCTION_MODE_LIVEVIEW);
+                            gui.menuBar.updateEvKey(showEv);
+                        } else {
+                            mainActivity.setFunctionMode(MainActivity.FUNCTION_MODE_REVIEW);
+                            gui.menuBar.setMenuKeyLabels(MainActivity.FUNCTION_MODE_REVIEW);
 
+                        }
                     }
                 }
-
                 break;
 
             case MainActivity.BUTTON_B_KEY:
