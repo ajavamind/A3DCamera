@@ -8,7 +8,7 @@ import android.view.KeyEvent;
 import com.andymodla.a3dcamera.MainActivity;
 
 class HorzMenuBar implements IGui {
-    PApplet base;
+    PApplet pApplet;
 
     MenuKey settingsKey;
     MenuKey imageModeKey;
@@ -44,8 +44,8 @@ class HorzMenuBar implements IGui {
 
     ;
 
-    public HorzMenuBar(PApplet abase, float x, float y, float menuWidth, float menuHeight) {
-        this.base = abase;
+    public HorzMenuBar(PApplet apApplet, float x, float y, float menuWidth, float menuHeight) {
+        this.pApplet = apApplet;
         this.menuX = x; // top left corner of menu bar
         this.menuY = y; // top left corner of menu bar
         this.menuY2 = 1080 - menuHeight;
@@ -55,25 +55,25 @@ class HorzMenuBar implements IGui {
         menuTextSize = SMALL_FONT_SIZE;
 
         // top menu bar
-        reviewKey = new MenuKey(base, MainActivity.MODE_KEY, "REVIEW", menuTextSize, yellow, backTransparent);
-        settingsKey = new MenuKey(base, MainActivity.SETTINGS_KEY, "\u2699", LARGE_FONT_SIZE, yellow, backTransparent);
-        optionsKey = new MenuKey(base, MainActivity.BUTTON_Y_KEY, "", menuTextSize, graytransparent, backTransparent);
-        functionKey = new MenuKey(base, MainActivity.BUTTON_X_KEY, "PARALLAX\nX", menuTextSize, yellow, backTransparent);
-        backKey = new MenuKey(base, MainActivity.BUTTON_A_KEY, "BACK\nA", menuTextSize, yellow, backTransparent);
-        imageModeKey = new MenuKey(base, MainActivity.ANAGLYPH_KEY, "ANAGLYPH", menuTextSize, yellow, backTransparent);
-        shutterKey = new MenuKey(base, MainActivity.SHUTTER_KEY, "\u25C9", GIANT_FONT_SIZE, yellow, backTransparent);
+        reviewKey = new MenuKey(pApplet, MainActivity.MODE_KEY, "REVIEW", yellow, backTransparent); // menuTextSize,
+        settingsKey = new MenuKey(pApplet, MainActivity.SETTINGS_KEY, "\u2699", yellow, backTransparent); // LARGE_FONT_SIZE,
+        optionsKey = new MenuKey(pApplet, MainActivity.BUTTON_Y_KEY, "",  graytransparent, backTransparent);
+        functionKey = new MenuKey(pApplet, MainActivity.BUTTON_X_KEY, "PARALLAX\nX", yellow, backTransparent);
+        backKey = new MenuKey(pApplet, MainActivity.BUTTON_A_KEY, "BACK\nA", yellow, backTransparent);
+        imageModeKey = new MenuKey(pApplet, MainActivity.ANAGLYPH_KEY, "ANAGLYPH", yellow, backTransparent);
+        shutterKey = new MenuKey(pApplet, MainActivity.SHUTTER_KEY, "\u25C9", yellow, backTransparent); // GIANT_FONT_SIZE,
 
         // bottom menu bar
-        downArrowKey = new MenuKey(base, KeyEvent.KEYCODE_DPAD_DOWN, "", menuTextSize, yellow, backTransparent);
-        leftArrowKey = new MenuKey(base, KeyEvent.KEYCODE_DPAD_LEFT, "", menuTextSize, yellow, backTransparent);
-        minusKey = new MenuKey(base, KeyEvent.KEYCODE_MINUS, "-EV", menuTextSize, yellow, backTransparent);
-        okKey = new MenuKey(base, MainActivity.BUTTON_B_KEY, "UNLOCK\nEV", menuTextSize, yellow, backTransparent);
-        plusKey = new MenuKey(base, KeyEvent.KEYCODE_PLUS, "+EV", menuTextSize, yellow, backTransparent);
-        rightArrowKey = new MenuKey(base, KeyEvent.KEYCODE_DPAD_RIGHT, "", menuTextSize, yellow, backTransparent);
-        upArrowKey = new MenuKey(base, KeyEvent.KEYCODE_DPAD_UP, "", menuTextSize, yellow, backTransparent);
+        downArrowKey = new MenuKey(pApplet, KeyEvent.KEYCODE_DPAD_DOWN, "", yellow, backTransparent);
+        leftArrowKey = new MenuKey(pApplet, KeyEvent.KEYCODE_DPAD_LEFT, "", yellow, backTransparent);
+        minusKey = new MenuKey(pApplet, KeyEvent.KEYCODE_MINUS, "-EV", yellow, backTransparent);
+        okKey = new MenuKey(pApplet, MainActivity.BUTTON_B_KEY, "UNLOCK\nEV", yellow, backTransparent);
+        plusKey = new MenuKey(pApplet, KeyEvent.KEYCODE_PLUS, "+EV", yellow, backTransparent);
+        rightArrowKey = new MenuKey(pApplet, KeyEvent.KEYCODE_DPAD_RIGHT, "", yellow, backTransparent);
+        upArrowKey = new MenuKey(pApplet, KeyEvent.KEYCODE_DPAD_UP, "", yellow, backTransparent);
 
         menuKey = new MenuKey[numKeys];
-        //gridKey = new MenuKey(base, KeyEvent.KEYCODE_G, "Grid", menuTextSize, yellow, backTransparent);
+        //gridKey = new MenuKey(pApplet, KeyEvent.KEYCODE_G, "Grid", menuTextSize, yellow, backTransparent);
 
         menuKey[0] = reviewKey;
         menuKey[1] = settingsKey;
@@ -91,23 +91,45 @@ class HorzMenuBar implements IGui {
         menuKey[12] = rightArrowKey;
         menuKey[13] = upArrowKey;
 
-        //h = (float) menuHeight; // height of each key area rectangle
-        //w = menuWidth / (float) ((numKeys)); // width of key
-        h = MainActivity.HIDDEN_MODE_BUTTON_Y + 24;
-        w = MainActivity.HIDDEN_MODE_BUTTON_X - 20;
+        //-------------------------------------------------------------
+        // Monoscopic initialization
+        float kh = MainActivity.HIDDEN_MODE_BUTTON_Y + 16;
+        //float kw = MainActivity.HIDDEN_MODE_BUTTON_X - 20;
+        float kw = (this.menuWidth)/((float) numKeys /2);
         // top menu bar
         for (int i = 0; i < 7; i++) {
-            menuKey[i].setPosition(menuX + inset + i * w, inset + menuY, w - 2 * inset, h - inset - inset / 2, inset);
+            menuKey[i].setPosition(menuX + inset + i * kw, inset + menuY, kw - 2 * inset, kh - inset - inset / 2, inset, menuTextSize, 0, false);
             menuKey[i].setActive(true);
             menuKey[i].setVisible(true);
         }
         // bottom menu bar
         for (int i = 7; i < numKeys; i++) {
             int j = i - 7;
-            menuKey[i].setPosition(menuX + inset + j * w, inset + menuY2, w - 2 * inset, h - inset - inset / 2, inset);
+            menuKey[i].setPosition(menuX + inset + j * kw, inset + menuY2, kw - 2 * inset, kh - inset - inset / 2, inset, menuTextSize, 0, false);
             menuKey[i].setActive(true);
             menuKey[i].setVisible(true);
         }
+        //-------------------------------------------------------------
+        // Stereoscopic initialization
+        kh = kh/2;
+        kw = this.menuWidth/numKeys;
+        float sInset = inset/2;
+
+        // top menu bar
+        for (int i = 0; i < 7; i++) {
+            menuKey[i].setPosition(menuX + sInset + i * kw, sInset + menuY+kh, kw - 2 * sInset, kh - sInset - sInset / 2, sInset, menuTextSize, menuWidth/2.0f, true);
+            menuKey[i].setActive(true);
+            menuKey[i].setVisible(true);
+        }
+        // bottom menu bar
+        for (int i = 7; i < numKeys; i++) {
+            int j = i - 7;
+            menuKey[i].setPosition(menuX + sInset + j * kw, sInset + menuY2, kw - 2 * sInset, kh - sInset - sInset / 2, sInset, menuTextSize, menuWidth/2.0f, true);
+            menuKey[i].setActive(true);
+            menuKey[i].setVisible(true);
+        }
+
+        //-------------------------------------------------------------
         setMenuKeyLabels(MainActivity.FUNCTION_MODE_LIVEVIEW);
     }
 
@@ -121,7 +143,8 @@ class HorzMenuBar implements IGui {
 
     // update key labels for camera functions
     public void setMenuKeyLabels(int mode) {
-        base.println("setMenuKeyLabels " + mode);
+        boolean stereoscopic = ((PhotoBooth) pApplet).parameters.isStereoscopeCameraMode();
+        //pApplet.println("setMenuKeyLabels " + mode);
         switch (mode) {
             case MainActivity.FUNCTION_MODE_LIVEVIEW:
                 menuKey[0].setText("REVIEW");
@@ -136,7 +159,7 @@ class HorzMenuBar implements IGui {
                 menuKey[3].setActive(true);
                 menuKey[4].setText("BACK\nA");
                 menuKey[6].setText("\u25C9");
-                menuKey[6].setFontSize(GIANT_FONT_SIZE);
+                //if (!stereoscopic) {menuKey[6].setFontSize(GIANT_FONT_SIZE, stereoscopic);}
                 menuKey[6].setKeyCode(KeyEvent.KEYCODE_BUTTON_R1);
 
                 menuKey[7].setText("");
@@ -170,7 +193,7 @@ class HorzMenuBar implements IGui {
                 menuKey[3].setBackgroundColor(backTransparent);
                 menuKey[4].setText("BACK\nA");
                 menuKey[6].setText("PRINT");
-                menuKey[6].setFontSize(SMALL_FONT_SIZE);
+                menuKey[6].setFontSize(SMALL_FONT_SIZE, stereoscopic);
                 menuKey[6].setKeyCode(MainActivity.SHUTTER_KEY);  // decode print in shutter logic
 
                 menuKey[7].setText("FIRST\nPHOTO" + DOWN_ARROW);
@@ -180,12 +203,12 @@ class HorzMenuBar implements IGui {
                 menuKey[8].setActive(true);
                 menuKey[8].setVisible(true);
                 menuKey[9].setKeyColor(graytransparent);
-                menuKey[9].setText("AI EDIT");
+                menuKey[9].setText("AI EDIT-");
                 menuKey[10].setText("REVIEW\n" + " B");
                 //menuKey[11].setKeyColor(graytransparent);
                 menuKey[11].setKeyColor(yellow);
-                menuKey[11].setText("BROADCAST");
-                menuKey[12].setText("NEXT\nPHOTO" + RIGHT_ARROW);
+                menuKey[11].setText("SEND\nPHOTO");
+                menuKey[12].setText("NEXT\nPHOTO+" + RIGHT_ARROW);
                 menuKey[12].setActive(true);
                 menuKey[12].setVisible(true);
                 menuKey[13].setText("LAST\nPHOTO" + UP_ARROW);
@@ -233,14 +256,14 @@ class HorzMenuBar implements IGui {
         menuKey[keyIndex].setText(text);
     }
 
-    // set all visible
+    // set menu keys visibility
     public void setVisible(boolean visible) {
         for (int i = 0; i < numKeys; i++) {
             menuKey[i].setVisible(visible);
         }
     }
 
-    // set all active
+    // set menu keys activity
     void setActive(boolean active) {
         for (int i = 0; i < numKeys; i++) {
             menuKey[i].setActive(active);
@@ -249,13 +272,12 @@ class HorzMenuBar implements IGui {
 
     // display all menu bar keys with background
     void display() {
-        base.fill(gray); // background color of menu bar area
-        base.noStroke();
-        //rect(0, 0, menuWidth, menuHeight);
-        //base.rect(menuX, menuY, menuWidth, menuHeight);
+        pApplet.fill(gray); // background color of menu bar area
+        pApplet.noStroke();
+        boolean stereoscopic = ((PhotoBooth) pApplet).parameters.isStereoscopeCameraMode();
 
         for (int i = 0; i < numKeys; i++) {
-            menuKey[i].draw();
+            menuKey[i].draw(stereoscopic);
             menuKey[i].setHighlight(false);
         }
     }
@@ -265,15 +287,25 @@ class HorzMenuBar implements IGui {
     }
 
     int mousePressed(int x, int y) {
+        boolean stereoscopic = ((PhotoBooth) pApplet).parameters.isStereoscopeCameraMode();
+        float dimx = 0; float dimw = 0;
+        if (stereoscopic) {
+            x = x%((int)menuWidth/2);
+        }
         int mkeyCode = 0;
 
         if (y < (menuY + menuHeight)) {
             // menu touch control area at either left or right side
             for (int i = 0; i < 7; i++) {
                 if (menuKey[i].visible && menuKey[i].active) {
-                    if (x >= menuKey[i].x && x <= (menuKey[i].x + menuKey[i].w)
-                        //&& y >= menuKey[i].y && y <= (menuKey[i].y + menuKey[i].h)
-                    ) {
+                    if (stereoscopic) {
+                        dimx = menuKey[i].stereoDimension.x;
+                        dimw = menuKey[i].stereoDimension.w;
+                    } else {
+                        dimx = menuKey[i].dimension.x;
+                        dimw = menuKey[i].dimension.w;
+                    }
+                    if (x >= dimx && x <= (dimx + dimw)) {
                         mkeyCode = menuKey[i].keyCode;
                         menuKey[i].setHighlight(true);
                         break;
@@ -284,9 +316,14 @@ class HorzMenuBar implements IGui {
             // menu touch control area at either left or right side
             for (int i = 7; i < numKeys; i++) {
                 if (menuKey[i].visible && menuKey[i].active) {
-                    if (x >= menuKey[i].x && x <= (menuKey[i].x + menuKey[i].w)
-                        //&& y >= menuKey[i].y && y <= (menuKey[i].y + menuKey[i].h)
-                    ) {
+                    if (stereoscopic) {
+                        dimx = menuKey[i].stereoDimension.x;
+                        dimw = menuKey[i].stereoDimension.w;
+                    } else {
+                        dimx = menuKey[i].dimension.x;
+                        dimw = menuKey[i].dimension.w;
+                    }
+                    if (x >= dimx && x <= (dimx + dimw)) {
                         mkeyCode = menuKey[i].keyCode;
                         menuKey[i].setHighlight(true);
                         break;

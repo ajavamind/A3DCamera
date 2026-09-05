@@ -5,9 +5,9 @@ import processing.core.PApplet;
 
 // The GUI assumes the sketch screen is at (0,0) top left corner of the display
 public class Gui {
-    static final boolean DEBUG = false;
+    static final boolean DEBUG = true;
 
-    PApplet base;  // base sketch reference
+    PApplet pApplet;  // parent PApplet sketch reference for drawing
     HorzMenuBar menuBar;
 
     // information zone touch coordinates
@@ -21,14 +21,14 @@ public class Gui {
 
     }
 
-    void setup(PApplet base) {
-        if (DEBUG) base.println("createGui()");
-        this.base = base;
-        menuWidth = base.width;
-        menuHeight = base.height / 6 - 20;
-        menuX = 0;
+    void setup(PApplet pApplet) {
+        if (DEBUG) pApplet.println("createGui()");
+        this.pApplet = pApplet;
+        menuWidth = ((PhotoBooth)pApplet).XBP_DISPLAY_FRAME_WIDTH;
+        menuHeight = 156;//pApplet.height / 6 - 20;
+        menuX = ((PhotoBooth)pApplet).frameX;
         menuY = 0;
-        menuBar = new HorzMenuBar(base, menuX, menuY, menuWidth, menuHeight);
+        menuBar = new HorzMenuBar(pApplet, menuX, menuY, menuWidth, menuHeight);
 
     }
 
@@ -37,7 +37,7 @@ public class Gui {
     }
 
     void displayMenuBar() {
-        if (DEBUG) base.println("displayMenuBar()");
+        //if (DEBUG) pApplet.println("displayMenuBar() menuX="+menuX+" menuY="+menuY+" menuWidth="+menuWidth+" menuHeight="+menuHeight);
         menuBar.display();
     }
 

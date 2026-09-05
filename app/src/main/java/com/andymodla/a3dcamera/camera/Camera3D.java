@@ -18,6 +18,7 @@ import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
+import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureFailure;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.TotalCaptureResult;
@@ -757,8 +758,8 @@ public class Camera3D {
         if (ActivityCompat.checkSelfPermission(context, CAMERA) == PackageManager.PERMISSION_GRANTED) {
             try {
                 // check if camera open already
-                if (mCameraDevice != null) {
-                    if (mCameraDevice.getId() == stereoCameraId) {
+                if (isCameraOpen()) {
+                    if (mCameraDevice.getId().equals(stereoCameraId)) {
                         return;
                     }
                 }
@@ -1203,6 +1204,7 @@ public class Camera3D {
                     //previewRequestBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, new Range<>(30, 30));
                     //previewRequestBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, bestRange);
                     //previewRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE, CameraMetadata.CONTROL_AE_MODE_ON_LOW_LIGHT_BOOST_BRIGHTNESS_PRIORITY); // Android 15+
+
                     previewRequestBuilder.set(EXPOSURE_METERING, METERING[parameters.getExposureMeteringIndex()]);
 
                     // Set scene mode
@@ -1441,6 +1443,8 @@ public class Camera3D {
             captureBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON);
             captureBuilder.set(CaptureRequest.CONTROL_AE_EXPOSURE_COMPENSATION, exposureCompensationIndex);
             captureBuilder.set(CaptureRequest.CONTROL_AE_LOCK, true);
+
+            //previewRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_EFFECT_MODE_POSTERIZE);
 
             //captureBuilder.set(CaptureRequest.TONEMAP_MODE, CaptureRequest.TONEMAP_MODE_HIGH_QUALITY);
             captureBuilder.set(CaptureRequest.TONEMAP_MODE, CaptureRequest.TONEMAP_MODE_FAST);

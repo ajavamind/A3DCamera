@@ -92,13 +92,13 @@ public class PhotoBooth extends PApplet implements IGui {
 
     private float shiftOffsetX = 0;
     private float shiftOffsetY = 0;
-    private int DISPLAY_OFFSET_Y = 180;  // status display line for filename, EV, parallax, zoom
-
+    private int DISPLAY_OFFSET_Y = 170;  // status display line for EV, parallax, zoom
+    private int FILENAME_OFFSET_Y = 210; // display line for filename
     private volatile int lastKeyCode; // for processKeyCode()
     private volatile int lastKey; // for processKeyCode()
 
-    private static final int STEREO_OFFSET = -10; // right image shift used for stereo depth
-    private static final int TITLE_STEREO_OFFSET = -160; // right image shift used for stereo depth
+    public static final int STEREO_OFFSET = -10; // right image shift used for stereo depth
+    public static final int TITLE_STEREO_OFFSET = -160; // right image shift used for stereo depth
     private String imageLabel;
     private volatile int labelFrameCount = 0;
     private static final int IMAGE_LABEL_TIMEOUT_FRAMES = 90;
@@ -147,9 +147,9 @@ public class PhotoBooth extends PApplet implements IGui {
     float AR = 1.33333333f;  // aspect ratio for XReal Beam Pro camera image sensor
 
     // Display frame inside full screen AR 4:3
-    private static final int XBP_DISPLAY_FRAME_WIDTH = 2048;
-    private static final int XBP_DISPLAY_FRAME_HEIGHT = 1080;
-    private static final int XBP_DISPLAY_BOTTOM_H = XBP_DISPLAY_FRAME_HEIGHT - 144;
+    public static final int XBP_DISPLAY_FRAME_WIDTH = 2048;
+    public static final int XBP_DISPLAY_FRAME_HEIGHT = 1080;
+    public static final int XBP_DISPLAY_BOTTOM_H = XBP_DISPLAY_FRAME_HEIGHT - 144;
     // calculate position of frame in full screen
     int frameX = (XBP_DISPLAY_WIDTH - XBP_DISPLAY_FRAME_WIDTH) / 2;
     int frameY = (XBP_DISPLAY_HEIGHT - XBP_DISPLAY_FRAME_HEIGHT) / 2;
@@ -186,7 +186,7 @@ public class PhotoBooth extends PApplet implements IGui {
     }
 
     public void setMenuKeyLabels(int func) {
-        if (state == MainActivity.REVIEW_PHOTO_STATE) {
+        if (state == MainActivity.LIVE_VIEW_STATE) {
             resetZoom();
         }
         gui.getMenuBar().setMenuKeyLabels(func);
@@ -1087,7 +1087,7 @@ public class PhotoBooth extends PApplet implements IGui {
 
         int level = DISPLAY_OFFSET_Y;
         DisplayMode position = displayMode.get();
-        if (position == DisplayMode.SBS) { // for stereoscope
+        if (position == DisplayMode.SBS && parameters.isStereoscopeCameraMode()) { // for stereoscope
             showString(ev, LEFT, 0, level);
             showString(ev, RIGHT, STEREO_OFFSET, level);
         } else { //monoscopic
@@ -1107,7 +1107,7 @@ public class PhotoBooth extends PApplet implements IGui {
 
         int level = DISPLAY_OFFSET_Y;
         DisplayMode position = displayMode.get();
-        if (position == DisplayMode.SBS) { // for stereoscope
+        if (position == DisplayMode.SBS && parameters.isStereoscopeCameraMode()) { // for stereoscope
             showString(spx, LEFT, 0, level);
             showString(spx, RIGHT, STEREO_OFFSET, level);
         } else { //monoscopic
@@ -1124,7 +1124,7 @@ public class PhotoBooth extends PApplet implements IGui {
 
         int level = DISPLAY_OFFSET_Y;
         DisplayMode position = displayMode.get();
-        if (position == DisplayMode.SBS) { // for stereoscope
+        if (position == DisplayMode.SBS && parameters.isStereoscopeCameraMode()) { // for stereoscope
             showString(sZoom, LEFT, 0, level);
             showString(sZoom, RIGHT, STEREO_OFFSET, level);
         } else { //monoscopic
@@ -1151,9 +1151,9 @@ public class PhotoBooth extends PApplet implements IGui {
         String label = imageLabel;
         if (label.isEmpty()) return;
 
-        int level = DISPLAY_OFFSET_Y + 100;
+        int level = FILENAME_OFFSET_Y;
         DisplayMode position = displayMode.get();
-        if (position == DisplayMode.SBS) { // stereoscope
+        if (position == DisplayMode.SBS && parameters.isStereoscopeCameraMode()) { // stereoscope
             showString(label, LEFT, 0, level);
             showString(label, RIGHT, STEREO_OFFSET, level);
         } else { //monoscopic
@@ -1164,14 +1164,16 @@ public class PhotoBooth extends PApplet implements IGui {
 
     void showString(String ev, int position, int offset, int bottom) {
         int x;
+        textSize(24);
         if (position == LEFT) {
             x = frameX + XBP_DISPLAY_FRAME_WIDTH / 4 + offset;
         } else if (position == RIGHT) {
             x = frameX + 3 * XBP_DISPLAY_FRAME_WIDTH / 4 + offset;
         } else {
+            textSize(48);
             x = width / 2; // CENTER
         }
-        textSize(24);
+
         fill(yellow);
         textAlign(CENTER, CENTER);
         text(ev, x, height - bottom);
