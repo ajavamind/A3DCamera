@@ -847,15 +847,15 @@ public class Camera3D {
     }
 
     public String getEv() {
-        String sev;
+        String sev = "EV ";
         if (exposureCompensationIndex < 0) {
-            sev = "-" + EV_TABLE[-exposureCompensationIndex];
+            sev += "-" + EV_TABLE[-exposureCompensationIndex];
         } else if (exposureCompensationIndex > 0) {
-            sev = "+" + EV_TABLE[exposureCompensationIndex];
+            sev += "+" + EV_TABLE[exposureCompensationIndex];
         } else {
-            sev = " " + EV_TABLE[exposureCompensationIndex];
+            sev += EV_TABLE[exposureCompensationIndex];
         }
-        return sev+" EV";
+        return sev;
     }
 
     public int incrementExposureCompensation(int delta) {

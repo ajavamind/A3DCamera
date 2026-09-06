@@ -6,13 +6,14 @@ import processing.core.PApplet;
 public interface IGui {
     // Font sizes
     static final float SMALLER_FONT_SIZE = 24;
-    static final float SMALL_FONT_SIZE = 44.0f;
-    static final float FONT_SIZE = 64.0f;
+    static final float SMALL_FONT_SIZE = 38.0f;
+    static final float FONT_SIZE = 44.0f;
+    static final float MID_FONT_SIZE = 48.0f;
     static final float MEDIUM_FONT_SIZE =  72;
     static final float LARGE_FONT_SIZE = 96;
     static final float GIANT_FONT_SIZE = 128;
 
-    // Text display rows (y position on screen)
+    // Text display rows (y pixel position on screen)
     static final int TITLE_ROW = 72;
     static final int STATUS_ROW = 72;
 

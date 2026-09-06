@@ -52,15 +52,13 @@ class HorzMenuBar implements IGui {
         this.menuWidth = menuWidth;
         this.menuHeight = menuHeight;
 
-        menuTextSize = SMALL_FONT_SIZE;
-
         // top menu bar
         reviewKey = new MenuKey(pApplet, MainActivity.MODE_KEY, "REVIEW", yellow, backTransparent); // menuTextSize,
         settingsKey = new MenuKey(pApplet, MainActivity.SETTINGS_KEY, "\u2699", yellow, backTransparent); // LARGE_FONT_SIZE,
         optionsKey = new MenuKey(pApplet, MainActivity.BUTTON_Y_KEY, "",  graytransparent, backTransparent);
         functionKey = new MenuKey(pApplet, MainActivity.BUTTON_X_KEY, "PARALLAX\nX", yellow, backTransparent);
         backKey = new MenuKey(pApplet, MainActivity.BUTTON_A_KEY, "BACK\nA", yellow, backTransparent);
-        imageModeKey = new MenuKey(pApplet, MainActivity.ANAGLYPH_KEY, "ANAGLYPH", yellow, backTransparent);
+        imageModeKey = new MenuKey(pApplet, MainActivity.ANAGLYPH_KEY, "ANA-\nGLYPH", yellow, backTransparent);
         shutterKey = new MenuKey(pApplet, MainActivity.SHUTTER_KEY, "\u25C9", yellow, backTransparent); // GIANT_FONT_SIZE,
 
         // bottom menu bar
@@ -94,8 +92,8 @@ class HorzMenuBar implements IGui {
         //-------------------------------------------------------------
         // Monoscopic initialization
         float kh = MainActivity.HIDDEN_MODE_BUTTON_Y + 16;
-        //float kw = MainActivity.HIDDEN_MODE_BUTTON_X - 20;
         float kw = (this.menuWidth)/((float) numKeys /2);
+        menuTextSize = FONT_SIZE;
         // top menu bar
         for (int i = 0; i < 7; i++) {
             menuKey[i].setPosition(menuX + i * (inset + kw), inset + menuY, kw - 2 * inset, kh - inset - inset / 2, inset, menuTextSize, 0, false);
@@ -112,19 +110,20 @@ class HorzMenuBar implements IGui {
         //-------------------------------------------------------------
         // Stereoscopic initialization
         kh = kh/2;
-        kw = (this.menuWidth/(numKeys))-8;
-        float sInset = 10;
-
+        float sw = (this.menuWidth/(numKeys+2));  // spacing for center of display
+        kw = (this.menuWidth/(numKeys+7))+8;
+        float sInset = 6;
+        menuTextSize = SMALL_FONT_SIZE;
         // top menu bar
         for (int i = 0; i < 7; i++) {
-            menuKey[i].setPosition(menuX + i * (sInset + kw), sInset + menuY+kh, kw - 2 * sInset, kh - sInset - sInset / 2, sInset, menuTextSize, menuWidth/2.0f, true);
+            menuKey[i].setPosition(menuX + sw + i * (sInset + kw), sInset + menuY+kh, kw - 2 * sInset, kh - sInset - sInset / 2, sInset, menuTextSize, menuWidth/2.0f, true);
             menuKey[i].setActive(true);
             menuKey[i].setVisible(true);
         }
         // bottom menu bar
         for (int i = 7; i < numKeys; i++) {
             int j = i - 7;
-            menuKey[i].setPosition( menuX + j * (sInset +  kw), sInset + menuY2, kw - 2 * sInset, kh - sInset - sInset / 2, sInset, menuTextSize, menuWidth/2.0f, true);
+            menuKey[i].setPosition( menuX + sw + j * (sInset +  kw), sInset + menuY2, kw - 2 * sInset, kh - sInset - sInset / 2, sInset, menuTextSize, menuWidth/2.0f, true);
             menuKey[i].setActive(true);
             menuKey[i].setVisible(true);
         }

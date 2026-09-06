@@ -112,7 +112,8 @@ public class PhotoBooth extends PApplet implements IGui {
     String[] help;
 
     String[] help2 = {
-            "Photo Booth Bluetooth Android Keyboard Functions:",
+            "Camera Android Keyboard Functions:",
+            "-------------------------------------",
             "Debug Toggle Display Frame Counter: D",
             "Cycle Display Mode: A",
             "Decrease Parallax: Minus (-)",
@@ -259,13 +260,13 @@ public class PhotoBooth extends PApplet implements IGui {
             textSize(24);
             text(sVersion, (float) width / 2, (float) (height / 2) + 4 * row);  // left
         } else if (parameters.isStereoscopeCameraMode()) {
-            text("3D Stereoscope Camera", (float) width / 4, (float) height / 2);  // left
-            text("3D Stereoscope Camera", ((float) 3 * width / 4) + TITLE_STEREO_OFFSET, (float) height / 2); // right
+            text("Stereoscope 3D Camera", (float) width / 4, (float) height / 2);  // left
+            text("Stereoscope 3D Camera", ((float) 3 * width / 4) + TITLE_STEREO_OFFSET, (float) height / 2); // right
             textSize(24);
             text(sVersion, (float) width / 4, (float) (height / 2) + 4 * row);  // left
             text(sVersion, ((float) 3 * width / 4) + TITLE_STEREO_OFFSET, (float) (height / 2) + 4 * row); // right
         } else {
-            text("3D Basic Camera", (float) width / 2, (float) height / 2);  // center
+            text("Basic 3D Camera", (float) width / 2, (float) height / 2);  // center
             textSize(24);
             text(sVersion, (float) width / 2, (float) (height / 2) + 4 * row);  // left
         }
@@ -305,7 +306,7 @@ public class PhotoBooth extends PApplet implements IGui {
         // set next key press label
         if (mode == DisplayMode.SBS) {
             if (DEBUG) PApplet.println("Display SBS Parallel Image");
-            gui.menuBar.setMenuKeyLabel(5, "ANAGLYPH");
+            gui.menuBar.setMenuKeyLabel(5, "ANA-\nGLYPH");
         } else if (mode == DisplayMode.ANAGLYPH) {
             if (DEBUG) PApplet.println("Display ANAGLYPH Image");
             gui.menuBar.setMenuKeyLabel(5, "LEFT\nEYE");
@@ -314,7 +315,7 @@ public class PhotoBooth extends PApplet implements IGui {
             gui.menuBar.setMenuKeyLabel(5, "RIGHT\nEYE");
         } else if (mode == DisplayMode.RIGHT) {
             if (DEBUG) PApplet.println("Display RIGHT Image");
-            gui.menuBar.setMenuKeyLabel(5, "SBS");
+            gui.menuBar.setMenuKeyLabel(5, "SBS\nPARALLEL");
         }
         update = true;
     }
@@ -599,7 +600,7 @@ public class PhotoBooth extends PApplet implements IGui {
         }
 //        if (parameters.isStereoscopeCameraMode()) {
 //            if (zoom) {
-//                textSize(48);
+//                textSize(IGui.MID_FONT_SIZE);
 //                fill(yellow);
 //                textAlign(LEFT);
 //                text("zoom +" + magnifyScale[magnifyIndex] + "    ", width - 400, height - 4);
@@ -608,7 +609,7 @@ public class PhotoBooth extends PApplet implements IGui {
 
         if (parameters.isPhotoBoothCameraMode()) {
 //            if (zoom && magnifyScale[magnifyIndex] > 1.0f) {
-//                textSize(48);
+//                textSize(IGui.MID_FONT_SIZE);
 //                fill(yellow);
 //                textAlign(LEFT);
 //                text("+" + magnifyScale[magnifyIndex] + "    ", width - 200, height - 4);
@@ -616,15 +617,15 @@ public class PhotoBooth extends PApplet implements IGui {
 
             // camera and review mode display test mode for debug
             if (DEBUG && testMode) {
-                textSize(48);
+                textSize(IGui.MID_FONT_SIZE);
                 fill(yellow);
                 textAlign(LEFT);
-                text("mirror=" + mirror + " zoom=" + zoom + " w=" + imgLeft.width + " h=" + imgLeft.height, width / 8, height - 96);
-                text("parallax=" + (parameters.getParallaxOffset()) + " vertical=" + (parameters.getVerticalOffset()) + " magnify=" + magnifyScale[magnifyIndex], width / 8, height - 48);
+                text("mirror=" + mirror + " zoom=" + zoom + " w=" + imgLeft.width + " h=" + imgLeft.height, width / 8, height - 2*IGui.MID_FONT_SIZE);
+                text("parallax=" + (parameters.getParallaxOffset()) + " vertical=" + (parameters.getVerticalOffset()) + " magnify=" + magnifyScale[magnifyIndex], width / 8, height - IGui.MID_FONT_SIZE);
             }
 
             // draw text on screen
-            textSize(48);
+            textSize(IGui.MID_FONT_SIZE);
             fill(yellow);
             textAlign(LEFT);
             String sMode = "";
@@ -639,11 +640,11 @@ public class PhotoBooth extends PApplet implements IGui {
             }
 
             if (state == MainActivity.LIVE_VIEW_STATE) {
-                text("Live", 50, height - 48);
+                text("Live", 50, height - IGui.MID_FONT_SIZE);
             } else if (state == MainActivity.REVIEW_PHOTO_STATE) {
-                text("Review", 50, height - 48);
+                text("Review", 50, height - IGui.MID_FONT_SIZE);
             } else if (state == MainActivity.REVIEW_AI_EDIT_STATE) {
-                text("Review", 50, height - 48);
+                text("Review", 50, height - IGui.MID_FONT_SIZE);
             }
             text(sMode, 50, height - 96);
 
@@ -655,7 +656,7 @@ public class PhotoBooth extends PApplet implements IGui {
                     text(parameters.getInst2(), width / 2, 100);
                     if (displayMode == DisplayMode.SBS) {
                         text(parameters.getTitle1(), width / 2, height - 96);
-                        text(parameters.getTitle2(), width / 2, height - 48);
+                        text(parameters.getTitle2(), width / 2, height - IGui.MID_FONT_SIZE);
                     }
                 }
                 textAlign(LEFT);
@@ -664,19 +665,19 @@ public class PhotoBooth extends PApplet implements IGui {
                 }
                 if (displayMode == DisplayMode.ANAGLYPH) {
                     text("px=" + (parameters.getParallaxOffset()) + "   ", (float) (9 * width) / 10, height - 96);
-                    text("vt=" + (parameters.getVerticalOffset()) + "   ", (float) (9 * width) / 10, height - 48);
+                    text("vt=" + (parameters.getVerticalOffset()) + "   ", (float) (9 * width) / 10, height - IGui.MID_FONT_SIZE);
                 }
             } else if (state == MainActivity.REVIEW_PHOTO_STATE) {
                 textAlign(RIGHT);
                 fill(lightgreen);
-                text("Print", width - 50, height - 48);
+                text("Print", width - 50, height - IGui.MID_FONT_SIZE);
                 if (parameters.getSbsCropPrint() && displayMode == DisplayMode.SBS) {
                     text("Crop", width - 50, height - 96);
                 }
             } else if (state == MainActivity.REVIEW_AI_EDIT_STATE) {
                 textAlign(RIGHT);
                 fill(lightmagenta);
-                text("AI Edit", width - 50, height - 48);
+                text("AI Edit", width - 50, height - IGui.MID_FONT_SIZE);
 
             }
         }
@@ -685,7 +686,7 @@ public class PhotoBooth extends PApplet implements IGui {
             case 1:
                 fill(255);
                 textAlign(LEFT);
-                textSize(48);
+                textSize(IGui.SMALL_FONT_SIZE);
                 for (int i = 0; i < 20; i++) {
                     text(help[i], 100, 36 + i * 50);
                 }
@@ -696,9 +697,12 @@ public class PhotoBooth extends PApplet implements IGui {
             case 2:
                 fill(255);
                 textAlign(LEFT);
-                textSize(48);
-                for (int i = 0; i < help2.length; i++) {
+                textSize(IGui.SMALL_FONT_SIZE);
+                for (int i = 0; i < 20; i++) {
                     text(help2[i], 100, 36 + i * 50);
+                }
+                for (int i = 20; i < help2.length; i++) {
+                    text(help2[i], width/2 + 100, 36 + (i-20) * 50);
                 }
 
                 break;
@@ -735,7 +739,7 @@ public class PhotoBooth extends PApplet implements IGui {
         // display draw frame counter for debug
         if (testCheckDraw) {
             fill(yellow);
-            textSize(48);
+            textSize(IGui.MID_FONT_SIZE);
             text(""+frameCount, width/2, height/3);
         }
 
@@ -873,7 +877,7 @@ public class PhotoBooth extends PApplet implements IGui {
         }
         // show any display pause with rotating text
         if (rotating) {
-            textSize(48);
+            textSize(IGui.MID_FONT_SIZE);
             fill(dimyellow);
             textAlign(CENTER, CENTER);
             rotatingIndex = (rotatingIndex + 1) % rotatingText.length;
@@ -1164,13 +1168,13 @@ public class PhotoBooth extends PApplet implements IGui {
 
     void showString(String ev, int position, int offset, int bottom) {
         int x;
-        textSize(24);
+        textSize(IGui.SMALLER_FONT_SIZE);
         if (position == LEFT) {
             x = frameX + XBP_DISPLAY_FRAME_WIDTH / 4 + offset;
         } else if (position == RIGHT) {
             x = frameX + 3 * XBP_DISPLAY_FRAME_WIDTH / 4 + offset;
         } else {
-            textSize(48);
+            textSize(IGui.MID_FONT_SIZE);
             x = width / 2; // CENTER
         }
 
@@ -1617,7 +1621,7 @@ public class PhotoBooth extends PApplet implements IGui {
                 // Display message if no images
                 fill(255);
                 textAlign(CENTER, CENTER);
-                textSize(48);
+                textSize(IGui.MID_FONT_SIZE);
                 text("No Photo Available for Review", width / 2, height / 2);
             }
         }
