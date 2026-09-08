@@ -55,7 +55,7 @@ class HorzMenuBar implements IGui {
         // top menu bar
         reviewKey = new MenuKey(pApplet, MainActivity.MODE_KEY, "REVIEW", yellow, backTransparent); // menuTextSize,
         settingsKey = new MenuKey(pApplet, MainActivity.SETTINGS_KEY, "\u2699", yellow, backTransparent); // LARGE_FONT_SIZE,
-        optionsKey = new MenuKey(pApplet, MainActivity.BUTTON_Y_KEY, "",  graytransparent, backTransparent);
+        optionsKey = new MenuKey(pApplet, MainActivity.BUTTON_Y_KEY, "ZOOM\nY",  yellow, backTransparent);
         functionKey = new MenuKey(pApplet, MainActivity.BUTTON_X_KEY, "PARALLAX\nX", yellow, backTransparent);
         backKey = new MenuKey(pApplet, MainActivity.BUTTON_A_KEY, "BACK\nA", yellow, backTransparent);
         imageModeKey = new MenuKey(pApplet, MainActivity.ANAGLYPH_KEY, "ANA-\nGLYPH", yellow, backTransparent);
@@ -129,7 +129,7 @@ class HorzMenuBar implements IGui {
         }
 
         //-------------------------------------------------------------
-        setMenuKeyLabels(MainActivity.FUNCTION_MODE_LIVEVIEW);
+        setMenuKeyLabels(MainActivity.FUNCTION_MODE_LIVEVIEW, MainActivity.LIVE_VIEW_STATE);
     }
 
     public void updateEvKey(boolean showEv) {
@@ -141,18 +141,19 @@ class HorzMenuBar implements IGui {
     }
 
     // update key labels for camera functions
-    public void setMenuKeyLabels(int mode) {
+    public void setMenuKeyLabels(int functionMode, int state) {
         boolean stereoscopic = ((PhotoBooth) pApplet).parameters.isStereoscopeCameraMode();
         //pApplet.println("setMenuKeyLabels " + mode);
-        switch (mode) {
+        switch (functionMode) {
             case MainActivity.FUNCTION_MODE_LIVEVIEW:
                 menuKey[0].setText("REVIEW");
-                menuKey[2].setBackgroundColor(backTransparent);
-                menuKey[2].setKeyColor(graytransparent);
-                menuKey[2].setHighlight(false);
-                menuKey[2].setText("");
-                menuKey[2].setActive(false);
-                menuKey[2].setVisible(false);
+                //menuKey[2].setBackgroundColor(backTransparent);
+                //menuKey[2].setKeyColor(graytransparent);
+                //menuKey[2].setHighlight(false);
+                //menuKey[2].setText("");
+                //menuKey[2].setActive(false);
+                //menuKey[2].setVisible(false);
+                menuKey[2].setText("ZOOM\nY");
                 menuKey[3].setBackgroundColor(backTransparent);
                 menuKey[3].setVisible(true);
                 menuKey[3].setActive(true);
@@ -187,8 +188,8 @@ class HorzMenuBar implements IGui {
                 menuKey[2].setActive(true);
                 menuKey[2].setVisible(true);
                 menuKey[2].setKeyColor(yellow);
-                menuKey[2].setText("ZOOM\nY");
-                menuKey[3].setText("RESET\nZOOM X");
+                menuKey[2].setText("MAGNIFY\nY");
+                menuKey[3].setText("RESET\nMAGNIFY X");
                 //menuKey[3].setActive(false);
                 //menuKey[3].setVisible(false);
                 //menuKey[3].setBackgroundColor(backTransparent);
@@ -234,19 +235,27 @@ class HorzMenuBar implements IGui {
                 menuKey[13].setText("");
                 break;
 
-            case MainActivity.FUNCTION_MODE_ZOOM:
+            case MainActivity.FUNCTION_MODE_MAGNIFY:
                 menuKey[2].setBackgroundColor(lighttransparent);
                 menuKey[3].setBackgroundColor(backTransparent);
                 menuKey[4].setText("BACK\nA");
-                menuKey[7].setText("SHIFT\nDOWN" + DOWN_ARROW);
-                menuKey[8].setText("SHIFT\nLEFT" + LEFT_ARROW);
-                menuKey[9].setKeyColor(yellow);
-                menuKey[9].setText("ZOOM-");
-                menuKey[10].setText("ZOOM\n" + " B");
+                 menuKey[9].setKeyColor(yellow);
+                menuKey[9].setText("MAGNIFY-");
+                menuKey[10].setText("MAGNIFY\n" + " B");
                 menuKey[11].setKeyColor(yellow);
-                menuKey[11].setText("ZOOM+");
-                menuKey[12].setText("SHIFT\nRIGHT" + RIGHT_ARROW);
-                menuKey[13].setText("SHIFT\nUP" + UP_ARROW);
+                menuKey[11].setText("MAGNIFY+");
+                if (state == MainActivity.REVIEW_PHOTO_STATE) {
+                    menuKey[7].setText("SHIFT\nDOWN" + DOWN_ARROW);
+                    menuKey[8].setText("SHIFT\nLEFT" + LEFT_ARROW);
+                    menuKey[12].setText("SHIFT\nRIGHT" + RIGHT_ARROW);
+                    menuKey[13].setText("SHIFT\nUP" + UP_ARROW);
+                } else {
+                    menuKey[7].setText("");
+                    menuKey[8].setText("");
+                    menuKey[12].setText("");
+                    menuKey[13].setText("");
+
+                }
                 break;
             default:
                 break;

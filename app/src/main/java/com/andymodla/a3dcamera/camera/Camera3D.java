@@ -847,13 +847,13 @@ public class Camera3D {
     }
 
     public String getEv() {
-        String sev = "EV ";
+        String sev = "EV";
         if (exposureCompensationIndex < 0) {
             sev += "-" + EV_TABLE[-exposureCompensationIndex];
         } else if (exposureCompensationIndex > 0) {
             sev += "+" + EV_TABLE[exposureCompensationIndex];
         } else {
-            sev += EV_TABLE[exposureCompensationIndex];
+            sev += " " + EV_TABLE[exposureCompensationIndex];
         }
         return sev;
     }

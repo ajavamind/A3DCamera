@@ -77,12 +77,11 @@ public class PhotoBooth extends PApplet implements IGui {
     private volatile boolean mirror = false;
     private volatile boolean crossEye = false;
     private volatile boolean grid = false;
-    volatile boolean zoom = false;
+    volatile boolean magnify = false;
     private volatile boolean showZoom = false;
     private volatile boolean showMenu = false;
     private volatile boolean showEv = false;
     private volatile boolean showParallax = false;
-    //private volatile boolean showZoom = false;
     private volatile boolean showPhotoBoothTitle = false;
     volatile boolean update = false;
     boolean screenshot = false;
@@ -92,12 +91,12 @@ public class PhotoBooth extends PApplet implements IGui {
 
     private float shiftOffsetX = 0;
     private float shiftOffsetY = 0;
-    private int DISPLAY_OFFSET_Y = 170;  // status display line for EV, parallax, zoom
+    private int DISPLAY_OFFSET_Y = 170;  // status display line for EV, parallax, magnify
     private int FILENAME_OFFSET_Y = 210; // display line for filename
     private volatile int lastKeyCode; // for processKeyCode()
     private volatile int lastKey; // for processKeyCode()
 
-    public static final int STEREO_OFFSET = -10; // right image shift used for stereo depth
+    public static final int STEREO_OFFSET = 0; // right image shift used for stereo depth from stereo window
     public static final int TITLE_STEREO_OFFSET = -160; // right image shift used for stereo depth
     private String imageLabel;
     private volatile int labelFrameCount = 0;
@@ -140,8 +139,15 @@ public class PhotoBooth extends PApplet implements IGui {
     String countdown = "";  // default ignore null string
 
     private int magnifyIndex = 0;
-    private static final float[] magnifyScale = {1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.5f, 3.0f, 4.0f, 6.0f, 8.0f};
-    private static final float[] shiftOffsetDelta = {0.0f, 10.0f, 9.0f, 8.0f, 7.0f, 6.0f, 5.0f, 4.0f, 3.0f, 2.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f};
+    private static final float[] magnifyScale = {1.0f, 1.125f, 1.25f, 1.375f, 1.5f, 1.625f, 1.75f, 1.875f,
+            2.0f, 2.125f, 2.25f, 2.375f, 2.5f, 2.625f, 2.75f, 2.875f,
+            3.0f, 3.125f, 3.25f, 3.375f, 3.5f, 3.625f, 3.75f, 3.875f, 4.0f};
+    private static final float[] shiftOffsetDelta = {0.0f, 8.0f, 7.0f, 6.0f, 5.0f, 4.0f, 3.0f, 2.0f,
+            2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f,
+            1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f};
+
+    //private static final float[] magnifyScale = {1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.5f, 3.0f, 4.0f, 6.0f, 8.0f};
+    //private static final float[] shiftOffsetDelta = {0.0f, 10.0f, 9.0f, 8.0f, 7.0f, 6.0f, 5.0f, 4.0f, 3.0f, 2.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f};
     //private static final float[] magnifyScale =     {1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.5f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f};
     //private static final float[] shiftOffsetDelta = {0.0f, 10.0f, 9.0f, 8.0f, 7.0f, 6.0f, 5.0f, 4.0f, 3.0f, 2.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f};
 
@@ -190,7 +196,7 @@ public class PhotoBooth extends PApplet implements IGui {
         if (state == MainActivity.LIVE_VIEW_STATE) {
             //resetZoom();
         }
-        gui.getMenuBar().setMenuKeyLabels(func);
+        gui.getMenuBar().setMenuKeyLabels(func, state);
     }
 
     public void reloadLastReviewImage() {
@@ -356,7 +362,7 @@ public class PhotoBooth extends PApplet implements IGui {
     }
 
 //    void toggleZoom() {
-//        zoom = !zoom;
+//        magnify = !magnify;
 //        update = true;
 //    }
 
@@ -599,16 +605,16 @@ public class PhotoBooth extends PApplet implements IGui {
             drawReview();
         }
 //        if (parameters.isStereoscopeCameraMode()) {
-//            if (zoom) {
+//            if (magnify) {
 //                textSize(IGui.MID_FONT_SIZE);
 //                fill(yellow);
 //                textAlign(LEFT);
-//                text("zoom +" + magnifyScale[magnifyIndex] + "    ", width - 400, height - 4);
+//                text("magnify +" + magnifyScale[magnifyIndex] + "    ", width - 400, height - 4);
 //            }
 //        }
 
         if (parameters.isPhotoBoothCameraMode()) {
-//            if (zoom && magnifyScale[magnifyIndex] > 1.0f) {
+//            if (magnify && magnifyScale[magnifyIndex] > 1.0f) {
 //                textSize(IGui.MID_FONT_SIZE);
 //                fill(yellow);
 //                textAlign(LEFT);
@@ -620,7 +626,7 @@ public class PhotoBooth extends PApplet implements IGui {
                 textSize(IGui.MID_FONT_SIZE);
                 fill(yellow);
                 textAlign(LEFT);
-                text("mirror=" + mirror + " zoom=" + zoom + " w=" + imgLeft.width + " h=" + imgLeft.height, width / 8, height - 2*IGui.MID_FONT_SIZE);
+                text("mirror=" + mirror + " magnify=" + magnify + " w=" + imgLeft.width + " h=" + imgLeft.height, width / 8, height - 2*IGui.MID_FONT_SIZE);
                 text("parallax=" + (parameters.getParallaxOffset()) + " vertical=" + (parameters.getVerticalOffset()) + " magnify=" + magnifyScale[magnifyIndex], width / 8, height - IGui.MID_FONT_SIZE);
             }
 
@@ -681,30 +687,14 @@ public class PhotoBooth extends PApplet implements IGui {
 
             }
         }
+        // show screen with help information overlayed
         switch (debugHelp) {
-            // overlays everything on screen
+            // text overlay on screen
             case 1:
-                fill(255);
-                textAlign(LEFT);
-                textSize(IGui.SMALL_FONT_SIZE);
-                for (int i = 0; i < 20; i++) {
-                    text(help[i], 100, 36 + i * 50);
-                }
-                for (int i = 20; i < help.length; i++) {
-                    text(help[i], width / 2 + 100, 36 + (i - 20) * 50);
-                }
+                drawText(help);
                 break;
             case 2:
-                fill(255);
-                textAlign(LEFT);
-                textSize(IGui.SMALL_FONT_SIZE);
-                for (int i = 0; i < 20; i++) {
-                    text(help2[i], 100, 36 + i * 50);
-                }
-                for (int i = 20; i < help2.length; i++) {
-                    text(help2[i], width/2 + 100, 36 + (i-20) * 50);
-                }
-
+                drawText(help2);
                 break;
             default:
                 break;
@@ -747,6 +737,28 @@ public class PhotoBooth extends PApplet implements IGui {
         if (screenshot) {
             saveScreenshot();
             screenshot = false;
+        }
+    }
+
+    private void drawText(String[] textLines) {
+//        if (position == DisplayMode.SBS && parameters.isStereoscopeCameraMode()) { // for stereoscope
+//            showString(ev, LEFT, 0, level);
+//            showString(ev, RIGHT, STEREO_OFFSET, level);
+//        } else { //monoscopic
+//            showString(ev, CENTER, 0, level);
+//        }
+        DisplayMode position = displayMode.get();
+        if (displayMode.get() == DisplayMode.SBS && parameters.isStereoscopeCameraMode()) { // for stereoscope
+        } else {
+            fill(255);
+            textAlign(LEFT);
+            textSize(IGui.SMALL_FONT_SIZE);
+            for (int i = 0; i < 20; i++) {
+                text(textLines[i], 100, 36 + i * 50);
+            }
+            for (int i = 20; i < textLines.length; i++) {
+                text(textLines[i], width / 2 + 100, 36 + (i - 20) * 50);
+            }
         }
     }
 
@@ -816,8 +828,8 @@ public class PhotoBooth extends PApplet implements IGui {
         // Center vertically within frame
         float baseVerticalOffset = frameY + (XBP_DISPLAY_FRAME_HEIGHT - imgHeight) / 2;
 
-        // Calculate zoom offsets - these keep the zoomed image centered in its half-frame
-        if (zoom) {
+        // Calculate magnify offsets - these keep the zoomed image centered in its half-frame
+        if (magnify) {
             offsetX = ((imgWidth * (1 - 1 / magnifyScale[magnifyIndex])) / 2) + shiftOffsetX;
             offsetY = ((imgHeight * (1 - 1 / magnifyScale[magnifyIndex])) / 2) + shiftOffsetY;
         }
@@ -835,7 +847,7 @@ public class PhotoBooth extends PApplet implements IGui {
             scale(-1, 1);
         }
 
-        if (zoom) {
+        if (magnify) {
             scale(magnifyScale[magnifyIndex], magnifyScale[magnifyIndex]);
         }
         //float iC = 0; //(imgWidth - (float)imgLeft.width)/2;
@@ -859,7 +871,7 @@ public class PhotoBooth extends PApplet implements IGui {
             scale(-1, 1);
         }
 
-        if (zoom) {
+        if (magnify) {
             scale(magnifyScale[magnifyIndex], magnifyScale[magnifyIndex]);
         }
 
@@ -894,8 +906,8 @@ public class PhotoBooth extends PApplet implements IGui {
         anaglyphW = (float) height * AR;
         float displayX = ((float) width - anaglyphW) / 2;
 
-        // Calculate zoom offsets
-        if (zoom) {
+        // Calculate magnify offsets
+        if (magnify) {
             offsetX = ((anaglyphW * (1 - 1 / magnifyScale[magnifyIndex])) / 2) + shiftOffsetX;
             offsetY = ((height * (1 - 1 / magnifyScale[magnifyIndex])) / 2) + shiftOffsetY;
         }
@@ -917,7 +929,7 @@ public class PhotoBooth extends PApplet implements IGui {
             scale(-1, 1); // Mirror - flip horizontally
         }
 
-        if (zoom) {
+        if (magnify) {
             scale(magnifyScale[magnifyIndex], magnifyScale[magnifyIndex]);
         }
 
@@ -947,7 +959,7 @@ public class PhotoBooth extends PApplet implements IGui {
             scale(-1, 1); // Mirror - flip horizontally
         }
 
-        if (zoom) {
+        if (magnify) {
             scale(magnifyScale[magnifyIndex], magnifyScale[magnifyIndex]);
         }
 
@@ -988,8 +1000,8 @@ public class PhotoBooth extends PApplet implements IGui {
         anaglyphW = (float) height * AR;
         float displayX = ((float) width - anaglyphW) / 2;
 
-        // Calculate zoom offsets
-        if (zoom) {
+        // Calculate magnify offsets
+        if (magnify) {
             offsetX = ((anaglyphW * (1 - 1 / magnifyScale[magnifyIndex])) / 2) + shiftOffsetX;
             offsetY = ((height * (1 - 1 / magnifyScale[magnifyIndex])) / 2) + shiftOffsetY;
         }
@@ -1006,7 +1018,7 @@ public class PhotoBooth extends PApplet implements IGui {
             scale(-1, 1); // Mirror - flip horizontally
         }
 
-        if (zoom) {
+        if (magnify) {
             scale(magnifyScale[magnifyIndex], magnifyScale[magnifyIndex]);
         }
         //if (DEBUG) PApplet.println("drawPhoto()");
@@ -1037,7 +1049,7 @@ public class PhotoBooth extends PApplet implements IGui {
             scale(-1, 1);
         }
 
-        if (zoom) {
+        if (magnify) {
             // Calculate crop boundaries relative to the source image size
             float scaleFactor = magnifyScale[magnifyIndex];
             int srcW = (int) (((float) img.width) / scaleFactor);
@@ -1089,9 +1101,8 @@ public class PhotoBooth extends PApplet implements IGui {
 //            ev = Camera3D.METERING_NAMES[parameters.getExposureMeteringIndex()]  + ev;
 //        }
 
-        int level = DISPLAY_OFFSET_Y;
-        DisplayMode position = displayMode.get();
-        if (position == DisplayMode.SBS && parameters.isStereoscopeCameraMode()) { // for stereoscope
+        int level = height - DISPLAY_OFFSET_Y;
+        if (displayMode.get() == DisplayMode.SBS && parameters.isStereoscopeCameraMode()) { // for stereoscope
             showString(ev, LEFT, 0, level);
             showString(ev, RIGHT, STEREO_OFFSET, level);
         } else { //monoscopic
@@ -1109,7 +1120,7 @@ public class PhotoBooth extends PApplet implements IGui {
 //            px = "= " + Camera3D.FOCUS_DISTANCE_NAMES[parameters.getFocusDistanceIndex()] + " " + px;
 //        }
 
-        int level = DISPLAY_OFFSET_Y;
+        int level = height - DISPLAY_OFFSET_Y;
         DisplayMode position = displayMode.get();
         if (position == DisplayMode.SBS && parameters.isStereoscopeCameraMode()) { // for stereoscope
             showString(spx, LEFT, 0, level);
@@ -1126,7 +1137,7 @@ public class PhotoBooth extends PApplet implements IGui {
 //            px = "= " + Camera3D.FOCUS_DISTANCE_NAMES[parameters.getFocusDistanceIndex()] + " " + px;
 //        }
 
-        int level = DISPLAY_OFFSET_Y;
+        int level = height - DISPLAY_OFFSET_Y;
         DisplayMode position = displayMode.get();
         if (position == DisplayMode.SBS && parameters.isStereoscopeCameraMode()) { // for stereoscope
             showString(sZoom, LEFT, 0, level);
@@ -1155,7 +1166,7 @@ public class PhotoBooth extends PApplet implements IGui {
         String label = imageLabel;
         if (label.isEmpty()) return;
 
-        int level = FILENAME_OFFSET_Y;
+        int level = height - FILENAME_OFFSET_Y;
         DisplayMode position = displayMode.get();
         if (position == DisplayMode.SBS && parameters.isStereoscopeCameraMode()) { // stereoscope
             showString(label, LEFT, 0, level);
@@ -1165,13 +1176,12 @@ public class PhotoBooth extends PApplet implements IGui {
         }
     }
 
-
-    void showString(String ev, int position, int offset, int bottom) {
+    void showString(String text, int side, int offset, int y) {
         int x;
         textSize(IGui.SMALLER_FONT_SIZE);
-        if (position == LEFT) {
+        if (side == LEFT) {
             x = frameX + XBP_DISPLAY_FRAME_WIDTH / 4 + offset;
-        } else if (position == RIGHT) {
+        } else if (side == RIGHT) {
             x = frameX + 3 * XBP_DISPLAY_FRAME_WIDTH / 4 + offset;
         } else {
             textSize(IGui.MID_FONT_SIZE);
@@ -1180,7 +1190,7 @@ public class PhotoBooth extends PApplet implements IGui {
 
         fill(yellow);
         textAlign(CENTER, CENTER);
-        text(ev, x, height - bottom);
+        text(text, x, y);
     }
 
     // called by MainActivity onKeyUp to process key events for the photo booth exclusively
@@ -1224,23 +1234,23 @@ public class PhotoBooth extends PApplet implements IGui {
 //                break;
 
             case KeyEvent.KEYCODE_Z:
-            case MainActivity.BUTTON_Y_KEY:  // ZOOM
-                if (state != MainActivity.LIVE_VIEW_STATE) {
+            case MainActivity.BUTTON_Y_KEY:  // MAGNIFY
+                if (state == MainActivity.LIVE_VIEW_STATE || state == MainActivity.REVIEW_PHOTO_STATE) {
                     toggleShowZoom();
                     if (showZoom) {
-                        zoom = true;
-                        int xfunction = MainActivity.FUNCTION_MODE_ZOOM;
+                        magnify = true;
+                        int xfunction = MainActivity.FUNCTION_MODE_MAGNIFY;
                         mainActivity.setFunctionMode(xfunction);
-                        gui.menuBar.setMenuKeyLabels(xfunction);
+                        gui.menuBar.setMenuKeyLabels(xfunction, state);
                         showMenu = true;
                     } else {
                         if (state == MainActivity.LIVE_VIEW_STATE) {
                             mainActivity.setFunctionMode(MainActivity.FUNCTION_MODE_LIVEVIEW);
-                            gui.menuBar.setMenuKeyLabels(MainActivity.FUNCTION_MODE_LIVEVIEW);
+                            gui.menuBar.setMenuKeyLabels(MainActivity.FUNCTION_MODE_LIVEVIEW, state);
                             gui.menuBar.updateEvKey(showEv);
                         } else {
                             mainActivity.setFunctionMode(MainActivity.FUNCTION_MODE_REVIEW);
-                            gui.menuBar.setMenuKeyLabels(MainActivity.FUNCTION_MODE_REVIEW);
+                            gui.menuBar.setMenuKeyLabels(MainActivity.FUNCTION_MODE_REVIEW, state);
 
                         }
                     }
@@ -1249,23 +1259,23 @@ public class PhotoBooth extends PApplet implements IGui {
 
             case MainActivity.BUTTON_X_KEY:  // PARALLAX or Reset Zoom
                 if (state == MainActivity.REVIEW_PHOTO_STATE) {
-                    // reset zoom
+                    // reset magnify
                     resetZoom();
                 } else {
                     toggleParallax();
                     if (showParallax) {
                         int yfunction = MainActivity.FUNCTION_MODE_PARALLAX;
                         mainActivity.setFunctionMode(yfunction);
-                        gui.menuBar.setMenuKeyLabels(yfunction);
+                        gui.menuBar.setMenuKeyLabels(yfunction, state);
                         showMenu = true;
                     } else {
                         if (state == MainActivity.LIVE_VIEW_STATE) {
                             mainActivity.setFunctionMode(MainActivity.FUNCTION_MODE_LIVEVIEW);
-                            gui.menuBar.setMenuKeyLabels(MainActivity.FUNCTION_MODE_LIVEVIEW);
+                            gui.menuBar.setMenuKeyLabels(MainActivity.FUNCTION_MODE_LIVEVIEW, state);
                             gui.menuBar.updateEvKey(showEv);
                         } else {
                             mainActivity.setFunctionMode(MainActivity.FUNCTION_MODE_REVIEW);
-                            gui.menuBar.setMenuKeyLabels(MainActivity.FUNCTION_MODE_REVIEW);
+                            gui.menuBar.setMenuKeyLabels(MainActivity.FUNCTION_MODE_REVIEW, state);
 
                         }
                     }
@@ -1273,7 +1283,7 @@ public class PhotoBooth extends PApplet implements IGui {
                 break;
 
             case MainActivity.BUTTON_B_KEY:
-                if (DEBUG) println("B key " + (mainActivity.isZoomFunction()) + " " + zoom);
+                if (DEBUG) println("B key " + (mainActivity.isZoomFunction()) + " " + magnify);
                 if (mainActivity.isLiveviewFunction()) {
                     toggleEv();
                 } else if (mainActivity.isReviewFunction()) {
@@ -1287,7 +1297,7 @@ public class PhotoBooth extends PApplet implements IGui {
 
             case MainActivity.BUTTON_A_KEY:
                 if (DEBUG) println("button A");
-                if (mainActivity.getFunctionMode() == MainActivity.FUNCTION_MODE_ZOOM) {
+                if (mainActivity.getFunctionMode() == MainActivity.FUNCTION_MODE_MAGNIFY) {
                     //resetZoom();
                 } else if (mainActivity.getFunctionMode() == MainActivity.FUNCTION_MODE_PARALLAX) {
                     //showParallax = !showParallax;
@@ -1295,10 +1305,10 @@ public class PhotoBooth extends PApplet implements IGui {
                     //gui.menuBar.setMenuKeyLabels(MainActivity.FUNCTION_MODE_LIVEVIEW);
                 } else if (state == MainActivity.REVIEW_PHOTO_STATE) {
                     mainActivity.setFunctionMode(MainActivity.FUNCTION_MODE_REVIEW);
-                    gui.menuBar.setMenuKeyLabels(MainActivity.FUNCTION_MODE_REVIEW);
+                    gui.menuBar.setMenuKeyLabels(MainActivity.FUNCTION_MODE_REVIEW, state);
                 } else {
                     mainActivity.setFunctionMode(MainActivity.FUNCTION_MODE_LIVEVIEW);
-                    gui.menuBar.setMenuKeyLabels(MainActivity.FUNCTION_MODE_LIVEVIEW);
+                    gui.menuBar.setMenuKeyLabels(MainActivity.FUNCTION_MODE_LIVEVIEW, state);
                 }
 
                 toggleShowMenu();
@@ -1320,7 +1330,7 @@ public class PhotoBooth extends PApplet implements IGui {
 //                        parallax = toDisplayPixels(iParallax);
 //                        if (DEBUG) PApplet.println("iParallax = " + iParallax);
 //                    }
-                } else if (mainActivity.isZoomFunction() && zoom) {
+                } else if (mainActivity.isZoomFunction() && magnify) {
                     shiftOffsetY -= shiftOffsetDelta[magnifyIndex];
                 }
                 break;
@@ -1342,7 +1352,7 @@ public class PhotoBooth extends PApplet implements IGui {
 //                        parallax = toDisplayPixels(iParallax);
 //                        if (DEBUG) PApplet.println("iParallax = " + iParallax);
 //                    }
-                } else if (mainActivity.isZoomFunction() && zoom) {
+                } else if (mainActivity.isZoomFunction() && magnify) {
                     shiftOffsetY += shiftOffsetDelta[magnifyIndex];
                 }
                 break;
@@ -1431,7 +1441,7 @@ public class PhotoBooth extends PApplet implements IGui {
                         if (DEBUG) PApplet.println("parallax = " + parallax);
                     }
                 } else if (mainActivity.isZoomFunction()) {
-                    if (zoom) {
+                    if (magnify) {
                         if (magnifyIndex > 0) {
                             magnifyIndex--;
                             if (magnifyIndex == 0) {
@@ -1482,7 +1492,7 @@ public class PhotoBooth extends PApplet implements IGui {
                         //if (DEBUG) PApplet.println("parallax = " + parallax);
                     }
                 } else if (mainActivity.isZoomFunction()) {
-                    if (zoom) {
+                    if (magnify) {
                         if (magnifyIndex < magnifyScale.length - 1) {
                             magnifyIndex++;
                             update = true;
@@ -1507,6 +1517,8 @@ public class PhotoBooth extends PApplet implements IGui {
             case KeyEvent.KEYCODE_H:  // help screens for debug
             case KeyEvent.KEYCODE_I:
             case KeyEvent.KEYCODE_HELP:
+                // establish the current help screen information to display in draw loop
+                // turn on the page to show for draw with debugHelp variable
                 debugHelp++;
                 if (debugHelp > 2) {
                     debugHelp = 0;

@@ -92,7 +92,7 @@ public class MainActivity extends AppCompatActivity {
     public static final int FUNCTION_MODE_LIVEVIEW = 0; //
     public static final int FUNCTION_MODE_REVIEW = 1;
     public static final int FUNCTION_MODE_PARALLAX = 2; // runs with both live view and review states
-    public static final int FUNCTION_MODE_ZOOM = 3; // runs with both live view and review states
+    public static final int FUNCTION_MODE_MAGNIFY = 3; // works with both review states
     public static final int NUMBER_OF_FUNCTIONS = 4;
     public int functionMode = FUNCTION_MODE_LIVEVIEW;
 
@@ -691,7 +691,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public boolean isZoomFunction() {
-        return (functionMode == FUNCTION_MODE_ZOOM);
+        return (functionMode == FUNCTION_MODE_MAGNIFY);
     }
 
     public void setFunctionMode(int func) {

@@ -6,6 +6,7 @@ import static com.andymodla.a3dcamera.camera.Camera3D.MAX_NUM_CAMERAS;
 
 import android.content.Context;
 import android.graphics.ImageFormat;
+import android.graphics.Rect;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraManager;
@@ -51,6 +52,14 @@ public class CameraInfoUtil {
 
                     // Flash Unit Presence
                     Boolean hasFlash = characteristics.get(CameraCharacteristics.FLASH_INFO_AVAILABLE);
+
+                    Rect activeArraySize = characteristics.get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE);
+                    Float maxZoom = characteristics.get(CameraCharacteristics.SCALER_AVAILABLE_MAX_DIGITAL_ZOOM);
+
+                    if (maxZoom == null || activeArraySize == null) {
+                        Log.d(TAG, "Camera ID: " + cameraId + "Zoom not supported");
+                    }
+                    Log.d(TAG, "Camera ID: " + cameraId + "  Zoom supported maxZoom=" + maxZoom + " activeArraySize=" + activeArraySize);
 
                     // Stream Configuration Map (supported preview/recording resolutions)
                     StreamConfigurationMap streamMap = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);

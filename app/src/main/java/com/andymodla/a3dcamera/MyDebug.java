@@ -6,5 +6,5 @@ package com.andymodla.a3dcamera;
 public class MyDebug {
 	public static final boolean LOG = BuildConfig.DEBUG;
 	public static final boolean LOG_DETAIL = false;
-	public static final boolean DEBUG = false; //BuildConfig.DEBUG;
+	public static final boolean DEBUG = BuildConfig.DEBUG;
 }
