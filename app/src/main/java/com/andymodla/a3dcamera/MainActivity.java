@@ -1556,7 +1556,7 @@ public class MainActivity extends AppCompatActivity {
             ActivityManager am = (ActivityManager) getSystemService(ACTIVITY_SERVICE);
             int standardHeapSize = am.getMemoryClass();
             int largeHeapSize = am.getLargeMemoryClass();
-            System.out.println("Standard: " + standardHeapSize + "MB, Large: " + largeHeapSize + "MB");
+            Log.d (TAG, "Standard: " + standardHeapSize + "MB, Large: " + largeHeapSize + "MB");
         }
 
 }

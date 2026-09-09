@@ -10,8 +10,8 @@ android {
         applicationId "com.andymodla.a3dcamera"
         minSdk 34
         targetSdk 34
-        versionCode 22
-        versionName "3.02"
+        versionCode 23
+        versionName "3.10"
 
         //testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -25,10 +25,15 @@ android {
     }
 
     buildTypes {
-        release {
+        debug {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             signingConfig signingConfigs.debug
+        }
+
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
     compileOptions {

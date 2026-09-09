@@ -37,7 +37,7 @@ import java.util.Date;
 
 
 public class PhotoBooth extends PApplet implements IGui {
-    private static final boolean DEBUG = true; //MyDebug.DEBUG;
+    private static final boolean DEBUG = MyDebug.DEBUG;
     private static final boolean testMode = false;
     private static boolean testCheckDraw = false;
 
@@ -1691,7 +1691,9 @@ public class PhotoBooth extends PApplet implements IGui {
                         if (DEBUG) println("nameWithoutExt: " + nameWithoutExt);
                         if (nameWithoutExt.toLowerCase().endsWith("_2x1")) {
                             boolean sbsFilesAdded = sbsImageFiles.add(fullPath);
-                            if (sbsFilesAdded) println("sbs file added: " + fullPath);
+                            if (sbsFilesAdded) {
+                                if (DEBUG) println("sbs file added: " + fullPath);
+                            }
                         }
                     }
                 }
