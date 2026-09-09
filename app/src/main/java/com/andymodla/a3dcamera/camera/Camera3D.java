@@ -51,6 +51,10 @@ import com.andymodla.a3dcamera.R;  // kludge fix this
 import com.andymodla.a3dcamera.Media;
 import com.andymodla.a3dcamera.Parameters;
 
+import android.hardware.camera2.CameraCharacteristics;
+import android.hardware.camera2.CameraManager;
+import android.util.Range;
+
 import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -58,6 +62,9 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+
+import android.graphics.Rect;
+
 import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
@@ -164,6 +171,13 @@ public class Camera3D {
     private int minExposureIndex;
     private int maxExposureIndex;
     private static final String[] EV_TABLE = {"0", "1/6", "1/3", "1/2", "2/3", "5/6", "1", "1 1/6", "1 1/3", "1 1/2", "1 2/3", "1 5/6", "2"};
+
+    float maxZoom = 1.0f;
+    float minZoom = 1.0f;
+    boolean zoomRatioSupported = false;
+    float zoom = 1.0f;
+    float zoomStep = 1.0f / 8.0f;
+    Rect cropRegion;
 
     private static final CaptureRequest.Key<Integer> EXPOSURE_METERING = new CaptureRequest.Key<>("org.codeaurora.qcamera3.exposure_metering.exposure_metering_mode", Integer.TYPE);
     private static final int FRAME_AVERAGE = 0; // normal behavior
@@ -453,7 +467,10 @@ public class Camera3D {
                 pairedRight = imageR;
             }
             if (oldLeft != null) {
-                try { oldLeft.close(); } catch (IllegalStateException ignored) {}
+                try {
+                    oldLeft.close();
+                } catch (IllegalStateException ignored) {
+                }
             }
 
             if (((MainActivity) context).state != LIVE_VIEW_STATE) {
@@ -461,7 +478,10 @@ public class Camera3D {
                 synchronized (Camera3D.this) {
                     imageL = null;
                 }
-                try { newLeft.close(); } catch (IllegalStateException ignored) {}
+                try {
+                    newLeft.close();
+                } catch (IllegalStateException ignored) {
+                }
                 return;
             }
             // Only save once BOTH sides of the stereo pair are available;
@@ -496,14 +516,20 @@ public class Camera3D {
                 pairedLeft = imageL;
             }
             if (oldRight != null) {
-                try { oldRight.close(); } catch (IllegalStateException ignored) {}
+                try {
+                    oldRight.close();
+                } catch (IllegalStateException ignored) {
+                }
             }
 
             if (((MainActivity) context).state != LIVE_VIEW_STATE) {
                 synchronized (Camera3D.this) {
                     imageR = null;
                 }
-                try { newRight.close(); } catch (IllegalStateException ignored) {}
+                try {
+                    newRight.close();
+                } catch (IllegalStateException ignored) {
+                }
                 return;
             }
             if (pairedLeft != null) {
@@ -518,7 +544,7 @@ public class Camera3D {
 
     /**
      * Force-release any buffered images still held by a capture ImageReader.
-     *
+     * <p>
      * NOTE: the capture completion callback is dispatched through the same
      * {@code mCameraHandler} thread that runs captureListener0/2 (we pass a
      * HandlerExecutor to captureSingleRequest), so this cannot race with
@@ -534,7 +560,10 @@ public class Camera3D {
         try {
             Image img;
             while ((img = reader.acquireNextImage()) != null) {
-                try { img.close(); } catch (IllegalStateException ignored) {}
+                try {
+                    img.close();
+                } catch (IllegalStateException ignored) {
+                }
             }
         } catch (IllegalStateException ise) {
             // All maxImages slots are already ACQUIRED (held in imageL/imageR),
@@ -547,7 +576,10 @@ public class Camera3D {
             try {
                 Image img;
                 while ((img = reader.acquireNextImage()) != null) {
-                    try { img.close(); } catch (IllegalStateException ignored) {}
+                    try {
+                        img.close();
+                    } catch (IllegalStateException ignored) {
+                    }
                 }
             } catch (IllegalStateException ise2) {
                 Log.w(TAG, "drainCaptureReader " + which + ": still held after release, giving up this cycle");
@@ -560,17 +592,29 @@ public class Camera3D {
      * them. Unlike releaseCaptureImages() this does NOT detach the listeners -
      * use it mid-stream (between captures) to free slots stranded by an
      * incomplete stereo pair without disrupting the next shot.
-     *
+     * <p>
      * Runs on mCameraHandler (same thread as captureListener0/2 and the
      * capture callback), so it cannot race with them.
      */
     private void releaseHeldCapturePair() {
         synchronized (this) {
-            if (imageL != null) { try { imageL.close(); } catch (IllegalStateException ignored) {} imageL = null; }
-            if (imageR != null) { try { imageR.close(); } catch (IllegalStateException ignored) {} imageR = null; }
+            if (imageL != null) {
+                try {
+                    imageL.close();
+                } catch (IllegalStateException ignored) {
+                }
+                imageL = null;
+            }
+            if (imageR != null) {
+                try {
+                    imageR.close();
+                } catch (IllegalStateException ignored) {
+                }
+                imageR = null;
+            }
         }
     }
-	
+
     /**
      * Image available listener for left preview frames
      */
@@ -793,6 +837,88 @@ public class Camera3D {
         }
     }
 
+//  Camera zoom level with 3D is not available in hardware
+//   Code is for reference only for use with 2D camera
+//    private void initZoom() {
+//        CameraCharacteristics characteristics;
+//        try {
+//            characteristics = mCameraManager.getCameraCharacteristics(stereoCameraId);
+//        } catch (Exception e) {
+//            Log.e(TAG, "getCameraCharacteristics failed", e);
+//            return;
+//        }
+//
+//        if (characteristics == null) {
+//            return;
+//        }
+
+//// Check for the modern zoom ratio range (Android 11+)
+//        Range<Float> zoomRange = characteristics.get(CameraCharacteristics.CONTROL_ZOOM_RATIO_RANGE);
+//        if (zoomRange != null) {
+//            zoomRatioSupported = true;
+//            minZoom = zoomRange.getLower();
+//            maxZoom = zoomRange.getUpper();
+//            Log.d(TAG, "Zoom ratio supported. Range: min=" + minZoom + " max=" + maxZoom);
+//        } else {
+//            // Fall back to legacy SCALER_CROP_REGION digital zoom
+//            zoomRatioSupported = false;
+//            Float maxDigitalZoom = characteristics.get(CameraCharacteristics.SCALER_AVAILABLE_MAX_DIGITAL_ZOOM);
+//            if (maxDigitalZoom != null) {
+//                maxZoom = Math.max(1.0f, maxDigitalZoom);
+//            }
+//            minZoom = 1.0f;
+//            Log.d(TAG, "Zoom ratio NOT supported. Max digital zoom=" + maxZoom);
+//        }
+//    }
+//
+//    public void setZoom(float zoomLevel) {
+//        if (previewRequestBuilder == null || mCameraCaptureSession == null) {
+//            Log.e(TAG, "setZoom ignored: camera/session not ready");
+//            return;
+//        }
+//
+//        // Clamp to the range the camera actually supports, otherwise the
+//        // request is invalid and gets rejected by the HAL.
+//        if (zoomLevel < minZoom) zoomLevel = minZoom;
+//        if (zoomLevel > maxZoom) zoomLevel = maxZoom;
+//
+//        // Use EITHER CONTROL_ZOOM_RATIO OR SCALER_CROP_REGION - never both.
+//        // When CONTROL_ZOOM_RATIO is set to a value other than 1.0, the HAL
+//        // re-defines the SCALER_CROP_REGION coordinate system (post-zoom
+//        // coordinates), so setting both keys in one request is invalid.
+//
+//        if (zoomRatioSupported) {
+//            Log.d(TAG, "zoomRatioSupported setZoom " + zoomLevel);
+//            previewRequestBuilder.set(CaptureRequest.CONTROL_ZOOM_RATIO, zoomLevel);
+//        } else {
+//            // Legacy zoom: centered crop of the active array scaled by zoom level
+//            CameraCharacteristics characteristics;
+//            Rect activeArraySize;
+//            try {
+//                characteristics = mCameraManager.getCameraCharacteristics(stereoCameraId);
+//                activeArraySize = characteristics.get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE);
+//                if (activeArraySize == null) return;
+//            } catch (Exception e) {
+//                return;
+//            }
+//            int cropWidth = (int) (activeArraySize.width() / zoomLevel);
+//            int cropHeight = (int) (activeArraySize.height() / zoomLevel);
+//            int xOffset = (activeArraySize.width() - cropWidth) / 2;
+//            int yOffset = (activeArraySize.height() - cropHeight) / 2;
+//            Rect cropRegion = new Rect(xOffset, yOffset, xOffset + cropWidth, yOffset + cropHeight);
+//            previewRequestBuilder.set(CaptureRequest.SCALER_CROP_REGION, cropRegion);
+//        }
+//
+//        Log.d(TAG, "setZoom " + zoomLevel);
+//        try {
+//            // Keep the same capture callback the preview session was started with
+//            mCameraCaptureSession.setRepeatingRequest(previewRequestBuilder.build(), previewCallback, mCameraHandler);
+//        } catch (CameraAccessException e) {
+//            Log.e(TAG, "setZoom failed, attempting recovery", e);
+//            handleCameraRecovery(CameraDevice.StateCallback.ERROR_CAMERA_DEVICE);
+//        }
+//    }
+
     private void initExposureCompensation() {
         try {
             // 1. Get the camera characteristics for your current camera ID
@@ -911,14 +1037,20 @@ public class Camera3D {
         public void onDisconnected(@NonNull CameraDevice camera) { // Turn off camera
             mOpenInProgress.set(false);
             if (null != mCameraDevice) {
-                try { mCameraDevice.close(); } catch (RuntimeException ignored) {}
+                try {
+                    mCameraDevice.close();
+                } catch (RuntimeException ignored) {
+                }
                 mCameraDevice = null;
             }
             // The session dies with the device; drop the stale reference so
             // createCameraCaptureSession() doesn't trust it. Guard against
             // null/already-closed sessions (can happen on double disconnect).
             if (mCameraCaptureSession != null) {
-                try { mCameraCaptureSession.close(); } catch (RuntimeException ignored) {}
+                try {
+                    mCameraCaptureSession.close();
+                } catch (RuntimeException ignored) {
+                }
                 mCameraCaptureSession = null;
             }
             // Release any pinned capture buffers so a later reopen is clean.
@@ -930,7 +1062,10 @@ public class Camera3D {
             mOpenInProgress.set(false);
             Log.e(TAG, "Camera " + camera.getId() + " hardware failure error=" + error);
             if (mCameraDevice != null) {
-                try { mCameraDevice.close(); } catch (RuntimeException ignored) {}
+                try {
+                    mCameraDevice.close();
+                } catch (RuntimeException ignored) {
+                }
             }
 
             if (mCameraCaptureSession != null) {
@@ -940,7 +1075,10 @@ public class Camera3D {
                 } catch (CameraAccessException | IllegalStateException e) {
                     Log.e(TAG, "Error stopping preview session", e);
                 }
-                try { mCameraCaptureSession.close(); } catch (RuntimeException ignored) {}
+                try {
+                    mCameraCaptureSession.close();
+                } catch (RuntimeException ignored) {
+                }
                 mCameraCaptureSession = null;
             }
             // Clear captureInProgress so the shutter is not stuck "busy".
@@ -996,10 +1134,22 @@ public class Camera3D {
         // Release any images still held in shared fields so their native buffers
         // are freed before the threads go away.
         synchronized (this) {
-            if (imageL != null) { imageL.close(); imageL = null; }
-            if (imageR != null) { imageR.close(); imageR = null; }
-            if (imageLeft != null) { imageLeft.close(); imageLeft = null; }
-            if (imageRight != null) { imageRight.close(); imageRight = null; }
+            if (imageL != null) {
+                imageL.close();
+                imageL = null;
+            }
+            if (imageR != null) {
+                imageR.close();
+                imageR = null;
+            }
+            if (imageLeft != null) {
+                imageLeft.close();
+                imageLeft = null;
+            }
+            if (imageRight != null) {
+                imageRight.close();
+                imageRight = null;
+            }
         }
         // CRITICAL: clear the preview-frame busy flags. If onPause() lands while
         // a stereo pair is mid-flight (left listener already set
@@ -1269,7 +1419,7 @@ public class Camera3D {
     /**
      * Teardown-only: close the device, session, capture readers/images and reset
      * the preview busy flags. Does NOT restart the app.
-     *
+     * <p>
      * IMPORTANT: this must NOT call restartApp(). Earlier versions did, which
      * turned any transient CameraAccessException/IllegalStateException during
      * startup (createProcessingPreviewSession.onConfigured), pause/resume, or
@@ -1284,12 +1434,19 @@ public class Camera3D {
             try {
                 mCameraCaptureSession.stopRepeating();
                 mCameraCaptureSession.abortCaptures();
-            } catch (Exception ignored) {}
-            try { mCameraCaptureSession.close(); } catch (RuntimeException ignored) {}
+            } catch (Exception ignored) {
+            }
+            try {
+                mCameraCaptureSession.close();
+            } catch (RuntimeException ignored) {
+            }
             mCameraCaptureSession = null;
         }
         if (mCameraDevice != null) {
-            try { mCameraDevice.close(); } catch (RuntimeException ignored) {}
+            try {
+                mCameraDevice.close();
+            } catch (RuntimeException ignored) {
+            }
             mCameraDevice = null;
         }
         // Detach capture listeners and release pinned JPEG images.
@@ -1299,8 +1456,20 @@ public class Camera3D {
         isProcessingRight.set(false);
         available.set(false);
         synchronized (this) {
-            if (imageLeft != null) { try { imageLeft.close(); } catch (IllegalStateException ignored) {} imageLeft = null; }
-            if (imageRight != null) { try { imageRight.close(); } catch (IllegalStateException ignored) {} imageRight = null; }
+            if (imageLeft != null) {
+                try {
+                    imageLeft.close();
+                } catch (IllegalStateException ignored) {
+                }
+                imageLeft = null;
+            }
+            if (imageRight != null) {
+                try {
+                    imageRight.close();
+                } catch (IllegalStateException ignored) {
+                }
+                imageRight = null;
+            }
         }
         captureInProgress.set(false);
     }
@@ -1314,8 +1483,20 @@ public class Camera3D {
         if (mImageReader0 != null) mImageReader0.setOnImageAvailableListener(null, null);
         if (mImageReader2 != null) mImageReader2.setOnImageAvailableListener(null, null);
         synchronized (this) {
-            if (imageL != null) { try { imageL.close(); } catch (IllegalStateException ignored) {} imageL = null; }
-            if (imageR != null) { try { imageR.close(); } catch (IllegalStateException ignored) {} imageR = null; }
+            if (imageL != null) {
+                try {
+                    imageL.close();
+                } catch (IllegalStateException ignored) {
+                }
+                imageL = null;
+            }
+            if (imageR != null) {
+                try {
+                    imageR.close();
+                } catch (IllegalStateException ignored) {
+                }
+                imageR = null;
+            }
         }
     }
 
@@ -1371,8 +1552,20 @@ public class Camera3D {
                 // closeCamera() does not close the JPEG capture ImageReaders;
                 // close them explicitly so openCamera() recreates fresh ones
                 // instead of overwriting stale references (native buffer leak).
-                if (mImageReader0 != null) { try { mImageReader0.close(); } catch (RuntimeException ignored) {} mImageReader0 = null; }
-                if (mImageReader2 != null) { try { mImageReader2.close(); } catch (RuntimeException ignored) {} mImageReader2 = null; }
+                if (mImageReader0 != null) {
+                    try {
+                        mImageReader0.close();
+                    } catch (RuntimeException ignored) {
+                    }
+                    mImageReader0 = null;
+                }
+                if (mImageReader2 != null) {
+                    try {
+                        mImageReader2.close();
+                    } catch (RuntimeException ignored) {
+                    }
+                    mImageReader2 = null;
+                }
                 // Reopen: openCamera() recreates the handler/executor, all
                 // ImageReaders, opens the device and builds the preview session.
                 openCamera();
@@ -1471,7 +1664,7 @@ public class Camera3D {
 
             timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
             ((MainActivity) context).remoteShutter();  // send shutter release broadcast message
-            Log.d(TAG, "createCameraCaptureSession() "+timestamp + " state="+((MainActivity)context).state);
+            Log.d(TAG, "createCameraCaptureSession() " + timestamp + " state=" + ((MainActivity) context).state);
 
             // left/right image readers � install fresh listeners for this shot.
             // Re-adding the same listener instance is a no-op, so continuous mode is safe.
@@ -1539,7 +1732,7 @@ public class Camera3D {
                             drainCaptureReader(mImageReader2, 1);
                             ((MainActivity) context).setContinuousMode(false);
 
-                            }
+                        }
                     };
             pauseCameraPreviewSession();
             try {
@@ -1560,8 +1753,14 @@ public class Camera3D {
                 mImageReader0.setOnImageAvailableListener(null, null);
                 mImageReader2.setOnImageAvailableListener(null, null);
                 synchronized (this) {
-                    if (imageL != null) { imageL.close(); imageL = null; }
-                    if (imageR != null) { imageR.close(); imageR = null; }
+                    if (imageL != null) {
+                        imageL.close();
+                        imageL = null;
+                    }
+                    if (imageR != null) {
+                        imageR.close();
+                        imageR = null;
+                    }
                 }
                 captureInProgress.set(false);
                 mCameraCaptureSession = null;

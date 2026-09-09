@@ -53,20 +53,20 @@ class HorzMenuBar implements IGui {
         this.menuHeight = menuHeight;
 
         // top menu bar
-        reviewKey = new MenuKey(pApplet, MainActivity.MODE_KEY, "REVIEW", yellow, backTransparent); // menuTextSize,
-        settingsKey = new MenuKey(pApplet, MainActivity.SETTINGS_KEY, "\u2699", yellow, backTransparent); // LARGE_FONT_SIZE,
-        optionsKey = new MenuKey(pApplet, MainActivity.BUTTON_Y_KEY, "ZOOM\nY",  yellow, backTransparent);
-        functionKey = new MenuKey(pApplet, MainActivity.BUTTON_X_KEY, "PARALLAX\nX", yellow, backTransparent);
-        backKey = new MenuKey(pApplet, MainActivity.BUTTON_A_KEY, "BACK\nA", yellow, backTransparent);
-        imageModeKey = new MenuKey(pApplet, MainActivity.ANAGLYPH_KEY, "ANA-\nGLYPH", yellow, backTransparent);
-        shutterKey = new MenuKey(pApplet, MainActivity.SHUTTER_KEY, "\u25C9", yellow, backTransparent); // GIANT_FONT_SIZE,
+        reviewKey = new MenuKey(pApplet, MainActivity.MODE_KEY, REVIEW_LABEL, yellow, backTransparent); // menuTextSize,
+        settingsKey = new MenuKey(pApplet, MainActivity.SETTINGS_KEY, SETTINGS_LABEL, yellow, backTransparent); // LARGE_FONT_SIZE,
+        optionsKey = new MenuKey(pApplet, MainActivity.BUTTON_Y_KEY, ZOOM_LABEL+"\n"+Y_KEY,  yellow, backTransparent);
+        functionKey = new MenuKey(pApplet, MainActivity.BUTTON_X_KEY, PARALLAX_LABEL+"\n"+X_KEY, yellow, backTransparent);
+        backKey = new MenuKey(pApplet, MainActivity.BUTTON_A_KEY, BACK_LABEL+"\n"+A_KEY, yellow, backTransparent);
+        imageModeKey = new MenuKey(pApplet, MainActivity.ANAGLYPH_KEY, ANAGLYPH_LABEL, yellow, backTransparent);
+        shutterKey = new MenuKey(pApplet, MainActivity.SHUTTER_KEY, SHUTTER_LABEL, yellow, backTransparent); // GIANT_FONT_SIZE,
 
         // bottom menu bar
         downArrowKey = new MenuKey(pApplet, KeyEvent.KEYCODE_DPAD_DOWN, "", yellow, backTransparent);
         leftArrowKey = new MenuKey(pApplet, KeyEvent.KEYCODE_DPAD_LEFT, "", yellow, backTransparent);
-        minusKey = new MenuKey(pApplet, KeyEvent.KEYCODE_MINUS, "-EV", yellow, backTransparent);
-        okKey = new MenuKey(pApplet, MainActivity.BUTTON_B_KEY, "UNLOCK\nEV", yellow, backTransparent);
-        plusKey = new MenuKey(pApplet, KeyEvent.KEYCODE_PLUS, "+EV", yellow, backTransparent);
+        minusKey = new MenuKey(pApplet, KeyEvent.KEYCODE_MINUS, EV_LABEL+MINUS_KEY, yellow, backTransparent);
+        okKey = new MenuKey(pApplet, MainActivity.BUTTON_B_KEY, UNLOCK_LABEL+"\n" + EV_LABEL +B_KEY, yellow, backTransparent);
+        plusKey = new MenuKey(pApplet, KeyEvent.KEYCODE_PLUS, IGui.EV_LABEL+PLUS_KEY, yellow, backTransparent);
         rightArrowKey = new MenuKey(pApplet, KeyEvent.KEYCODE_DPAD_RIGHT, "", yellow, backTransparent);
         upArrowKey = new MenuKey(pApplet, KeyEvent.KEYCODE_DPAD_UP, "", yellow, backTransparent);
 
@@ -146,20 +146,16 @@ class HorzMenuBar implements IGui {
         //pApplet.println("setMenuKeyLabels " + mode);
         switch (functionMode) {
             case MainActivity.FUNCTION_MODE_LIVEVIEW:
-                menuKey[0].setText("REVIEW");
-                //menuKey[2].setBackgroundColor(backTransparent);
-                //menuKey[2].setKeyColor(graytransparent);
-                //menuKey[2].setHighlight(false);
-                //menuKey[2].setText("");
-                //menuKey[2].setActive(false);
-                //menuKey[2].setVisible(false);
-                menuKey[2].setText("ZOOM\nY");
+                menuKey[0].setText(REVIEW_LABEL);
+                menuKey[2].setBackgroundColor(backTransparent);
+                menuKey[2].setHighlight(false);
+                menuKey[2].setText(ZOOM_LABEL+"\n"+Y_KEY);
                 menuKey[3].setBackgroundColor(backTransparent);
                 menuKey[3].setVisible(true);
                 menuKey[3].setActive(true);
-                menuKey[3].setText("PARALLAX\nX");
-                menuKey[4].setText("BACK\nA");
-                menuKey[6].setText("\u25C9");
+                menuKey[3].setText(PARALLAX_LABEL+"\n"+X_KEY);
+                menuKey[4].setText(BACK_LABEL+"\n"+A_KEY);
+                menuKey[6].setText(SHUTTER_LABEL);
                 //if (!stereoscopic) {menuKey[6].setFontSize(GIANT_FONT_SIZE, stereoscopic);}
                 menuKey[6].setKeyCode(KeyEvent.KEYCODE_BUTTON_R1);
 
@@ -170,10 +166,10 @@ class HorzMenuBar implements IGui {
                 menuKey[8].setActive(false);
                 menuKey[8].setVisible(false);
                 menuKey[9].setKeyColor(yellow);
-                menuKey[9].setText("EV-");
-                //menuKey[10].setText("UNLOCK\nEV"+" B");
+                menuKey[9].setText(EV_LABEL+MINUS_KEY);
+                menuKey[10].setText(UNLOCK_LABEL+ "\n"+ EV_LABEL + " " + B_KEY);
                 menuKey[11].setKeyColor(yellow);
-                menuKey[11].setText("EV+");
+                menuKey[11].setText(EV_LABEL+PLUS_KEY);
                 menuKey[12].setText("");
                 menuKey[12].setActive(false);
                 menuKey[12].setVisible(false);
@@ -183,37 +179,37 @@ class HorzMenuBar implements IGui {
                 break;
 
             case MainActivity.FUNCTION_MODE_REVIEW:
-                menuKey[0].setText("LIVEVIEW");
+                menuKey[0].setText(LIVEVIEW_LABEL);
                 menuKey[2].setBackgroundColor(backTransparent);
                 menuKey[2].setActive(true);
                 menuKey[2].setVisible(true);
                 menuKey[2].setKeyColor(yellow);
-                menuKey[2].setText("MAGNIFY\nY");
-                menuKey[3].setText("RESET\nMAGNIFY X");
+                menuKey[2].setText(ZOOM_LABEL+"\n"+Y_KEY);
+                menuKey[3].setText(RESET_LABEL+"\n"+ZOOM_LABEL+" " +X_KEY);
                 //menuKey[3].setActive(false);
                 //menuKey[3].setVisible(false);
                 //menuKey[3].setBackgroundColor(backTransparent);
-                menuKey[4].setText("BACK\nA");
-                menuKey[6].setText("PRINT");
+                menuKey[4].setText(BACK_LABEL+"\n"+A_KEY);
+                menuKey[6].setText(PRINT_LABEL);
                 menuKey[6].setFontSize(SMALL_FONT_SIZE, stereoscopic);
                 menuKey[6].setKeyCode(MainActivity.SHUTTER_KEY);  // decode print in shutter logic
 
-                menuKey[7].setText("FIRST\nPHOTO" + DOWN_ARROW);
+                menuKey[7].setText(FIRST_LABEL + "\n" + PHOTO_LABEL + DOWN_ARROW_KEY);
                 menuKey[7].setActive(true);
                 menuKey[7].setVisible(true);
-                menuKey[8].setText("PREV\nPHOTO" + LEFT_ARROW);
+                menuKey[8].setText(PREVIOUS_LABEL + "\n" + PHOTO_LABEL + LEFT_ARROW_KEY);
                 menuKey[8].setActive(true);
                 menuKey[8].setVisible(true);
                 menuKey[9].setKeyColor(graytransparent);
-                menuKey[9].setText("AI EDIT-");
-                menuKey[10].setText("REVIEW\n" + " B");
+                menuKey[9].setText(AIEDIT_LABEL + MINUS_KEY);
+                menuKey[10].setText(REVIEW_LABEL + "\n" + B_KEY);
                 //menuKey[11].setKeyColor(graytransparent);
                 menuKey[11].setKeyColor(yellow);
-                menuKey[11].setText("SEND\nPHOTO+");
-                menuKey[12].setText("NEXT\nPHOTO" + RIGHT_ARROW);
+                menuKey[11].setText(SEND_LABEL + "\n" + PHOTO_LABEL + PLUS_KEY);
+                menuKey[12].setText(NEXT_LABEL + "\n" + PHOTO_LABEL + RIGHT_ARROW_KEY);
                 menuKey[12].setActive(true);
                 menuKey[12].setVisible(true);
-                menuKey[13].setText("LAST\nPHOTO" + UP_ARROW);
+                menuKey[13].setText(LAST_LABEL + "\n" + PHOTO_LABEL + UP_ARROW_KEY);
                 menuKey[13].setActive(true);
                 menuKey[13].setVisible(true);
                 break;
@@ -225,30 +221,34 @@ class HorzMenuBar implements IGui {
                 menuKey[4].setText("BACK\nA");
 
                 menuKey[7].setText("");
-                menuKey[8].setText("-4" + LEFT_ARROW);
+                menuKey[8].setActive(true);
+                menuKey[8].setVisible(true);
+                menuKey[8].setText("-4" + LEFT_ARROW_KEY);
                 menuKey[9].setKeyColor(yellow);
                 menuKey[9].setText("-1");
-                menuKey[10].setText("PARALLAX\n" + " B");
+                menuKey[10].setText(PARALLAX_LABEL + "\n" + B_KEY);
                 menuKey[11].setKeyColor(yellow);
                 menuKey[11].setText("+1");
-                menuKey[12].setText("+4" + RIGHT_ARROW);
+                menuKey[12].setActive(true);
+                menuKey[12].setVisible(true);
+                menuKey[12].setText("+4" + RIGHT_ARROW_KEY);
                 menuKey[13].setText("");
                 break;
 
             case MainActivity.FUNCTION_MODE_MAGNIFY:
                 menuKey[2].setBackgroundColor(lighttransparent);
                 menuKey[3].setBackgroundColor(backTransparent);
-                menuKey[4].setText("BACK\nA");
-                 menuKey[9].setKeyColor(yellow);
-                menuKey[9].setText("MAGNIFY-");
-                menuKey[10].setText("MAGNIFY\n" + " B");
+                menuKey[4].setText(BACK_LABEL+"\n"+A_KEY);
+                menuKey[9].setKeyColor(yellow);
+                menuKey[9].setText(ZOOM_LABEL+"\n"+MINUS_KEY);
+                menuKey[10].setText(ZOOM_LABEL+"\n"+B_KEY);
                 menuKey[11].setKeyColor(yellow);
-                menuKey[11].setText("MAGNIFY+");
+                menuKey[11].setText(ZOOM_LABEL+"\n"+PLUS_KEY);
                 if (state == MainActivity.REVIEW_PHOTO_STATE) {
-                    menuKey[7].setText("SHIFT\nDOWN" + DOWN_ARROW);
-                    menuKey[8].setText("SHIFT\nLEFT" + LEFT_ARROW);
-                    menuKey[12].setText("SHIFT\nRIGHT" + RIGHT_ARROW);
-                    menuKey[13].setText("SHIFT\nUP" + UP_ARROW);
+                    menuKey[7].setText(SHIFT_LABEL + "\n" + DOWN_LABEL + DOWN_ARROW_KEY);
+                    menuKey[8].setText(SHIFT_LABEL + "\n" + LEFT_LABEL + LEFT_ARROW_KEY);
+                    menuKey[12].setText(SHIFT_LABEL + "\n" + RIGHT_LABEL + RIGHT_ARROW_KEY);
+                    menuKey[13].setText(SHIFT_LABEL + "\n" + UP_LABEL + UP_ARROW_KEY);
                 } else {
                     menuKey[7].setText("");
                     menuKey[8].setText("");

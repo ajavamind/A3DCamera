@@ -5,13 +5,21 @@ import processing.core.PApplet;
 // Graphical User Interface constants
 public interface IGui {
     // Font sizes
-    static final float SMALLER_FONT_SIZE = 24;
+    static final float SMALLER_FONT_SIZE = 24.0f;
     static final float SMALL_FONT_SIZE = 38.0f;
+    static final float SMALL2_FONT_SIZE = 36.0f;
     static final float FONT_SIZE = 44.0f;
     static final float MID_FONT_SIZE = 48.0f;
-    static final float MEDIUM_FONT_SIZE =  72;
-    static final float LARGE_FONT_SIZE = 96;
-    static final float GIANT_FONT_SIZE = 128;
+    static final float MEDIUM_FONT_SIZE =  72.0f;
+    static final float LARGE_FONT_SIZE = 96.0f;
+    static final float GIANT_FONT_SIZE = 1280f;
+
+    // Screen layout parameters for GUI
+    static int XBP_CAMERA_DISPLAY_WIDTH = 1280;
+    static int XBP_CAMERA_DISPLAY_HEIGHT = 960;
+
+    static int XBP_DISPLAY_WIDTH = 2400;
+    static int XBP_DISPLAY_HEIGHT = 1080;
 
     // Text display rows (y pixel position on screen)
     static final int TITLE_ROW = 72;
@@ -64,10 +72,6 @@ public interface IGui {
     //→ U+2192 Right Arrow
 
     //← U+2190 Left Arrow
-    static final String UP_ARROW = "\u2191";
-    static final String DOWN_ARROW = "\u2193";
-    static final String LEFT_ARROW = "\u2190";
-    static final String RIGHT_ARROW = "\u2192";
     static final String PLAY = "\u25BA";
     static final String STOP = "\u25AA";
     static final String PLUS_MINUS = "||"; //"\u00B1";  //  alternate plus minus 2213
@@ -79,11 +83,59 @@ public interface IGui {
     static final String LEFT_RIGHT_ARROW = "\u2194";
     static final String MICROPHONE = "\u1F3A4";
 
-    // Screen layout parameters for GUI
-    static int XBP_CAMERA_DISPLAY_WIDTH = 1280;
-    static int XBP_CAMERA_DISPLAY_HEIGHT = 960;
+    // Menu text strings
 
-    static int XBP_DISPLAY_WIDTH = 2400;
-    static int XBP_DISPLAY_HEIGHT = 1080;
+    static final String REVIEW_LABEL = "REVIEW";
+    static final String LIVEVIEW_LABEL = "LIVEVIEW";
+    static final String ZOOM_LABEL = "ZOOM"; // Magnify
+    static final String EV_LABEL = "EV";
+    static final String PARALLAX_LABEL = "PARALLAX";
+    static final String PX_LABEL = "PX";
+    static final String LOCK_LABEL = "LOCK";
+    static final String UNLOCK_LABEL = "UNLOCK";
+    static final String BACK_LABEL = "BACK";
+    static final String MENU_LABEL = "MENU";
+    static final String SETTINGS_LABEL = "\u2699"; //"SETTINGS";
+    static final String SHUTTER_LABEL = "\u25C9"; //"SHUTTER";
+    static final String ANAGLYPH_LABEL = "ANA-\nGLYPH";
+    static final String LEFT_LABEL = "LEFT";
+    static final String RIGHT_LABEL = "RIGHT";
+    static final String UP_LABEL = "UP";
+    static final String DOWN_LABEL = "DOWN";
+    static final String SBS_LABEL = "SBS";
+    static final String RESET_LABEL = "RESET";
+    static final String PRINT_LABEL = "PRINT";
+    static final String SEND_LABEL = "SEND";
+    static final String PHOTO_LABEL = "PHOTO";
+    static final String FIRST_LABEL = "FIRST";
+    static final String LAST_LABEL = "LAST";
+    static final String NEXT_LABEL = "NEXT";
+    static final String PREVIOUS_LABEL = "PREV";
+    static final String SHIFT_LABEL = "SHIFT";
+    static final String AIEDIT_LABEL = "AI EDIT";
+// Mini Game Controller Key Labels
+    static final String L_KEY = "L";
+    static final String L2_KEY = "L2";
+    static final String R_KEY = "R";
+    static final String R2_KEY = "R2";
+
+    static final String X_KEY = "X";
+    static final String Y_KEY = "Y";
+    static final String A_KEY = "A";
+    static final String B_KEY = "B";
+
+    static final String HOME_KEY = "HOME";
+    static final String MINUS_KEY = "-";
+    static final String PLUS_KEY = "+";
+
+    static final String UP_ARROW_KEY = "\u2191";
+    static final String DOWN_ARROW_KEY = "\u2193";
+    static final String LEFT_ARROW_KEY = "\u2190";
+    static final String RIGHT_ARROW_KEY = "\u2192";
+
+
+
+
+
 
 }

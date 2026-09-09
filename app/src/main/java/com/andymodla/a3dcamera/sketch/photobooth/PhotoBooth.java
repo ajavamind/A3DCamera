@@ -138,6 +138,7 @@ public class PhotoBooth extends PApplet implements IGui {
 
     String countdown = "";  // default ignore null string
 
+    private int zoomIndex = 0;
     private int magnifyIndex = 0;
     private static final float[] magnifyScale = {1.0f, 1.125f, 1.25f, 1.375f, 1.5f, 1.625f, 1.75f, 1.875f,
             2.0f, 2.125f, 2.25f, 2.375f, 2.5f, 2.625f, 2.75f, 2.875f,
@@ -235,45 +236,26 @@ public class PhotoBooth extends PApplet implements IGui {
         smooth();
         frameRate(displayFPS);
         initial = true;
-        if (media.leftReview == null && media.rightReview == null) {
-            reviewImagesPresent = loadImageFileList();
-            if (DEBUG) PApplet.println("PhotoBooth loadImageFileList() = " + reviewImagesPresent);
-            if (reviewImagesPresent) {
-                PImage sbsImage = loadImage(sbsImageFiles.get(currentIndex));
-                if (sbsImage != null) {
-                    PImage[] split = splitImageLR(sbsImage, Camera3D.CAMERA_WIDTH_DEFAULT, Camera3D.CAMERA_HEIGHT_DEFAULT);
-                    media.leftReview = split[0];
-                    media.rightReview = split[1];
-                }
-            } else {
-                if (DEBUG) println("NO files loaded from DCIM/A3DCamera folder during initial start");
-                // load test image
-                media.leftReview = loadImage("Image_l.JPG");
-                media.rightReview = loadImage("Image_r.JPG");
-            }
-            currentLeft = media.leftReview;
-            currentRight = media.rightReview;
 
-        }
-
-        textSize(36);
+        textSize(SMALL2_FONT_SIZE);
         textAlign(CENTER, CENTER);
         fill(yellow);
         int row = 72;
         String sVersion = " Version: " + BuildConfig.VERSION_NAME + " Alpha";
+        String copyright = "Copyright (c) 2026 Andrew Modla";
         if (parameters.isPhotoBoothCameraMode()) {
             text("3D Photo Booth", (float) width / 2, (float) height / 2); // left
-            textSize(24);
+            textSize(SMALL_FONT_SIZE);
             text(sVersion, (float) width / 2, (float) (height / 2) + 4 * row);  // left
         } else if (parameters.isStereoscopeCameraMode()) {
             text("Stereoscope 3D Camera", (float) width / 4, (float) height / 2);  // left
             text("Stereoscope 3D Camera", ((float) 3 * width / 4) + TITLE_STEREO_OFFSET, (float) height / 2); // right
-            textSize(24);
+            textSize(SMALLER_FONT_SIZE);
             text(sVersion, (float) width / 4, (float) (height / 2) + 4 * row);  // left
             text(sVersion, ((float) 3 * width / 4) + TITLE_STEREO_OFFSET, (float) (height / 2) + 4 * row); // right
         } else {
             text("Basic 3D Camera", (float) width / 2, (float) height / 2);  // center
-            textSize(24);
+            textSize(SMALLER_FONT_SIZE);
             text(sVersion, (float) width / 2, (float) (height / 2) + 4 * row);  // left
         }
 
@@ -529,6 +511,26 @@ public class PhotoBooth extends PApplet implements IGui {
     public void draw() {
         if (initial) {
             long t0 = System.nanoTime();
+            if (media.leftReview == null && media.rightReview == null) {
+                reviewImagesPresent = loadImageFileList();
+                if (DEBUG) PApplet.println("PhotoBooth loadImageFileList() = " + reviewImagesPresent);
+                if (reviewImagesPresent) {
+                    PImage sbsImage = loadImage(sbsImageFiles.get(currentIndex));
+                    if (sbsImage != null) {
+                        PImage[] split = splitImageLR(sbsImage, Camera3D.CAMERA_WIDTH_DEFAULT, Camera3D.CAMERA_HEIGHT_DEFAULT);
+                        media.leftReview = split[0];
+                        media.rightReview = split[1];
+                    }
+                } else {
+                    if (DEBUG) println("NO files loaded from DCIM/A3DCamera folder during initial start");
+                    // load test image
+                    media.leftReview = loadImage("Image_l.JPG");
+                    media.rightReview = loadImage("Image_r.JPG");
+                }
+                currentLeft = media.leftReview;
+                currentRight = media.rightReview;
+            }
+
             // Force OpenGL texture creation/upload now, on the GL thread.
             // The review images are already captured/loaded at the camera's
             // native resolution, so only resize if their size does not match
@@ -562,7 +564,7 @@ public class PhotoBooth extends PApplet implements IGui {
             initial = false;
             if (DEBUG)
                 PApplet.println("PhotoBooth draw() initialization done in " + n2s(System.nanoTime() - t0) + " seconds");
-            setReviewLabel("Previous");
+            setReviewLabel(LAST_LABEL);
 
         }
 
@@ -773,11 +775,6 @@ public class PhotoBooth extends PApplet implements IGui {
                     imgLeft = stereoCamera.leftImage;
                     imgRight = stereoCamera.rightImage;
                     AR = (float) imgLeft.width / (float) imgLeft.height;
-                    //imgWidth = imgLeft.width; //(float) XBP_DISPLAY_FRAME_WIDTH / 2;
-                    //imgHeight = imgWidth / AR;
-
-                    //AR = (float) (imgLeft.width-toDisplayPixels(parameters.getParallaxOffset()) )/ (float) imgLeft.height;
-                    //println("AR="+AR);
                 }
             }
         }
@@ -789,25 +786,17 @@ public class PhotoBooth extends PApplet implements IGui {
 
 
                 //parallax = parameters.getParallaxOffset();
-                float ar = (float) 1280/ (float)960;
+                //float ar = (float) 1280/ (float)960;
                 centerLiveViewX = 0;//52;//1024-((float)768*ar)/2; // to do refactor
-                //float ar = (float) halfWidth/ (float)original.height;
-                //centerReviewX = (1024-((float)768*ar))/2; // to do refactor
-                //if (DEBUG) println("centerLiveViewX="+centerLiveViewX);
-                //centerLiveViewX = centerReviewX;
                 int cParallax = parallax;
                 int cVertAlign = verticalAlignment;
-                //parallax = toDisplayPixels(parameters.getParallaxOffset());
-                //centerLiveViewX = (float)parallax/2;
-                //println("display parallax="+parallax);
-                //verticalAlignment = 0;
-                //println("live w="+imgWidth+" h="+imgHeight);
-                //centerLiveViewX = 0;
-                //drawSBS(imgLeft, imgRight, centerLiveViewX, 1024-(float)
-                //        toDisplayPixels(parameters.getParallaxOffset()), 768);
+                float cShiftOffsetX = shiftOffsetX;
+                float cShiftOffsetY = shiftOffsetY;
                 drawSBS(imgLeft, imgRight, centerLiveViewX, 1024, 768);
                 parallax = cParallax;
                 verticalAlignment = cVertAlign;
+                shiftOffsetX = cShiftOffsetX;
+                shiftOffsetY = cShiftOffsetY;
             } else if (displayMode == DisplayMode.LEFT) {
                 drawPhoto(imgLeft);
             } else if (displayMode == DisplayMode.RIGHT) {
@@ -1132,7 +1121,10 @@ public class PhotoBooth extends PApplet implements IGui {
 
     void drawZoom() {
         if (!showZoom) return;
-        String sZoom = "+" + magnifyScale[magnifyIndex] + "  x: " + (int)shiftOffsetX + "  y: " + (int)shiftOffsetY;
+        String sZoom = "+" + magnifyScale[magnifyIndex];
+        if (state != MainActivity.LIVE_VIEW_STATE) {
+            sZoom += "  x: " + (int) shiftOffsetX + "  y: " + (int) shiftOffsetY;
+        }
 //        if (stereoCamera.getFunctionMode() == Camera3D.FUNCTION_MODE_PARALLAX) {
 //            px = "= " + Camera3D.FOCUS_DISTANCE_NAMES[parameters.getFocusDistanceIndex()] + " " + px;
 //        }
@@ -1330,7 +1322,7 @@ public class PhotoBooth extends PApplet implements IGui {
 //                        parallax = toDisplayPixels(iParallax);
 //                        if (DEBUG) PApplet.println("iParallax = " + iParallax);
 //                    }
-                } else if (mainActivity.isZoomFunction() && magnify) {
+                } else if (mainActivity.isZoomFunction() && magnify && state == MainActivity.REVIEW_PHOTO_STATE) {
                     shiftOffsetY -= shiftOffsetDelta[magnifyIndex];
                 }
                 break;
@@ -1352,7 +1344,7 @@ public class PhotoBooth extends PApplet implements IGui {
 //                        parallax = toDisplayPixels(iParallax);
 //                        if (DEBUG) PApplet.println("iParallax = " + iParallax);
 //                    }
-                } else if (mainActivity.isZoomFunction() && magnify) {
+                } else if (mainActivity.isZoomFunction() && magnify && state == MainActivity.REVIEW_PHOTO_STATE) {
                     shiftOffsetY += shiftOffsetDelta[magnifyIndex];
                 }
                 break;
@@ -1374,7 +1366,7 @@ public class PhotoBooth extends PApplet implements IGui {
                         if (DEBUG) PApplet.println("iParallax = " + iParallax);
                     }
 
-                } else if (mainActivity.isZoomFunction()) {
+                } else if (mainActivity.isZoomFunction() && state == MainActivity.REVIEW_PHOTO_STATE) {
                     shiftOffsetX += shiftOffsetDelta[magnifyIndex];
                 } else if (mainActivity.isReviewFunction()) {
                     //               if (state == MainActivity.REVIEW_PHOTO_STATE) {
@@ -1403,7 +1395,7 @@ public class PhotoBooth extends PApplet implements IGui {
                         parallax = toDisplayPixels(iParallax);
                         //if (DEBUG) PApplet.println("iParallax = " + iParallax);
                     }
-                } else if (mainActivity.isZoomFunction()) {
+                } else if (mainActivity.isZoomFunction() && state == MainActivity.REVIEW_PHOTO_STATE) {
                     shiftOffsetX -= shiftOffsetDelta[magnifyIndex];
                 } else if (state == MainActivity.REVIEW_PHOTO_STATE) {
                     currentIndex--;
@@ -1418,7 +1410,7 @@ public class PhotoBooth extends PApplet implements IGui {
 
             case KeyEvent.KEYCODE_MINUS:
             case MainActivity.BUTTON_MINUS_KEY:
-            case KeyEvent.KEYCODE_LEFT_BRACKET:
+            case KeyEvent.KEYCODE_LEFT_BRACKET:  // keyboard debug zoom level
                 if (mainActivity.isLiveviewFunction()) {
                     if (showEv) {
                         int index = stereoCamera.decrementExposureCompensation(1);
@@ -1454,10 +1446,32 @@ public class PhotoBooth extends PApplet implements IGui {
                 }
                 break;
 
+//            // Camera zoom level with 3D is not available in hardware
+//            // Code is for reference only for use with 2D camera
+//            case KeyEvent.KEYCODE_LEFT_BRACKET:  // keyboard debug zoom level
+//                if (mainActivity.isLiveviewFunction()) {
+//                    zoomIndex--;
+//                    if (zoomIndex < 0) zoomIndex = 0;
+//                    stereoCamera.setZoom(magnifyScale[zoomIndex]);
+//                    //parameters.setZoomIndex(index);
+//                    if (DEBUG) println("set zoom " + magnifyScale[zoomIndex]);
+//                }
+//                break;
+//
+//            case KeyEvent.KEYCODE_RIGHT_BRACKET:  // keyboard debug zoom level
+//                if (mainActivity.isLiveviewFunction()) {
+//                    zoomIndex++;
+//                    if (zoomIndex >= magnifyScale.length) zoomIndex = magnifyScale.length - 1;
+//                    stereoCamera.setZoom(magnifyScale[zoomIndex]);
+//                    //parameters.setZoomIndex(index);
+//                    if (DEBUG) println("set zoom " + magnifyScale[zoomIndex]);
+//                }
+//                break;
+
             case KeyEvent.KEYCODE_PLUS:
             case KeyEvent.KEYCODE_EQUALS:
             case MainActivity.BUTTON_PLUS_KEY:
-            case KeyEvent.KEYCODE_RIGHT_BRACKET:
+            case KeyEvent.KEYCODE_RIGHT_BRACKET:  // keyboard debug zoom level
                 if (mainActivity.isLiveviewFunction()) {
                     if (showEv) {
                         int index = stereoCamera.incrementExposureCompensation(1);

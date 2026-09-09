@@ -398,7 +398,10 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             }
         });
-        if (MyDebug.DEBUG) CameraInfoUtil.displayCameraInfo(this);
+        if (MyDebug.DEBUG) {
+            CameraInfoUtil.displayCameraInfo(this);
+            CameraInfoUtil.logZoomCapabilities(this);
+        }
     }
 
     @Override

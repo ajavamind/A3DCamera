@@ -12,6 +12,7 @@ import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.util.Log;
+import android.util.Range;
 import android.util.Size;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -278,6 +279,58 @@ though all images in a single capture request will share the same timestamp.
         Log.d(TAG, "getCameraIdList(): No more cameras >= " + cameraId);
         String[] rList = list.toArray(new String[0]);
         return rList;
+    }
+
+    /**
+     * Dump everything zoom-related for every camera, including the logical
+     * multi-cameras (e.g. ids 4/5) that displayCameraInfo() skips.
+     *
+     * Logcat filter: A3DCamera zoom
+     */
+    public static void logZoomCapabilities(Context context) {
+        CameraManager cameraManager = (CameraManager) context.getSystemService(Context.CAMERA_SERVICE);
+        if (cameraManager == null) {
+            Log.e(TAG, "logZoomCapabilities: no CameraManager");
+            return;
+        }
+        try {
+            String[] ids = cameraManager.getCameraIdList();
+            Log.i(TAG, "zoom === " + ids.length + " cameras ===");
+            for (String id : ids) {
+                try {
+                    CameraCharacteristics c = cameraManager.getCameraCharacteristics(id);
+
+                    boolean isLogical = false;
+                    int[] caps = c.get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES);
+                    if (caps != null) {
+                        for (int cap : caps) {
+                            if (cap == CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_LOGICAL_MULTI_CAMERA) {
+                                isLogical = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    Set<String> physicalIds = c.getPhysicalCameraIds();
+                    Range<Float> zoomRatioRange = c.get(CameraCharacteristics.CONTROL_ZOOM_RATIO_RANGE);
+                    Float maxDigitalZoom = c.get(CameraCharacteristics.SCALER_AVAILABLE_MAX_DIGITAL_ZOOM);
+                    Rect activeArray = c.get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE);
+                    Integer hwLevel = c.get(CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL);
+
+                    Log.i(TAG, "zoom cameraId=" + id
+                            + " logical=" + isLogical
+                            + " physicalIds=" + physicalIds
+                            + " zoomRatioRange=" + zoomRatioRange
+                            + " maxDigitalZoom=" + maxDigitalZoom
+                            + " activeArray=" + activeArray
+                            + " hwLevel=" + hwLevel);
+                } catch (Exception e) {
+                    Log.e(TAG, "zoom cameraId=" + id + " error: " + e.getMessage());
+                }
+            }
+        } catch (CameraAccessException e) {
+            Log.e(TAG, "logZoomCapabilities: " + e.getMessage());
+        }
     }
 
 
