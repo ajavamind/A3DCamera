@@ -22,10 +22,10 @@ import com.google.android.material.slider.Slider;
  * Settings Activity for A3DCamera
  * Provides a GUI to view and change all application parameters.
  * Launched by pressing the 'J' key from MainActivity.
- *
+ * <p>
  * All changes accumulate in the UI and are saved when the user presses
  * the back button to exit.
- *
+ * <p>
  * Copyright 2025-2026 Andy Modla All Rights Reserved
  */
 public class SettingsActivity extends AppCompatActivity {
@@ -65,15 +65,20 @@ public class SettingsActivity extends AppCompatActivity {
     private RadioButton rbStereoscopeCameraMode;
     private RadioButton rbPhotoBoothCameraMode;
 
+    // --- RadioGroup for UDP Control ---
+    private RadioGroup rgUdpControl;
+    private RadioButton rbUdpControlOff;
+    private RadioButton rbUdpControlReceive;
+    private RadioButton rbUdpControlTransmit;
+    private RadioButton rbUdpControlBoth;
+
+
     // --- Switch references (boolean parameters) ---
     private Switch swSoundOn;
     private Switch swAiEdit;
-    //private Switch swPhotoBooth;
     private Switch swMirror;
     private Switch swBlankScreen;
     private Switch swCountDownEnabled;
-    private Switch swUdpControlEnabled;
-    private Switch swUdpTransmit;
     private Switch swAutoReview;
     private Switch swSbsCropPrint;
 
@@ -158,10 +163,18 @@ public class SettingsActivity extends AppCompatActivity {
         rbFocusMacro = findViewById(R.id.rb_focus_macro);
         //rbFocusAuto = findViewById(R.id.rb_focus_auto);
 
+        // Camera Mode RadioGroup
         rgCameraMode = findViewById(R.id.rg_camera_mode);
         rbBasicCameraMode = findViewById(R.id.rb_basic_camera_mode);
         rbStereoscopeCameraMode = findViewById(R.id.rb_stereoscope_camera_mode);
         rbPhotoBoothCameraMode = findViewById(R.id.rb_photo_booth_camera_mode);
+
+        // UDP Control RadioGroup
+        rgUdpControl = findViewById(R.id.rg_udp_control);
+        rbUdpControlOff = findViewById(R.id.rb_udp_control_off);
+        rbUdpControlReceive = findViewById(R.id.rb_udp_control_receive);
+        rbUdpControlTransmit = findViewById(R.id.rb_udp_control_transmit);
+        rbUdpControlBoth = findViewById(R.id.rb_udp_control_both);
 
         // Exposure metering RadioGroup
         rgExposureMetering = findViewById(R.id.rg_exposure_metering);
@@ -180,8 +193,8 @@ public class SettingsActivity extends AppCompatActivity {
         swMirror = findViewById(R.id.sw_mirror);
         swBlankScreen = findViewById(R.id.sw_blank_screen);
         swCountDownEnabled = findViewById(R.id.sw_count_down_enabled);
-        swUdpControlEnabled = findViewById(R.id.sw_udp_control_enabled);
-        swUdpTransmit = findViewById(R.id.sw_udp_transmit);
+//        swUdpControlEnabled = findViewById(R.id.sw_udp_control_enabled);
+//        swUdpTransmit = findViewById(R.id.sw_udp_transmit);
         swAutoReview = findViewById(R.id.sw_auto_review);
         swSbsCropPrint = findViewById(R.id.sw_sbs_crop_print);
 
@@ -216,25 +229,41 @@ public class SettingsActivity extends AppCompatActivity {
         tvVerticalValue.setText(String.valueOf(parameters.getVerticalOffset()));
 
         sliderCountdown.setValue(parameters.getCountdownTimer());
-        tvCountdownValue.setText("Countdown Timer "+parameters.getCountdownTimer() + " (seconds)");
+        tvCountdownValue.setText("Countdown Timer " + parameters.getCountdownTimer() + " (seconds)");
 
         // Focus distance index: 0=hyperFocal, 1=photoBooth, 2=macro, 3=auto
         int fdi = parameters.getFocusDistanceIndex();
         switch (fdi) {
-            case 0: rgFocusDistance.check(R.id.rb_focus_hyperfocal); break;
-            case 1: rgFocusDistance.check(R.id.rb_focus_photobooth); break;
-            case 2: rgFocusDistance.check(R.id.rb_focus_macro); break;
+            case 0:
+                rgFocusDistance.check(R.id.rb_focus_hyperfocal);
+                break;
+            case 1:
+                rgFocusDistance.check(R.id.rb_focus_photobooth);
+                break;
+            case 2:
+                rgFocusDistance.check(R.id.rb_focus_macro);
+                break;
             //case 3: rgFocusDistance.check(R.id.rb_focus_auto); break;
-            default: rgFocusDistance.check(R.id.rb_focus_hyperfocal); break;
+            default:
+                rgFocusDistance.check(R.id.rb_focus_hyperfocal);
+                break;
         }
 
         // Exposure metering index: 0=frameAverage, 1=centerWeighted, 2=spot
         int emi = parameters.getExposureMeteringIndex();
         switch (emi) {
-            case 0: rgExposureMetering.check(R.id.rb_exposure_frame_average); break;
-            case 1: rgExposureMetering.check(R.id.rb_exposure_center_weighted); break;
-            case 2: rgExposureMetering.check(R.id.rb_exposure_spot); break;
-            default: rgExposureMetering.check(R.id.rb_exposure_frame_average); break;
+            case 0:
+                rgExposureMetering.check(R.id.rb_exposure_frame_average);
+                break;
+            case 1:
+                rgExposureMetering.check(R.id.rb_exposure_center_weighted);
+                break;
+            case 2:
+                rgExposureMetering.check(R.id.rb_exposure_spot);
+                break;
+            default:
+                rgExposureMetering.check(R.id.rb_exposure_frame_average);
+                break;
         }
 
         swSaveLr.setChecked(parameters.getSaveLr());
@@ -243,28 +272,56 @@ public class SettingsActivity extends AppCompatActivity {
         // Camera mode index: 1=basic camera, 2=stereoscope camera, 3=photo booth camera
         int cmi = parameters.getCameraMode();
         switch (cmi) {
-            case Parameters.BASIC_MODE: rgCameraMode.check(R.id.rb_basic_camera_mode); break;
-            case Parameters.STEREOSCOPE_MODE: rgCameraMode.check(R.id.rb_stereoscope_camera_mode); break;
-            case Parameters.PHOTO_BOOTH_MODE: rgCameraMode.check(R.id.rb_photo_booth_camera_mode); break;
-            default: rgCameraMode.check(R.id.rb_basic_camera_mode); break;
+            case Parameters.BASIC_MODE:
+                rgCameraMode.check(R.id.rb_basic_camera_mode);
+                break;
+            case Parameters.STEREOSCOPE_MODE:
+                rgCameraMode.check(R.id.rb_stereoscope_camera_mode);
+                break;
+            case Parameters.PHOTO_BOOTH_MODE:
+                rgCameraMode.check(R.id.rb_photo_booth_camera_mode);
+                break;
+            default:
+                rgCameraMode.check(R.id.rb_basic_camera_mode);
+                break;
         }
 
-            swSoundOn.setChecked(parameters.getIsSoundOn());
-            swCountDownEnabled.setChecked(parameters.getCountDownEnabled());
-            swUdpControlEnabled.setChecked(parameters.getUdpControlEnabled());
-            swUdpTransmit.setChecked(parameters.getUdpTransmit());
-            tvReceiverPort.setText(String.valueOf(parameters.getReceiverPort()));
+        // UDP Control index: 0 = off, 1=udp receive, 2=udp transmit, 3=udp both
+        int uc = parameters.getUdpControl();
+        switch (uc) {
+            case Parameters.UDP_CONTROL_OFF:
+                rgUdpControl.check(R.id.rb_udp_control_off);
+                break;
+            case Parameters.UDP_CONTROL_RECEIVE:
+                rgUdpControl.check(R.id.rb_udp_control_receive);
+                break;
+            case Parameters.UDP_CONTROL_TRANSMIT:
+                rgUdpControl.check(R.id.rb_udp_control_transmit);
+                break;
+            case Parameters.UDP_CONTROL_BOTH:
+                rgUdpControl.check(R.id.rb_udp_control_both);
+                break;
+            default:
+                rgUdpControl.check(R.id.rb_udp_control_off);
+                break;
+        }
+
+        swSoundOn.setChecked(parameters.getIsSoundOn());
+        swCountDownEnabled.setChecked(parameters.getCountDownEnabled());
+//            swUdpControlEnabled.setChecked(parameters.getUdpControlEnabled());
+//            swUdpTransmit.setChecked(parameters.getUdpTransmit());
+        tvReceiverPort.setText(String.valueOf(parameters.getReceiverPort()));
 
 
-            swAiEdit.setChecked(parameters.getIsAiEdit());
-            swMirror.setChecked(parameters.getIsMirror());
-            swBlankScreen.setChecked(parameters.getIsBlankScreen());
-            etTitle1.setText(parameters.getTitle1());
-            etTitle2.setText(parameters.getTitle2());
-            etInstruction1.setText(parameters.getInst1());
-            etInstruction2.setText(parameters.getInst2());
-            swAutoReview.setChecked(parameters.getAutoReview());
-            swSbsCropPrint.setChecked(parameters.getSbsCropPrint());
+        swAiEdit.setChecked(parameters.getIsAiEdit());
+        swMirror.setChecked(parameters.getIsMirror());
+        swBlankScreen.setChecked(parameters.getIsBlankScreen());
+        etTitle1.setText(parameters.getTitle1());
+        etTitle2.setText(parameters.getTitle2());
+        etInstruction1.setText(parameters.getInst1());
+        etInstruction2.setText(parameters.getInst2());
+        swAutoReview.setChecked(parameters.getAutoReview());
+        swSbsCropPrint.setChecked(parameters.getSbsCropPrint());
 
 
     }
@@ -279,17 +336,23 @@ public class SettingsActivity extends AppCompatActivity {
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 tvParallaxValue.setText(String.valueOf(progress));
             }
-            @Override public void onStartTrackingTouch(SeekBar seekBar) { }
-            @Override public void onStopTrackingTouch(SeekBar seekBar) { }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+            }
         });
         seekParallax.setOnKeyListener((v, keyCode, event) -> {
             if (event.getAction() == KeyEvent.ACTION_DOWN) {
                 int current = seekParallax.getProgress();
                 int delta = 2;
-                if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT ) {
+                if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT) {
                     seekParallax.setProgress(Math.max(seekParallax.getMin(), current - delta));
                     return true;
-                } else if (keyCode == KeyEvent.KEYCODE_DPAD_RIGHT ) {
+                } else if (keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
                     seekParallax.setProgress(Math.min(seekParallax.getMax(), current + delta));
                     return true;
                 }
@@ -303,17 +366,23 @@ public class SettingsActivity extends AppCompatActivity {
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 tvVerticalValue.setText(String.valueOf(progress));
             }
-            @Override public void onStartTrackingTouch(SeekBar seekBar) { }
-            @Override public void onStopTrackingTouch(SeekBar seekBar) { }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+            }
         });
         seekVertical.setOnKeyListener((v, keyCode, event) -> {
             if (event.getAction() == KeyEvent.ACTION_DOWN) {
                 int current = seekVertical.getProgress();
                 int delta = 1;
-                if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT ) {
+                if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT) {
                     seekVertical.setProgress(Math.max(seekVertical.getMin(), current - delta));
                     return true;
-                } else if (keyCode == KeyEvent.KEYCODE_DPAD_RIGHT ) {
+                } else if (keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
                     seekVertical.setProgress(Math.min(seekVertical.getMax(), current + delta));
                     return true;
                 }
@@ -323,7 +392,7 @@ public class SettingsActivity extends AppCompatActivity {
 
         // --- Countdown Timer Slider (Material, label shows value on thumb) ---
         sliderCountdown.addOnChangeListener((slider, value, fromUser) -> {
-            tvCountdownValue.setText("Countdown Timer "+((int) value) + " (seconds)");
+            tvCountdownValue.setText("Countdown Timer " + ((int) value) + " (seconds)");
         });
 
         // --- EditText: save immediately when focus is lost (tab out or back press) ---
@@ -405,22 +474,34 @@ public class SettingsActivity extends AppCompatActivity {
             cameraMode = Parameters.BASIC_MODE;
         } else if (checkedId == R.id.rb_stereoscope_camera_mode) {
             cameraMode = Parameters.STEREOSCOPE_MODE;
-        } else if (checkedId == R.id.rb_photo_booth_camera_mode){
+        } else if (checkedId == R.id.rb_photo_booth_camera_mode) {
             cameraMode = Parameters.PHOTO_BOOTH_MODE;
         } else {
             cameraMode = Parameters.BASIC_MODE;
         }
         parameters.setCameraMode(cameraMode);
 
+        // UDP Broadcast Control from RadioGroup
+        checkedId = rgUdpControl.getCheckedRadioButtonId();
+        int udpControl;
+
+        if (checkedId == R.id.rb_udp_control_off) {
+            udpControl = Parameters.UDP_CONTROL_OFF;
+        } else if (checkedId == R.id.rb_udp_control_receive) {
+            udpControl = Parameters.UDP_CONTROL_RECEIVE;
+        } else if (checkedId == R.id.rb_udp_control_transmit) {
+            udpControl = Parameters.UDP_CONTROL_TRANSMIT;
+        } else {
+            udpControl = Parameters.UDP_CONTROL_BOTH;
+        }
+        parameters.setUdpControl(udpControl);
+
         // --- Booleans ---
         parameters.setIsSoundOn(swSoundOn.isChecked());
         parameters.setIsAiEdit(swAiEdit.isChecked());
-        //parameters.setIsPhotoBooth(swPhotoBooth.isChecked());
         parameters.setIsMirror(swMirror.isChecked());
         parameters.setIsBlankScreen(swBlankScreen.isChecked());
         parameters.setCountDownEnabled(swCountDownEnabled.isChecked());
-        parameters.setUdpControlEnabled(swUdpControlEnabled.isChecked());
-        parameters.setUdpTransmit(swUdpTransmit.isChecked());
         parameters.setAutoReview(swAutoReview.isChecked());
         parameters.setSbsCropPrint(swSbsCropPrint.isChecked());
 

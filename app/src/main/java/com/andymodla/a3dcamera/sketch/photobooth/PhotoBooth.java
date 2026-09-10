@@ -1335,7 +1335,7 @@ public class PhotoBooth extends PApplet implements IGui {
                         currentIndex = 0;
                         reloadReviewImage(currentIndex);
                     } else {
-                        setReviewLabel("Begin");
+                        setReviewLabel(FIRST_LABEL);
                     }
                 } else if (mainActivity.isParallaxFunction()) {
 //                    if (showParallax) {

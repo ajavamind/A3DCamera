@@ -463,80 +463,56 @@
                 android:textStyle="bold" />
         </LinearLayout>
 
-        <!-- Broadcast Control Enable -->
-        <LinearLayout
+		<!-- Broadcast UDP Control -->
+        <RadioGroup
+            android:id="@+id/rg_udp_control"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginBottom="8dp">
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Broadcast Enable"
-                    android:textColor="#E0E0E0"
-                    android:textSize="14sp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Enable Wi-Fi broadcast controller for either transmit or receive (performs a restart)"
-                    android:textColor="#9E9E9E"
-                    android:textSize="11sp" />
-            </LinearLayout>
-
-            <Switch
-                android:id="@+id/sw_udp_control_enabled"
-                android:layout_width="60dp"
-                android:layout_height="32dp"
-                android:thumbTint="@color/switch_thumb_selector"
-                android:trackTint="@color/switch_track_selector" />
-        </LinearLayout>
-
-        <!-- Broadcast Transmit -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
+            android:orientation="vertical"
             android:layout_marginBottom="12dp">
 
-            <LinearLayout
-                android:layout_width="0dp"
+            <RadioButton
+                android:id="@+id/rb_udp_control_off"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical">
+                android:text="Broadcast Network Off"
+                android:textColor="#FFFFFF"
+                android:textSize="13sp"
+                android:buttonTint="#4FC3F7"
+                android:layout_marginBottom="4dp" />
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Broadcast Mode"
-                    android:textColor="#E0E0E0"
-                    android:textSize="14sp" />
+            <RadioButton
+                android:id="@+id/rb_udp_control_receive"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Broadcast Receive On"
+                android:textColor="#FFFFFF"
+                android:textSize="13sp"
+                android:buttonTint="#4FC3F7"
+                android:layout_marginBottom="4dp" />
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Receive (off - default) or Transmit (on) (performs a restart)"
-                    android:textColor="#9E9E9E"
-                    android:textSize="11sp" />
-            </LinearLayout>
+            <RadioButton
+                android:id="@+id/rb_udp_control_transmit"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Broadcast Transmit On"
+                android:textColor="#FFFFFF"
+                android:textSize="13sp"
+                android:buttonTint="#4FC3F7"
+                android:layout_marginBottom="4dp" />
 
-            <Switch
-                android:id="@+id/sw_udp_transmit"
-                android:layout_width="60dp"
-                android:layout_height="32dp"
-                android:thumbTint="@color/switch_thumb_selector"
-                android:trackTint="@color/switch_track_selector" />
-        </LinearLayout>
-		
+            <RadioButton
+                android:id="@+id/rb_udp_control_both"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Broadcast Receive and Transmit On"
+                android:textColor="#FFFFFF"
+                android:textSize="13sp"
+                android:buttonTint="#4FC3F7"
+                android:layout_marginBottom="4dp" />
+        </RadioGroup>
+
+
 		
         <!-- ============================================================ -->
         <!-- SECTION 4: Stereo Alignment                                  -->

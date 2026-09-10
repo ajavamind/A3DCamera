@@ -289,13 +289,15 @@ public class MainActivity extends AppCompatActivity {
 
         camera = new Camera3D(this, media, parameters, photoBooth);
         media.setCamera(camera);
-        if (parameters.getUdpControlEnabled()) {
-            if (parameters.getUdpTransmit()) { // transmitter and receiver mutually exclusive
-                udpRemoteControl.setUdpTransmitter(camera, hostIpAddr);
-            } else {
-                udpRemoteControl.setUdpReceiver(camera, hostIpAddr);
-            }
+
+        int uc = parameters.getUdpControl();
+        if ((uc & Parameters.UDP_CONTROL_RECEIVE) == Parameters.UDP_CONTROL_RECEIVE) {
+            udpRemoteControl.setUdpReceiver(camera, hostIpAddr);
         }
+        if ((uc & Parameters.UDP_CONTROL_TRANSMIT) == Parameters.UDP_CONTROL_TRANSMIT) {
+            udpRemoteControl.setUdpTransmitter(camera, hostIpAddr);
+        }
+
         imageSender = new ImageSender(this, parameters, udpRemoteControl);
         if (photoBooth != null) { // we are using processing in stereoscope or photo booth mode
             // set photo booth countdown
@@ -1225,19 +1227,17 @@ public class MainActivity extends AppCompatActivity {
 
     // send remote control shutter command on local network
     public void remoteShutter() {
-        if (parameters.getUdpControlEnabled()) {
-            if (parameters.getUdpTransmit()) {
-                udpRemoteControl.sendShutterPushRelease();
-            }
+        int uc = parameters.getUdpControl();
+        if ((uc & Parameters.UDP_CONTROL_TRANSMIT) == Parameters.UDP_CONTROL_TRANSMIT) {
+            udpRemoteControl.sendShutterPushRelease();
         }
     }
 
     // send remote control focus command on local network
     public void remoteFocus() {
-        if (parameters.getUdpControlEnabled()) {
-            if (parameters.getUdpTransmit()) {
-                udpRemoteControl.sendFocusReleasePush();
-            }
+        int uc = parameters.getUdpControl();
+        if ((uc & Parameters.UDP_CONTROL_TRANSMIT) == Parameters.UDP_CONTROL_TRANSMIT) {
+            udpRemoteControl.sendFocusReleasePush();
         }
     }
 

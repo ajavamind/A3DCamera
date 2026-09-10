@@ -67,6 +67,8 @@ public class UdpRemoteControl {
     int mode = PHOTO_MODE;
     boolean connected;
     String broadcastIpAddress;
+    String hostIpAddress;
+
     boolean focus = false;
     // Define an Executor at the class level (to reuse it)
     private ExecutorService executorService;
@@ -87,6 +89,7 @@ public class UdpRemoteControl {
      */
     public void setUdpTransmitter(Camera3D camera, String hostIpAddress) {
         if (hostIpAddress == null) return;
+        this.hostIpAddress = hostIpAddress;
         this.camera = camera;
         //isUdpTransmitter = true;
         if (MyDebug.LOG) Log.d(TAG, "setUdpTransmitter " + hostIpAddress);
@@ -117,8 +120,13 @@ public class UdpRemoteControl {
             // first create listener for UDP messages
             NetListener udpListener = new NetListener() {
                 public void netEvent(NetMessage m) {
+                    String fromIpAddress = m.getDatagramPacket().getAddress().getHostAddress();
                     if (MyDebug.LOG)
-                        Log.d(TAG, "netEvent from ip address=" + m.getDatagramPacket().getAddress());
+                        Log.d(TAG, "netEvent from ip address=" + fromIpAddress);
+                    if (fromIpAddress.equals(hostIpAddress)) {
+                        Log.d(TAG, "Ignore message from self");
+                        return;
+                    }
                     byte[] data = m.getData();
                     byte[] b = new byte[1];
                     b[0] = data[0];
@@ -182,7 +190,7 @@ public class UdpRemoteControl {
                         }
                     } else if (command.startsWith("R")) { // reset / information request
                         httpUrl = getHostnameUrl();
-                        if (MyDebug.LOG) Log.d(TAG, "Reset information request " + httpUrl);
+                        if (MyDebug.LOG) Log.d(TAG, "Reset information request to host URL=" + httpUrl);
                         ToastHelper.showToast(context, httpUrl);
                     } else if (command.startsWith("/")) { // slash command
                         sParam = getParam(data);

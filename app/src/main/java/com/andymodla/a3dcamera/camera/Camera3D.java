@@ -1517,7 +1517,8 @@ public class Camera3D {
             // attempts, each of which resets retryCount to 0 on success.
             clearCamera();
             if (!((MainActivity) context).isFinishing()) {
-                ((MainActivity) context).restartApp();
+                Log.e(TAG, "exit app");
+                ((MainActivity) context).finish();
             }
             return;
         }

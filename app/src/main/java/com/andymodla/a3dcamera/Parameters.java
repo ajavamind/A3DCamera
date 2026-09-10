@@ -78,6 +78,12 @@ class ParamStore {
             public static final int PHOTO_BOOTH_MODE = 3;
             volatile int cameraMode = BASIC_MODE;
 
+            // UDP Control parameters
+            public static final int UDP_CONTROL_OFF = 0;
+            public static final int UDP_CONTROL_RECEIVE = 1;
+            public static final int UDP_CONTROL_TRANSMIT = 2;
+            public static final int UDP_CONTROL_BOTH = 3;
+
 //            public static final int BASIC_MODE = 0;
 //            public static final int STEREOSCOPE_MODE = 1;
 //            public static final int PHOTO_BOOTH_MODE = 2;
@@ -108,8 +114,9 @@ class ParamStore {
             private int countdownTimer = 0;
             private boolean countDownEnabled = false;
 
-            private boolean udpControlEnabled = false;
-            private boolean udpTransmit = false;
+            private int udpControl = 0; // 0 = off, 1 = receive, 2 = transmit, 3 = both
+            //private boolean udpControlEnabled = false;
+            //private boolean udpTransmit = false;
 
             // New parameters
             private boolean autoReview = false;
@@ -184,8 +191,7 @@ class ParamStore {
                 readInst2();
                 readCountdownTimer();
                 readCountDownEnabled();
-                readUdpControlEnabled();
-                readUdpTransmit();
+                readUdpControl();
                 readAutoReview();
                 readSbsCropPrint();
                 readFocusDistanceIndex();
@@ -449,38 +455,19 @@ class ParamStore {
                 ((MainActivity) this.context).updateParameters();
             }
 
-            public void readUdpControlEnabled() {
-                udpControlEnabled = prefs.getBoolean(udpControlEnabledStore.name, Boolean.parseBoolean(udpControlEnabledStore.defaultValue));
+            public void readUdpControl() {
+                udpControl = prefs.getInt(udpControlStore.name, Integer.parseInt(udpControlStore.defaultValue));
             }
 
-            public boolean getUdpControlEnabled() {
-                return udpControlEnabled;
+            public int getUdpControl() {
+                return udpControl;
             }
 
-            public void setUdpControlEnabled(boolean udpControlEnabled) {
-                boolean changed = (this.udpControlEnabled != udpControlEnabled);
-                this.udpControlEnabled = udpControlEnabled;
+            public void setUdpControl(int udpControl) {
+                boolean changed = (this.udpControl != udpControl);
+                this.udpControl = udpControl;
                 SharedPreferences.Editor editor = prefs.edit();
-                editor.putBoolean(udpControlEnabledStore.name, udpControlEnabled);
-                editor.commit();
-                // Needs restart to reinitialize the application (only if value actually changed)
-                if (changed) ((MainActivity) context).restartApp();
-
-            }
-
-            public void readUdpTransmit() {
-                udpTransmit = prefs.getBoolean(udpTransmitStore.name, Boolean.parseBoolean(udpTransmitStore.defaultValue));
-            }
-
-            public boolean getUdpTransmit() {
-                return udpTransmit;
-            }
-
-            public void setUdpTransmit(boolean udpTransmit) {
-                boolean changed = (this.udpTransmit != udpTransmit);
-                this.udpTransmit = udpTransmit;
-                SharedPreferences.Editor editor = prefs.edit();
-                editor.putBoolean(udpTransmitStore.name, udpTransmit);
+                editor.putInt(udpControlStore.name, udpControl);
                 editor.commit();
                 // Needs restart to reinitialize the application (only if value actually changed)
                 if (changed) ((MainActivity) context).restartApp();
@@ -750,16 +737,10 @@ class ParamStore {
                     "Enables or disables the countdown timer for the camera."
             );
 
-            ParamStore udpControlEnabledStore = new ParamStore(
-                    "uc", "udpControlEnabled", "UDP Control Enabled",
-                    "getUdpControlEnabled", "setUdpControlEnabled", boolean.class, "false",
-                    "Enables or disables Wi-Fi UDP broadcast message receive and transmit."
-            );
-
-            ParamStore udpTransmitStore = new ParamStore(
-                    "ut", "udpTransmit", "UDP Transmit",
-                    "getUdpTransmit", "setUdpTransmit", boolean.class, "false",
-                    "With Wi-Fi broadcast message control enabled, this option mutually exclusive enables transmit or receive only."
+            ParamStore udpControlStore = new ParamStore(
+                    "uc", "udpControl", "UDP Control",
+                    "getUdpControl", "setUdpControl", int.class, "0",
+                    "UDP broadcast message either receive or transmit or both transmit+receive."
             );
 
             ParamStore autoReviewStore = new ParamStore(
@@ -826,7 +807,7 @@ class ParamStore {
             ParamStore[] paramStores = {parallaxOffsetStore, verticalOffsetStore,
                     isBlankScreenStore, isSoundOnStore, isAiEditStore,
                     title1Store, title2Store, inst1Store, inst2Store, countdownTimerStore, isMirrorStore,
-                    countDownEnabledStore, udpControlEnabledStore, udpTransmitStore, autoReviewStore, sbsCropPrintStore,
+                    countDownEnabledStore, udpControlStore, autoReviewStore, sbsCropPrintStore,
                     focusDistanceIndexStore, exposureMeteringIndexStore, saveLrStore, saveAnaglyphStore,
                     saveFileTypeStore, saveFileQualityStore, aspectRatioIndexStore,
                     exposureCompensationIndexStore};

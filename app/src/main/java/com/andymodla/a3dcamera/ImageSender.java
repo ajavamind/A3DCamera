@@ -37,7 +37,8 @@ public class ImageSender {
         }
         this.targetImageUrl = imageUrl;
         try {
-            if (parameters.getUdpTransmit()) {
+            int uc = parameters.getUdpControl();
+            if (((uc & Parameters.UDP_CONTROL_TRANSMIT)) == Parameters.UDP_CONTROL_TRANSMIT) {
                 sendUrlBroadcast(targetImageUrl);
             }
         } catch (Exception e) {
