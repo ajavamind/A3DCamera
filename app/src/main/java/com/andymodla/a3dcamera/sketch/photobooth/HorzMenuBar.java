@@ -185,10 +185,8 @@ class HorzMenuBar implements IGui {
                 menuKey[2].setVisible(true);
                 menuKey[2].setKeyColor(yellow);
                 menuKey[2].setText(ZOOM_LABEL+"\n"+Y_KEY);
-                menuKey[3].setText(RESET_LABEL+"\n"+ZOOM_LABEL+" " +X_KEY);
-                //menuKey[3].setActive(false);
-                //menuKey[3].setVisible(false);
-                //menuKey[3].setBackgroundColor(backTransparent);
+                menuKey[3].setText(PARALLAX_LABEL+"\n"+X_KEY);
+                menuKey[3].setBackgroundColor(backTransparent);
                 menuKey[4].setText(BACK_LABEL+"\n"+A_KEY);
                 menuKey[6].setText(PRINT_LABEL);
                 menuKey[6].setFontSize(SMALL_FONT_SIZE, stereoscopic);
@@ -203,7 +201,6 @@ class HorzMenuBar implements IGui {
                 menuKey[9].setKeyColor(graytransparent);
                 menuKey[9].setText(AIEDIT_LABEL + MINUS_KEY);
                 menuKey[10].setText(REVIEW_LABEL + "\n" + B_KEY);
-                //menuKey[11].setKeyColor(graytransparent);
                 menuKey[11].setKeyColor(yellow);
                 menuKey[11].setText(SEND_LABEL + "\n" + PHOTO_LABEL + PLUS_KEY);
                 menuKey[12].setText(NEXT_LABEL + "\n" + PHOTO_LABEL + RIGHT_ARROW_KEY);
@@ -238,6 +235,7 @@ class HorzMenuBar implements IGui {
             case MainActivity.FUNCTION_MODE_MAGNIFY:
                 menuKey[2].setBackgroundColor(lighttransparent);
                 menuKey[3].setBackgroundColor(backTransparent);
+                menuKey[3].setText(RESET_LABEL+"\n"+ZOOM_LABEL+" " +X_KEY);
                 menuKey[4].setText(BACK_LABEL+"\n"+A_KEY);
                 menuKey[9].setKeyColor(yellow);
                 menuKey[9].setText(ZOOM_LABEL+"\n"+MINUS_KEY);
