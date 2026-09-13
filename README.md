@@ -137,7 +137,7 @@ because the app can accomodate the controller codes it does receive.
 * Shutter/Print - (XBP Mode/Camera key or R game controller key) In Live-view mode take a photo on key release. In Photo Booth mode show count down seconds delay, until photo capture. In Review mode print current review photo.
 
 * Y - Zoom and shift photo in playback review mode
-* X - View and modify the Parallax in live-view alterning the placement of the stereo window. Saves Parallax change in storage
+* X - View and modify the Parallax in live-view to change the placement of the stereo window. Saves Parallax change in storage. Not working in Review.
 * BACK ( A key on the game controller )   - Toggles game controller soft keys on the display. Cancel continuous capture or return to camera app from print. This is the standard BACK key for Android apps.
 * STATUS/OK ( B key game controller ) - Toggle current active feature lock/unlock. Use to lock/unlock EV after minus or plus keys change exposure compensation. Same applies to Zoom and Parallax changes.
 * MINUS - decrease EV exposure compensation by 1/6.
@@ -187,20 +187,7 @@ The switches connect to buttons in the wireless mouse.
 ### Limitations
 Captured images are on par in quality with the native camera app. However, with this camera images may still need adjustments for vertical alignment, horizontal perspective lens distortion, contrast, color saturation, color balance, and sharpening.
 
-The exposure compensation EV ranges from EV -2 to  EV +2 in steps of 1/6. In low light the image may be under exposed at EV +2 and in full sun the image may be blown out at EV -2.
-
-Here is a list of EV compensation values with the camera firmware selected shutter speed and ISO values:
-
-EV -2 1/90 ISO 89
-
-EV -1 1/60 ISO 119
-
-EV  0 1/50 ISO 200
-
-EV +1 1/45 ISO 358
-
-EV +2 1/30 ISO 478
-
+The exposure compensation EV ranges from EV -2 to  EV +2 in steps of 1/6.
 Color balance adjustments are not implemented.
 
 There are no camera leveling, tilt, or subject distance suggestions from the app.
