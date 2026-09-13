@@ -10,8 +10,8 @@ android {
         applicationId "com.andymodla.a3dcamera"
         minSdk 34
         targetSdk 34
-        versionCode 24
-        versionName "3.11"
+        versionCode 25
+        versionName "3.12"
 
         //testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }

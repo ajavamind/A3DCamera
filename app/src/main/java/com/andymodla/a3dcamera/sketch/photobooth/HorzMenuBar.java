@@ -35,7 +35,7 @@ class HorzMenuBar implements IGui {
     float menuY2;
     float menuWidth;
     float menuHeight;
-    float inset = 24;
+    float inset = 24;  // key spacing between keys pixels
     float w, h;  // width and height of key area
     float menuTextSize;
 
@@ -92,8 +92,9 @@ class HorzMenuBar implements IGui {
         //-------------------------------------------------------------
         // Monoscopic initialization
         float kh = MainActivity.HIDDEN_MODE_BUTTON_Y + 16;
-        float kw = (this.menuWidth)/((float) numKeys /2);
+        float kw = (this.menuWidth)/((float) numKeys /2)- 7;
         menuTextSize = FONT_SIZE;
+        inset = 12;
         // top menu bar
         for (int i = 0; i < 7; i++) {
             menuKey[i].setPosition(menuX + i * (inset + kw), inset + menuY, kw - 2 * inset, kh - inset - inset / 2, inset, menuTextSize, 0, false);
@@ -132,11 +133,11 @@ class HorzMenuBar implements IGui {
         setMenuKeyLabels(MainActivity.FUNCTION_MODE_LIVEVIEW, MainActivity.LIVE_VIEW_STATE);
     }
 
-    public void updateEvKey(boolean showEv) {
+    public void updateEvKey(boolean showEv, String ev) {
         if (showEv) {
-            menuKey[10].setText("LOCK\nEV B");
+            menuKey[10].setText("LOCK\n"+ev+" B");
         } else {
-            menuKey[10].setText("UNLOCK\nEV B");
+            menuKey[10].setText("UNLOCK\n"+ev+" B");
         }
     }
 

@@ -171,13 +171,7 @@ public class Camera3D {
     private int minExposureIndex;
     private int maxExposureIndex;
     private static final String[] EV_TABLE = {"0", "1/6", "1/3", "1/2", "2/3", "5/6", "1", "1 1/6", "1 1/3", "1 1/2", "1 2/3", "1 5/6", "2"};
-
-    float maxZoom = 1.0f;
-    float minZoom = 1.0f;
-    boolean zoomRatioSupported = false;
-    float zoom = 1.0f;
-    float zoomStep = 1.0f / 8.0f;
-    Rect cropRegion;
+    private final AtomicBoolean exposureLock = new AtomicBoolean(false); //
 
     private static final CaptureRequest.Key<Integer> EXPOSURE_METERING = new CaptureRequest.Key<>("org.codeaurora.qcamera3.exposure_metering.exposure_metering_mode", Integer.TYPE);
     private static final int FRAME_AVERAGE = 0; // normal behavior
@@ -193,6 +187,13 @@ public class Camera3D {
 
     // Sharpness 0 - 6, default 2
     private static final CaptureRequest.Key<Integer> SHARPNESS = new CaptureRequest.Key<>("org.codeaurora.qcamera3.sharpness.strength", Integer.class);
+
+    // Camera lens zoom parameters (not used)
+    float minZoom = 1.0f;
+    boolean zoomRatioSupported = false;
+    float zoom = 1.0f;
+    float zoomStep = 1.0f / 8.0f;
+    Rect cropRegion;
 
     //volatile boolean shutterSound = true;
     public final AtomicBoolean available = new AtomicBoolean(false); // PImage available to access
@@ -963,7 +964,9 @@ public class Camera3D {
         previewRequestBuilder.set(CaptureRequest.CONTROL_AE_LOCK, false);
         previewRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON);
         previewRequestBuilder.set(CaptureRequest.CONTROL_AE_EXPOSURE_COMPENSATION, index);
-        previewRequestBuilder.set(CaptureRequest.CONTROL_AE_LOCK, true);
+        if (exposureLock.get()) {
+            previewRequestBuilder.set(CaptureRequest.CONTROL_AE_LOCK, true);
+        }
         try {
             mCameraCaptureSession.setRepeatingRequest(previewRequestBuilder.build(), null, mCameraHandler);
         } catch (CameraAccessException e) {
@@ -1011,6 +1014,10 @@ public class Camera3D {
         return newIndex;
     }
 
+    public void setExposureLock(boolean lock) {
+        exposureLock.set(lock);
+        Log.d(TAG, "setExposureLock: " + lock);
+    }
 
     private final CameraDevice.StateCallback mStateCallback = new CameraDevice.StateCallback() {
         @Override
@@ -1230,7 +1237,10 @@ public class Camera3D {
                                 previewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_OFF);
                                 previewRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON);
                                 previewRequestBuilder.set(CaptureRequest.CONTROL_AE_EXPOSURE_COMPENSATION, exposureCompensationIndex);
-                                previewRequestBuilder.set(CaptureRequest.CONTROL_AE_LOCK, true);
+                                if (exposureLock.get()) {
+                                    previewRequestBuilder.set(CaptureRequest.CONTROL_AE_LOCK, true);
+                                }
+
                                 //  Let system handle tone mapping (remove custom curve)
                                 previewRequestBuilder.set(CaptureRequest.TONEMAP_MODE, CaptureRequest.TONEMAP_MODE_FAST);
                                 //previewRequestBuilder.set(CaptureRequest.TONEMAP_MODE, CaptureRequest.TONEMAP_MODE_CONTRAST_CURVE);
@@ -1334,7 +1344,9 @@ public class Camera3D {
                     //previewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_OFF);
                     previewRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON);
                     previewRequestBuilder.set(CaptureRequest.CONTROL_AE_EXPOSURE_COMPENSATION, exposureCompensationIndex);
-                    previewRequestBuilder.set(CaptureRequest.CONTROL_AE_LOCK, true);
+                    if (exposureLock.get()) {
+                        previewRequestBuilder.set(CaptureRequest.CONTROL_AE_LOCK, true);
+                    }
                     //  Let system handle tonemapping (remove custom curve)
                     previewRequestBuilder.set(CaptureRequest.TONEMAP_MODE, CaptureRequest.TONEMAP_MODE_FAST);
 
@@ -1636,7 +1648,9 @@ public class Camera3D {
 
             captureBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON);
             captureBuilder.set(CaptureRequest.CONTROL_AE_EXPOSURE_COMPENSATION, exposureCompensationIndex);
-            captureBuilder.set(CaptureRequest.CONTROL_AE_LOCK, true);
+            if (exposureLock.get()) {
+                captureBuilder.set(CaptureRequest.CONTROL_AE_LOCK, true);
+            }
 
             //previewRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_EFFECT_MODE_POSTERIZE);
 

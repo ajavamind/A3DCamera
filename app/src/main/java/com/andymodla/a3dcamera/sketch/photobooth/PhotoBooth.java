@@ -239,25 +239,27 @@ public class PhotoBooth extends PApplet implements IGui {
         frameRate(displayFPS);
         initial = true;
 
-        textSize(SMALL2_FONT_SIZE);
         textAlign(CENTER, CENTER);
         fill(yellow);
         int row = 72;
         String sVersion = " Version: " + BuildConfig.VERSION_NAME + " Alpha";
         String copyright = "Copyright (c) 2026 Andrew Modla";
         if (parameters.isPhotoBoothCameraMode()) {
+            textSize(MEDIUM_FONT_SIZE);
             text("3D Photo Booth", (float) width / 2, (float) height / 2); // left
-            textSize(SMALL_FONT_SIZE);
+            textSize(MID_FONT_SIZE);
             text(sVersion, (float) width / 2, (float) (height / 2) + 4 * row);  // left
         } else if (parameters.isStereoscopeCameraMode()) {
+            textSize(SMALL2_FONT_SIZE);
             text("Stereoscope 3D Camera", (float) width / 4, (float) height / 2);  // left
             text("Stereoscope 3D Camera", ((float) 3 * width / 4) + TITLE_STEREO_OFFSET, (float) height / 2); // right
             textSize(SMALLER_FONT_SIZE);
             text(sVersion, (float) width / 4, (float) (height / 2) + 4 * row);  // left
             text(sVersion, ((float) 3 * width / 4) + TITLE_STEREO_OFFSET, (float) (height / 2) + 4 * row); // right
         } else {
+            textSize(MEDIUM_FONT_SIZE);
             text("Basic 3D Camera", (float) width / 2, (float) height / 2);  // center
-            textSize(SMALLER_FONT_SIZE);
+            textSize(MID_FONT_SIZE);
             text(sVersion, (float) width / 2, (float) (height / 2) + 4 * row);  // left
         }
 
@@ -335,7 +337,12 @@ public class PhotoBooth extends PApplet implements IGui {
 
     public void toggleEv() {
         showEv = !showEv;
-        gui.menuBar.updateEvKey(showEv);
+        if (showEv) {
+            stereoCamera.setExposureLock(!showEv);
+        } else {
+            stereoCamera.setExposureLock(!showEv);
+        }
+        gui.menuBar.updateEvKey(showEv, stereoCamera.getEv());
         update = true;
     }
 
@@ -1088,8 +1095,12 @@ public class PhotoBooth extends PApplet implements IGui {
     }
 
     void drawEv() {
-        if (!showEv) return;
         String ev = stereoCamera.getEv();
+        if (!showEv) {
+            gui.menuBar.updateEvKey(showEv, ev);
+            return;
+        }
+
 //        if (stereoCamera.getFunctionMode() == Camera3D.FUNCTION_MODE_EV) {
 //            ev = Camera3D.METERING_NAMES[parameters.getExposureMeteringIndex()]  + ev;
 //        }
@@ -1229,7 +1240,7 @@ public class PhotoBooth extends PApplet implements IGui {
 //                media.shareImage2(media.getMediaFile(), Media.APP_AIEDIT_PACKAGE);
 //                break;
 
-            case KeyEvent.KEYCODE_Z:
+            case KeyEvent.KEYCODE_Z:  // Z key ZOOM
             case MainActivity.BUTTON_Y_KEY:  // MAGNIFY
                 if (state == MainActivity.LIVE_VIEW_STATE || state == MainActivity.REVIEW_PHOTO_STATE) {
                     toggleShowZoom();
@@ -1243,7 +1254,7 @@ public class PhotoBooth extends PApplet implements IGui {
                         if (state == MainActivity.LIVE_VIEW_STATE) {
                             mainActivity.setFunctionMode(MainActivity.FUNCTION_MODE_LIVEVIEW);
                             gui.menuBar.setMenuKeyLabels(MainActivity.FUNCTION_MODE_LIVEVIEW, state);
-                            gui.menuBar.updateEvKey(showEv);
+                            gui.menuBar.updateEvKey(showEv, stereoCamera.getEv());
                         } else {
                             mainActivity.setFunctionMode(MainActivity.FUNCTION_MODE_REVIEW);
                             gui.menuBar.setMenuKeyLabels(MainActivity.FUNCTION_MODE_REVIEW, state);
@@ -1254,31 +1265,35 @@ public class PhotoBooth extends PApplet implements IGui {
                 break;
 
             case MainActivity.BUTTON_X_KEY:  // PARALLAX or Reset Zoom
-                if (state == MainActivity.REVIEW_PHOTO_STATE) {
+                boolean skip = false;
+                if (state == MainActivity.REVIEW_PHOTO_STATE || state == MainActivity.LIVE_VIEW_STATE) {
                     if (mainActivity.getFunctionMode() == MainActivity.FUNCTION_MODE_MAGNIFY) {
                         // reset magnify
                         resetZoom();
+                        skip = true;
                     } else {
                         mainActivity.setFunctionMode(MainActivity.FUNCTION_MODE_PARALLAX);
                         gui.menuBar.setMenuKeyLabels(MainActivity.FUNCTION_MODE_PARALLAX, state);
                     }
                 }
-                toggleParallax();
-                if (showParallax) {
-                    int yfunction = MainActivity.FUNCTION_MODE_PARALLAX;
-                    mainActivity.setFunctionMode(yfunction);
-                    gui.menuBar.setMenuKeyLabels(yfunction, state);
-                    showMenu = true;
-                } else {
-
-                    if (state == MainActivity.LIVE_VIEW_STATE) {
-                        mainActivity.setFunctionMode(MainActivity.FUNCTION_MODE_LIVEVIEW);
-                        gui.menuBar.setMenuKeyLabels(MainActivity.FUNCTION_MODE_LIVEVIEW, state);
-                        gui.menuBar.updateEvKey(showEv);
+                if (!skip) {
+                    toggleParallax();
+                    if (showParallax) {
+                        int yfunction = MainActivity.FUNCTION_MODE_PARALLAX;
+                        mainActivity.setFunctionMode(yfunction);
+                        gui.menuBar.setMenuKeyLabels(yfunction, state);
+                        showMenu = true;
                     } else {
-                        mainActivity.setFunctionMode(MainActivity.FUNCTION_MODE_REVIEW);
-                        gui.menuBar.setMenuKeyLabels(MainActivity.FUNCTION_MODE_REVIEW, state);
 
+                        if (state == MainActivity.LIVE_VIEW_STATE) {
+                            mainActivity.setFunctionMode(MainActivity.FUNCTION_MODE_LIVEVIEW);
+                            gui.menuBar.setMenuKeyLabels(MainActivity.FUNCTION_MODE_LIVEVIEW, state);
+                            gui.menuBar.updateEvKey(showEv, stereoCamera.getEv());
+                        } else {
+                            mainActivity.setFunctionMode(MainActivity.FUNCTION_MODE_REVIEW);
+                            gui.menuBar.setMenuKeyLabels(MainActivity.FUNCTION_MODE_REVIEW, state);
+
+                        }
                     }
                 }
                 break;
@@ -1338,7 +1353,7 @@ public class PhotoBooth extends PApplet implements IGui {
 
             case MainActivity.DOWN_ARROW_KEY:
                 if (state == MainActivity.LIVE_VIEW_STATE && mainActivity.isLiveviewFunction()) {
-                    //resetZoom();  removed - TODO replace with crop??
+                    // TODO replace with crop??
                 } else if (state == MainActivity.REVIEW_PHOTO_STATE && mainActivity.isReviewFunction()) {
                     if (currentIndex != 0) {
                         currentIndex = 0;
@@ -1432,6 +1447,8 @@ public class PhotoBooth extends PApplet implements IGui {
                     if (showEv) {
                         int index = stereoCamera.decrementExposureCompensation(1);
                         parameters.setExposureCompensationIndex(index);
+                        String ev = stereoCamera.getEv();
+                        gui.menuBar.updateEvKey(showEv, ev);
                     }
 
                 } else if (mainActivity.isReviewFunction()) {
@@ -1445,7 +1462,8 @@ public class PhotoBooth extends PApplet implements IGui {
                 } else if (mainActivity.isParallaxFunction()) {
                     if (showParallax) {
                         if (mainActivity.isReview()) {
-
+                            rParallax--;
+                            parallax = toDisplayPixels(rParallax);
                         } else {
                             iParallax = parameters.getParallaxOffset() - 1;
                             parameters.setParallaxOffset(iParallax);
@@ -1497,8 +1515,9 @@ public class PhotoBooth extends PApplet implements IGui {
                     if (showEv) {
                         int index = stereoCamera.incrementExposureCompensation(1);
                         parameters.setExposureCompensationIndex(index);
+                        String ev = stereoCamera.getEv();
+                        gui.menuBar.updateEvKey(showEv, ev);
                     }
-
                 } else if (mainActivity.isReviewFunction()) {
 //                    currentIndex++;
 //                    if (currentIndex >= sbsImageFiles.size()) {
@@ -1542,7 +1561,7 @@ public class PhotoBooth extends PApplet implements IGui {
 
             case MainActivity.MODE_KEY:  // processing in MainActivity and here
                 if (state == MainActivity.LIVE_VIEW_STATE) {
-                    gui.menuBar.updateEvKey(showEv);
+                    gui.menuBar.updateEvKey(showEv, stereoCamera.getEv());
                 }
                 break;
 
@@ -1617,7 +1636,7 @@ public class PhotoBooth extends PApplet implements IGui {
      * Review Code
      */
 
-    // TODO exit and restore take care of last image on application start up
+    // TODO exit shutdown app NOT USED
     public void exit() {
         if (DEBUG) println("exit PhotoBooth .........");
 
