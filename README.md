@@ -65,18 +65,20 @@ The app has three camera modes:
 3. Photo Booth 3D Camera - A specialized Basic 3D Camera mode with features for a photo booth operation using an external buzzer control box. This mode always saves Anaglyph and single Left and Right photos by default, unless turned off in Settings. It requires a local Wi-Fi network for printing and image transfer to external 3D or 2D displays, and can use an optional notebook computer with a web browser to manage and share the saved photos.
 
 ### Focus
-The camera app is fixed focus with selected distances selected in Settings. 
-The camera is set to a default fixed focus of approximately 166 cm, which is the hyper focal distance of the lens.
+The camera app is fixed focus with selected distance options in Settings. 
+The focus distance options are hyper focal 1.66 meters, Photo Booth 5.50 centimeters, and macro 100 cm. Macro may not be useful for 3D but shows how the lens can focus close.
+
+The camera is set by default to the hyper focal distance of the lens approximately 166 cm.
 Note the code uses 0.60356647 diopters to set the hyper focal distance.
 The hyper focal distance in cm is one divided by this value.
 It is considered sharp from 83 cm (half the hyperfocal distance) and beyond.
+For closer subjects use the photo booth fixed focus distance.
 The camera reports its LENS_FOCUS_DISTANCE_CALIBRATION as APPROXIMATE.
 
-The focus distance options are hyper focal 1.66 meters, Photo Booth 5.50 centimeters, and macro 100 cm. Macro may not be useful for 3D but shows how the lens can focus close.
-
 ### Exposure
-Auto exposure sets the best subject lighting by automatically changing shutter speed and ISO. There is exposure compensation manual control implemented. 
-The photographer can use the Settings menu to set the type of exposure metering: Frame Average, Center Weighted, and Spot Metering.
+Auto exposure sets the best subject lighting by automatically changing shutter speed and ISO. The camera app implements a manual exposure compensation control from
+-2 to +2 EV with an auto exposure lock. 
+The photographer can use the Settings menu for exposure metering: Frame Average, Center Weighted, and Spot Metering.
 
 ### Image Storage
 The app stores image files in the "DCIM/A3DCamera" folder. The base folder can be changed to "Pictures/A3DCamera", for example with a code change.
@@ -87,9 +89,9 @@ The app stores 3D photos in several formats:
 3. Left and Right Camera images are stored respectively as "_l" and "_r" suffix filename jpg files. Only Left and right images contain limited EXIF capture information: for example- IMG20250904_r.jpg f2.2, 1/3 second, 2.16mm, ISO413. The L/R images are not modified for parallax or vertical alignment. Storage is optional in Settings. Each left and right camera photo captured is 4080 x 3072 pixels, the maximum sensor size of each left and right camera. Note the aspect ratio is not exactly 4:3. The camera sensor can capture an image at 8160x6144, but is not used. RAM memory size and processor speed limitations make stereo difficult at this resolution. The native camera app has an option for single 8K 2D image capture.
 
 * The DCIM/A3DCamera folder for SBS photo storage.
-* The DCIM/A3DCamera/Anaglyph subfolder for Anaglyph photo storage as an optional settings option.
-* The DCIM/A3DCamera/LR subfolder for single left and right photo storage as an optional settings option.
-* The DCIM/A3DCamera/AIEdit subfolder for AI edited photo storage (a separate private app usage option)
+* The DCIM/A3DCamera/Anaglyph subfolder for Anaglyph photo storage.
+* The DCIM/A3DCamera/LR subfolder for single left and right photo storage.
+* The DCIM/A3DCamera/AIEdit subfolder for AI edited photo storage (for a separate private app used with A3DCamera)
 * The DCIM/A3DCamera/Screenshots
 
 ### Display
@@ -97,14 +99,14 @@ The app display is a centered viewfinder sized to permit use of stereoscopic "fr
 More about free-viewing can be found at: 
 [Learning To Free View](https://stereoscopy.blog/2022/03/11/learning-to-free-view-see-stereoscopic-images-with-the-naked-eye/).
 
-When free-viewing I sometimes use a pair of +4.0 reading glasses to get closer to the screen. A +5.0 reading glasses would be ideal, if I could find a +5.0 without excessive lens distortion. 
+When free-viewing I sometimes use a pair of +4.0 reading glasses to get closer to the screen. 
+A +5.0 reading glasses would be ideal, if I could find a +5.0 without excessive lens distortion. 
 
 The SBS display is sized at 130 mm for viewing in a stereoscope.
 
 As a hobbyist app the user is encouraged to use [Stereo Photo Maker (English)](https://stereo.jpn.org/eng/stphmkr/) 
 to align left and right images vertically, correct any horizontal perspective distortion, and set the most pleasing stereo window.
 
-When using the Command Line feature to configure the app (See Photo Booth section for details), you can set the vertical misalignment and parallax to adjust the stereo window for your preference.
 These values persist after app restart and adjust the saved SBS and Anaglyph photos, except for unadjusted left and right photos.
 
 ### Camera Control
@@ -131,7 +133,7 @@ because the app can accomodate the controller codes it does receive.
 
 ![Shan Wan Bluetooth Game Controller](images/Shan_Wan_Q36_mini_Game_Controller_900x600.png)
 
-* Review - (Volume up key or L game controller key) Toggles between Live-View and Review photo modes
+* Review/LiveView - (Volume up key or L game controller key) Toggles between Live-View and Review photo modes
 * Settings - (L2 gamer controller key or 'J' keyboard key) Enters Settings menu
 * Image Mode - (Volume down key or R2 game controller key) Toggles SBS, Anaglyph, Left and Right image viewing
 * Shutter/Print - (XBP Mode/Camera key or R game controller key) In Live-view mode take a photo on key release. In Photo Booth mode show count down seconds delay, until photo capture. In Review mode print current review photo.
@@ -230,7 +232,9 @@ The following commands examples are coded:
 
 These two commands affect the live view image, and change the alignment of stored SBS and Anaglyph photos.
 
-A list of commands screenshot with the "H" help key from a wireless keyboard:
+A list of commands screenshot with the "H" help key from a wireless keyboard.
+When using the Command Line feature to configure the app (See Photo Booth section for details), 
+you can set the vertical misalignment and parallax to adjust the stereo window for your preference.
 
 ## Usage
 1. I discovered my camera lens vertical alignment is only off by 1 pixels so that live free-viewing is possible without eye strain for me. But the camera can not be too close to the subject.
@@ -241,25 +245,27 @@ A list of commands screenshot with the "H" help key from a wireless keyboard:
 6. To use the navigation bar press the box or circle to exit (however neither will close the app, unless you swipe it off or clear/close all apps).
    
 ## Hardware Isssues
-1. The XReal BP camera will time out at a maximum of 15 minutes ( Settings->screen timeout). 
-   This can be extended by entering Developer mode, set a developer option to "Stay awake" to prevent the app from sleeping during charging.
-   You must keep the device charged with the power cable connected to prevent battery power depletion and app timeout to be able to last for hours     during a long session required for a photo booth.
+1. The XReal BP camera will time out at a maximum of 15 minutes ( XBP Settings -> screen timeout). 
+   This can be extended by entering Developer mode, set a developer option to "Stay awake" to prevent the app from sleeping while charging.
+   You must keep the device charged with the power cable connected to prevent battery power depletion and app timeout
+   to be able to continue without interruption, for hours during a long session required when operating as a photo booth.
    The USB data connector is connected to a small portable monitor and is powered by the XReal Beam Pro camera when charging.
-   This is the camera setup for the Photo Booth (tested for at least 7 hours of operation).
+   The Photo Booth mode charging configuration lasts for at least 7 hours of continuous operation.
 
 ## Stretch Goals
 
 1. Set image capture aspect ratio: 4:3, 16:9 and 1:1 using crop.
 2. Time Interval and motion detection captures.
+3. Zoom photo review crop photo file save.
 
 ## Experiments
-### 1. Wi-Fi Remote Control
-The app can listen for UDP broadcast messages to control the camera triggering the shutter.
-This feature can be used to trigger multiple Beam Pro cameras at the same time. This is working with other phone cameras with custom a custom camera app, but I don't have a 2nd XBO to fully test.
+### 1. Wi-Fi Broadcast Remote Control
+The app can listen for UDP broadcast messages to trigger the camera shutter.
+This feature can trigger multiple Beam Pro cameras at the same time. 
+with other 3D rig phone cameras with a custom camera app.
 
-An Android app at [RemoteCapture ](https://github.com/ajavamind/RemoteCapture) can trigger broadcast messages.
-
-You can also simultaneously trigger any Android device running the [MultRemoteCamera app](https://sourceforge.net/p/multi-remote-camera/wiki/Home/) Android app.
+An Android app at [RemoteCapture ](https://github.com/ajavamind/RemoteCapture) broadcasts shutter focus and trigger messages.
+The receiving camera app runs on an any Android device using the [MultRemoteCamera app](https://sourceforge.net/p/multi-remote-camera/wiki/Home/) Android app.
 I created this app by modifying the Open Camera (open soucre) app several years ago. My objective then was to use two phones for stereo photography.
 It reqires a local Wi-Fi network.
 
@@ -274,9 +280,7 @@ This Ubuntu Linux computer has a Nvidia 3060 GPU and uses [llama-cpp-server](htt
 ### 3. Beam Pro Remote Control and Viewing Using Scrcpy
 With the screen copy utility (Scrcpy) from https://github.com/Genymobile/scrcpy you can display the Beam Pro screen on your Windows, Linux, or iOS computer.
 In addition you can conrol your Beam Pro device with your computer mouse or keyboard, either USB wired or wireless! You have to  initialize with wired USB first. 
-See Scrcpy documentation.
-
-To use Scrcpy fully you need to set your Beam Pro to developer's mode. (I have not tested without entering developer's mode though, so I may be wrong).
+See Scrcpy documentation at [https://github.com/Genymobile/scrcpy/blob/master/doc/connection.md](https://github.com/Genymobile/scrcpy/blob/master/doc/connection.md)
 
 Here is an example command line script for running scrcpy wireless connected to XBP from my computer:
 
@@ -310,10 +314,18 @@ You have to make the scrcpy window active, so that keys get directed to scrcpy. 
 
 Sitting in another room I can see live view output of the camera and capture images with either a Bluetooth controller or Wi-Fi using the computer keyboard.
 
+### 4. Using AI to Control the Camera
+The A3DCamera app can receive broadcast commands to change settings and control the camera operation.
+I use a local AI LLM model on my computer to code and run a Python program for broadcasting messages to operate the camera remotely.
+I did this with the [PI Agent Harness (minimal)](https://pi.dev/) using a local LLM model.
+
+Work in Progress - proof of concept tested and achieved.
 
 ## Credits
 
 Thanks to Wilbert Brants for sharing his Android 3D camera code example. 
+
+Thanks to Processing.org
 
 ## Licenses
 
@@ -322,7 +334,7 @@ The A3DCamera android application uses the MIT License.
 --------------------------------------------------------------------------
 
 
-The app includes a Processing-Android Java sketch for displaying the camera viewfinder within a standard Android framework.
+The app includes a Processing-Android Java sketch library for displaying the camera viewfinder within a standard Android framework.
 Processing is a platform and sketch library for coding visual art projects.
 
 See [https://processing.org](https://processing.org) for more information about Processing.
