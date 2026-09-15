@@ -319,6 +319,40 @@ The A3DCamera app can receive broadcast commands to change settings and control 
 I use a local AI LLM model on my computer to code and run a Python program for broadcasting messages to operate the camera remotely.
 I did this with the [PI Agent Harness (minimal)](https://pi.dev/) using a local LLM model.
 
+```python
+# send_broadcast shutter
+import socket
+
+BROADCAST_ADDR = "192.168.8.255"
+PORT = 8000
+MESSAGE = "S20260914_140000"
+
+def main():
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        # Allow broadcasting
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+        data = MESSAGE.encode("utf-8")
+        sent = sock.sendto(data, (BROADCAST_ADDR, PORT))
+        print(f"Sent {sent} byte(s) ('{MESSAGE}') to {BROADCAST_ADDR}:{PORT}")
+    finally:
+        sock.close()
+
+if __name__ == "__main__":
+    main()
+```
+
+```python
+# listen_check.py — run on *another* machine on 192.168.8.x, or the PC itself
+import socket
+
+s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+s.bind(("0.0.0.0", 8000))   # PC's own port 8000 must be free
+while True:
+    data, addr = s.recvfrom(1024)
+    print("received:", data, "from", addr)
+```
+
 Work in Progress - proof of concept tested and achieved.
 
 ## Credits
