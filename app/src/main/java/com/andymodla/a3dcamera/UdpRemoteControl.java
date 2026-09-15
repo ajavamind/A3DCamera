@@ -123,15 +123,16 @@ public class UdpRemoteControl {
                     String fromIpAddress = m.getDatagramPacket().getAddress().getHostAddress();
                     if (MyDebug.LOG)
                         Log.d(TAG, "netEvent from ip address=" + fromIpAddress);
-                    if (fromIpAddress.equals(hostIpAddress)) {
-                        Log.d(TAG, "Ignore message from self");
-                        return;
-                    }
                     byte[] data = m.getData();
                     byte[] b = new byte[1];
                     b[0] = data[0];
                     String command = Bytes.getAsString(b);
                     if (MyDebug.LOG) Log.d(TAG, "netEvent (UDP Server) command=" + command);
+                    if (fromIpAddress != null && fromIpAddress.equals(hostIpAddress)) {
+                        Log.d(TAG, "Ignore message from self");
+                        return;
+                    }
+
                     if (command.startsWith("F")) {
                         if (!isVideo) {
                             if (!isFocusWaiting()) {

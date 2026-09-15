@@ -242,7 +242,8 @@ public class PhotoBooth extends PApplet implements IGui {
         textAlign(CENTER, CENTER);
         fill(yellow);
         int row = 72;
-        String sVersion = " Version: " + BuildConfig.VERSION_NAME + " Alpha";
+        String dVersion = BuildConfig.DEBUG?  " DEBUG" : "";
+        String sVersion = " Version: " + BuildConfig.VERSION_NAME + " Alpha" + dVersion;
         String copyright = "Copyright (c) 2026 Andrew Modla";
         if (parameters.isPhotoBoothCameraMode()) {
             textSize(MEDIUM_FONT_SIZE);

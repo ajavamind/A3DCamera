@@ -70,6 +70,7 @@ class ParamStore {
             private final String TAG = "Parameters";
             private final SharedPreferences prefs;
             private final Context context;
+            private volatile boolean restartNeeded = false;
 
             // Camera modes
             public static final int SIMPLE_MODE = 0;  // not used in photo booth sketch
@@ -204,6 +205,15 @@ class ParamStore {
                 readExposureCompensationIndex();
             }
 
+            /**
+             * Check and clear restart needed
+             */
+            public boolean isRestartNeeded() {
+                boolean restart = restartNeeded;
+                restartNeeded = false;
+                return restart;
+            }
+
             //------------------------------------------------------------------------------
             public void readParallaxOffset() {
                 parallaxOffset = prefs.getInt(parallaxOffsetStore.name, Integer.parseInt(parallaxOffsetStore.defaultValue));
@@ -214,6 +224,7 @@ class ParamStore {
             }
 
             public void setParallaxOffset(int parallaxOffset) {
+                if (this.parallaxOffset == parallaxOffset) return; // no change
                 this.parallaxOffset = parallaxOffset;
                 // Save to SharedPreferences
                 SharedPreferences.Editor editor = prefs.edit();
@@ -232,6 +243,7 @@ class ParamStore {
             }
 
             public void setVerticalOffset(int verticalOffset) {
+                if (this.verticalOffset == verticalOffset) return; // no change
                 this.verticalOffset = verticalOffset;
                 // Save to SharedPreferences
                 SharedPreferences.Editor editor = prefs.edit();
@@ -270,7 +282,7 @@ class ParamStore {
             }
 
             public void setCameraMode(int cameraMode) {
-                boolean changed = (this.cameraMode != cameraMode);
+                if (this.cameraMode == cameraMode) return;
                 this.cameraMode = cameraMode;
                 // Save to SharedPreferences
                 SharedPreferences.Editor editor = prefs.edit();
@@ -278,7 +290,7 @@ class ParamStore {
                 editor.commit(); // synchronous save: do it now and return
                 //editor.apply();   // asynchronous save
                 // Needs restart to reinitialize the application (only if value actually changed)
-                if (changed) ((MainActivity) context).restartApp();
+                restartNeeded = true;
             }
 
             //------------------------------------------------------------------------------
@@ -291,6 +303,7 @@ class ParamStore {
             }
 
             public void setIsBlankScreen(boolean isBlankScreen) {
+                if (this.isBlankScreen == isBlankScreen) return; // no change
                 this.isBlankScreen = isBlankScreen;
                 // Save to SharedPreferences
                 SharedPreferences.Editor editor = prefs.edit();
@@ -309,6 +322,7 @@ class ParamStore {
             }
 
             public void setIsSoundOn(boolean isSoundOn) {
+                if (this.isSoundOn == isSoundOn) return; // no change)
                 this.isSoundOn = isSoundOn;
                 // Save to SharedPreferences
                 SharedPreferences.Editor editor = prefs.edit();
@@ -328,6 +342,7 @@ class ParamStore {
             }
 
             public void setIsMirror(boolean isMirror) {
+                if (this.isMirror == isMirror) return; // no change
                 this.isMirror = isMirror;
                 // Save to SharedPreferences
                 SharedPreferences.Editor editor = prefs.edit();
@@ -346,6 +361,7 @@ class ParamStore {
             }
 
             public void setIsAiEdit(boolean isAiEdit) {
+                if (this.isAiEdit == isAiEdit) return; // no change
                 this.isAiEdit = isAiEdit;
                 // Save to SharedPreferences
                 SharedPreferences.Editor editor = prefs.edit();
@@ -363,6 +379,7 @@ class ParamStore {
             }
 
             public void setTitle1(String title1) {
+                if (this.title1.equals(title1)) return; // no change
                 this.title1 = title1;
                 // Save to SharedPreferences
                 SharedPreferences.Editor editor = prefs.edit();
@@ -380,6 +397,7 @@ class ParamStore {
             }
 
             public void setTitle2(String title2) {
+                if (this.title2.equals(title2)) return; // no change
                 this.title2 = title2;
                 // Save to SharedPreferences
                 SharedPreferences.Editor editor = prefs.edit();
@@ -397,6 +415,7 @@ class ParamStore {
             }
 
             public void setInst1(String inst1) {
+                if (this.instruction1.equals(inst1)) return; // no change
                 this.instruction1 = inst1;
                 // Save to SharedPreferences
                 SharedPreferences.Editor editor = prefs.edit();
@@ -414,6 +433,7 @@ class ParamStore {
             }
 
             public void setInst2(String inst2) {
+                if (this.instruction2.equals(inst2)) return; // no change
                 this.instruction2 = inst2;
                 // Save to SharedPreferences
                 SharedPreferences.Editor editor = prefs.edit();
@@ -431,6 +451,7 @@ class ParamStore {
             }
 
             public void setCountdownTimer(int countdownTimer) {
+                if (this.countdownTimer == countdownTimer) return; // no change
                 this.countdownTimer = countdownTimer;
                 // Save to SharedPreferences
                 SharedPreferences.Editor editor = prefs.edit();
@@ -448,6 +469,7 @@ class ParamStore {
             }
 
             public void setCountDownEnabled(boolean countDownEnabled) {
+                if (this.countDownEnabled == countDownEnabled) return; // no change
                 this.countDownEnabled = countDownEnabled;
                 SharedPreferences.Editor editor = prefs.edit();
                 editor.putBoolean(countDownEnabledStore.name, countDownEnabled);
@@ -464,14 +486,14 @@ class ParamStore {
             }
 
             public void setUdpControl(int udpControl) {
-                boolean changed = (this.udpControl != udpControl);
+                if (this.udpControl == udpControl) return;
                 this.udpControl = udpControl;
                 SharedPreferences.Editor editor = prefs.edit();
                 editor.putInt(udpControlStore.name, udpControl);
                 editor.commit();
+                ((MainActivity) this.context).updateParameters();
                 // Needs restart to reinitialize the application (only if value actually changed)
-                if (changed) ((MainActivity) context).restartApp();
-
+                restartNeeded = true;
             }
 
             //------------------------------------------------------------------------------
@@ -485,6 +507,7 @@ class ParamStore {
             }
 
             public void setAutoReview(boolean autoReview) {
+                if (this.autoReview == autoReview) return; // no change
                 this.autoReview = autoReview;
                 SharedPreferences.Editor editor = prefs.edit();
                 editor.putBoolean(autoReviewStore.name, autoReview);
@@ -502,6 +525,7 @@ class ParamStore {
             }
 
             public void setSbsCropPrint(boolean sbsCropPrint) {
+                if (this.sbsCropPrint == sbsCropPrint) return; // no change
                 this.sbsCropPrint = sbsCropPrint;
                 SharedPreferences.Editor editor = prefs.edit();
                 editor.putBoolean(sbsCropPrintStore.name, sbsCropPrint);
@@ -520,6 +544,7 @@ class ParamStore {
             }
 
             public void setFocusDistanceIndex(int focusDistanceIndex) {
+                if (this.focusDistanceIndex == focusDistanceIndex) return; // no change
                 this.focusDistanceIndex = focusDistanceIndex;
                 SharedPreferences.Editor editor = prefs.edit();
                 editor.putInt(focusDistanceIndexStore.name, focusDistanceIndex);
@@ -538,6 +563,7 @@ class ParamStore {
             }
 
             public void setExposureMeteringIndex(int exposureMeteringIndex) {
+                if (this.exposureMeteringIndex == exposureMeteringIndex) return; // no change
                 this.exposureMeteringIndex = exposureMeteringIndex;
                 SharedPreferences.Editor editor = prefs.edit();
                 editor.putInt(exposureMeteringIndexStore.name, exposureMeteringIndex);
@@ -556,6 +582,7 @@ class ParamStore {
             }
 
             public void setSaveLr(boolean saveLR) {
+                if (this.saveLR == saveLR) return; // no change
                 this.saveLR = saveLR;
                 SharedPreferences.Editor editor = prefs.edit();
                 editor.putBoolean(saveLrStore.name, saveLR);
@@ -574,6 +601,7 @@ class ParamStore {
             }
 
             public void setSaveAnaglyph(boolean saveAnaglyph) {
+                if (this.saveAnaglyph == saveAnaglyph) return; // no change
                 this.saveAnaglyph = saveAnaglyph;
                 SharedPreferences.Editor editor = prefs.edit();
                 editor.putBoolean(saveAnaglyphStore.name, saveAnaglyph);
@@ -591,6 +619,7 @@ class ParamStore {
             }
 
             public void setSaveFileType(String saveFileType) {
+                if (this.saveFileType.equals(saveFileType)) return; // no change
                 this.saveFileType = saveFileType;
                 SharedPreferences.Editor editor = prefs.edit();
                 editor.putString(saveFileTypeStore.name, saveFileType);
@@ -609,6 +638,7 @@ class ParamStore {
             }
 
             public void setSaveFileQuality(int saveFileQuality) {
+                if (this.saveFileQuality == saveFileQuality) return; // no change
                 this.saveFileQuality = saveFileQuality;
                 SharedPreferences.Editor editor = prefs.edit();
                 editor.putInt(saveFileQualityStore.name, saveFileQuality);
@@ -627,6 +657,7 @@ class ParamStore {
             }
 
             public void setAspectRatioIndex(int aspectRatioIndex) {
+                if (this.aspectRatioIndex == aspectRatioIndex) return; // no change
                 this.aspectRatioIndex = aspectRatioIndex;
                 SharedPreferences.Editor editor = prefs.edit();
                 editor.putInt(aspectRatioIndexStore.name, aspectRatioIndex);
@@ -645,6 +676,7 @@ class ParamStore {
             }
 
             public void setExposureCompensationIndex(int exposureCompensationIndex) {
+                if (this.exposureCompensationIndex == exposureCompensationIndex) return; // no change
                 this.exposureCompensationIndex = exposureCompensationIndex;
                 SharedPreferences.Editor editor = prefs.edit();
                 editor.putInt(exposureCompensationIndexStore.name, exposureCompensationIndex);

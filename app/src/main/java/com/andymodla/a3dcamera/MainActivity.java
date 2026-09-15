@@ -422,6 +422,10 @@ public class MainActivity extends AppCompatActivity {
     protected void onRestart() {
         super.onRestart();
         Log.d(TAG, "onRestart()");
+        if (parameters.isRestartNeeded()){
+            Log.d(TAG, "Restart needed");
+            restartApp();
+        }
     }
 
     @Override
