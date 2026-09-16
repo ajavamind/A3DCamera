@@ -10,8 +10,8 @@ android {
         applicationId "com.andymodla.a3dcamera"
         minSdk 34
         targetSdk 34
-        versionCode 26
-        versionName "3.13"
+        versionCode 29
+        versionName "3.15"
 
         //testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -32,7 +32,7 @@ android {
         }
 
         release {
-            minifyEnabled false
+            minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
@@ -63,8 +63,8 @@ dependencies {
     // AI tools thru OpenAI API standard
     implementation("com.openai:openai-java:4.1.0")
 
-    // oscP5.jar used to transmit or receive broadcast messages over UDP local WiFi network
-    implementation files('libs/oscP5.jar')
+    // additional jars in libs select as needed
+    //implementation files('libs/*.jar')
 
     // native libyuv library for yuv image to RGB jpg conversion
     implementation "io.github.crow-misia.libyuv:libyuv-android:0.44.0"

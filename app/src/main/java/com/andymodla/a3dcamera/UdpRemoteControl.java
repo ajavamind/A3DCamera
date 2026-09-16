@@ -29,7 +29,8 @@ import netP5.NetListener;
 import netP5.NetMessage;
 import netP5.NetStatus;
 import netP5.UdpClient;
-import netP5.UdpServer1;
+import netP5.UdpServer;
+//import netP5.UdpServer1;
 
 import com.andymodla.a3dcamera.camera.Camera3D;
 
@@ -39,7 +40,8 @@ public class UdpRemoteControl {
 
     private boolean isVideo = false;
     // UDP Server variables
-    private volatile UdpServer1 udpServer;    // Broadcast receiver
+    private volatile UdpServer udpServer;    // Broadcast receiver
+    //private volatile UdpServer1 udpServer;    // Broadcast receiver
     private int udpPort = 8000;  // Broadcast port
     public static String httpUrl = "";
     public static String sParam = ""; // Photo counter received from Broadcast message
@@ -68,7 +70,7 @@ public class UdpRemoteControl {
     boolean connected;
     String broadcastIpAddress;
     String hostIpAddress;
-
+    NetListener udpListener;
     boolean focus = false;
     // Define an Executor at the class level (to reuse it)
     private ExecutorService executorService;
@@ -118,7 +120,7 @@ public class UdpRemoteControl {
     public void setUdpReceiver(Camera3D camera, String hostIpAddress) {
         if (udpServer == null) {
             // first create listener for UDP messages
-            NetListener udpListener = new NetListener() {
+            udpListener = new NetListener() {
                 public void netEvent(NetMessage m) {
                     String fromIpAddress = m.getDatagramPacket().getAddress().getHostAddress();
                     if (MyDebug.LOG)
@@ -212,11 +214,13 @@ public class UdpRemoteControl {
 
             // Now create UDP server for receiving Broadcast messages with listener created above
             if (udpServer == null) {
-                udpServer = new UdpServer1(udpListener, udpPort);
+                udpServer = new UdpServer(this, udpPort);
+                //udpServer = new UdpServer1(udpListener, udpPort);
                 if (udpServer == null) {
                     if (MyDebug.LOG) Log.d(TAG, "UdpServer error");
                     ToastHelper.showToast(context, "Remote Message Server not running");
                 } else {
+                    udpServer.addListener(udpListener);
                     if (udpServer.socket() == null) {
                         if (MyDebug.LOG) Log.d(TAG, "UdpServer not connected retry");
                     }
