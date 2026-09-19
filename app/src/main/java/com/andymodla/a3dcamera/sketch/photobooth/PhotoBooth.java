@@ -22,6 +22,7 @@ import com.andymodla.a3dcamera.Parameters;
 import com.andymodla.a3dcamera.MainActivity;
 
 import processing.core.PApplet;
+import processing.core.PGraphics;
 import processing.core.PImage;
 import processing.opengl.PGL;
 import processing.opengl.PGraphicsOpenGL;
@@ -79,6 +80,7 @@ public class PhotoBooth extends PApplet implements IGui {
     private volatile boolean mirror = false;
     private volatile boolean crossEye = false;
     private volatile boolean grid = false;
+    private volatile int gridCount =  0;
     volatile boolean magnify = false;
     private volatile boolean showZoom = false;
     private volatile boolean showMenu = false;
@@ -140,7 +142,6 @@ public class PhotoBooth extends PApplet implements IGui {
 
     String countdown = "";  // default ignore null string
 
-    private int zoomIndex = 0;
     private int magnifyIndex = 0;
     private static final float[] magnifyScale = {1.0f, 1.125f, 1.25f, 1.375f, 1.5f, 1.625f, 1.75f, 1.875f,
             2.0f, 2.125f, 2.25f, 2.375f, 2.5f, 2.625f, 2.75f, 2.875f,
@@ -851,7 +852,7 @@ public class PhotoBooth extends PApplet implements IGui {
         if (magnify) {
             scale(magnifyScale[magnifyIndex], magnifyScale[magnifyIndex]);
         }
-        //float iC = 0; //(imgWidth - (float)imgLeft.width)/2;
+
         if (crossEye) {
             image(imgRight, -offsetX + centerX, -offsetY, imgWidth, imgHeight);
         } else {
@@ -1074,8 +1075,8 @@ public class PhotoBooth extends PApplet implements IGui {
     void drawGrid(boolean full) {
         fill(yellow);
         int thickness = 2;
-        int top = MainActivity.HIDDEN_SHUTTER_BUTTON_Y + 10;
-        int bottom = 96 + top;
+        int top = 157;
+        int bottom = 307;
         int leftMargin = frameX;
         int rightMargin = frameX;
         if (full) {
@@ -1340,6 +1341,14 @@ public class PhotoBooth extends PApplet implements IGui {
                     } else {
                         setReviewLabel("End");
                     }
+                } else if (state == MainActivity.LIVE_VIEW_STATE && mainActivity.isLiveviewFunction()) {
+                    // gridCount needed to get around multiple down arrow keys
+                    if (gridCount == 0) {
+                        toggleGrid();
+                        gridCount++;
+                    } else {
+                        gridCount = 0;
+                    }
                 } else if (mainActivity.isParallaxFunction()) {
 //                    if (showParallax) {
 //                        iParallax = parameters.getParallaxOffset() + DELTA_PARALLAX;
@@ -1529,12 +1538,14 @@ public class PhotoBooth extends PApplet implements IGui {
                     // share broadcast review photo on network
                     if (DEBUG) println("share broadcast review photo on network");
                     if (mainActivity.imageSender != null) {
-                        String filename = sbsImageFiles.get(currentIndex);
-                        filename = filename.substring(filename.lastIndexOf(File.separator) + 1);
-                        if (!filename.isEmpty()) {
-                            String imageUrl = "http://" + mainActivity.hostIpAddr + ":" + mainActivity.hostPort + File.separator + filename;
-                            if (DEBUG) println("imageSender.sendImageUrl " + imageUrl);
-                            mainActivity.imageSender.sendImageUrl(null, parameters.getReceiverPort(), imageUrl);
+                        if (sbsImageFiles.size() > 0) {
+                            String filename = sbsImageFiles.get(currentIndex);
+                            filename = filename.substring(filename.lastIndexOf(File.separator) + 1);
+                            if (!filename.isEmpty()) {
+                                String imageUrl = "http://" + mainActivity.hostIpAddr + ":" + mainActivity.hostPort + File.separator + filename;
+                                if (DEBUG) println("imageSender.sendImageUrl " + imageUrl);
+                                mainActivity.imageSender.sendImageUrl(null, parameters.getReceiverPort(), imageUrl);
+                            }
                         }
                     }
 
@@ -1969,9 +1980,10 @@ public class PhotoBooth extends PApplet implements IGui {
         if (keyUp) {
             this.lastKey = lastKey;
             this.lastKeyCode = lastKeyCode;
-            println("setKeyCode " + lastKeyCode);
+            //println("setKeyCode " + lastKeyCode);
         } else {  // key down
             switch (lastKeyCode) {
+                // these game controller keys generate rapid multiple key events when down
                 case MainActivity.LEFT_ARROW_KEY:
                 case MainActivity.RIGHT_ARROW_KEY:
                 case MainActivity.UP_ARROW_KEY:
@@ -1983,8 +1995,124 @@ public class PhotoBooth extends PApplet implements IGui {
         }
     }
 
-////////////////////////////////////////////////////////////////////////////////////////////////
-    // NOT used for reference
+    //-------------------------------------------------------------------------TODO work in progress
+
+    // Crop parameters
+    PImage leftCropped;
+    PImage rightCropped;
+    // ----------------------------------------------------------------------------------- CropParam
+    /**
+     * Crop parameters.
+     * magnify : zoom factor, 1.0 .. 4.0 in steps of 0.125 (snapped on set).
+     *             Applied after the offsets; zoom is centered on the (shifted)
+     *             view window.
+     * xOffset / yOffset : shift of the ZOOM CENTER POINT of the original input
+     *             image, in SOURCE PIXELS relative to each image's own size
+     *             (0 = center, +width/2 = right edge, -height/2 = top edge).
+     * parallax : extra horizontal shift (source pixels) of the right image's
+     *             zoom center point.
+     */
+    static class CropParam {
+        float magnify;
+        float xOffset;
+        float yOffset;
+        float parallax;
+
+        CropParam(float magnify, float xOffset, float yOffset, float parallax) {
+            this.magnify = snapMagnify(magnify);
+            this.xOffset = xOffset;
+            this.yOffset = yOffset;
+            this.parallax = parallax;
+        }
+
+        /** Clamp to [1.0, 4.0] and snap to the nearest 0.125 step. */
+        float snapMagnify(float m) {
+            m = constrain(m, 1.0f, 4.0f);
+            return round(m * 8.0f) / 8.0f;
+        }
+
+        void setMagnify(float m) {
+            this.magnify = snapMagnify(m);
+        }
+    }
+
+
+    /**
+     * Crop both images per cParam. Order of operations:
+     *   1. offsets (xOffset / yOffset, plus parallax on the right image)
+     *      relocate the ZOOM CENTER POINT of the original input image.
+     *      Offsets are in SOURCE PIXELS relative to each image's own size, so
+     *      the same CropParam pans correctly for any resolution — e.g. an
+     *      xOffset of width/2 moves the zoom center to the right edge whether
+     *      the source is 1080p or 4080x3072.
+     *   2. magnify zoom is applied SECOND about that shifted center point:
+     *      crop size = (srcW / magnify, srcH / magnify), centered on it and
+     *      clamped to stay inside the source image.
+     *
+     * The result is stored in leftCropped / rightCropped and also returned as a
+     * combined Bitmap (left | right side by side).
+     */
+    private Bitmap saveCropSBS(CropParam cParam, PImage leftImage, PImage rightImage) {
+        float m = constrain(cParam.magnify, 1.0f, 4.0f);
+
+        // Step 1: shifted zoom center points (offsets are raw source pixels).
+        float lcx = (leftImage.width  * 0.5f) + cParam.xOffset;
+        float lcy = (leftImage.height * 0.5f) + cParam.yOffset;
+        float rcx = (rightImage.width * 0.5f) + cParam.xOffset + cParam.parallax;
+        float rcy = (rightImage.height * 0.5f) + cParam.yOffset;
+
+        // Step 2 (zoom): crop window size after magnifying, computed per image so
+        // both crops keep their source aspect ratio even if left/right differ.
+        int lcw = max(1, (int) round(leftImage.width  / m));
+        int lch = max(1, (int) round(leftImage.height / m));
+        int rcw = max(1, (int) round(rightImage.width  / m));
+        int rch = max(1, (int) round(rightImage.height / m));
+
+        // Crop window centered on the shifted center points, clamped so it stays
+        // inside the source image.
+        int lx = constrain((int) round(lcx - lcw * 0.5f), 0, max(0, leftImage.width  - lcw));
+        int ly = constrain((int) round(lcy - lch * 0.5f), 0, max(0, leftImage.height - lch));
+
+        int rx = constrain((int) round(rcx - rcw * 0.5f), 0, max(0, rightImage.width  - rcw));
+        int ry = constrain((int) round(rcy - rch * 0.5f), 0, max(0, rightImage.height - rch));
+
+        // Crop the PImages (aspect ratio of each crop window is fixed by magnify).
+        leftCropped  = leftImage.get(lx, ly, lcw, lch);
+        rightCropped = rightImage.get(rx, ry, rcw, rch);
+
+        //println("CropSBS: magnify=" + m
+        //        + " left=(" + lx + "," + ly + " " + lcw + "x" + lch + ")"
+        //        + " right=(" + rx + "," + ry + " " + rcw + "x" + rch + ")");
+
+        // Combine the two cropped PImages into one side-by-side Bitmap.
+        return pimageToBitmap(appendImages(leftCropped, rightCropped));
+    }
+
+    /** Places a and b side by side (both scaled to the same height) in a new PImage. */
+    PImage appendImages(PImage a, PImage b) {
+        int h = max(a.height, b.height);
+        float sA = (float) h / a.height;
+        float sB = (float) h / b.height;
+        int wA = max(1, (int) round(a.width * sA));
+        int wB = max(1, (int) round(b.width * sB));
+
+        PGraphics out = createGraphics(wA + wB, h);
+        out.beginDraw();
+        out.background(0);
+        out.image(a, 0, 0, wA, h);
+        out.image(b, wA, 0, wB, h);
+        out.endDraw();
+        return out;
+    }
+
+    /** Converts a Processing PImage (RGB) into an Android Bitmap. */
+    Bitmap pimageToBitmap(PImage img) {
+        img.loadPixels();
+        return Bitmap.createBitmap(img.pixels, img.width, img.height, Bitmap.Config.ARGB_8888);
+    }
+
+//--------------------------------------------------------------------------------------------------
+// NOT used for reference
 //    void nextImage() {
 //        if (currentIndex < leftImageFiles.size() - 1) {
 //            currentIndex++;

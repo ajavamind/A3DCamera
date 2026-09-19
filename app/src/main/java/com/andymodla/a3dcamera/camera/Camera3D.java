@@ -123,18 +123,19 @@ public class Camera3D {
     public static int XBP_CAMERA_HEIGHT_6x4 = 720; // small for performance
 
     public volatile int focusDistanceIndex = 0;  // default HYPERFOCAL camera
-    static final float MACRO_FOCUS_DISTANCE = 10.0f;  // 100mm
     static final float HYPERFOCAL_FOCUS_DISTANCE = 0.60356647f;  // 1.66 meters
     static final float PHOTO_BOOTH_FOCUS_DISTANCE = 1.89f;  // 550mm
+    static final float CLOSEUP_FOCUS_DISTANCE = 3.3333333f;  // 300mm
+    static final float MACRO_FOCUS_DISTANCE = 10.0f;  // 100mm
     // 550 mm chosen for ideal subject distance based on camera lens interaxial distance (50mm) for best stereo capture
     //static final float PHOTO_BOOTH_FOCUS_DISTANCE = 1.43f;  // 700mm
     //static final float PHOTO_BOOTH_FOCUS_DISTANCE = 1.0f;  // 1 meter
     //static final float PHOTO_BOOTH_FOCUS_DISTANCE = 2.0f;  // 500mm
     static final float AUTO_FOCUS_DISTANCE = 0.0f;
-    static final float[] FOCUS_DISTANCE = {HYPERFOCAL_FOCUS_DISTANCE, PHOTO_BOOTH_FOCUS_DISTANCE, MACRO_FOCUS_DISTANCE, AUTO_FOCUS_DISTANCE};
-    public static final String[] FOCUS_DISTANCE_NAMES = {"HYPERFOCAL ", "PHOTO BOOTH", "MACRO", "AUTO FOCUS"};
+    static final float[] FOCUS_DISTANCE = {HYPERFOCAL_FOCUS_DISTANCE, PHOTO_BOOTH_FOCUS_DISTANCE, CLOSEUP_FOCUS_DISTANCE, MACRO_FOCUS_DISTANCE, AUTO_FOCUS_DISTANCE};
+    public static final String[] FOCUS_DISTANCE_NAMES = {"HYPERFOCAL ", "PHOTO BOOTH", "CLOSEUP", "MACRO", "AUTO FOCUS"};
 
-
+    // Camera Parameters
     private int cameraWidth = CAMERA_WIDTH_DEFAULT; // camera width lens pixels
     private int cameraHeight = CAMERA_HEIGHT_DEFAULT; // camera height lens pixels
     private int captureCameraWidth = CAMERA_WIDTH_DEFAULT; // camera width lens pixels

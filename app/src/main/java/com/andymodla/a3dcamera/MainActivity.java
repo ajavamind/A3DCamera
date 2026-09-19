@@ -733,7 +733,16 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
-        Log.d(TAG, "onKeyDown " + keyCode);
+        char ch = 0;
+        if (event != null) {
+            ch = (char) event.getUnicodeChar();
+            if (ch == 65535 && keyCode == 0) { // special case all other keys
+                // ignore key
+                return true;
+            }
+        }
+
+        Log.d(TAG, "onKeyDown " + keyCode + " " + (int) ch);
         switch (keyCode) {
             case KeyEvent.KEYCODE_VOLUME_UP:
             case KeyEvent.KEYCODE_VOLUME_DOWN:
@@ -776,7 +785,7 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             }
         }
-        Log.d(TAG, "onKeyUp " + keyCode + " " + ch);
+        Log.d(TAG, "onKeyUp " + keyCode + " " + (int) ch);
         if (commandLine != null && ch != 0 && commandLine.processCommandLineKey(keyCode, ch)) {
             return true;
         }

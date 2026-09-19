@@ -1,6 +1,8 @@
 package com.andymodla.a3dcamera.sketch.photobooth;
 
 
+import static com.andymodla.a3dcamera.MyDebug.DEBUG;
+
 import processing.core.PApplet;
 
 import android.view.KeyEvent;
@@ -314,7 +316,7 @@ class HorzMenuBar implements IGui {
                         dimx = menuKey[i].dimension.x;
                         dimw = menuKey[i].dimension.w;
                     }
-                    pApplet.println("mousePressed " + i + " x=" + x + " dimx=" + dimx + " dimw=" + dimw);
+                    if (DEBUG) pApplet.println("mousePressed " + i + " x=" + x + " dimx=" + dimx + " dimw=" + dimw);
                     if (x >= dimx && x <= (dimx + dimw)) {
                         mkeyCode = menuKey[i].keyCode;
                         menuKey[i].setHighlight(true);

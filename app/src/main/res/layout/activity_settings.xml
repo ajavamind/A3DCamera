@@ -258,6 +258,16 @@
                 android:textSize="13sp"
                 android:buttonTint="#4FC3F7"
                 android:layout_marginBottom="4dp" />
+				
+			<RadioButton
+                android:id="@+id/rb_focus_closeup"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Closeup Focus Distance 300mm"
+                android:textColor="#FFFFFF"
+                android:textSize="13sp"
+                android:buttonTint="#4FC3F7"
+                android:layout_marginBottom="4dp" />
 
             <RadioButton
                 android:id="@+id/rb_focus_macro"

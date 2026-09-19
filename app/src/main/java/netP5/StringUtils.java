@@ -26,7 +26,7 @@
 /**
  * StringUtils Contains some basic utility methods for handling Strings.
  *
- * Copyright (C) 2003 Johan Känngård
+ * Copyright (C) 2003 Johan Kï¿½nngï¿½rd
  * Contains code Copyright (C) 2001,2002 Stephen Ostermiller
  * http://ostermiller.org/utils/StringHelper.java.html
  *
@@ -46,7 +46,7 @@
  *
  * The GPL is located at: http://www.gnu.org/licenses/gpl.txt
  *
- * @author Johan Känngård, http://dev.kanngard.net/
+ * @author Johan Kï¿½nngï¿½rd, http://dev.kanngard.net/
  * @version 0.4
  */
 
@@ -268,7 +268,7 @@ public class StringUtils extends Object {
 	 *         String element is specified by the correspondent lengths array
 	 *         element.
 	 * @throws IndexOutOfBoundsException
-	 *             if any of the length´s are invalid.
+	 *             if any of the lengthï¿½s are invalid.
 	 */
 	public static String[] explode(String source, int[] lengths) {
 		String[] result = new String[lengths.length];
@@ -612,7 +612,7 @@ public class StringUtils extends Object {
 	 *
 	 * @param source
 	 *            the source String to copy.
-	 * @param length
+	 * @param copies
 	 *            the number of copies of source to return.
 	 * @return a String consisting of the specified source String copied the
 	 *         specified number of times.

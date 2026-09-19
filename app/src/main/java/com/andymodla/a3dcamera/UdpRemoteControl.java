@@ -148,7 +148,8 @@ public class UdpRemoteControl {
                                 });
                             }
                         } else {
-                            ToastHelper.showToast(context, "Remote Not In Photo Mode");
+                            //ToastHelper.showToast(context, "Remote Not In Photo Mode");
+                            Log.d(TAG, "Remote Not In Photo Mode");
                         }
                     } else if (command.startsWith("S") || command.startsWith("C")) {
                         sParam = getParam(data);
@@ -160,7 +161,8 @@ public class UdpRemoteControl {
                                 }
                             });
                         } else {
-                            ToastHelper.showToast(context, "Remote Not In Photo Mode");
+                            //ToastHelper.showToast(context, "Remote Not In Photo Mode");
+                            Log.d(TAG, "Remote Not In Photo Mode");
                         }
                     } else if (command.startsWith("V")) { // record/stop video
                         sParam = getParam(data);
@@ -176,7 +178,8 @@ public class UdpRemoteControl {
                                 }
                             });
                         } else {
-                            ToastHelper.showToast(context, "Remote Not In Video Mode");
+                            //ToastHelper.showToast(context, "Remote Not In Video Mode");
+                            Log.d(TAG, "Remote Not In Video Mode");
                         }
                     } else if (command.startsWith("P")) { // pause
                         if (MyDebug.LOG) Log.d(TAG, "remote pause Video ");
@@ -189,12 +192,12 @@ public class UdpRemoteControl {
                                 }
                             });
                         } else {
-                            ToastHelper.showToast(context, "Remote Not In Video Mode");
+                            //ToastHelper.showToast(context, "Remote Not In Video Mode");
+                            Log.d(TAG, "Remote Not In Video Mode");
                         }
                     } else if (command.startsWith("R")) { // reset / information request
                         httpUrl = getHostnameUrl();
                         if (MyDebug.LOG) Log.d(TAG, "Reset information request to host URL=" + httpUrl);
-                        ToastHelper.showToast(context, httpUrl);
                     } else if (command.startsWith("/")) { // slash command
                         sParam = getParam(data);
                         CommandLine commandLine = ((MainActivity) context).getCommandLine();
@@ -217,8 +220,7 @@ public class UdpRemoteControl {
                 udpServer = new UdpServer(this, udpPort);
                 //udpServer = new UdpServer1(udpListener, udpPort);
                 if (udpServer == null) {
-                    if (MyDebug.LOG) Log.d(TAG, "UdpServer error");
-                    ToastHelper.showToast(context, "Remote Message Server not running");
+                    if (MyDebug.LOG) Log.d(TAG, "UdpServer error not running");
                 } else {
                     udpServer.addListener(udpListener);
                     if (udpServer.socket() == null) {

@@ -790,7 +790,7 @@ class ParamStore {
             ParamStore focusDistanceIndexStore = new ParamStore(
                     "fdi", "focusDistanceIndex", "Focus Distance Index",
                     "getFocusDistanceIndex", "setFocusDistanceIndex", int.class, "0",
-                    "Set the focus distance index: 0 HyperFocal Focus Distance 1.7 m; 1 Photo Booth Focus Distance 550mm; 2 Macro Focus Distance 100mm; 3 Auto Focus Distance"
+                    "Set the focus distance index: 0 HyperFocal Focus Distance 1.7 m; 1 Photo Booth Focus Distance 550mm; 2 Closeup Focus Distance 300mm; 3 Macro Focus Distance 100mm; 4 Auto Focus Distance"
             );
 
             ParamStore exposureMeteringIndexStore = new ParamStore(

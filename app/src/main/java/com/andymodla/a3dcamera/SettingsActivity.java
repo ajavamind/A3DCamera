@@ -47,6 +47,7 @@ public class SettingsActivity extends AppCompatActivity {
     private RadioGroup rgFocusDistance;
     private RadioButton rbFocusHyperfocal;
     private RadioButton rbFocusPhotobooth;
+    private RadioButton rbFocusCloseup;
     private RadioButton rbFocusMacro;
     private RadioButton rbFocusAuto;
 
@@ -160,6 +161,7 @@ public class SettingsActivity extends AppCompatActivity {
         rgFocusDistance = findViewById(R.id.rg_focus_distance);
         rbFocusHyperfocal = findViewById(R.id.rb_focus_hyperfocal);
         rbFocusPhotobooth = findViewById(R.id.rb_focus_photobooth);
+        rbFocusCloseup = findViewById(R.id.rb_focus_closeup);
         rbFocusMacro = findViewById(R.id.rb_focus_macro);
         //rbFocusAuto = findViewById(R.id.rb_focus_auto);
 
@@ -241,9 +243,12 @@ public class SettingsActivity extends AppCompatActivity {
                 rgFocusDistance.check(R.id.rb_focus_photobooth);
                 break;
             case 2:
+                rgFocusDistance.check(R.id.rb_focus_closeup);
+                break;
+            case 3:
                 rgFocusDistance.check(R.id.rb_focus_macro);
                 break;
-            //case 3: rgFocusDistance.check(R.id.rb_focus_auto); break;
+            //case 4: rgFocusDistance.check(R.id.rb_focus_auto); break;
             default:
                 rgFocusDistance.check(R.id.rb_focus_hyperfocal);
                 break;
@@ -443,10 +448,12 @@ public class SettingsActivity extends AppCompatActivity {
             focusIndex = 0;
         } else if (checkedId == R.id.rb_focus_photobooth) {
             focusIndex = 1;
-        } else if (checkedId == R.id.rb_focus_macro) {
+        } else if (checkedId == R.id.rb_focus_closeup) {
             focusIndex = 2;
-        } else {
+        } else if (checkedId == R.id.rb_focus_macro) {
             focusIndex = 3;
+        } else {
+            focusIndex = 4;
         }
         parameters.setFocusDistanceIndex(focusIndex);
 
