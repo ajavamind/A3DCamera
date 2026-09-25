@@ -206,7 +206,7 @@ In developer mode, use Settings -> System -> Developer options to turn on USB de
 
 By default the Beam Pro device uses the red mode key to launch the native 3D camera app. This will interfere with the A3DCamera app operation. Change the mode key to no app launch or to launch the A3DCamera app instead. To do this, use Settings -> System -> Gestures -> Mode (red) button. Press "Quick Start" to on or off. Press "Start ... >" to select the "Quick Start" application. If you chose "On" then "Select Application" to launch the "A3DCamera" app instead of the native Camera app.
 
-Also in "Gestures" you can change the Navigation mode to 3-button navigation. This is my preferred way to swipe and use navigation keys with the app.
+Also in "Gestures" you can change the Navigation mode to 3-button navigation. This is the best way to navigate from this app and is preferred, instead of swiping.
 
 And in "Gestures" you can change the power button operation from the default "Access digital assistant" to the "Power menu" which I prefer to lock or restart my XBP.
 I move the "Assistant" app icon to the home screen to access a digital assistant.
