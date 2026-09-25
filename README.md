@@ -212,7 +212,10 @@ And in "Gestures" you can change the power button operation from the default "Ac
 I move the "Assistant" app icon to the home screen to access a digital assistant.
 
 For best performance close all apps including background apps, except the HTTP server app used for photo file transfers, before starting A3DCamera.
-A3DCamera requires the "Simple HTTP Server PLUS" app for broadcasting photos on its local WiFi private network. The A3dCamera app photo booth mode uses this server for sharing photos from the /DCIM/A3DCamera folder. 
+A3DCamera requires the "Simple HTTP Server PLUS" app for broadcasting photos on its local WiFi private network. The A3dCamera app photo booth mode uses this server for sharing photos from the /DCIM/A3DCamera folder.
+
+After installing all the apps discussed, move them to the home screen. Place the A3DCamera app icon on left side center of the home screen so that the Home button focus goes to this app.
+This is helpful when using the Steroscopy 3D Camera mode and the screen cannot be touch insides its enclosure.
 
 For printing 4x6 photos with the Canon CP1300 or CP1500 printer, you need to install the Canon Print Service plugin application from the Google Play store. 
 The Canon printer app package name expected by the A3DCamera app is "jp.co.canon.android.printservice.plugin".
