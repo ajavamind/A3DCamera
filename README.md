@@ -172,7 +172,7 @@ Connect a Bluetooth Mouse to control the camera app with the mouse buttons. A mo
 This mode is the default after a clean install (no app of the XBP)
 
 * LEFT Button - Capture a photo (shutter button). In photo review mode this button sends a photo to the printer
-* MIDDLE Button - Share the photo with a selected app.
+* MIDDLE Button -Toggle Anaglyph, Left, Right, and SBS display modes.
 * RIGHT Button - Review the last photo.
 
 
