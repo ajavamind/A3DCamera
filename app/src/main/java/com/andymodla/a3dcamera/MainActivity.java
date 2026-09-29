@@ -129,8 +129,9 @@ public class MainActivity extends AppCompatActivity {
 
     // Key codes for 8BitDo Micro Bluetooth Keyboard controller (Android mode)
 
-    // Key codes for ShanWan Q36 Bluetooth Mini Game Controller
-    // S switch set for Android mode the center position on the controller
+    // Key codes output by Shan Wan Q36 Bluetooth Mini Game Controller
+    // in Nintendo Switch mode S switch set in the center position on the controller
+    // for Android the keycodes are as follow
     public static final int SHUTTER_KEY = KeyEvent.KEYCODE_BUTTON_R1; // 103
     public static final int ANAGLYPH_KEY = KeyEvent.KEYCODE_BUTTON_R2; // 105
     public static final int MODE_KEY = KeyEvent.KEYCODE_BUTTON_L1; // 102
@@ -143,12 +144,14 @@ public class MainActivity extends AppCompatActivity {
 
     public static final int BUTTON_PLUS_KEY = KeyEvent.KEYCODE_BUTTON_START; // 108 "+" button
     public static final int BUTTON_MINUS_KEY = KeyEvent.KEYCODE_BUTTON_SELECT; // 109 "-" button
+    public static final int HOME_KEY = KeyEvent.KEYCODE_HOME; // 3 home button
 
     // game controller key labels do not match Android key codes it outputs!
     public static final int BUTTON_X_KEY = KeyEvent.KEYCODE_BUTTON_Y; //  100 up
     public static final int BUTTON_Y_KEY = KeyEvent.KEYCODE_BUTTON_X; //  99 up
     public static final int BUTTON_B_KEY = KeyEvent.KEYCODE_BUTTON_A;  //  96 up
     public static final int BUTTON_A_KEY = KeyEvent.KEYCODE_BUTTON_B;  //  97 up
+
 
     static final int BACK_KEY = KeyEvent.KEYCODE_BACK;  // KEYCODE_BACK = 04
     static final int DPAD_CENTER_KEY = KeyEvent.KEYCODE_DPAD_CENTER;  // 23 up
@@ -1254,6 +1257,9 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    public void sendResponse(String response, String ipAddr) {
+        udpRemoteControl.sendMessage(response, ipAddr);
+    }
     /**
      * Show half second Toast message
      *

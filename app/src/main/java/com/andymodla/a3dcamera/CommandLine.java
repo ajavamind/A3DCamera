@@ -11,6 +11,7 @@ public class CommandLine {
     private final Snackbar mSnackbar;
     View rootView;
     Parameters mParameters;
+    MainActivity mainActivity;
     
     // New feature: Tracks the current cursor position (0 to cmdBuffer.length())
     private int cursorPosition = 0; 
@@ -28,6 +29,7 @@ public class CommandLine {
      */
     public CommandLine(MainActivity mainActivity, Parameters parameters, String initialMessage) {
         cmdBuffer = new StringBuilder();
+        this.mainActivity = mainActivity;
         //rootView = mainActivity.findViewById(R.id.overlay_text); // Or any appropriate view
         rootView = mainActivity.decorView; // Or any appropriate view
         mParameters = parameters;
@@ -130,8 +132,8 @@ public class CommandLine {
     }
 
     // process command line from UDP input message
-    public void processCommandLine(String text) {
-        Log.d(TAG, "processCommandLine: " + text);
+    public void processCommandLine(String text, String fromIpAddress) {
+        Log.d(TAG, "processCommandLine: " + text + " fromIpAddress= " + fromIpAddress );
         String result;
         String cmd = text.trim();
 
@@ -139,6 +141,8 @@ public class CommandLine {
             result = text+"--> Error: No command specified";
         } else {
             result = parseAndExecute(cmd);
+            // send result back to UDP sender
+            mainActivity.sendResponse(result, fromIpAddress);
         }
         Log.d(TAG, "processCommandLine: " + result);
     }

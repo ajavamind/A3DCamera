@@ -93,28 +93,27 @@ public class UdpRemoteControl {
         if (hostIpAddress == null) return;
         this.hostIpAddress = hostIpAddress;
         this.camera = camera;
-        //isUdpTransmitter = true;
+
         if (MyDebug.LOG) Log.d(TAG, "setUdpTransmitter " + hostIpAddress);
         executorService = Executors.newSingleThreadExecutor();
-        //if (isUdpTransmitter) {
-            // extract local network broadcast address from host IP address
-            broadcastIpAddress = hostIpAddress.substring(0, hostIpAddress.lastIndexOf(".")) + ".255";
+        // extract local network broadcast address from host IP address
+        broadcastIpAddress = hostIpAddress.substring(0, hostIpAddress.lastIndexOf(".")) + ".255";
+        udpClient = null;
+        try {
+            udpClient = new UdpClient(broadcastIpAddress, udpPort);  // from netP5.* library
+            Log.d(TAG, "UdpClient " + broadcastIpAddress);
+        } catch (Exception e) {
+            Log.d(TAG, "Wifi problem");
             udpClient = null;
-            try {
-                udpClient = new UdpClient(broadcastIpAddress, udpPort);  // from netP5.* library
-                Log.d(TAG, "UdpClient " + broadcastIpAddress);
-            } catch (Exception e) {
-                Log.d(TAG, "Wifi problem");
-                udpClient = null;
-            }
-            connected = false;
-            if (udpClient != null) {
-                connected = true;
-                Log.d(TAG, "Wifi connected " + broadcastIpAddress);
-            } else {
-                Log.d(TAG, "Wifi not connected " + broadcastIpAddress);
-            }
-        //}
+        }
+        connected = false;
+        if (udpClient != null) {
+            connected = true;
+            Log.d(TAG, "Wifi connected " + broadcastIpAddress);
+        } else {
+            Log.d(TAG, "Wifi not connected " + broadcastIpAddress);
+        }
+
     }
 
     public void setUdpReceiver(Camera3D camera, String hostIpAddress) {
@@ -197,15 +196,31 @@ public class UdpRemoteControl {
                         }
                     } else if (command.startsWith("R")) { // reset / information request
                         httpUrl = getHostnameUrl();
-                        if (MyDebug.LOG) Log.d(TAG, "Reset information request to host URL=" + httpUrl);
+                        if (MyDebug.LOG)
+                            Log.d(TAG, "Reset information request to host URL=" + httpUrl);
                     } else if (command.startsWith("/")) { // slash command
                         sParam = getParam(data);
                         CommandLine commandLine = ((MainActivity) context).getCommandLine();
-                        commandLine.processCommandLine(sParam);
+                        commandLine.processCommandLine(sParam, fromIpAddress);
+                    } else if (command.startsWith("{")) { // brace response command TODO JSON
+                        sParam = getParam(data);
+                        CommandLine commandLine = ((MainActivity) context).getCommandLine();
+                        //commandLine.processCommandLine(sParam, fromIpAddress);
+                        Log.d(TAG, "from " + fromIpAddress + " { " + sParam);
                     } else if (command.startsWith("K")) {  // keyboard command
                         sParam = getParam(data);
-                        boolean result = ((MainActivity) context).onKeyUp(Integer.parseInt(sParam),null);
-                        Log.d(TAG, "remote keyboard command " + sParam + " result=" + result);
+                        int cmd = 0;
+                        try {
+                            cmd = Integer.parseInt(sParam);
+                        } catch (Exception e) {
+                            cmd = 0; // ignore
+                            Log.d(TAG, "remote keyboard command " + sParam + " error");
+                            sParam = "";
+                        }
+                        if (cmd != 0) {
+                            boolean result = ((MainActivity) context).onKeyUp(cmd, null);
+                            Log.d(TAG, "remote keyboard command " + sParam + " result=" + result);
+                        }
                     }
 
                 }
@@ -393,7 +408,6 @@ public class UdpRemoteControl {
      */
 
 
-
     void updatePhotoIndex() {
         photoIndex++;
         if (photoIndex > 9999) {
@@ -483,7 +497,9 @@ public class UdpRemoteControl {
     }
 
     void sendFocusReleasePush() {
-        if (executorService == null) { return;}
+        if (executorService == null) {
+            return;
+        }
         //  When you need to call the network method:
         executorService.execute(new Runnable() {
             @Override
@@ -495,7 +511,7 @@ public class UdpRemoteControl {
         });
     }
 
-        void shutterPush() {
+    void shutterPush() {
         if (udpClient != null) {
             udpClient.send("S" + getFilename(UPDATE, PHOTO_MODE));
         }
@@ -527,14 +543,27 @@ public class UdpRemoteControl {
         }
     }
 
+    void sendMessage(String message, String toIpAddress) {
+        if (udpClient != null) {
+            Log.d(TAG, "sendBroadcast: " + message+ " to " + toIpAddress);
+            String metaData = "{"+ message + "}";
+            udpClient.send(metaData.getBytes(), toIpAddress, udpPort);
+            // send broadcast message to specific IP address
+        }
+
+    }
+
     void shutterPushRelease() {
         if (udpClient != null) {
             udpClient.send("S" + getFilename(UPDATE, PHOTO_MODE));
             udpClient.send("R");
         }
     }
+
     void sendShutterPushRelease() {
-        if (executorService == null) { return;}
+        if (executorService == null) {
+            return;
+        }
         //  When you need to call the network method:
         executorService.execute(new Runnable() {
             @Override
